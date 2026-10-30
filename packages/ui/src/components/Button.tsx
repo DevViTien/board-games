@@ -3,11 +3,13 @@ import type { ButtonHTMLAttributes } from "react";
 
 import { cn } from "../lib/cn";
 
-const buttonVariants = cva(
+/** Also used to style links that look like buttons (e.g. a Next.js `Link` to a page). */
+export const buttonVariants = cva(
   [
     "inline-flex items-center justify-center gap-2 rounded-card font-medium transition-colors",
     "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring",
     "disabled:pointer-events-none disabled:opacity-50",
+    "aria-disabled:pointer-events-none aria-disabled:opacity-50",
   ],
   {
     variants: {
@@ -31,8 +33,26 @@ export type ButtonVariants = VariantProps<typeof buttonVariants>;
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>, ButtonVariants {}
 
-export function Button({ variant, size, type = "button", className, ...props }: ButtonProps) {
+/**
+ * `aria-disabled` is the way to disable a button that may hold keyboard focus (undo, redo): it
+ * looks and acts disabled but stays focusable, whereas `disabled` makes the browser drop focus to
+ * the page body. Presses are ignored here, since the browser no longer blocks them.
+ */
+export function Button({
+  variant,
+  size,
+  type = "button",
+  className,
+  onClick,
+  ...props
+}: ButtonProps) {
+  const ariaDisabled = props["aria-disabled"] === true || props["aria-disabled"] === "true";
   return (
-    <button type={type} className={cn(buttonVariants({ variant, size }), className)} {...props} />
+    <button
+      type={type}
+      className={cn(buttonVariants({ variant, size }), className)}
+      onClick={ariaDisabled ? undefined : onClick}
+      {...props}
+    />
   );
 }

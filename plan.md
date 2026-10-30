@@ -140,37 +140,59 @@ board-games/
 
 | Phần dùng chung | Ở đâu | Game chỉ cần cung cấp |
 |---|---|---|
-| Hợp đồng luật (`GameDefinition`) | `engine` | `setup`, `legalMoves`, `applyMove`, `result`, (`evaluate`) |
-| Lịch sử, undo/redo, replay, autosave | `engine` + `features/play` | Không gì cả |
-| AI (minimax, expectimax) + Web Worker | `engine/ai` + `ai-worker` | Hàm `evaluate` (nếu muốn có AI) |
-| Ngẫu nhiên (xúc xắc) | `engine/rng` | Khai báo `random: true`, gọi RNG được truyền vào |
+| Hợp đồng luật (`GameDefinition`) | `engine` | `meta`, `defaultOptions`, `setup`, `currentPlayer`, `legalMoves`, `applyMove`, `result`, (`parseOptions`, `evaluate`, `moveKey`) |
+| Lịch sử, undo/redo, biên bản, replay | `engine` (`session`, `record`) | Không gì cả |
+| Autosave | `apps/web` | Không gì cả |
+| AI (minimax, expectimax) + Web Worker | `engine/ai` + `ai-worker` | Hàm `evaluate` và `meta.supportsAI: true` (nếu muốn có AI) |
+| Ngẫu nhiên (xúc xắc) | `engine` chọn kết quả bằng rng được truyền vào | Khai báo `outcomes(state, move)`: các kết quả có thể kèm trọng số |
 | Chơi online, kết nối lại, server trọng tài | `transport` + `server` + `protocol` | Không gì cả |
 | Menu, bộ lọc, màn hình chọn chế độ | `features/menu` | `meta` (tên, số người, thời lượng, `supportsAI`) |
 | Khung màn hình ván (lượt, đồng hồ, nút) | `features/play` | Component `Board` |
 | Giao diện nền, token, theme | `packages/ui` | Không gì cả |
 
-### 3.4 Các interface cốt lõi (phác thảo)
+### 3.4 Các interface cốt lõi
+
+`GameDefinition` và phiên chơi đã cài ở `packages/engine` (chi tiết: `openspec/specs/game-engine/spec.md`, mã nguồn `packages/engine/src/types.ts`). `Transport` đã cài ở `apps/web/src/transport/` (M1 có `LocalTransport`). `RoomStore` vẫn là phác thảo.
 
 ```ts
-// packages/engine
-interface GameDefinition<S, M, O = void> {
-  id: GameId;
-  meta: GameMeta;                                  // tên, số người, thể loại, supportsAI...
-  setup(ctx: SetupContext<O>): S;                  // ctx có số người, tuỳ chọn luật, rng
-  currentPlayer(state: S): PlayerIndex;
-  legalMoves(state: S): readonly M[];
-  applyMove(state: S, move: M, ctx: MoveContext): S;  // ctx có rng cho game ngẫu nhiên
-  result(state: S): GameResult | null;
-  evaluate?(state: S, player: PlayerIndex): number;
-  serializeMove?(move: M): string;                 // mặc định JSON
+// packages/engine — mọi method khai báo `this: void` để truyền đi mà không cần bind
+interface GameDefinition<State, Move, Outcome = never, Options extends object = Record<string, never>> {
+  readonly id: GameId;                               // kebab-case; khai báo game bằng `as const satisfies`
+  readonly meta: GameMeta;                           // số người, thể loại, thời lượng, supportsAI
+  readonly defaultOptions: Options;
+  parseOptions?(raw: unknown): Options | null;       // kiểm tra tuỳ chọn từ bên ngoài; không có thì chỉ nhận defaultOptions
+  setup(ctx: { playerCount; options }): State;       // tất định; ngẫu nhiên lúc tạo ván đi vào options
+  currentPlayer(state: State): PlayerIndex;
+  legalMoves(state: State): readonly Move[];
+  outcomes?(state: State, move: Move): readonly { outcome: Outcome; weight: number }[];
+  applyMove(state: State, move: Move, outcome?: Outcome): State; // tất định, không sửa state
+  result(state: State): GameResult | null;           // { kind: "win", winners, reason? } | { kind: "draw", reason? }
+  evaluate?(state: State, player: PlayerIndex): number;
+  moveKey?(move: Move): string;                      // mặc định: JSON với khoá đã sắp xếp
 }
 
-// apps/web/src/transport
-interface Transport<M> {
-  submit(move: M): void;
-  onEvent(listener: (event: SessionEvent<M>) => void): Unsubscribe;
+// Phiên chơi: dữ liệu thuần + hàm thuần, lỗi trả về dạng Result<T> với mã ENGINE_ERROR
+createSession(game, { playerCount, options? }): Result<Session>
+playMove(game, session, move: unknown, rng: Rng): Result<Session> // rng do nơi gọi truyền vào mỗi nước
+applyEntry(game, session, entry: unknown): Result<Session> // { move, outcome? } chơi ở nơi khác (server online), không gieo lại
+undo(session) / redo(session): Result<Session>
+activeEntries(session) / lastEntry(session)            // lịch sử đang có hiệu lực, không gồm nước đã hoàn tác
+toRecord(session): GameRecord                          // { version: 1, gameId, playerCount, options, entries }
+fromRecord(game, raw: unknown): Result<Session>        // biên bản là dữ liệu không tin cậy
+
+// apps/web/src/transport — nơi duy nhất giữ Session; màn hình chơi chỉ đọc ảnh chụp và gửi yêu cầu
+interface Transport<State, Move, Outcome = never> {
+  getSnapshot(): PlaySnapshot;                       // { status: "loading" } | { status: "ready", state, legalMoves,
+                                                     //   currentPlayer, result, lastEntry, moveCount, canUndo, canRedo,
+                                                     //   canMove (transport quyết ai được đi), viewer (chỉ để lật bàn) }
+  subscribe(listener: (event: TransportEvent) => void): () => void; // "changed" | { "rejected", code }
+  submit(move: Move): void;                          // kết quả qua sự kiện, kể cả bị từ chối (online là bất đồng bộ)
+  requestUndo(): void;                               // AI (M2) hoàn tác hai nước, online (M4) chờ đối thủ đồng ý
+  requestRedo(): void;
+  requestNewGame(): void;
   dispose(): void;
 }
+// LocalTransport (cùng máy) tự khôi phục và tự lưu ván dở qua SavedGameStore (IndexedDB).
 
 // apps/web/src/server/store
 interface RoomStore {
@@ -252,12 +274,12 @@ Nhờ `RoomStore` là interface, toàn bộ logic phòng (`room-service.ts`) tes
 - Thêm một ngôn ngữ: thêm mã vào `LOCALES` và `LOCALE_LABELS` (`src/i18n/config.ts`), tạo `messages/<mã>.json`, thêm vào `MESSAGE_LOADERS`; TypeScript và `messages.test.ts` sẽ chỉ ra chỗ còn thiếu.
 
 ### Quy trình thêm một game mới (checklist)
-1. `packages/games/src/<id>/`: `rules.ts` cài `GameDefinition`, `rules.test.ts`, (tuỳ chọn) `options.ts` cho biến thể luật.
-2. Chạy bộ test chung `describeGameContract(<id>)` (mục 7) → phải xanh.
+1. `packages/games/src/<id>/`: `rules.ts` cài `GameDefinition` (khai báo bằng `export const <id> = { … } as const satisfies GameDefinition<State, Move, Outcome, Options>` để mã game giữ kiểu literal), `rules.test.ts`, (tuỳ chọn) `options.ts` cho biến thể luật kèm `parseOptions`.
+2. Trong `rules.test.ts`, gọi `describeGameContract(<game>, { seeds, maxPlies, playerCounts?, options?, timeout? })` từ `@board-games/engine/testing` → phải xanh (không truyền `playerCounts` thì thử mọi số người game cho phép).
 3. `apps/web/src/games/<id>/`: `Board.tsx`, `rules.{vi,en,ja}.mdx`, `index.ts`.
 4. Thêm tên và nội dung của game vào `apps/web/messages/{vi,en,ja}.json` (`Games.<id>…`).
 5. Thêm một dòng vào `apps/web/src/games/registry.ts`.
-6. Game tự xuất hiện trong menu, chơi được cùng máy, online, và với máy nếu có `evaluate`.
+6. Game tự xuất hiện trong menu, chơi được cùng máy, online, và với máy nếu `meta.supportsAI` (bộ kiểm tra hợp đồng bắt buộc khi đó phải có `evaluate`).
 
 ## 5. Môi trường và hạ tầng
 
@@ -353,5 +375,12 @@ Còn lại:
 - Push lên GitHub, xem CI chạy xanh.
 - Nối repo với Vercel (Root Directory: `apps/web`), kiểm tra trang chạy trên domain Vercel.
 
+### M1. Engine + game mẫu cùng máy (30/10/2026)
+
+Đã xong, qua 2 change OpenSpec (đã archive):
+- `add-game-engine`: `packages/engine` — hợp đồng `GameDefinition`, phiên chơi (hoàn tác/làm lại), biên bản ván và phát lại từ dữ liệu không tin cậy, ngẫu nhiên đi qua rng được truyền vào, bộ kiểm tra hợp đồng `@board-games/engine/testing` (14 kiểm tra). Spec: `openspec/specs/game-engine/`.
+- `add-tictactoe-game`: Tic-tac-toe trong `packages/games`; registry hai tầng (`GAMES` + `GAME_ENTRY_LOADERS`, giao diện nạp lười); menu sinh từ registry với lối "Tiếp tục"; màn hình chơi cùng máy `/play/<mã game>` qua `Transport`/`LocalTransport`; tự lưu ván dở vào IndexedDB; `ConfirmDialog` trong `packages/ui`; bản dịch vi/en/ja. Spec: `openspec/specs/{tictactoe,game-menu,local-play}/`.
+- Mỗi change đều qua 2 lượt review (senior dev, săn bug) và một lượt xử lý kết quả review trước khi archive.
+
 ### Tiếp theo
-**M1. Engine + game mẫu cùng máy**, bắt đầu bằng `/opsx:propose` (gợi ý tách 2 change: `add-game-engine` cho hợp đồng game + session + autosave, `add-tictactoe-game` cho game mẫu + menu từ registry).
+**M2. AI**: `engine/ai` (minimax + alpha-beta, giới hạn thời gian, 3 mức), Web Worker, `AITransport`; bắt đầu bằng `/opsx:propose`. Trước M2 cần chủ dự án trả lời câu hỏi "ván dở theo game hay theo game × chế độ" (design của `add-tictactoe-game`, Open Questions).

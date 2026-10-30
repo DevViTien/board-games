@@ -14,11 +14,15 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@board-games/engine": "workspace:*",
+    "@board-games/games": "workspace:*",
     "@board-games/ui": "workspace:*",
+    "idb-keyval": "catalog:",
     "next": "catalog:",
     "next-intl": "catalog:",
     "react": "catalog:",
-    "react-dom": "catalog:"
+    "react-dom": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@board-games/config": "workspace:*",

@@ -5,7 +5,7 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const nextConfig: NextConfig = {
   // Workspace packages ship TypeScript source instead of a build step.
-  transpilePackages: ["@board-games/ui"],
+  transpilePackages: ["@board-games/engine", "@board-games/games", "@board-games/ui"],
   typedRoutes: true,
 };
 

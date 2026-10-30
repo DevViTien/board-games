@@ -33,6 +33,24 @@ describe("Button", () => {
     expect(onClick).not.toHaveBeenCalled();
   });
 
+  it("ignores presses but stays focusable when aria-disabled", async () => {
+    const onClick = vi.fn();
+    render(
+      <Button aria-disabled onClick={onClick}>
+        Chơi
+      </Button>,
+    );
+    const button = screen.getByRole("button", { name: "Chơi" });
+
+    await userEvent.tab();
+    expect(button).toHaveFocus();
+    await userEvent.keyboard("{Enter}");
+    await userEvent.click(button, { pointerEventsCheck: 0 });
+
+    expect(onClick).not.toHaveBeenCalled();
+    expect(button).toHaveAttribute("aria-disabled", "true");
+  });
+
   it("lets className override variant classes", () => {
     render(<Button className="px-8">Chơi</Button>);
 

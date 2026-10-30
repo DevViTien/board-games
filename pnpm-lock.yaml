@@ -236,6 +236,9 @@ catalogs:
     husky:
       specifier: ^9.1.7
       version: 9.1.7
+    idb-keyval:
+      specifier: ^6.3.0
+      version: 6.3.0
     jsdom:
       specifier: ^30.1.3
       version: 30.1.3
@@ -284,6 +287,9 @@ catalogs:
     vitest:
       specifier: ^5.0.5
       version: 5.0.5
+    zod:
+      specifier: ^4.6.7
+      version: 4.6.7
 
 importers:
 
@@ -328,9 +334,18 @@ importers:
 
   apps/web:
     dependencies:
+      '@board-games/engine':
+        specifier: workspace:*
+        version: link:../../packages/engine
+      '@board-games/games':
+        specifier: workspace:*
+        version: link:../../packages/games
       '@board-games/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      idb-keyval:
+        specifier: 'catalog:'
+        version: 6.3.0
       next:
         specifier: 'catalog:'
         version: 16.4.3(@babel/core@7.29.7(supports-color@7.2.0))(@playwright/test@1.64.1)(@types/node@24.19.2)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -343,6 +358,9 @@ importers:
       react-dom:
         specifier: 'catalog:'
         version: 19.3.1(react@19.3.1)
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
     devDependencies:
       '@board-games/config':
         specifier: workspace:*
@@ -443,6 +461,10 @@ importers:
         version: 5.0.5(@types/node@24.19.2)(@vitest/coverage-v8@5.0.5)(jsdom@30.1.3)(vite@8.3.5(@types/node@24.19.2)(jiti@2.7.0)(yaml@2.9.1))
 
   packages/games:
+    dependencies:
+      '@board-games/engine':
+        specifier: workspace:*
+        version: link:../engine
     devDependencies:
       '@board-games/config':
         specifier: workspace:*
@@ -2922,6 +2944,9 @@ packages:
 
   icu-minify@4.14.9:
     resolution: {integrity: sha512-PmO+fNnC3K3mfPKTnm3RrPERrhQZnjm1AlpyZQ0ShbXi8Y/kYZ3YOde8TEjCLz9k3P2DmzkBn8lykGrCAi1Ajw==}
+
+  idb-keyval@6.3.0:
+    resolution: {integrity: sha512-um+2dgAWmYsu615EXpWVwSmapJhON0G43t3Ka/EVaohzPQXSMqKEqeDK/oIW3Ow+BXaF2PvSc+oBTFp793A5Ow==}
 
   ignore@5.3.2:
     resolution: {integrity: sha512-hsBTNUqQTDwkWtcdYI2i06Y/nUBEsNEDJKjWdigLvegy8kDuJAS8uRlpkkcQpyEXL0Z/pjDy5HBmMjRCJ2gq+g==}
@@ -6489,6 +6514,8 @@ snapshots:
   icu-minify@4.14.9:
     dependencies:
       '@formatjs/icu-messageformat-parser': 3.5.22
+
+  idb-keyval@6.3.0: {}
 
   ignore@5.3.2: {}
 

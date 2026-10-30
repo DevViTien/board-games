@@ -6,12 +6,60 @@
     "comingSoon": "Coming soon",
     "playersFixed": "{count, plural, one {# player} other {# players}}",
     "playersRange": "{min}–{max} players",
-    "duration": "~{minutes} min"
+    "duration": "~{minutes} min",
+    "play": "Play",
+    "continue": "Continue"
   },
   "Games": {
-    "caro": { "name": "Gomoku" },
-    "ludo": { "name": "Ludo" },
-    "chess": { "name": "Chess" }
+    "tictactoe": {
+      "name": "Tic-tac-toe",
+      "players": {
+        "x": "X",
+        "o": "O"
+      }
+    },
+    "caro": {
+      "name": "Gomoku"
+    },
+    "ludo": {
+      "name": "Ludo"
+    },
+    "chess": {
+      "name": "Chess"
+    }
+  },
+  "Play": {
+    "board": "Board",
+    "cell": "Row {row}, column {col}, {content}",
+    "cellEmpty": "empty",
+    "turn": "{player} to move",
+    "winner": "{count, plural, one {{player} wins!} other {{player} win!}}",
+    "draw": "It is a draw!",
+    "undo": "Undo",
+    "redo": "Redo",
+    "newGame": "New game",
+    "backToMenu": "Back to menu",
+    "loading": "Loading…",
+    "confirmNewGame": {
+      "title": "Start a new game?",
+      "description": "The current game will be discarded.",
+      "confirm": "New game",
+      "cancel": "Keep playing"
+    },
+    "notFound": {
+      "title": "Game not found",
+      "description": "This game is not part of Board Games Hub."
+    },
+    "loadError": {
+      "title": "Couldn't load the game",
+      "description": "Your connection may be down, or the app was just updated. Please try again.",
+      "retry": "Try again"
+    }
+  },
+  "NotFound": {
+    "title": "Page not found",
+    "description": "This page is not part of Board Games Hub.",
+    "backToMenu": "Back to menu"
   },
   "Settings": {
     "language": "Language"

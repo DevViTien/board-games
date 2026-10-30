@@ -95,6 +95,8 @@ function typescript(tsconfigRootDir) {
       rules: {
         "@typescript-eslint/consistent-type-imports": "error",
         "@typescript-eslint/restrict-template-expressions": ["error", { allowNumber: true }],
+        // `this: void` marks methods that are safe to call unbound (see GameDefinition).
+        "@typescript-eslint/no-invalid-void-type": ["error", { allowAsThisParameter: true }],
       },
     },
     {

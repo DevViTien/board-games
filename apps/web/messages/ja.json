@@ -6,12 +6,60 @@
     "comingSoon": "近日公開",
     "playersFixed": "{count}人",
     "playersRange": "{min}〜{max}人",
-    "duration": "約{minutes}分"
+    "duration": "約{minutes}分",
+    "play": "遊ぶ",
+    "continue": "続きから"
   },
   "Games": {
-    "caro": { "name": "五目並べ" },
-    "ludo": { "name": "ルドー" },
-    "chess": { "name": "チェス" }
+    "tictactoe": {
+      "name": "三目並べ",
+      "players": {
+        "x": "X",
+        "o": "O"
+      }
+    },
+    "caro": {
+      "name": "五目並べ"
+    },
+    "ludo": {
+      "name": "ルドー"
+    },
+    "chess": {
+      "name": "チェス"
+    }
+  },
+  "Play": {
+    "board": "盤面",
+    "cell": "{row}行{col}列、{content}",
+    "cellEmpty": "空き",
+    "turn": "{player}の番です",
+    "winner": "{count, plural, other {{player}の勝ち！}}",
+    "draw": "引き分け！",
+    "undo": "元に戻す",
+    "redo": "やり直す",
+    "newGame": "新しいゲーム",
+    "backToMenu": "メニューに戻る",
+    "loading": "読み込み中…",
+    "confirmNewGame": {
+      "title": "新しいゲームを始めますか？",
+      "description": "今のゲームは破棄されます。",
+      "confirm": "新しいゲーム",
+      "cancel": "続ける"
+    },
+    "notFound": {
+      "title": "ゲームが見つかりません",
+      "description": "このゲームは Board Games Hub にありません。"
+    },
+    "loadError": {
+      "title": "ゲームを読み込めませんでした",
+      "description": "通信が切れているか、アプリが更新された可能性があります。もう一度お試しください。",
+      "retry": "再試行"
+    }
+  },
+  "NotFound": {
+    "title": "ページが見つかりません",
+    "description": "このページは Board Games Hub にありません。",
+    "backToMenu": "メニューに戻る"
   },
   "Settings": {
     "language": "言語"

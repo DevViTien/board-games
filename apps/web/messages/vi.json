@@ -6,12 +6,60 @@
     "comingSoon": "Sắp có",
     "playersFixed": "{count} người",
     "playersRange": "{min}–{max} người",
-    "duration": "~{minutes} phút"
+    "duration": "~{minutes} phút",
+    "play": "Chơi",
+    "continue": "Tiếp tục"
   },
   "Games": {
-    "caro": { "name": "Cờ caro" },
-    "ludo": { "name": "Cờ cá ngựa" },
-    "chess": { "name": "Cờ vua" }
+    "tictactoe": {
+      "name": "Tic-tac-toe",
+      "players": {
+        "x": "X",
+        "o": "O"
+      }
+    },
+    "caro": {
+      "name": "Cờ caro"
+    },
+    "ludo": {
+      "name": "Cờ cá ngựa"
+    },
+    "chess": {
+      "name": "Cờ vua"
+    }
+  },
+  "Play": {
+    "board": "Bàn cờ",
+    "cell": "Hàng {row}, cột {col}, {content}",
+    "cellEmpty": "trống",
+    "turn": "Đến lượt {player}",
+    "winner": "{count, plural, other {{player} thắng!}}",
+    "draw": "Hoà!",
+    "undo": "Hoàn tác",
+    "redo": "Làm lại",
+    "newGame": "Ván mới",
+    "backToMenu": "Về menu",
+    "loading": "Đang tải…",
+    "confirmNewGame": {
+      "title": "Bắt đầu ván mới?",
+      "description": "Ván đang chơi sẽ bị bỏ.",
+      "confirm": "Ván mới",
+      "cancel": "Chơi tiếp"
+    },
+    "notFound": {
+      "title": "Không tìm thấy game",
+      "description": "Game này không có trong Board Games Hub."
+    },
+    "loadError": {
+      "title": "Không tải được game",
+      "description": "Có thể mạng đang gián đoạn hoặc ứng dụng vừa được cập nhật. Hãy thử lại.",
+      "retry": "Thử lại"
+    }
+  },
+  "NotFound": {
+    "title": "Không tìm thấy trang",
+    "description": "Trang này không có trong Board Games Hub.",
+    "backToMenu": "Về menu"
   },
   "Settings": {
     "language": "Ngôn ngữ"
