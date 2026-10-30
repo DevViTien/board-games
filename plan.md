@@ -45,6 +45,7 @@ Tra trên npm ngày 30/10/2026. Phiên bản khai báo **một lần** trong m�
 | Git hooks | husky + lint-staged + commitlint | 9.1 / 17.6 / 21.2 | Trước commit: Prettier + ESLint trên file thay đổi; commit message theo Conventional Commits |
 | Phát hiện code thừa | knip | 6.43 | File, export, thư viện không dùng; chạy trong CI |
 | Cập nhật thư viện | Renovate | — | PR gom hằng tuần; đã chặn TypeScript ≥ 6.1 và ESLint ≥ 10 |
+| Phát triển theo spec | OpenSpec (`@fission-ai/openspec`) | 1.15 | Lệnh `/opsx:*` trong Claude Code; quy trình ở CLAUDE.md, cấu hình ở `openspec/config.yaml` |
 
 pnpm 12 chỉ cài bản đã phát hành ít nhất khoảng 1 ngày (chống tấn công chuỗi cung ứng) và chặn script cài đặt trừ khi khai báo trong `allowBuilds`. Không thêm ngoại lệ cho các chính sách này; nếu bản mới nhất quá mới thì dùng bản trước đó.
 
@@ -273,6 +274,8 @@ Nhờ `RoomStore` là interface, toàn bộ logic phòng (`room-service.ts`) tes
 
 Kích thước ước lượng: **S** ≈ 1–2 buổi, **M** ≈ 3–5 buổi, **L** ≈ 1–2 tuần (làm ngoài giờ).
 
+Từ M1, mỗi mốc được làm qua một hoặc nhiều **OpenSpec change** (`/opsx:propose` → `/opsx:apply` → `/opsx:archive`, xem CLAUDE.md). Bảng dưới là lộ trình; chi tiết requirement, thiết kế và task của từng việc nằm trong `openspec/changes/<tên>/`, và hành vi đã xong nằm trong `openspec/specs/`. Mốc chỉ coi là xong khi mọi change của nó đã archive.
+
 ### 6.1 Giai đoạn 0: Khung
 
 | Mốc | Nội dung | Xong khi | Cỡ |
@@ -337,17 +340,18 @@ Mọi mốc chỉ coi là xong khi:
 
 Đã xong:
 - pnpm workspace + Turborepo, catalog phiên bản trong `pnpm-workspace.yaml`.
-- `packages/config`: tsconfig (`base`, `library`, `react-library`, `nextjs`), Prettier, ESLint dùng chung qua `createConfig(layer, dir)`.
+- `packages/config`: tsconfig (`base`, `library`, `react-library`, `nextjs`), ESLint (`createConfig(layer, dir)`), Vitest (`createVitestConfig`) dùng chung; Prettier ở `prettier.config.js` gốc.
 - Quy tắc chiều phụ thuộc chạy được: thử import React vào `engine`, import `games` từ `engine`, import file nội bộ `@board-games/*/src`, `export default` đều bị ESLint báo lỗi.
 - `packages/engine`, `games`, `protocol`: khung rỗng, sẵn lint/typecheck/test.
-- `packages/ui`: token sáng/tối (CSS variables + Tailwind `@theme`), `Button`, `Card`, `Badge`, `cx`.
-- `apps/web`: Next.js 16 + Tailwind 4, trang menu tạm với 3 game "Sắp có".
-- CI GitHub Actions (`format:check` + lint, typecheck, test, build), cấu hình VS Code, README.
-- `pnpm check` xanh ở máy local.
+- `packages/ui`: token sáng/tối, `Button` (cva), `Card`, `Badge`, `Select`, `cn`, bộ icon.
+- `apps/web`: Next.js 16 + Tailwind 4, trang menu tạm với 3 game "Sắp có", đa ngôn ngữ vi/en/ja (next-intl).
+- Tooling: git hooks (husky, lint-staged, commitlint), knip, Renovate, Playwright, coverage.
+- OpenSpec 1.15: lệnh `/opsx:*`, `openspec/config.yaml`, `CLAUDE.md`, spec nền `localization`, `pnpm spec:check` trong CI.
+- `pnpm check` xanh ở máy local; commit `feat: create codebase`.
 
 Còn lại:
-- Commit và push lên GitHub, xem CI chạy xanh.
+- Push lên GitHub, xem CI chạy xanh.
 - Nối repo với Vercel (Root Directory: `apps/web`), kiểm tra trang chạy trên domain Vercel.
 
 ### Tiếp theo
-**M1. Engine + game mẫu cùng máy.**
+**M1. Engine + game mẫu cùng máy**, bắt đầu bằng `/opsx:propose` (gợi ý tách 2 change: `add-game-engine` cho hợp đồng game + session + autosave, `add-tictactoe-game` cho game mẫu + menu từ registry).

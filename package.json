@@ -17,12 +17,14 @@
     "test:e2e": "turbo run test:e2e",
     "check": "turbo run lint typecheck test build",
     "knip": "knip",
+    "spec:check": "openspec validate --all --strict --no-interactive && openspec list --json | node scripts/openspec-archive-gate.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
   "devDependencies": {
     "@commitlint/cli": "catalog:",
     "@commitlint/config-conventional": "catalog:",
+    "@fission-ai/openspec": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "eslint": "catalog:",
     "husky": "catalog:",

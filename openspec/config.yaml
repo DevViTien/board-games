@@ -1,0 +1,83 @@
+schema: spec-driven
+
+context: |
+  Board Games Hub — web app chơi cờ trên trình duyệt: cùng máy, đấu với máy (AI), và online với
+  bạn bè qua link mời. Dự án cá nhân, phi thương mại, cho một nhóm nhỏ bạn bè/đồng nghiệp; chạy
+  trên gói miễn phí (Vercel Hobby, Upstash).
+
+  Nguồn chân lý:
+  - idea.md = sản phẩm và các quyết định đã chốt (mục 9). plan.md = kiến trúc, quy ước code (§4),
+    các mốc M0–M8 (§6). openspec/specs/ = hành vi hiện trạng (WHAT). openspec/changes/ = việc sắp làm.
+  - MVP: Cờ caro, Cờ cá ngựa (luật "phổ biến" ở idea.md §3.4, viết sao cho bật/tắt được từng biến
+    thể), Cờ vua (chưa có chế độ đấu với máy). Chỉ game dân gian, cổ điển hoặc tự thiết kế; không
+    tái tạo board game thương mại.
+
+  Stack: pnpm workspace + Turborepo; Next.js 16 (App Router) + React 19 + TypeScript 6 strict;
+  Tailwind 4 + design token; next-intl (vi mặc định, en, ja); Vitest + Testing Library; Playwright.
+  Online: WebSocket trên Vercel Functions + Upstash Redis (phòng, lịch sử nước đi, pub/sub).
+
+  Kiến trúc (plan.md §3): packages/engine (hợp đồng GameDefinition, session, AI, rng) ←
+  packages/games (luật từng game) và packages/protocol (thông điệp online) ← apps/web (Next.js).
+  packages/ui (token, component, icon) chỉ dùng React. packages/config là tooling.
+
+  Bất biến (không được vi phạm; change nào cần đổi thì phải nói rõ trong proposal và lý do):
+  - Phụ thuộc chỉ đi một chiều theo sơ đồ trên. engine/games/protocol không import React, Next,
+    DOM; chạy được ở trình duyệt, Node và Web Worker. ESLint chặn import sai chiều.
+  - Luật game là hàm thuần: không mutate state, không gọi Math.random/Date.now trực tiếp; ngẫu
+    nhiên đi qua rng được truyền vào để server và replay tái tạo đúng.
+  - Online: server là trọng tài. Mọi nước đi được server kiểm tra bằng chính code luật trong
+    packages/games; client chỉ hiển thị trước. Xúc xắc và mọi giá trị ngẫu nhiên do server tạo.
+  - Một ván = danh sách nước đi. Kết nối lại, xem lại, autosave đều dựng state bằng cách phát lại.
+  - Function trên Vercel không giữ state: mọi thứ của phòng nằm trong Redis. Kết nối WebSocket
+    bị ngắt định kỳ là bình thường; client tự nối lại, người chơi không mất ván.
+  - Thêm một game chỉ gồm: GameDefinition + Board + bản dịch + một dòng registry. Phải sửa phần
+    dùng chung (engine, session, transport, menu, server) để thêm game là dấu hiệu thiết kế sai.
+  - Không có chữ hiển thị nào ngoài apps/web/messages/{vi,en,ja}.json; packages trả về id/mã,
+    app dịch. vi.json là bản gốc; en/ja phải đủ key và cùng tham số ICU.
+  - Không tài khoản: danh tính = playerId ngẫu nhiên + tên tạm trong localStorage.
+  - Không thêm dịch vụ trả phí hoặc dịch vụ ngoài mới khi chưa có quyết định ghi vào idea.md.
+
+  Quy ước: plan.md §4 (TypeScript strict, không enum mà dùng `as const`, export có tên, file
+  kebab-case, component PascalCase, cn()/cva() cho style, icon chỉ qua @board-games/ui, test đặt
+  cạnh code, Conventional Commits).
+
+  Ngôn ngữ: nội dung artifact (proposal, design, tasks, mô tả requirement và scenario) viết bằng
+  TIẾNG VIỆT. Giữ nguyên tiếng Anh: tiêu đề cấu trúc của OpenSpec (## Why, ## What Changes,
+  ## Purpose, ## Requirements, ### Requirement:, #### Scenario:, ## ADDED/MODIFIED/REMOVED
+  Requirements), các dấu **WHEN** / **THEN** / **AND**, từ khoá SHALL / MUST, và mọi định danh
+  (tên capability, tên change, tên hàm/kiểu, mã lỗi, khoá bản dịch, đường dẫn).
+
+rules:
+  proposal:
+    - Viết tiếng Việt; tên change và tên capability là kebab-case tiếng Anh, dạng động từ + đối tượng (add-tictactoe-game, add-online-rooms).
+    - Ghi rõ change thuộc mốc nào trong plan.md §6 (M1, M2, …).
+    - Luôn có mục "Ngoài phạm vi" liệt kê những gì cố ý không làm.
+    - Nếu change chạm tới một bất biến trong context, nêu bất biến đó và lý do.
+  specs:
+    - Mô tả tiếng Việt, mỗi requirement chứa từ khoá SHALL hoặc MUST.
+    - Mô tả hành vi người chơi hoặc hệ thống quan sát được (WHAT); cách cài đặt (HOW) để ở design.md.
+    - Mỗi scenario phải kiểm chứng được bằng một test (unit, component hoặc E2E).
+    - Khối MODIFIED chép TRỌN thân requirement đang có trong openspec/specs/ rồi mới sửa; chép thiếu sẽ làm mất nội dung khi archive.
+    - Đổi bản chất một requirement thì dùng cặp REMOVED + ADDED với tên khác nhau.
+  design:
+    - Chỉ ra package và thư mục bị ảnh hưởng theo plan.md §3.2, kiểm tra chiều phụ thuộc.
+    - Với mỗi quyết định, nêu phương án đã cân nhắc và lý do chọn.
+    - Nếu thêm thư viện, ghi phiên bản và kiểm tra chính sách tuổi phiên bản của pnpm (plan.md §2).
+  tasks:
+    - Viết tiếng Việt; mỗi task kiểm chứng được độc lập, đủ nhỏ để xong trong khoảng nửa buổi.
+    - Mỗi nhóm task có task viết test tương ứng với các scenario.
+    - Có chữ hiển thị mới thì có task thêm bản dịch cho cả vi, en, ja.
+    - "Nhóm task cuối luôn gồm việc chạy `pnpm check`, `pnpm knip`, `pnpm spec:check` (và `pnpm test:e2e` nếu đổi giao diện), cập nhật plan.md §10 nếu xong một mốc."
+    - Việc cố ý hoãn ghi ở mục "## Ngoài phạm vi", không để `- [ ]` treo mãi.
+
+operations:
+  apply:
+    guidance:
+      - Làm theo thứ tự trong tasks.md; tick `- [x]` ngay khi task xong và test liên quan xanh.
+      - Không mở rộng phạm vi khi đang apply; cần đổi hướng thì sửa proposal/design/specs trước rồi mới code.
+      - Gọi CLI bằng `pnpm exec openspec` để dùng đúng phiên bản ghim trong repo.
+  archive:
+    guidance:
+      - Chỉ archive khi hành vi đã có trong code và `pnpm check` xanh; không bao giờ archive hành vi chưa code.
+      - Trước khi archive, đối chiếu delta spec với code hiện tại (code có thể đã đi khác lúc đề xuất) và diff trọn thân các khối MODIFIED với bản trong openspec/specs/.
+      - Archive trong cùng PR với task cuối cùng của change.

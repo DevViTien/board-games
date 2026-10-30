@@ -29,6 +29,9 @@ jobs:
 
       - run: pnpm knip
 
+      - name: OpenSpec (strict validation, no finished change left unarchived)
+        run: pnpm spec:check
+
       - run: pnpm check
 
   e2e:
