@@ -1,0 +1,61 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Install scripts are blocked unless listed here. These scripts only fetch or compile a native
+# binding as a fallback; pnpm already installs the prebuilt one as an optional dependency.
+allowBuilds:
+  "@parcel/watcher": false
+  "@swc/core": false
+  unrs-resolver: false
+
+# Single source of truth for dependency versions; packages reference them with "catalog:".
+catalog:
+  # tooling
+  "@commitlint/cli": ^21.2.4
+  "@commitlint/config-conventional": ^21.2.4
+  husky: ^9.1.7
+  knip: ^6.43.0
+  lint-staged: ^17.6.0
+  turbo: ^2.11.10
+  # typescript-eslint 8.x supports TypeScript < 6.1, so stay on 6.0.
+  typescript: ~6.0.3
+
+  # lint & format
+  "@eslint/js": ^9.39.5
+  # ESLint 10 is blocked by eslint-config-next's plugins (react, import, jsx-a11y), which still peer on ^9.
+  eslint: ^9.39.5
+  eslint-config-next: ^16.4.3
+  eslint-plugin-jsx-a11y: ^6.10.2
+  eslint-plugin-react: ^7.37.5
+  eslint-plugin-react-hooks: ^7.1.1
+  eslint-plugin-simple-import-sort: ^14.0.0
+  globals: ^17.13.0
+  prettier: ^3.9.10
+  prettier-plugin-tailwindcss: ^0.8.1
+  typescript-eslint: ^8.72.1
+
+  # testing
+  "@playwright/test": ^1.64.1
+  "@testing-library/dom": ^10.4.2
+  "@testing-library/jest-dom": ^7.0.1
+  "@testing-library/react": ^16.3.3
+  "@testing-library/user-event": ^14.6.8
+  "@vitest/coverage-v8": ^5.0.5
+  jsdom: ^30.1.3
+  vitest: ^5.0.5
+
+  # app & ui
+  "@tailwindcss/postcss": ^4.3.3
+  "@types/node": ^24.19.2
+  "@types/react": ^19.3.0
+  "@types/react-dom": ^19.3.0
+  class-variance-authority: ^0.7.1
+  clsx: ^2.1.1
+  lucide-react: ^1.64.0
+  next: ^16.4.3
+  next-intl: ^4.14.9
+  react: ^19.3.1
+  react-dom: ^19.3.1
+  tailwind-merge: ^3.7.0
+  tailwindcss: ^4.3.3

@@ -1,0 +1,19 @@
+{
+  "Site": {
+    "tagline": "Play board games with friends, right in your browser."
+  },
+  "Menu": {
+    "comingSoon": "Coming soon",
+    "playersFixed": "{count, plural, one {# player} other {# players}}",
+    "playersRange": "{min}–{max} players",
+    "duration": "~{minutes} min"
+  },
+  "Games": {
+    "caro": { "name": "Gomoku" },
+    "ludo": { "name": "Ludo" },
+    "chess": { "name": "Chess" }
+  },
+  "Settings": {
+    "language": "Language"
+  }
+}

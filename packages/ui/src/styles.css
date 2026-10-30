@@ -1,0 +1,71 @@
+/*
+ * Design tokens. A theme is one block of raw variables below; Tailwind utilities
+ * (bg-surface, text-fg-muted, rounded-card, ...) read them through @theme, so
+ * adding a theme never touches component code.
+ */
+
+:root {
+  color-scheme: light;
+  --bg: oklch(0.985 0.002 250);
+  --surface: oklch(1 0 0);
+  --surface-muted: oklch(0.965 0.004 250);
+  --fg: oklch(0.22 0.015 250);
+  --fg-muted: oklch(0.5 0.015 250);
+  --border: oklch(0.91 0.006 250);
+  --accent: oklch(0.55 0.16 255);
+  --accent-hover: oklch(0.5 0.16 255);
+  --accent-fg: oklch(0.99 0 0);
+  --focus-ring: oklch(0.65 0.15 255);
+  --radius: 0.75rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: oklch(0.17 0.01 250);
+    --surface: oklch(0.21 0.012 250);
+    --surface-muted: oklch(0.25 0.012 250);
+    --fg: oklch(0.95 0.005 250);
+    --fg-muted: oklch(0.7 0.012 250);
+    --border: oklch(0.3 0.012 250);
+    --accent: oklch(0.7 0.14 255);
+    --accent-hover: oklch(0.76 0.13 255);
+    --accent-fg: oklch(0.17 0.01 250);
+    --focus-ring: oklch(0.7 0.14 255);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: oklch(0.17 0.01 250);
+  --surface: oklch(0.21 0.012 250);
+  --surface-muted: oklch(0.25 0.012 250);
+  --fg: oklch(0.95 0.005 250);
+  --fg-muted: oklch(0.7 0.012 250);
+  --border: oklch(0.3 0.012 250);
+  --accent: oklch(0.7 0.14 255);
+  --accent-hover: oklch(0.76 0.13 255);
+  --accent-fg: oklch(0.17 0.01 250);
+  --focus-ring: oklch(0.7 0.14 255);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-fg);
+  --color-focus-ring: var(--focus-ring);
+  --radius-card: var(--radius);
+  /*
+   * --font-app (Latin + Vietnamese) and --font-cjk (Japanese) are provided by the app via
+   * next/font; the browser picks per glyph, and the system stack is the last fallback.
+   */
+  --font-sans:
+    var(--font-app, system-ui), var(--font-cjk, sans-serif), -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+}

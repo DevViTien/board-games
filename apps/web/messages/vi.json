@@ -1,0 +1,19 @@
+{
+  "Site": {
+    "tagline": "Chơi cờ cùng bạn bè ngay trên trình duyệt."
+  },
+  "Menu": {
+    "comingSoon": "Sắp có",
+    "playersFixed": "{count} người",
+    "playersRange": "{min}–{max} người",
+    "duration": "~{minutes} phút"
+  },
+  "Games": {
+    "caro": { "name": "Cờ caro" },
+    "ludo": { "name": "Cờ cá ngựa" },
+    "chess": { "name": "Cờ vua" }
+  },
+  "Settings": {
+    "language": "Ngôn ngữ"
+  }
+}

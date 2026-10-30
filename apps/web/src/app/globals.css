@@ -1,0 +1,5 @@
+@import "tailwindcss";
+@import "@board-games/ui/styles.css";
+
+/* Workspace packages live outside this app, so Tailwind must be told to scan them. */
+@source "../../../../packages/ui/src";

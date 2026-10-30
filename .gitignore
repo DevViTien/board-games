@@ -1,1 +1,28 @@
+# dependencies
+node_modules
+.pnpm-store
+
+# build output
+.next
+out
+dist
+*.tsbuildinfo
+next-env.d.ts
+
+# tooling caches and reports
+.turbo
+coverage
+playwright-report
+test-results
+
+# environment
+.env*
+!.env.example
+.vercel
+
+# os
+.DS_Store
+Thumbs.db
+
+# local scratch
 .temp/

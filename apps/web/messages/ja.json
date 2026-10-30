@@ -1,0 +1,19 @@
+{
+  "Site": {
+    "tagline": "ブラウザで友だちとボードゲームを楽しもう。"
+  },
+  "Menu": {
+    "comingSoon": "近日公開",
+    "playersFixed": "{count}人",
+    "playersRange": "{min}〜{max}人",
+    "duration": "約{minutes}分"
+  },
+  "Games": {
+    "caro": { "name": "五目並べ" },
+    "ludo": { "name": "ルドー" },
+    "chess": { "name": "チェス" }
+  },
+  "Settings": {
+    "language": "言語"
+  }
+}

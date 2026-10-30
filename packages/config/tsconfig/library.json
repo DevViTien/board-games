@@ -1,0 +1,6 @@
+// Pure TypeScript packages (engine, games, protocol): must run in browser, Node and Web Workers,
+// so no DOM types.
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "./base.json"
+}
