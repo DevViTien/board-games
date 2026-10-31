@@ -151,15 +151,17 @@ describe("createLocalTransport", () => {
 
     transport.submit({ cell: 0 });
     await flush();
-    expect(store.entries.get("tictactoe")).toMatchObject({ entries: [{ move: { cell: 0 } }] });
+    expect(store.entries.get("tictactoe:local")?.record).toMatchObject({
+      entries: [{ move: { cell: 0 } }],
+    });
 
     transport.requestUndo();
     await flush();
-    expect(store.entries.has("tictactoe")).toBe(false);
+    expect(store.entries.has("tictactoe:local")).toBe(false);
 
     for (const cell of [0, 3, 1, 4, 2]) transport.submit({ cell });
     await flush();
-    expect(store.entries.has("tictactoe")).toBe(false);
+    expect(store.entries.has("tictactoe:local")).toBe(false);
   });
 
   it("restores a saved game", async () => {
@@ -177,13 +179,18 @@ describe("createLocalTransport", () => {
   });
 
   it("drops a saved game the engine rejects and starts a new one", async () => {
-    const store = createMemoryStore({ tictactoe: { version: 1, gameId: "tictactoe", junk: true } });
+    const store = createMemoryStore({
+      "tictactoe:local": {
+        settings: { kind: "local" },
+        record: { version: 1, gameId: "tictactoe", junk: true },
+      },
+    });
 
     const snapshot = await ready(createTransport(store));
 
     expect(snapshot.moveCount).toBe(0);
     await flush();
-    expect(store.entries.has("tictactoe")).toBe(false);
+    expect(store.entries.has("tictactoe:local")).toBe(false);
   });
 
   it("starts a new game when storage fails, and keeps playing when saving fails", async () => {
@@ -191,7 +198,7 @@ describe("createLocalTransport", () => {
       load: () => Promise.reject(new Error("blocked")),
       save: () => Promise.reject(new Error("blocked")),
       clear: () => Promise.reject(new Error("blocked")),
-      listSavedGameIds: () => Promise.reject(new Error("blocked")),
+      listInProgress: () => Promise.reject(new Error("blocked")),
     };
     const transport = createTransport(broken);
 
@@ -220,7 +227,7 @@ describe("createLocalTransport", () => {
     await ready(transport);
     transport.submit({ cell: 0 });
     await flush();
-    const saved = store.entries.get("tictactoe");
+    const saved = store.entries.get("tictactoe:local");
     const before = transport.getSnapshot();
 
     transport.dispose();
@@ -231,7 +238,7 @@ describe("createLocalTransport", () => {
     await flush();
 
     expect(transport.getSnapshot()).toBe(before);
-    expect(store.entries.get("tictactoe")).toEqual(saved);
+    expect(store.entries.get("tictactoe:local")).toEqual(saved);
   });
 
   it("lets a move be made while the game is on, and none once it is over", async () => {
@@ -245,7 +252,9 @@ describe("createLocalTransport", () => {
   });
 
   it("never writes over a saved game it could not read", async () => {
-    const store = createMemoryStore({ tictactoe: { kept: true } });
+    const store = createMemoryStore({
+      "tictactoe:local": { settings: { kind: "local" }, record: { kept: true } },
+    });
     const transport = createTransport({
       ...store,
       load: () => Promise.reject(new Error("Connection to Indexed Database server lost")),
@@ -259,7 +268,31 @@ describe("createLocalTransport", () => {
     await flush();
 
     expect(readySnapshot(transport).moveCount).toBe(0);
-    expect(store.entries.get("tictactoe")).toEqual({ kept: true });
+    expect(store.entries.get("tictactoe:local")?.record).toEqual({ kept: true });
+  });
+
+  it("starts a new game after 3 seconds when the store does not answer, and never writes over it", async () => {
+    vi.useFakeTimers();
+    try {
+      const store = createMemoryStore({
+        "tictactoe:local": { settings: { kind: "local" }, record: { kept: true } },
+      });
+      const save = vi.spyOn(store, "save");
+      const transport = createTransport({ ...store, load: () => new Promise(() => undefined) });
+
+      await vi.advanceTimersByTimeAsync(2999);
+      expect(transport.getSnapshot()).toEqual({ status: "loading" });
+      await vi.advanceTimersByTimeAsync(1);
+
+      expect(readySnapshot(transport).moveCount).toBe(0);
+      transport.submit({ cell: 0 });
+      await vi.advanceTimersByTimeAsync(0);
+      expect(readySnapshot(transport).moveCount).toBe(1);
+      expect(save).not.toHaveBeenCalled();
+      expect(store.entries.get("tictactoe:local")?.record).toEqual({ kept: true });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("does not resume a finished game left in storage, and drops it", async () => {
@@ -270,9 +303,12 @@ describe("createLocalTransport", () => {
     await flush();
     first.dispose();
     // Only reachable if clearing after the winning move failed: put the won game in storage.
-    const won = finished.entries.get("tictactoe") as { entries: unknown[] };
+    const won = finished.entries.get("tictactoe:local")?.record as { entries: unknown[] };
     const store = createMemoryStore({
-      tictactoe: { ...won, entries: [...won.entries, { move: { cell: 2 } }] },
+      "tictactoe:local": {
+        settings: { kind: "local" },
+        record: { ...won, entries: [...won.entries, { move: { cell: 2 } }] },
+      },
     });
 
     const snapshot = await ready(createTransport(store));
@@ -280,7 +316,7 @@ describe("createLocalTransport", () => {
     expect(snapshot.moveCount).toBe(0);
     expect(snapshot.result).toBeNull();
     await flush();
-    expect(store.entries.has("tictactoe")).toBe(false);
+    expect(store.entries.has("tictactoe:local")).toBe(false);
   });
 
   it("keeps playing when the store throws instead of rejecting", async () => {

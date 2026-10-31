@@ -1,14 +1,13 @@
-import { act, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
-import { PlayRoute } from "@/features/play/PlayRoute";
+import { SetupScreen } from "@/features/setup/SetupScreen";
 import { renderWithIntl } from "@/test/render-with-intl";
-import { createMemoryStore } from "@/transport/memory-store";
 
-import PlayError from "./error";
+import SetupError from "./error";
 import GameNotFound from "./not-found";
-import PlayPage from "./page";
+import SetupPage from "./page";
 
 const NOT_FOUND = new Error("NEXT_NOT_FOUND");
 
@@ -16,30 +15,21 @@ vi.mock("next/navigation", () => ({
   notFound: () => {
     throw NOT_FOUND;
   },
+  useRouter: () => ({ push: vi.fn() }),
 }));
 
 describe("/play/[gameId]", () => {
-  it("renders the play route for a registered game, passing only its id", async () => {
-    const page = await PlayPage({ params: Promise.resolve({ gameId: "tictactoe" }) });
+  it("renders the setup screen of a registered game, passing only plain values", async () => {
+    const page = await SetupPage({ params: Promise.resolve({ gameId: "tictactoe" }) });
 
-    expect(page.type).toBe(PlayRoute);
-    expect(page.props).toEqual({ gameId: "tictactoe" });
+    expect(page.type).toBe(SetupScreen);
+    expect(page.props).toEqual({ gameId: "tictactoe", supportsAI: true });
   });
 
   it("calls notFound for an unknown game", async () => {
     await expect(
-      PlayPage({ params: Promise.resolve({ gameId: "khong-co-game-nay" }) }),
+      SetupPage({ params: Promise.resolve({ gameId: "khong-co-game-nay" }) }),
     ).rejects.toBe(NOT_FOUND);
-  });
-
-  it("loads and shows the board of the requested game", async () => {
-    // The route suspends while the game's code loads; React only retries inside an awaited act.
-    await act(async () => {
-      renderWithIntl(<PlayRoute gameId="tictactoe" store={createMemoryStore()} />);
-      await Promise.resolve();
-    });
-
-    expect(await screen.findByRole("group", { name: "Bàn cờ" })).toBeInTheDocument();
   });
 
   it("offers a way back to the menu when the game does not exist", () => {
@@ -49,15 +39,12 @@ describe("/play/[gameId]", () => {
     expect(screen.getByRole("link", { name: "Về menu" })).toHaveAttribute("href", "/");
   });
 
-  it("offers to retry, or to go back to the menu, when the game fails to load", async () => {
+  it("offers to retry, or to go back to the menu, when the screen fails", async () => {
     const retry = vi.fn();
-    renderWithIntl(<PlayError error={new Error("ChunkLoadError")} retry={retry} />, {
-      locale: "en",
-    });
+    renderWithIntl(<SetupError error={new Error("ChunkLoadError")} retry={retry} />);
 
-    expect(screen.getByRole("heading", { name: "Couldn't load the game" })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+    await userEvent.click(screen.getByRole("button", { name: "Thử lại" }));
     expect(retry).toHaveBeenCalledOnce();
-    expect(screen.getByRole("link", { name: "Back to menu" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "Về menu" })).toHaveAttribute("href", "/");
   });
 });

@@ -8,7 +8,8 @@
     "playersRange": "{min}–{max} players",
     "duration": "~{minutes} min",
     "play": "Play",
-    "continue": "Continue"
+    "continueTitle": "Continue a game",
+    "continueItem": "{game} · {mode}"
   },
   "Games": {
     "tictactoe": {
@@ -16,7 +17,8 @@
       "players": {
         "x": "X",
         "o": "O"
-      }
+      },
+      "move": "row {row}, column {col}"
     },
     "caro": {
       "name": "Gomoku"
@@ -28,10 +30,48 @@
       "name": "Chess"
     }
   },
+  "Modes": {
+    "local": "Same device",
+    "ai": "Vs computer",
+    "aiLevel": "Vs computer · {level}"
+  },
+  "Levels": {
+    "easy": "Easy",
+    "medium": "Medium",
+    "hard": "Hard"
+  },
+  "Setup": {
+    "mode": "Mode",
+    "modes": {
+      "ai": "Against the computer",
+      "local": "Same device"
+    },
+    "level": "Level",
+    "first": "Who moves first",
+    "firsts": {
+      "human": "Me",
+      "ai": "The computer",
+      "random": "Random"
+    },
+    "start": "Start",
+    "inProgress": {
+      "title": "Games in progress",
+      "continue": "Continue",
+      "continueLabel": "Continue: {mode}"
+    },
+    "confirm": {
+      "title": "Discard the game in progress?",
+      "description": "The game in progress in this mode will be discarded when the new one starts.",
+      "descriptionUnknown": "Saved games could not be read. If a game is in progress in this mode, it will be discarded.",
+      "confirm": "Start a new game",
+      "cancel": "Keep it"
+    }
+  },
   "Play": {
     "board": "Board",
     "cell": "Row {row}, column {col}, {content}",
     "cellEmpty": "empty",
+    "lastMove": "Last move",
     "turn": "{player} to move",
     "winner": "{count, plural, one {{player} wins!} other {{player} win!}}",
     "draw": "It is a draw!",
@@ -54,6 +94,15 @@
       "title": "Couldn't load the game",
       "description": "Your connection may be down, or the app was just updated. Please try again.",
       "retry": "Try again"
+    },
+    "yourTurn": "Your move ({player})",
+    "aiMovedYourTurn": "The computer played {move}. Your move ({player})",
+    "aiThinking": "The computer is thinking…",
+    "youWin": "You win!",
+    "aiWins": "The computer wins!",
+    "modeNotFound": {
+      "title": "Play page not found",
+      "description": "This address does not lead to a way to play on Board Games Hub."
     }
   },
   "NotFound": {

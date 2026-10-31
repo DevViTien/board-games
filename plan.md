@@ -94,13 +94,15 @@ board-games/
 │     ├─ src/
 │     │  ├─ app/                    # chỉ chứa route, mỏng, gọi xuống features
 │     │  │  ├─ page.tsx             # menu
-│     │  │  ├─ play/[gameId]/       # chơi cùng máy / với máy
+│     │  │  ├─ play/[gameId]/       # màn hình bắt đầu ván
+│     │  │  │  └─ [mode]/           # chơi theo chế độ: local (cùng máy), ai (với máy)
 │     │  │  ├─ room/[roomId]/       # phòng online
 │     │  │  └─ api/
 │     │  │     ├─ rooms/route.ts    # tạo phòng, lấy thông tin phòng
 │     │  │     └─ ws/route.ts       # điểm nối WebSocket
 │     │  ├─ features/               # mỗi tính năng một thư mục, tự chứa
-│     │  │  ├─ menu/
+│     │  │  ├─ menu/                # thẻ game, mục "Tiếp tục ván dở"
+│     │  │  ├─ setup/               # màn hình bắt đầu ván: chế độ, mức độ, ai đi trước, lựa chọn gần nhất
 │     │  │  ├─ play/                # màn hình ván, thanh điều khiển, hộp thoại kết thúc
 │     │  │  ├─ room/                # sảnh chờ, ghế, trạng thái kết nối
 │     │  │  ├─ identity/            # tên tạm + playerId trong localStorage
@@ -114,8 +116,8 @@ board-games/
 │     │  ├─ config/                 # constant toàn app: site.ts, routes.ts, storage-keys.ts
 │     │  ├─ i18n/                   # cấu hình ngôn ngữ, chọn ngôn ngữ, bộ nạp bản dịch
 │     │  ├─ test/                   # tiện ích test dùng chung (renderWithIntl)
-│     │  ├─ transport/              # Local, AI, Online: cùng một interface
-│     │  ├─ ai-worker/              # Web Worker chạy AI của engine
+│     │  ├─ transport/              # transport theo ghế (người/máy, sau thêm online), kho ván dở theo slot
+│     │  ├─ ai-worker/              # AiPlayer: Web Worker chạy AI của engine, dự phòng trên luồng chính
 │     │  ├─ server/                 # chỉ chạy phía server
 │     │  │  ├─ room-service.ts      # xử lý join/move/resign, không biết Redis hay WebSocket
 │     │  │  ├─ store/               # RoomStore: redis.ts, memory.ts (dev + test)
@@ -143,16 +145,17 @@ board-games/
 | Hợp đồng luật (`GameDefinition`) | `engine` | `meta`, `defaultOptions`, `setup`, `currentPlayer`, `legalMoves`, `applyMove`, `result`, (`parseOptions`, `evaluate`, `moveKey`) |
 | Lịch sử, undo/redo, biên bản, replay | `engine` (`session`, `record`) | Không gì cả |
 | Autosave | `apps/web` | Không gì cả |
-| AI (minimax, expectimax) + Web Worker | `engine/ai` + `ai-worker` | Hàm `evaluate` và `meta.supportsAI: true` (nếu muốn có AI) |
+| AI: `chooseMove(game, state, { level, rng, now, timeLimitMs })`, minimax góc nhìn ghế máy + alpha-beta + expectimax, đào sâu dần; mức `AI_LEVEL` Dễ/Vừa/Khó; chạy trong Web Worker (`AiPlayer`, không chạy được thì dự phòng trên luồng chính), transport cho máy đi khi tới ghế máy | `engine/ai` + `ai-worker` + `transport` | Hàm `evaluate` (càng cao càng tốt cho `player`; số hữu hạn, nên là số nguyên, trị tuyệt đối dưới 10^8; mọi chênh lệch đều được coi là thật) và `meta.supportsAI: true` |
 | Ngẫu nhiên (xúc xắc) | `engine` chọn kết quả bằng rng được truyền vào | Khai báo `outcomes(state, move)`: các kết quả có thể kèm trọng số |
 | Chơi online, kết nối lại, server trọng tài | `transport` + `server` + `protocol` | Không gì cả |
-| Menu, bộ lọc, màn hình chọn chế độ | `features/menu` | `meta` (tên, số người, thời lượng, `supportsAI`) |
+| Menu, bộ lọc | `features/menu` | `meta` (tên, số người, thời lượng) |
+| Màn hình bắt đầu ván (chế độ, mức độ, ai đi trước, ván dở của game) | `features/setup` | `meta.supportsAI` |
 | Khung màn hình ván (lượt, đồng hồ, nút) | `features/play` | Component `Board` |
 | Giao diện nền, token, theme | `packages/ui` | Không gì cả |
 
 ### 3.4 Các interface cốt lõi
 
-`GameDefinition` và phiên chơi đã cài ở `packages/engine` (chi tiết: `openspec/specs/game-engine/spec.md`, mã nguồn `packages/engine/src/types.ts`). `Transport` đã cài ở `apps/web/src/transport/` (M1 có `LocalTransport`). `RoomStore` vẫn là phác thảo.
+`GameDefinition` và phiên chơi đã cài ở `packages/engine` (chi tiết: `openspec/specs/game-engine/spec.md`, mã nguồn `packages/engine/src/types.ts`). `Transport`, `SavedGameStore` và `AiPlayer` đã cài ở `apps/web/src/transport/` và `apps/web/src/ai-worker/` (M2: một transport cục bộ theo ghế cho cả cùng máy lẫn đấu với máy; chi tiết: `openspec/specs/{local-play,play-vs-ai,game-setup}/spec.md`). `RoomStore` vẫn là phác thảo.
 
 ```ts
 // packages/engine — mọi method khai báo `this: void` để truyền đi mà không cần bind
@@ -167,7 +170,7 @@ interface GameDefinition<State, Move, Outcome = never, Options extends object = 
   outcomes?(state: State, move: Move): readonly { outcome: Outcome; weight: number }[];
   applyMove(state: State, move: Move, outcome?: Outcome): State; // tất định, không sửa state
   result(state: State): GameResult | null;           // { kind: "win", winners, reason? } | { kind: "draw", reason? }
-  evaluate?(state: State, player: PlayerIndex): number;
+  evaluate?(state: State, player: PlayerIndex): number; // bắt buộc khi supportsAI; |giá trị| < 10^8
   moveKey?(move: Move): string;                      // mặc định: JSON với khoá đã sắp xếp
 }
 
@@ -184,15 +187,38 @@ fromRecord(game, raw: unknown): Result<Session>        // biên bản là dữ l
 interface Transport<State, Move, Outcome = never> {
   getSnapshot(): PlaySnapshot;                       // { status: "loading" } | { status: "ready", state, legalMoves,
                                                      //   currentPlayer, result, lastEntry, moveCount, canUndo, canRedo,
-                                                     //   canMove (transport quyết ai được đi), viewer (chỉ để lật bàn) }
+                                                     //   canMove (transport quyết ai được đi), viewer (ghế của người ở
+                                                     //   thiết bị này khi chỉ có một người, null nếu không),
+                                                     //   seats: SeatController[], waitingFor: "ai" | null (M4 thêm
+                                                     //   "opponent"), inProgress (người đã đi ít nhất một nước còn hiệu lực) }
   subscribe(listener: (event: TransportEvent) => void): () => void; // "changed" | { "rejected", code }
   submit(move: Move): void;                          // kết quả qua sự kiện, kể cả bị từ chối (online là bất đồng bộ)
-  requestUndo(): void;                               // AI (M2) hoàn tác hai nước, online (M4) chờ đối thủ đồng ý
-  requestRedo(): void;
+  requestUndo(): void;                               // lùi tới lượt người ở thiết bị này (bỏ cả nước máy); online (M4) chờ đối thủ đồng ý
+  requestRedo(): void;                               // làm lại tới lượt người kế tiếp (kèm nước máy)
   requestNewGame(): void;
   dispose(): void;
 }
-// LocalTransport (cùng máy) tự khôi phục và tự lưu ván dở qua SavedGameStore (IndexedDB).
+
+// Transport cục bộ theo ghế: mỗi ghế là người ({ kind: "human" }) hoặc máy ({ kind: "ai", level }); M4 thêm "remote".
+// Tới ghế máy thì hỏi AiPlayer, chờ tối thiểu 300 ms, kiểm lại ván chưa đổi rồi mới đi; máy lỗi thì đi nước hợp lệ ngẫu nhiên.
+createLocalTransport({ definition, store, rng, mode?: "local" | "ai", start?: PlaySetup, fallback?: PlaySetup, ai?: AiPlayer })
+// PlaySetup = { mode: "local" } | { mode: "ai", level, first: "human" | "ai" | "random" }
+
+// Ván dở theo slot game × chế độ (khoá "<gameId>:<mode>", vỏ { version: 2, savedAt, inProgress, mode, record });
+// ván cùng máy của M1 (khoá "<gameId>", version 1) được chuyển một lần trước mọi thao tác.
+interface SavedGameStore {
+  load(slot: SaveSlot): Promise<{ settings: ModeSettings; record: unknown } | undefined>; // từ chối = có thể có ván, không được ghi đè
+  save(slot: SaveSlot, game: { settings; record; inProgress }): Promise<void>;
+  clear(slot: SaveSlot): Promise<void>;
+  listInProgress(): Promise<SavedGameSummary[]>;    // cho menu và màn hình bắt đầu ván, mới nhất trước
+}
+
+// apps/web/src/ai-worker — máy nghĩ ngoài luồng giao diện
+interface AiPlayer {
+  chooseMove(request: AiRequest): Promise<unknown>;  // { gameId, state, level, timeLimitMs, seed }; transport kiểm lại nước
+  dispose(): void;
+}
+// createWorkerAiPlayer(): Worker tạo ở yêu cầu đầu; Worker lỗi/không trả lời → luồng chính (200 ms) cho mọi lượt sau.
 
 // apps/web/src/server/store
 interface RoomStore {
@@ -304,7 +330,7 @@ Từ M1, mỗi mốc được làm qua một hoặc nhiều **OpenSpec change** 
 |---|---|---|---|
 | **M0. Khởi tạo repo** | Git + GitHub; pnpm workspace + Turborepo; `packages/config`; Next.js khung trong `apps/web`; Tailwind + token sáng/tối trong `packages/ui`; ESLint (kèm quy tắc chiều phụ thuộc), Prettier, Vitest; CI; nối Vercel | `pnpm lint typecheck test build` xanh ở local và CI; trang "Hello" chạy trên domain Vercel | S |
 | **M1. Engine + game mẫu cùng máy** | `engine`: types, session (undo/redo), rng; `games/tictactoe`; bộ test hợp đồng chung; `features/menu` tự sinh từ registry; `features/play` + `LocalTransport`; autosave vào IndexedDB | Chơi Tic-tac-toe cùng máy từ menu; undo/redo đúng; F5 vẫn giữ ván | M |
-| **M2. AI** | `engine/ai` (minimax + alpha-beta, giới hạn thời gian, 3 mức khó); `ai-worker`; `AITransport` | Đấu với máy Tic-tac-toe, máy mức Khó không thua; giao diện không bị đứng khi máy nghĩ | S |
+| **M2. AI** | `engine/ai` (minimax + alpha-beta, giới hạn thời gian, 3 mức khó); `ai-worker`; transport theo ghế (người/máy) thay cho `AITransport` riêng; màn hình bắt đầu ván; ván dở theo game × chế độ | Đấu với máy Tic-tac-toe, máy mức Khó không thua; giao diện không bị đứng khi máy nghĩ | S |
 | **M3. Thử nghiệm online trên Vercel** *(cổng quyết định)* | Dựng route WebSocket tối giản trên Vercel Hobby, đo: thời gian giữ kết nối, độ trễ từ Việt Nam, 2 client trên 2 instance có nhận được tin qua Redis pub/sub không, chạy local được không | Có bảng số đo và **quyết định**: giữ WebSocket của Vercel, hay chuyển sang phương án dự phòng (Ably/Pusher gói miễn phí, hoặc server Node riêng). Ghi kết quả vào plan.md | S |
 | **M4. Phòng online** | `protocol` (thông điệp + zod); `features/identity`; `room-service` + `RoomStore` (memory, redis); `realtime/`; `OnlineTransport` có tự kết nối lại; trang tạo phòng, link mời, mã phòng; TTL 7 ngày | 2 trình duyệt chơi Tic-tac-toe qua link; tắt mạng một bên rồi bật lại vẫn tiếp tục đúng lượt; gửi nước đi sai luật bị server từ chối; test E2E bằng Playwright xanh | L |
 
@@ -372,8 +398,8 @@ Mọi mốc chỉ coi là xong khi:
 - `pnpm check` xanh ở máy local; commit `feat: create codebase`.
 
 Còn lại:
-- Push lên GitHub, xem CI chạy xanh.
-- Nối repo với Vercel (Root Directory: `apps/web`), kiểm tra trang chạy trên domain Vercel.
+- Đã push lên GitHub; CI chưa chạy được vì tài khoản GitHub bị khoá do vấn đề thanh toán (job không được khởi động). Mở khoá ở GitHub → Settings → Billing rồi chạy lại CI.
+- Nối repo với Vercel (Root Directory: `apps/web`), kiểm tra trang chạy trên domain Vercel (cần trước M3).
 
 ### M1. Engine + game mẫu cùng máy (30/10/2026)
 
@@ -382,5 +408,12 @@ Còn lại:
 - `add-tictactoe-game`: Tic-tac-toe trong `packages/games`; registry hai tầng (`GAMES` + `GAME_ENTRY_LOADERS`, giao diện nạp lười); menu sinh từ registry với lối "Tiếp tục"; màn hình chơi cùng máy `/play/<mã game>` qua `Transport`/`LocalTransport`; tự lưu ván dở vào IndexedDB; `ConfirmDialog` trong `packages/ui`; bản dịch vi/en/ja. Spec: `openspec/specs/{tictactoe,game-menu,local-play}/`.
 - Mỗi change đều qua 2 lượt review (senior dev, săn bug) và một lượt xử lý kết quả review trước khi archive.
 
+### M2. AI (30/10/2026)
+
+Đã xong, qua 2 change OpenSpec:
+- `add-game-ai` (đã archive): `packages/engine` có `chooseMove` (minimax góc nhìn ghế máy + alpha-beta + expectimax, đào sâu dần, giới hạn thời gian) và mức `AI_LEVEL` Dễ/Vừa/Khó; Tic-tac-toe có `evaluate` và `supportsAI: true`. Spec: `openspec/specs/game-ai/`.
+- `add-play-vs-ai` (đã archive): màn hình bắt đầu ván `/play/<mã game>` (`features/setup`: chế độ, mức độ, ai đi trước, nhớ lựa chọn gần nhất, tiếp tục ván dở của game); màn hình chơi theo chế độ `/play/<mã game>/{local,ai}`; transport cục bộ theo ghế (người/máy) thay cho `AITransport` riêng; máy nghĩ trong Web Worker (`ai-worker`, dự phòng trên luồng chính); ván dở lưu theo game × chế độ, ván M1 được chuyển sang khoá mới; menu có mục "Tiếp tục ván dở"; `RadioGroup` trong `packages/ui`; bản dịch vi/en/ja; E2E cho đấu với máy, màn hình bắt đầu ván, ván lưu ở bản trước và trang lỗi tải game; máy báo nước vừa đi và ô vừa đánh được đánh dấu. Spec: `openspec/specs/{game-setup,play-vs-ai}/`, cập nhật `local-play`, `game-menu`.
+- Sửa lỗi phát hiện khi viết E2E: phần chơi của game không tải được thì màn hình kẹt ở "Đang tải…" và tải lại chunk liên tục, không bao giờ hiện trang lỗi; nay lần tải lỗi được giữ cho tới khi người chơi bấm "Thử lại".
+
 ### Tiếp theo
-**M2. AI**: `engine/ai` (minimax + alpha-beta, giới hạn thời gian, 3 mức), Web Worker, `AITransport`; bắt đầu bằng `/opsx:propose`. Trước M2 cần chủ dự án trả lời câu hỏi "ván dở theo game hay theo game × chế độ" (design của `add-tictactoe-game`, Open Questions).
+**M3. Thử nghiệm online trên Vercel** (cổng quyết định, §6.1): dựng route WebSocket tối giản trên Vercel Hobby, đo thời gian giữ kết nối, độ trễ từ Việt Nam, pub/sub qua Redis giữa 2 instance, chạy local; ghi số đo và quyết định giữ WebSocket của Vercel hay chuyển phương án dự phòng. Cần nối repo với Vercel trước (xem M0 "Còn lại").

@@ -17,7 +17,8 @@ export interface CounterMove {
 
 const STEPS = [1, 2] as const;
 
-export const counterGame = {
+/** The rules without `evaluate`, for the contract-suite variant that claims AI support anyway. */
+export const counterRules = {
   id: "counter",
   meta: {
     players: { min: 2, max: 2 },
@@ -34,4 +35,19 @@ export const counterGame = {
   result: (state) =>
     state.count === COUNTER_TARGET ? { kind: "win", winners: [1 - state.toMove] } : null,
   moveKey: (move) => `+${move.add}`,
+} as const satisfies GameDefinition<CounterState, CounterMove>;
+
+export const counterGame = {
+  ...counterRules,
+  // Exact for this game: the player to move wins unless the distance left is a multiple of 3.
+  evaluate: (state: CounterState, player: PlayerIndex) => {
+    const moverWins = (COUNTER_TARGET - state.count) % 3 !== 0;
+    return (state.toMove === player) === moverWins ? 1 : -1;
+  },
+} as const satisfies GameDefinition<CounterState, CounterMove>;
+
+/** The counter game declared playable against the AI. */
+export const counterAiGame = {
+  ...counterGame,
+  meta: { ...counterGame.meta, supportsAI: true },
 } as const satisfies GameDefinition<CounterState, CounterMove>;

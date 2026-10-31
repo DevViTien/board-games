@@ -74,3 +74,13 @@ export const diceRaceGame = {
   ...diceRaceRules,
   parseOptions: (raw: unknown) => (isDiceRaceOptions(raw) ? { target: raw.target } : null),
 } as const satisfies GameDefinition<DiceRaceState, DiceRaceMove, number, DiceRaceOptions>;
+
+/** The dice race declared playable against the AI: a player's lead over the best other player. */
+export const diceRaceAiGame = {
+  ...diceRaceGame,
+  meta: { ...diceRaceGame.meta, supportsAI: true },
+  evaluate: (state: DiceRaceState, player: PlayerIndex) => {
+    const others = state.positions.filter((_position, seat) => seat !== player);
+    return (state.positions[player] ?? 0) - Math.max(...others);
+  },
+} as const satisfies GameDefinition<DiceRaceState, DiceRaceMove, number, DiceRaceOptions>;

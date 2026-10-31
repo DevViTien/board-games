@@ -68,6 +68,12 @@ export interface GameDefinition<
   /** Must be deterministic and must not modify `state`. */
   applyMove(this: void, state: State, move: Move, outcome?: Outcome): State;
   result(this: void, state: State): GameResult | null;
+  /**
+   * How good an unfinished `state` looks for `player`, higher is better; required when
+   * `meta.supportsAI`. Scale: a finite number, preferably an integer, with an absolute value below
+   * 10^8 (the AI clamps anything larger, and wins and losses score far above that). The AI treats
+   * any difference as real, so round away differences that are only noise.
+   */
   evaluate?(this: void, state: State, player: PlayerIndex): number;
   /** Identity of a move; defaults to JSON with sorted keys. */
   moveKey?(this: void, move: Move): string;

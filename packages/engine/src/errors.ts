@@ -8,6 +8,7 @@ export const ENGINE_ERROR = {
   GameMismatch: "game-mismatch",
   CorruptRecord: "corrupt-record",
   UnsupportedRecordVersion: "unsupported-record-version",
+  AiNotSupported: "ai-not-supported",
 } as const;
 
 export type EngineErrorCode = (typeof ENGINE_ERROR)[keyof typeof ENGINE_ERROR];

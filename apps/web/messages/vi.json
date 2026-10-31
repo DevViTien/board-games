@@ -8,7 +8,8 @@
     "playersRange": "{min}–{max} người",
     "duration": "~{minutes} phút",
     "play": "Chơi",
-    "continue": "Tiếp tục"
+    "continueTitle": "Tiếp tục ván dở",
+    "continueItem": "{game} · {mode}"
   },
   "Games": {
     "tictactoe": {
@@ -16,7 +17,8 @@
       "players": {
         "x": "X",
         "o": "O"
-      }
+      },
+      "move": "hàng {row}, cột {col}"
     },
     "caro": {
       "name": "Cờ caro"
@@ -28,10 +30,48 @@
       "name": "Cờ vua"
     }
   },
+  "Modes": {
+    "local": "Cùng máy",
+    "ai": "Với máy",
+    "aiLevel": "Với máy · {level}"
+  },
+  "Levels": {
+    "easy": "Dễ",
+    "medium": "Vừa",
+    "hard": "Khó"
+  },
+  "Setup": {
+    "mode": "Chế độ",
+    "modes": {
+      "ai": "Đấu với máy",
+      "local": "Cùng máy"
+    },
+    "level": "Mức độ",
+    "first": "Ai đi trước",
+    "firsts": {
+      "human": "Tôi",
+      "ai": "Máy",
+      "random": "Ngẫu nhiên"
+    },
+    "start": "Bắt đầu",
+    "inProgress": {
+      "title": "Ván đang dở",
+      "continue": "Tiếp tục",
+      "continueLabel": "Tiếp tục: {mode}"
+    },
+    "confirm": {
+      "title": "Bỏ ván đang dở?",
+      "description": "Ván đang dở ở chế độ này sẽ bị bỏ khi bắt đầu ván mới.",
+      "descriptionUnknown": "Không đọc được các ván đã lưu. Nếu đang có ván dở ở chế độ này, ván đó sẽ bị bỏ.",
+      "confirm": "Bắt đầu ván mới",
+      "cancel": "Giữ ván dở"
+    }
+  },
   "Play": {
     "board": "Bàn cờ",
     "cell": "Hàng {row}, cột {col}, {content}",
     "cellEmpty": "trống",
+    "lastMove": "Nước vừa đi",
     "turn": "Đến lượt {player}",
     "winner": "{count, plural, other {{player} thắng!}}",
     "draw": "Hoà!",
@@ -54,6 +94,15 @@
       "title": "Không tải được game",
       "description": "Có thể mạng đang gián đoạn hoặc ứng dụng vừa được cập nhật. Hãy thử lại.",
       "retry": "Thử lại"
+    },
+    "yourTurn": "Đến lượt bạn ({player})",
+    "aiMovedYourTurn": "Máy đánh {move}. Đến lượt bạn ({player})",
+    "aiThinking": "Máy đang nghĩ…",
+    "youWin": "Bạn thắng!",
+    "aiWins": "Máy thắng!",
+    "modeNotFound": {
+      "title": "Không tìm thấy trang chơi này",
+      "description": "Đường dẫn này không dẫn tới cách chơi nào của Board Games Hub."
     }
   },
   "NotFound": {

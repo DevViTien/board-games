@@ -41,7 +41,7 @@ export const tictactoe = {
     players: { min: 2, max: 2 },
     category: GAME_CATEGORY.Classic,
     durationMinutes: 2,
-    supportsAI: false,
+    supportsAI: true,
   },
   defaultOptions: {},
   // Typed so the inferred State is the full TicTacToeState, not the all-empty board it starts as.
@@ -63,4 +63,15 @@ export const tictactoe = {
     if (winner !== null) return { kind: "win", winners: [winner] };
     return state.board.every((mark) => mark !== null) ? { kind: "draw" } : null;
   },
+  // Each line holding only `player`'s marks scores +10^n (n marks), only the opponent's −10^n, and
+  // a blocked line 0: an integer within ±800, as the AI's scale asks.
+  evaluate: (state, player) =>
+    WINNING_LINES.reduce((total, line) => {
+      const marks = line.map((cell) => state.board[cell]);
+      const mine = marks.filter((mark) => mark === player).length;
+      const theirs = marks.filter((mark) => mark !== null && mark !== player).length;
+      if (mine > 0 && theirs === 0) return total + 10 ** mine;
+      if (theirs > 0 && mine === 0) return total - 10 ** theirs;
+      return total;
+    }, 0),
 } as const satisfies GameDefinition<TicTacToeState, TicTacToeMove>;

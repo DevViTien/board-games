@@ -2,6 +2,7 @@ import { ENGINE_ERROR, err, ok, type Result } from "./errors";
 import { isPlainObject } from "./guards";
 import { defaultMoveKey, stableStringify } from "./move-key";
 import { parseGameOptions } from "./options";
+import { checkOutcomeWeights } from "./outcome-weights";
 import type {
   GameDefinition,
   GameId,
@@ -220,13 +221,7 @@ function step<State, Move, Outcome, Options extends object>(
   if (move === undefined) return err(ENGINE_ERROR.IllegalMove);
 
   const choices = game.outcomes?.(state, move) ?? [];
-  // A weight of 0 or 1.5 is a bug in the rules, never a real chance: refusing it here keeps such
-  // an outcome out of play and replay alike instead of silently skewing the dice.
-  for (const { weight } of choices) {
-    if (!Number.isInteger(weight) || weight <= 0) {
-      throw new RangeError(`Outcome weight ${weight} is not a positive integer`);
-    }
-  }
+  checkOutcomeWeights(choices);
   const entry = lock(move, choices);
   if (entry === undefined) return err(ENGINE_ERROR.IllegalMove);
   return ok({ entry, state: game.applyMove(state, move, entry.outcome) });

@@ -342,3 +342,5 @@ Vì `Board` là component React nên nằm ở `apps/web`, còn `GameDefinition`
 | 8 | Quy mô | **Dự án cá nhân, phi thương mại**, ít người dùng (bạn bè, đồng nghiệp) |
 | 9 | Luật cờ cá ngựa mặc định | **Cột "phổ biến"** ở bảng 3.4 |
 | 10 | Ngôn ngữ | **Tiếng Việt (mặc định), tiếng Anh, tiếng Nhật**, có ngay từ đầu |
+| 11 | Ván dở | **Lưu theo game × chế độ chơi** (cùng máy / với máy): ván cùng máy và ván với máy của cùng một game không đè lên nhau |
+| 12 | Thứ tự mốc | **M2 (AI) trước M3** (thử nghiệm online trên Vercel) |

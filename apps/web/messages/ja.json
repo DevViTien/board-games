@@ -8,7 +8,8 @@
     "playersRange": "{min}〜{max}人",
     "duration": "約{minutes}分",
     "play": "遊ぶ",
-    "continue": "続きから"
+    "continueTitle": "途中のゲームを続ける",
+    "continueItem": "{game}・{mode}"
   },
   "Games": {
     "tictactoe": {
@@ -16,7 +17,8 @@
       "players": {
         "x": "X",
         "o": "O"
-      }
+      },
+      "move": "{row}行{col}列"
     },
     "caro": {
       "name": "五目並べ"
@@ -28,10 +30,48 @@
       "name": "チェス"
     }
   },
+  "Modes": {
+    "local": "同じ端末で",
+    "ai": "コンピューター対戦",
+    "aiLevel": "コンピューター対戦・{level}"
+  },
+  "Levels": {
+    "easy": "やさしい",
+    "medium": "ふつう",
+    "hard": "むずかしい"
+  },
+  "Setup": {
+    "mode": "モード",
+    "modes": {
+      "ai": "コンピューターと対戦",
+      "local": "同じ端末で"
+    },
+    "level": "レベル",
+    "first": "先手",
+    "firsts": {
+      "human": "自分",
+      "ai": "コンピューター",
+      "random": "ランダム"
+    },
+    "start": "開始",
+    "inProgress": {
+      "title": "途中のゲーム",
+      "continue": "続きから",
+      "continueLabel": "続きから：{mode}"
+    },
+    "confirm": {
+      "title": "途中のゲームを破棄しますか？",
+      "description": "新しいゲームを始めると、このモードの途中のゲームは破棄されます。",
+      "descriptionUnknown": "保存したゲームを読み込めませんでした。このモードに途中のゲームがある場合、そのゲームは破棄されます。",
+      "confirm": "新しいゲームを始める",
+      "cancel": "残す"
+    }
+  },
   "Play": {
     "board": "盤面",
     "cell": "{row}行{col}列、{content}",
     "cellEmpty": "空き",
+    "lastMove": "直前の手",
     "turn": "{player}の番です",
     "winner": "{count, plural, other {{player}の勝ち！}}",
     "draw": "引き分け！",
@@ -54,6 +94,15 @@
       "title": "ゲームを読み込めませんでした",
       "description": "通信が切れているか、アプリが更新された可能性があります。もう一度お試しください。",
       "retry": "再試行"
+    },
+    "yourTurn": "あなたの番です（{player}）",
+    "aiMovedYourTurn": "コンピューターは{move}に打ちました。あなたの番です（{player}）",
+    "aiThinking": "コンピューターが考えています…",
+    "youWin": "あなたの勝ち！",
+    "aiWins": "コンピューターの勝ち！",
+    "modeNotFound": {
+      "title": "このプレイページは見つかりません",
+      "description": "このアドレスに対応する遊び方は Board Games Hub にありません。"
     }
   },
   "NotFound": {

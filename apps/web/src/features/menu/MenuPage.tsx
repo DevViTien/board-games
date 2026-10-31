@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { SITE } from "@/config/site";
 import { LocaleSwitcher } from "@/features/settings/LocaleSwitcher";
 
+import { ContinueList } from "./ContinueList";
 import { buildMenu } from "./menu-games";
 import { PlayLink } from "./PlayLink";
 
@@ -56,6 +57,8 @@ export function MenuPage() {
           );
         })}
       </ul>
+
+      <ContinueList />
     </main>
   );
 }

@@ -5,10 +5,15 @@ import { describe, expect, expectTypeOf, it } from "vitest";
 import { defineGameEntry } from "./define-game-entry";
 import { GAME_ENTRY_LOADERS, type GameEntryLoaders } from "./registry";
 import { TicTacToeBoard } from "./tictactoe/Board";
+import { useTicTacToeMoveLabel } from "./tictactoe/move-label";
 import { useTicTacToePlayerLabel } from "./tictactoe/player-label";
 import type { BoardProps, GameEntry } from "./types";
 
-const ticTacToeUI = { Board: TicTacToeBoard, usePlayerLabel: useTicTacToePlayerLabel };
+const ticTacToeUI = {
+  Board: TicTacToeBoard,
+  usePlayerLabel: useTicTacToePlayerLabel,
+  useMoveLabel: useTicTacToeMoveLabel,
+};
 
 describe("defineGameEntry", () => {
   it("hands the game's own rules and UI to whoever opens the entry", () => {
@@ -32,7 +37,11 @@ describe("defineGameEntry", () => {
     > = () => null;
 
     // @ts-expect-error -- the board does not fit Tic-tac-toe's State and Move
-    defineGameEntry(tictactoe, { Board: ChessLikeBoard, usePlayerLabel: useTicTacToePlayerLabel });
+    defineGameEntry(tictactoe, {
+      Board: ChessLikeBoard,
+      usePlayerLabel: useTicTacToePlayerLabel,
+      useMoveLabel: useTicTacToeMoveLabel,
+    });
   });
 
   it("refuses a game that is not registered", () => {

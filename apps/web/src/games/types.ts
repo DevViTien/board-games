@@ -23,6 +23,11 @@ export interface GameUI<State, Move, Outcome = never> {
   readonly Board: ComponentType<BoardProps<State, Move, Outcome>>;
   /** Hook returning the translated name or symbol of a seat (X/O, a colour…). */
   readonly usePlayerLabel: () => (player: PlayerIndex) => string;
+  /**
+   * Hook returning how a move is read out, to fit in a sentence ("row 2, column 3"): the play
+   * screen tells where the AI just played with it.
+   */
+  readonly useMoveLabel: () => (move: Move) => string;
 }
 
 /**

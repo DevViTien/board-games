@@ -59,12 +59,12 @@ function gameWonOn(line: readonly number[], winner: 0 | 1): number[] {
 }
 
 describe("tictactoe rules", () => {
-  it("declares two players, the classic category, about 2 minutes and no AI yet", () => {
+  it("declares two players, the classic category, about 2 minutes and play against the AI", () => {
     expect(tictactoe.meta).toEqual({
       players: { min: 2, max: 2 },
       category: "classic",
       durationMinutes: 2,
-      supportsAI: false,
+      supportsAI: true,
     });
     expect(tictactoe.defaultOptions).toEqual({});
   });

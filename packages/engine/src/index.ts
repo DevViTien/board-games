@@ -1,3 +1,5 @@
+export { chooseMove, type ChooseMoveOptions } from "./ai/choose-move";
+export { AI_LEVEL, type AiLevel } from "./ai/levels";
 export { GAME_CATEGORY, type GameCategory } from "./constants";
 export {
   ENGINE_ERROR,

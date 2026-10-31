@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { COUNTER_TARGET, counterGame, type CounterState } from "../test-fixtures/counter-game";
+import {
+  COUNTER_TARGET,
+  counterGame,
+  counterRules,
+  type CounterState,
+} from "../test-fixtures/counter-game";
 import {
   DICE_FACES,
   diceRaceGame,
@@ -345,7 +350,7 @@ const BROKEN_GAMES: readonly BrokenGame[] = [
   {
     id: CONTRACT_CHECK.AiHasEvaluate,
     what: "claims AI support without evaluate",
-    game: { ...counterGame, meta: { ...counterGame.meta, supportsAI: true } },
+    game: { ...counterRules, meta: { ...counterRules.meta, supportsAI: true } },
     config: COUNTER_CONFIG,
   },
 ];

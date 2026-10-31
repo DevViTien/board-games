@@ -3,6 +3,7 @@
 import { TICTACTOE_SIZE, type TicTacToeMove, type TicTacToeState } from "@board-games/games";
 import { cn } from "@board-games/ui";
 import { useTranslations } from "next-intl";
+import { useId } from "react";
 
 import type { BoardProps } from "../types";
 import { useTicTacToePlayerLabel } from "./player-label";
@@ -20,18 +21,22 @@ function Mark({ player }: { player: number }) {
 }
 
 /**
- * Nine buttons in a grid. A cell that cannot be chosen is `aria-disabled` and ignores presses rather
- * than being `disabled`: a disabled button drops keyboard focus to the page body, so the cell just
- * played would lose focus, and marked cells could no longer be reached with Tab to hear them.
+ * Nine buttons in a grid; the cell of the last move is outlined and described as such. A cell that
+ * cannot be chosen is `aria-disabled` and ignores presses rather than being `disabled`: a disabled
+ * button drops keyboard focus to the page body, so the cell just played would lose focus, and
+ * marked cells could no longer be reached with Tab to hear them.
  */
 export function TicTacToeBoard({
   state,
   legalMoves,
   onMove,
   disabled,
+  lastEntry,
 }: BoardProps<TicTacToeState, TicTacToeMove>) {
   const t = useTranslations("Play");
   const playerLabel = useTicTacToePlayerLabel();
+  const lastMoveId = useId();
+  const lastCell = lastEntry?.move.cell;
 
   return (
     // Rows as well as columns are fixed thirds (`grid-rows-3` is `minmax(0, 1fr)`): with auto rows a
@@ -41,6 +46,10 @@ export function TicTacToeBoard({
       aria-label={t("board")}
       className="grid aspect-square w-full max-w-sm grid-cols-3 grid-rows-3 gap-2"
     >
+      {/* Describes the cell of the last move, without changing the names cells are found by. */}
+      <span id={lastMoveId} hidden>
+        {t("lastMove")}
+      </span>
       {state.board.map((mark, cell) => {
         const move = disabled ? undefined : legalMoves.find((legal) => legal.cell === cell);
         return (
@@ -48,6 +57,7 @@ export function TicTacToeBoard({
             key={cell}
             type="button"
             aria-disabled={move === undefined}
+            aria-describedby={cell === lastCell ? lastMoveId : undefined}
             aria-label={t("cell", {
               row: Math.floor(cell / TICTACTOE_SIZE) + 1,
               col: (cell % TICTACTOE_SIZE) + 1,
@@ -63,6 +73,8 @@ export function TicTacToeBoard({
               // A marked cell is plainly taken; an empty one that cannot be chosen (game over, or
               // not this device's turn) must not look playable, also on touch screens without hover.
               move === undefined && mark === null && "border-dashed bg-surface-muted",
+              // The last move stands out by a thicker border too, which forced colours keep.
+              cell === lastCell && "border-3 border-accent",
             )}
           >
             {mark !== null && <Mark player={mark} />}

@@ -59,6 +59,16 @@ describe("TicTacToeBoard", () => {
     expect(cellNamed("Row 2, column 2, empty")).toBeInTheDocument();
   });
 
+  it("describes the cell of the last move as such, and only that one", () => {
+    const state = tictactoe.applyMove(tictactoe.applyMove(EMPTY, { cell: 0 }), { cell: 5 });
+    renderWithIntl(<TicTacToeBoard {...boardProps(state, { lastEntry: { move: { cell: 5 } } })} />);
+
+    expect(cellNamed("Hàng 2, cột 3, O")).toHaveAccessibleDescription("Nước vừa đi");
+    expect(cellNamed("Hàng 1, cột 1, X")).not.toHaveAccessibleDescription();
+    // Hidden, so it is read only as the description of that cell.
+    expect(screen.queryByText("Nước vừa đi")).not.toBeVisible();
+  });
+
   it("reports the move for an empty cell", async () => {
     const onMove = vi.fn();
     renderWithIntl(<TicTacToeBoard {...boardProps(EMPTY, { onMove })} />);

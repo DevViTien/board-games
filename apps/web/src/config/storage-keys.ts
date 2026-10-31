@@ -2,3 +2,6 @@
 // games now, statistics later) gets its own database instead of sharing one.
 export const SAVED_GAMES_DB = "board-games-saved-games";
 export const SAVED_GAMES_STORE = "saved-games";
+
+// localStorage: the setup screen's last choices, one entry per game ("<prefix><gameId>").
+export const SETUP_CHOICE_KEY_PREFIX = "board-games:setup:";

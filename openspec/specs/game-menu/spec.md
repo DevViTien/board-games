@@ -32,29 +32,35 @@ Mỗi thẻ SHALL hiện tên game, số người chơi (một số nếu cố �
 
 ### Requirement: Vào chơi từ menu
 
-Chọn một thẻ chơi được SHALL mở màn hình chơi của game đó. Thẻ "Sắp có" MUST NOT mở được và MUST NOT nhận tiêu điểm bàn phím như một liên kết.
+Chọn một thẻ chơi được SHALL mở màn hình bắt đầu ván của game đó, nơi người chơi chọn chế độ trước khi vào bàn cờ. Lối vào trên thẻ luôn ghi "Chơi". Thẻ "Sắp có" MUST NOT mở được và MUST NOT nhận tiêu điểm bàn phím như một liên kết.
 
 #### Scenario: Mở game chơi được
 
-- **WHEN** người chơi chọn thẻ Tic-tac-toe
-- **THEN** màn hình chơi Tic-tac-toe mở ra
+- **WHEN** người chơi chọn "Chơi" trên thẻ Tic-tac-toe
+- **THEN** màn hình bắt đầu ván Tic-tac-toe mở ra
 
 #### Scenario: Thẻ sắp có không mở được
 
 - **WHEN** người chơi bấm vào thẻ Cờ vua đang "Sắp có"
 - **THEN** không có gì được mở
 
-### Requirement: Lối tiếp tục ván dở
+### Requirement: Mục tiếp tục ván dở trên menu
 
-Khi trình duyệt đang giữ một ván dở của một game, thẻ của game đó SHALL ghi lối vào là "Tiếp tục" thay vì "Chơi", và chọn lối đó SHALL mở đúng ván dở.
+Khi trình duyệt đang giữ ván dở (với ván đấu với máy: theo requirement "Ván dở khi đấu với máy" của capability `play-vs-ai`), menu SHALL có mục "Tiếp tục ván dở" liệt kê từng ván theo game và chế độ, mỗi mục ghi tên game và chế độ (ván đấu với máy kèm mức độ, ví dụ "Tic-tac-toe · Với máy · Khó"), ván lưu gần nhất đứng đầu. Chọn một mục SHALL mở thẳng đúng ván đó. Khi không có ván dở nào, mục này MUST không hiện.
 
-#### Scenario: Có ván dở
+#### Scenario: Có ván dở ở hai chế độ
 
-- **WHEN** người chơi có một ván Tic-tac-toe đang dở và quay về menu
-- **THEN** thẻ Tic-tac-toe ghi "Tiếp tục"
-- **AND** chọn thẻ mở lại đúng ván đó
+- **WHEN** người chơi có một ván Tic-tac-toe cùng máy và một ván Tic-tac-toe đấu với máy mức Khó đang dở, và quay về menu
+- **THEN** mục "Tiếp tục ván dở" có hai mục "Tic-tac-toe · Cùng máy" và "Tic-tac-toe · Với máy · Khó"
+- **AND** chọn mục "Tic-tac-toe · Với máy · Khó" mở lại đúng ván đấu với máy đó
+
+#### Scenario: Ván lưu gần nhất đứng đầu
+
+- **WHEN** người chơi đi một nước trong ván cùng máy rồi sau đó đi một nước trong ván đấu với máy, và quay về menu
+- **THEN** mục ván đấu với máy đứng trước mục ván cùng máy
 
 #### Scenario: Không có ván dở
 
-- **WHEN** người chơi chưa có ván Tic-tac-toe nào đang dở
-- **THEN** thẻ Tic-tac-toe ghi "Chơi"
+- **WHEN** người chơi chưa có ván dở nào
+- **THEN** menu không có mục "Tiếp tục ván dở"
+- **AND** thẻ Tic-tac-toe ghi "Chơi"
