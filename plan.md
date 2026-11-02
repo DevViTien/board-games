@@ -400,7 +400,7 @@ Mọi mốc chỉ coi là xong khi:
 
 Còn lại:
 - Đã push lên GitHub; CI chưa chạy được vì tài khoản GitHub bị khoá do vấn đề thanh toán (job không được khởi động). Mở khoá ở GitHub → Settings → Billing rồi chạy lại CI.
-- ~~Nối repo với Vercel~~ — xong 01/11/2026: project `board-games` (Root Directory `apps/web`, biến `ENABLE_EXPERIMENTAL_COREPACK=1` cho Production và Preview), bản đầu chạy trên https://board-games-swart.vercel.app (build dùng pnpm 12.8.1, Next 16.4.3; đấu với máy chạy trong Web Worker). Bản đầu được deploy bằng CLI; cần xác nhận lần push `main` kế tiếp tự deploy qua Git.
+- ~~Nối repo với Vercel~~ — xong 01/11/2026: project `board-games` (Root Directory `apps/web`, biến `ENABLE_EXPERIMENTAL_COREPACK=1` cho Production và Preview), bản đầu chạy trên https://board-games-swart.vercel.app (build dùng pnpm 12.8.1, Next 16.4.3; đấu với máy chạy trong Web Worker). Bản đầu được deploy bằng CLI; từ 02/11/2026 mỗi lần push `main` tự deploy qua Git (function ở `sin1`).
 
 ### M1. Engine + game mẫu cùng máy (30/10/2026)
 
@@ -436,7 +436,7 @@ Rút ra cho M4:
 - **Kết nối bị cắt mỗi ~5 phút** (giới hạn 300 giây của Hobby), server không kịp gửi khung đóng → client coi `1006` là chuyện bình thường, nối lại ngay và tải các nước còn thiếu theo số thứ tự; không dựa vào sự kiện đóng phía server để dọn dẹp.
 - **Kết nối dồn vào cùng instance**: Vercel đặt nhiều WebSocket vào một instance, nhưng một phòng vẫn có thể nằm trên 2 instance → bắt buộc pub/sub qua Redis. Bản thử mở một kết nối Redis subscriber cho mỗi WebSocket; M4 nên dùng một subscriber mỗi instance cho mọi phòng.
 - **Chạy local**: `vercel dev` chạy được route WebSocket (độ trễ 0–5 ms); `next dev` thì không.
-- **Lỗi đã gặp khi dựng**: commit có email tác giả không thuộc tài khoản Vercel thì deploy Hobby bị **Blocked** → repo dùng `user.email` riêng (`git config --local`). Bản Preview có Deployment Protection → script đo cần khoá Protection Bypass for Automation (đã thu hồi sau khi đo).
+- **Lỗi đã gặp khi dựng**: commit có email tác giả không thuộc tài khoản Vercel thì deploy Hobby bị **Blocked** → repo đặt `git config --local user.email` là email noreply của GitHub (`178360649+DevViTien@users.noreply.github.com`): GitHub chặn push lộ email riêng tư, còn Vercel vẫn nhận ra tác giả là `DevViTien`. Bản Preview có Deployment Protection → script đo cần khoá Protection Bypass for Automation (đã thu hồi sau khi đo).
 - **Chi phí**: mọi thứ trên gói miễn phí, không nhập thẻ. Hạn mức cần theo dõi: Vercel Hobby (bộ nhớ đã cấp 360 GB-giờ, CPU 4 giờ, 1 triệu lần gọi mỗi tháng) và Upstash Free (500 nghìn lệnh/tháng). WebSocket giữ instance sống suốt thời gian có người kết nối, nên **bộ nhớ GB-giờ** là hạn mức dễ chạm nhất. Ước tính, cần kiểm lại: với bộ nhớ mặc định 2 GB thì được khoảng 180 giờ instance mỗi tháng, tức ~6 giờ/ngày có người chơi online. Nhóm nhỏ thì đủ; nếu thiếu thì chuyển realtime sang Cloudflare Durable Objects (gói miễn phí, ngủ đông khi không có tin).
 
 ### Tiếp theo
