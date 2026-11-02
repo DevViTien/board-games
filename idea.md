@@ -196,7 +196,7 @@ Với cờ vua, lựa chọn "Đấu với máy" bị ẩn trong giai đoạn đ
 | AI | Web Worker | Không làm đơ giao diện khi máy suy nghĩ |
 | Lưu trữ phía trình duyệt | `localStorage` (tên tạm, token người chơi, cài đặt) + IndexedDB qua `idb-keyval` (ván đang chơi, thống kê) | Không cần tài khoản |
 | Offline | PWA (Serwist cho Next.js) | Cài như app |
-| Online | **WebSocket trên Vercel Functions** (`experimental_upgradeWebSocket` của `@vercel/functions`, thư viện `ws`) | Server kiểm tra nước đi bằng engine luật dùng chung |
+| Online | **WebSocket trên Vercel Functions** (`upgradeWebSocket` của `@vercel/functions`, thư viện `ws`) | Server kiểm tra nước đi bằng engine luật dùng chung |
 | Trạng thái online | **Upstash Redis**, gói miễn phí (qua Vercel Marketplace): lưu phòng + pub/sub giữa các instance | Function không giữ state lâu dài; xem 6.3 |
 | Hẹn giờ phía server | Upstash QStash (tin nhắn hẹn giờ) hoặc Vercel Cron | Xử thua khi bỏ ván / hết giờ mà không cần tiến trình chạy liên tục |
 | Test | Vitest (luật), Playwright (luồng online 2 trình duyệt) | |
@@ -267,7 +267,7 @@ Những điểm riêng do chạy trên Vercel Functions:
 - **Hai người có thể nối vào hai instance khác nhau** → mỗi phòng có một kênh pub/sub trên Redis để các instance chuyển nước đi cho nhau.
 - **Kết nối WebSocket bị giới hạn thời gian** (bài thử nghiệm ghi nhận bị ngắt sau khoảng 5 phút) trong khi một ván cờ vua/cá ngựa dài hơn thế → client **tự kết nối lại ngầm** và tải các nước đi còn thiếu. Người chơi chỉ thấy chấm trạng thái chớp nhẹ, không mất ván.
 - **Không có tiến trình chạy nền** để đếm giờ → lưu thời điểm hết hạn trong Redis, kiểm tra mỗi khi có thông điệp; với ván bị bỏ thì đặt một tin nhắn hẹn giờ QStash để xử lý.
-- **Phương án dự phòng**: tính năng WebSocket của Vercel còn mới (beta từ 06/2026). Nếu giới hạn gây khó, chuyển phần realtime sang dịch vụ chuyên có gói miễn phí (Ably, Pusher) hoặc một server Node nhỏ riêng; nhờ có `Transport` nên phần còn lại không phải sửa.
+- **Phương án dự phòng**: tính năng WebSocket của Vercel còn mới (đã GA; thử nghiệm M3 cho thấy dùng được, xem plan.md §10). Nếu giới hạn gây khó, chuyển phần realtime sang dịch vụ chuyên có gói miễn phí (Ably, Pusher) hoặc một server Node nhỏ riêng; nhờ có `Transport` nên phần còn lại không phải sửa.
 
 ### 6.4 Cấu trúc thư mục dự kiến (monorepo pnpm + Turborepo)
 
@@ -321,7 +321,7 @@ Vì `Board` là component React nên nằm ở `apps/web`, còn `GameDefinition`
 - **Bản quyền game**: chỉ dùng game dân gian/cổ điển và game tự thiết kế; không dùng tên, hình ảnh, luật đặc thù của board game thương mại. Hình quân cờ, âm thanh tự làm hoặc lấy từ nguồn CC0.
 - **Luật cờ vua đủ đúng**: dù chưa có AI, vẫn phải cài đủ nhập thành, bắt tốt qua đường, phong cấp, chiếu bí, hết nước đi, hoà lặp 3 lần, luật 50 nước. Có thể bọc thư viện `chess.js` (giấy phép BSD) vào `GameDefinition` cho nhanh. Khi làm AI cờ vua về sau: Stockfish (bản WASM) dùng giấy phép GPLv3, nên muốn dùng thì để repo ở chế độ công khai; với dự án cá nhân thì việc này dễ.
 - **Luật cờ cá ngựa mỗi nơi một kiểu**: chốt bộ luật mặc định (3.4), hiện luật đang dùng ngay trong phòng để tránh tranh cãi.
-- **WebSocket trên Vercel còn mới**: giới hạn thời gian kết nối, API `experimental_` có thể thay đổi, và cần kiểm tra giới hạn riêng của gói Hobby (số kết nối, thời gian chạy function). Giai đoạn 0 phải đo thực tế; nếu không ổn thì dùng phương án dự phòng ở 6.3.
+- **WebSocket trên Vercel còn mới**: giới hạn thời gian kết nối và giới hạn riêng của gói Hobby (số kết nối, thời gian chạy function). Đã đo ở mốc M3 (plan.md §10): kết nối bị cắt mỗi ~5 phút, độ trễ ~70 ms khi function ở Singapore, pub/sub qua Redis giữa các instance chạy đúng → giữ WebSocket của Vercel; phương án dự phòng ở 6.3 vẫn để đó nếu hết hạn mức miễn phí.
 - **Giới hạn gói miễn phí**: Upstash Redis và QStash gói miễn phí có hạn mức lệnh mỗi ngày; với một nhóm nhỏ thì dư, nhưng nên gom thông điệp (không gửi `presence` quá dày).
 - **Mất tên tạm/ghế** khi đổi máy hay xoá dữ liệu trình duyệt: xử lý bằng nút "Đây là tôi" (6.3).
 - **AI nặng trên điện thoại**: cờ tướng, cờ vây cần giới hạn thời gian suy nghĩ và chạy trong Web Worker.

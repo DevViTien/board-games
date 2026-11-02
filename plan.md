@@ -35,8 +35,8 @@ Tra trên npm ngày 30/10/2026. Phiên bản khai báo **một lần** trong m�
 | Lưu trữ trình duyệt | idb-keyval | 6.3 | IndexedDB cho ván đang chơi, thống kê |
 | Sinh mã phòng/ID | nanoid | 6.0 | |
 | Kiểm tra dữ liệu | zod | 4.x (xác nhận khi cài) | Kiểm tra thông điệp online ở cả hai phía |
-| Online | WebSocket trên Vercel Functions | `@vercel/functions` 3.10, `ws` 8.22 | API `experimental_upgradeWebSocket` **cần kiểm chứng ở mốc M3** |
-| Dữ liệu online | Upstash Redis | `@upstash/redis` 1.40 | Phòng, lịch sử nước đi, pub/sub |
+| Online | WebSocket trên Vercel Functions | `@vercel/functions` 3.10, `ws` 8.22 | `upgradeWebSocket` (đã GA); đã đo ở M3, xem §10 |
+| Dữ liệu online | Upstash Redis | `redis` 6.3 (TCP) | Phòng, lịch sử nước đi, pub/sub. Pub/sub cần kết nối TCP nên dùng `redis` qua `REDIS_URL`; `@upstash/redis` (REST) không subscribe được |
 | Lint | ESLint + typescript-eslint + eslint-config-next | **9.39** / 8.72 / 16.4 | Flat config. Không dùng ESLint 10 vì các plugin của eslint-config-next (react, import, jsx-a11y) chưa hỗ trợ |
 | Sắp xếp import | eslint-plugin-simple-import-sort | 14.0 | Tự sửa khi lưu file / commit |
 | Format | Prettier + prettier-plugin-tailwindcss | 3.9 / 0.8 | Tự sắp xếp class Tailwind, cả trong `cn()` và `cva()` |
@@ -314,8 +314,8 @@ Nhờ `RoomStore` là interface, toàn bộ logic phòng (`room-service.ts`) tes
 | Mã nguồn | Git, repo trên GitHub (có thể để công khai) |
 | CI | GitHub Actions: `pnpm install` → `turbo lint typecheck test build` cho mọi PR |
 | Deploy | Vercel nối với GitHub: nhánh `main` lên production, mỗi PR có link preview để gửi bạn thử |
-| Biến môi trường | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, `QSTASH_TOKEN` (từ v1); khai báo và kiểm tra bằng zod trong `apps/web/src/server/env.ts` |
-| Chạy local | `pnpm dev`; khi không có biến Redis thì tự dùng `RoomStore` bộ nhớ để chơi online giữa 2 tab ngay trên máy |
+| Biến môi trường | `REDIS_URL` (tích hợp Upstash trên Vercel tự thêm, kèm `KV_*`), `QSTASH_TOKEN` (từ v1); khai báo và kiểm tra bằng zod trong `apps/web/src/server/env.ts` |
+| Chạy local | `pnpm dev` cho mọi thứ trừ WebSocket; route WebSocket chỉ chạy dưới `vercel dev` (M3). Khi không có biến Redis thì tự dùng `RoomStore` bộ nhớ để chơi online giữa 2 tab ngay trên máy |
 | Cập nhật thư viện | Renovate hoặc Dependabot, gom theo tuần |
 
 ## 6. Các mốc phát triển
@@ -376,7 +376,8 @@ Mọi mốc chỉ coi là xong khi:
 
 | Rủi ro | Ảnh hưởng | Cách xử lý |
 |---|---|---|
-| WebSocket của Vercel không ổn trên gói Hobby (giới hạn thời gian, chạy local khó, API `experimental_` đổi) | Chậm mốc M4 | Đặt thử nghiệm M3 **trước** khi làm phòng online; kiến trúc `Transport` + `RoomStore` cho phép đổi hạ tầng mà không sửa game |
+| WebSocket của Vercel không ổn trên gói Hobby (giới hạn thời gian, chạy local khó) | Chậm mốc M4 | Đã thử ở M3: dùng được, kết nối bị cắt mỗi ~5 phút nên client phải tự nối lại. Kiến trúc `Transport` + `RoomStore` vẫn cho phép đổi hạ tầng mà không sửa game |
+| Kết nối WebSocket giữ instance sống, tốn hạn mức bộ nhớ (GB-giờ) của Hobby | Hết hạn mức miễn phí giữa tháng, Vercel tạm dừng function | Theo dõi tab Usage sau M4; dồn kết nối vào ít instance; nếu thiếu thì chuyển realtime sang Cloudflare Durable Objects (gói miễn phí, có ngủ đông) |
 | TypeScript 7 / công cụ mới chưa tương thích nhau | Lỗi build, lint | Ghim TypeScript 6.0; nâng cấp có chủ đích qua Renovate |
 | Luật cờ vua nhiều trường hợp hiếm | Bug khó thấy | Test perft với thế cờ chuẩn; cân nhắc bọc `chess.js` |
 | Luật cá ngựa phức tạp, dễ sai khi kết hợp nhiều biến thể | Bug, tranh cãi khi chơi | Mỗi điểm luật một test; tự chơi 1000 ván ngẫu nhiên; MVP chỉ bật bộ luật phổ biến |
@@ -399,7 +400,7 @@ Mọi mốc chỉ coi là xong khi:
 
 Còn lại:
 - Đã push lên GitHub; CI chưa chạy được vì tài khoản GitHub bị khoá do vấn đề thanh toán (job không được khởi động). Mở khoá ở GitHub → Settings → Billing rồi chạy lại CI.
-- Nối repo với Vercel (Root Directory: `apps/web`), kiểm tra trang chạy trên domain Vercel (cần trước M3).
+- ~~Nối repo với Vercel~~ — xong 01/11/2026: project `board-games` (Root Directory `apps/web`, biến `ENABLE_EXPERIMENTAL_COREPACK=1` cho Production và Preview), bản đầu chạy trên https://board-games-swart.vercel.app (build dùng pnpm 12.8.1, Next 16.4.3; đấu với máy chạy trong Web Worker). Bản đầu được deploy bằng CLI; cần xác nhận lần push `main` kế tiếp tự deploy qua Git.
 
 ### M1. Engine + game mẫu cùng máy (30/10/2026)
 
@@ -415,5 +416,28 @@ Còn lại:
 - `add-play-vs-ai` (đã archive): màn hình bắt đầu ván `/play/<mã game>` (`features/setup`: chế độ, mức độ, ai đi trước, nhớ lựa chọn gần nhất, tiếp tục ván dở của game); màn hình chơi theo chế độ `/play/<mã game>/{local,ai}`; transport cục bộ theo ghế (người/máy) thay cho `AITransport` riêng; máy nghĩ trong Web Worker (`ai-worker`, dự phòng trên luồng chính); ván dở lưu theo game × chế độ, ván M1 được chuyển sang khoá mới; menu có mục "Tiếp tục ván dở"; `RadioGroup` trong `packages/ui`; bản dịch vi/en/ja; E2E cho đấu với máy, màn hình bắt đầu ván, ván lưu ở bản trước và trang lỗi tải game; máy báo nước vừa đi và ô vừa đánh được đánh dấu. Spec: `openspec/specs/{game-setup,play-vs-ai}/`, cập nhật `local-play`, `game-menu`.
 - Sửa lỗi phát hiện khi viết E2E: phần chơi của game không tải được thì màn hình kẹt ở "Đang tải…" và tải lại chunk liên tục, không bao giờ hiện trang lỗi; nay lần tải lỗi được giữ cho tới khi người chơi bấm "Thử lại".
 
+### M3. Thử nghiệm online trên Vercel (02/11/2026)
+
+**Quyết định: giữ WebSocket của Vercel + Upstash Redis, function chạy ở Singapore (`sin1`).** Không cần phương án dự phòng.
+
+Cách đo: route thử `/api/probe/ws` (`upgradeWebSocket` + `redis` pub/sub) và script `scripts/m3-probe/probe.mjs`, nằm trên nhánh `spike/m3-online-probe` (không merge). Deploy dạng Preview trên Vercel Hobby; Redis là Upstash gói Free, vùng Singapore, tạo qua Vercel Marketplace (tắt tự nâng gói). Đo từ một máy ở Việt Nam: mỗi vùng một kết nối ping 2 giây/lần trong 12 phút, và 6 kết nối cùng phòng, mỗi kết nối phát 5 giây/lần trong 3 phút.
+
+| Số đo | Function ở `iad1` (Mỹ) | Function ở `sin1` (Singapore) |
+|---|---|---|
+| Kết nối sống được | 308 giây, rồi bị cắt với mã `1006` (không có khung đóng) | 310 giây, mã `1006` |
+| Nối lại (gồm bắt tay TLS) | 1,7–1,9 giây | 0,33 giây |
+| Độ trễ khứ hồi ping (p50 / p95 / max) | 235 / 244 / 542 ms | **69 / 78 / 108 ms** |
+| Pub/sub: tin tới nơi | 1080/1080, 648 tin qua instance khác | 1080/1080, 576 tin qua instance khác |
+| Pub/sub: thời gian từ gửi tới nhận (p50 / p95 / max) | 456 / 479 / 1151 ms | **69 / 81 / 174 ms** |
+| Số instance cho 6 kết nối | 2 | 2 |
+
+Rút ra cho M4:
+- **Vùng**: function của project đã đặt ở `sin1` từ 02/11/2026 (Settings → Functions → Function Region). Ở `iad1` mỗi tin phải vòng qua Mỹ và Redis Singapore, chậm gấp ~6 lần. Đặt `regions` trong `apps/web/vercel.json` không có tác dụng khi deploy bằng CLI từ gốc monorepo; cờ `vercel deploy --regions sin1` thì có.
+- **Kết nối bị cắt mỗi ~5 phút** (giới hạn 300 giây của Hobby), server không kịp gửi khung đóng → client coi `1006` là chuyện bình thường, nối lại ngay và tải các nước còn thiếu theo số thứ tự; không dựa vào sự kiện đóng phía server để dọn dẹp.
+- **Kết nối dồn vào cùng instance**: Vercel đặt nhiều WebSocket vào một instance, nhưng một phòng vẫn có thể nằm trên 2 instance → bắt buộc pub/sub qua Redis. Bản thử mở một kết nối Redis subscriber cho mỗi WebSocket; M4 nên dùng một subscriber mỗi instance cho mọi phòng.
+- **Chạy local**: `vercel dev` chạy được route WebSocket (độ trễ 0–5 ms); `next dev` thì không.
+- **Lỗi đã gặp khi dựng**: commit có email tác giả không thuộc tài khoản Vercel thì deploy Hobby bị **Blocked** → repo dùng `user.email` riêng (`git config --local`). Bản Preview có Deployment Protection → script đo cần khoá Protection Bypass for Automation (đã thu hồi sau khi đo).
+- **Chi phí**: mọi thứ trên gói miễn phí, không nhập thẻ. Hạn mức cần theo dõi: Vercel Hobby (bộ nhớ đã cấp 360 GB-giờ, CPU 4 giờ, 1 triệu lần gọi mỗi tháng) và Upstash Free (500 nghìn lệnh/tháng). WebSocket giữ instance sống suốt thời gian có người kết nối, nên **bộ nhớ GB-giờ** là hạn mức dễ chạm nhất. Ước tính, cần kiểm lại: với bộ nhớ mặc định 2 GB thì được khoảng 180 giờ instance mỗi tháng, tức ~6 giờ/ngày có người chơi online. Nhóm nhỏ thì đủ; nếu thiếu thì chuyển realtime sang Cloudflare Durable Objects (gói miễn phí, ngủ đông khi không có tin).
+
 ### Tiếp theo
-**M3. Thử nghiệm online trên Vercel** (cổng quyết định, §6.1): dựng route WebSocket tối giản trên Vercel Hobby, đo thời gian giữ kết nối, độ trễ từ Việt Nam, pub/sub qua Redis giữa 2 instance, chạy local; ghi số đo và quyết định giữ WebSocket của Vercel hay chuyển phương án dự phòng. Cần nối repo với Vercel trước (xem M0 "Còn lại").
+**M4. Phòng online** (§6): `protocol`, `features/identity`, `room-service` + `RoomStore` (memory, redis), `realtime/`, `OnlineTransport` tự nối lại; trang tạo phòng, link mời, mã phòng.
