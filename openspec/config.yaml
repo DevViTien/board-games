@@ -32,7 +32,8 @@ context: |
     bị ngắt định kỳ là bình thường; client tự nối lại, người chơi không mất ván.
   - Thêm một game chỉ gồm: GameDefinition + Board, hình minh hoạ (Artwork) và token của game
     (games/<id>/theme.css, selector [data-game="<id>"]) trong thư mục game + bản dịch + một dòng
-    registry (GAME_ENTRY_LOADERS) và một dòng GAME_ARTWORK (games/artwork.ts). Phải sửa phần
+    registry (GAME_ENTRY_LOADERS) và một dòng GAME_ARTWORK (games/artwork.ts), và, nếu game có máy,
+    một dòng AI_GAMES (packages/games/src/ai.ts). Phải sửa phần
     dùng chung (engine, session, transport, menu, server, packages/ui) để thêm game là dấu hiệu
     thiết kế sai.
   - Không có chữ hiển thị nào ngoài apps/web/messages/{vi,en,ja}.json; packages trả về id/mã,

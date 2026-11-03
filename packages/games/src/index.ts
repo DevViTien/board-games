@@ -1,6 +1,7 @@
 import type { AnyGameDefinition } from "@board-games/engine";
 
 import { caro } from "./caro";
+import { chess } from "./chess";
 import type { RegisteredGameId } from "./ids";
 import { ludo } from "./ludo";
 import { tictactoe } from "./tictactoe";
@@ -10,7 +11,12 @@ import { tictactoe } from "./tictactoe";
  * for client code that must not load every game's rules); each entry is declared with
  * `as const satisfies GameDefinition<…>` so its id stays a literal, checked against `GAME_IDS`.
  */
-export const GAMES = [tictactoe, caro, ludo] as const satisfies readonly (AnyGameDefinition & {
+export const GAMES = [
+  tictactoe,
+  caro,
+  ludo,
+  chess,
+] as const satisfies readonly (AnyGameDefinition & {
   readonly id: RegisteredGameId;
 })[];
 
@@ -19,6 +25,7 @@ export function findGame(id: string): AnyGameDefinition | undefined {
 }
 
 export * from "./caro";
+export * from "./chess";
 export { GAME_IDS, isRegisteredGameId, type RegisteredGameId } from "./ids";
 export * from "./ludo";
 export * from "./tictactoe";

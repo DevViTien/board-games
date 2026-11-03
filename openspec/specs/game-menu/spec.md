@@ -36,7 +36,7 @@ Thẻ chơi được SHALL có hai lối vào: "Chơi" mở màn hình bắt đ�
 
 #### Scenario: Thẻ sắp có không mở được
 
-- **WHEN** người chơi bấm vào thẻ Cờ vua đang "Sắp có"
+- **WHEN** menu có thẻ "Sắp có" của một game dự kiến chưa có luật và người chơi bấm vào thẻ đó
 - **THEN** không có gì được mở
 
 ### Requirement: Mục tiếp tục ván dở trên menu
@@ -78,11 +78,11 @@ Menu SHALL có ô "Vào phòng" để nhập mã phòng online. Mã đúng đị
 
 Menu SHALL hiện mọi game đã có luật trong app dưới dạng chơi được, và mọi game đã lên kế hoạch cho MVP nhưng chưa có luật dưới dạng "Sắp có". Game chơi được SHALL đứng trước game "Sắp có". Một game MUST NOT hiện hai lần: khi game dự kiến được thêm luật, thẻ "Sắp có" của nó được thay bằng thẻ chơi được.
 
-#### Scenario: Menu khi có Tic-tac-toe và Cờ caro
+#### Scenario: Menu có bốn game chơi được
 
 - **WHEN** người chơi mở trang chủ
-- **THEN** thẻ Tic-tac-toe và thẻ Cờ caro chơi được đứng trước mọi thẻ "Sắp có"
-- **AND** thẻ Cờ cá ngựa cũng chơi được, chỉ Cờ vua hiện nhãn "Sắp có"
+- **THEN** thẻ Tic-tac-toe, Cờ caro, Cờ cá ngựa và Cờ vua đều chơi được
+- **AND** menu không còn thẻ nào có nhãn "Sắp có"
 
 #### Scenario: Game dự kiến đã có luật không bị lặp
 
@@ -98,6 +98,11 @@ Menu SHALL hiện mọi game đã có luật trong app dưới dạng chơi đư
 
 - **WHEN** menu hiện bằng tiếng Việt thẻ Cờ cá ngựa
 - **THEN** thẻ ghi "2–4 người" và "~20 phút", có hai lối vào "Chơi" và "Online", và không có nhãn "Sắp có"
+
+#### Scenario: Thẻ Cờ vua
+
+- **WHEN** menu hiện bằng tiếng Việt thẻ Cờ vua
+- **THEN** thẻ ghi "2 người" và "~20 phút", có hai lối vào "Chơi" và "Online", và không có nhãn "Sắp có"
 
 ### Requirement: Tuỳ chọn luật trong mục tiếp tục ván dở
 

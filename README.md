@@ -53,6 +53,7 @@ packages/config     tsconfig, ESLint, Vitest dùng chung
 - Phụ thuộc giữa các package chỉ đi một chiều (plan.md §3.1), ESLint báo lỗi nếu import sai chiều.
 - Phiên bản thư viện khai báo một lần trong `pnpm-workspace.yaml` (mục `catalog`); các package tham chiếu bằng `"catalog:"`.
 - Quy ước constant/enum, styling, icon, test: plan.md §4.
+- Phần mềm và hình của bên thứ ba đi kèm app (chess.js, bộ quân "staunty" của Lichess) và giấy phép của chúng: [apps/web/public/third-party-licenses.txt](apps/web/public/third-party-licenses.txt).
 
 ## Phát triển theo spec (OpenSpec)
 

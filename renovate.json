@@ -18,6 +18,13 @@
       "description": "eslint-config-next's plugins still peer on ESLint 9.",
       "matchPackageNames": ["eslint", "@eslint/js"],
       "allowedVersions": "<10"
+    },
+    {
+      "description": "chess.js is pinned: the chess adapter calls an internal method. Its own PR, never automerged: review packages/games/src/chess/chess-js.ts and run the perft tests.",
+      "matchPackageNames": ["chess.js"],
+      "groupName": "chess.js",
+      "automerge": false,
+      "labels": ["chess.js: xem adapter + perft"]
     }
   ]
 }

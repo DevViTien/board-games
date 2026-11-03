@@ -1,0 +1,2855 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mockup M7 – Cờ vua</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #d6d8cf;
+        font-family: "Be Vietnam Pro", system-ui, sans-serif;
+        color: #17182b;
+      }
+      .page {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 56px;
+        padding: 48px 24px 96px;
+      }
+      .intro {
+        max-width: 1280px;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .intro h1 {
+        margin: 0;
+        font-size: 32px;
+        font-weight: 800;
+      }
+      .intro p,
+      .intro ul {
+        margin: 0;
+        color: #3c3e52;
+        line-height: 1.55;
+        max-width: 940px;
+      }
+      .intro ul {
+        padding-left: 20px;
+      }
+      .frame-label {
+        width: 100%;
+        max-width: 1280px;
+        font-weight: 700;
+        font-size: 15px;
+        color: #3c3e52;
+        margin-bottom: -44px;
+      }
+      .phones,
+      .extras {
+        display: flex;
+        gap: 40px;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: flex-start;
+      }
+
+      /* Shared app tokens (packages/ui styles.css). */
+      [data-theme="light"] {
+        color-scheme: light;
+        --surface: #ffffff;
+        --surface-muted: #efede6;
+        --fg: #17182b;
+        --fg-muted: #5e6072;
+        --border: #e2e0d8;
+        --border-control: #7c7a72;
+        --accent: #5b34e6;
+        --accent-fg: #ffffff;
+        --accent-soft: #ece7ff;
+        --accent-ink: #3a1fa8;
+        --focus-ring: #17182b;
+        --focus-ring-halo: #ffffff;
+        --danger-soft: #fbe4e1;
+        --danger-ink: #a42a21;
+        --success-soft: #dff5ec;
+        --success-ink: #0d6b4b;
+        --celebration-soft: #ffe9db;
+        --celebration-ink: #a6430c;
+        --overlay: rgb(23 24 43 / 0.4);
+      }
+      [data-theme="dark"] {
+        color-scheme: dark;
+        --surface: #1b1c30;
+        --surface-muted: #24253b;
+        --fg: #f1f0f7;
+        --fg-muted: #a9aabf;
+        --border: #2c2e47;
+        --border-control: #8a8cab;
+        --accent: #a894ff;
+        --accent-fg: #121322;
+        --accent-soft: #2d2752;
+        --accent-ink: #d9d0ff;
+        --focus-ring: #f1f0f7;
+        --focus-ring-halo: #121322;
+        --danger-soft: #3a1e1c;
+        --danger-ink: #ffb3aa;
+        --success-soft: #173a30;
+        --success-ink: #7fe3bd;
+        --celebration-soft: #3a2a1e;
+        --celebration-ink: #ffb98c;
+        --overlay: rgb(0 0 0 / 0.6);
+      }
+
+      /* Chess tokens (games/chess/theme.css, design §3). */
+      [data-theme="light"][data-game="chess"] {
+        --game-page: #f2f1ea;
+        --game-tint: #e3e6cc;
+        --game-board: #ebecd0;
+        --chess-square-dark: #577a3a;
+        --game-line: #3f5a2c;
+        --game-mark-1: #262a1e;
+        --game-mark-2: #2b2e24;
+        --chess-piece-light: #ffffff;
+        --chess-piece-dark-edge: #f4f4ec;
+        --game-highlight: #1b1e14;
+        --chess-paper: #ffffff;
+        --game-last-move: #1b1e14;
+        --chess-mark-light: #f3f08a;
+        --chess-mark-dark: #afb83a;
+        --chess-coord: #2d4420;
+        --chess-coord-on-dark: #f7f7ea;
+        --chess-check: #e5534b;
+        --chess-sheet: #ffffff;
+        --chess-sheet-line: #e2e4d4;
+        --chess-sheet-current: #e7ebd2;
+      }
+      [data-theme="dark"][data-game="chess"] {
+        --game-page: #141711;
+        --game-tint: #232a1c;
+        --game-board: #c4c8a4;
+        --chess-square-dark: #4c6a35;
+        --game-line: #2a3a1e;
+        --game-mark-1: #1a1d13;
+        --game-mark-2: #1e2118;
+        --chess-piece-light: #f6f6ec;
+        --chess-piece-dark-edge: #e8ead6;
+        --game-highlight: #10130b;
+        --chess-paper: #f6f6ec;
+        --game-last-move: #10130b;
+        --chess-mark-light: #d2cf6a;
+        --chess-mark-dark: #8c9530;
+        --chess-coord: #141f0d;
+        --chess-coord-on-dark: #f0f1e2;
+        --chess-check: #e5534b;
+        --chess-sheet: #1c2017;
+        --chess-sheet-line: #313826;
+        --chess-sheet-current: #2c3423;
+      }
+
+      .pc.w {
+        --pf: var(--chess-piece-light);
+        --pe: var(--game-mark-1);
+      }
+      .pc.b {
+        --pf: var(--game-mark-2);
+        --pe: var(--chess-piece-dark-edge);
+      }
+      .pc.ink {
+        --pf: transparent;
+        --pe: currentColor;
+      }
+
+      .board {
+        display: grid;
+        grid-template-columns: repeat(8, var(--cell));
+        grid-auto-rows: var(--cell);
+        box-shadow: 0 0 0 2px var(--game-line);
+        border-radius: 3px;
+        width: max-content;
+      }
+      .cell {
+        position: relative;
+      }
+      .cell.l {
+        background: var(--game-board);
+      }
+      .cell.d {
+        background: var(--chess-square-dark);
+      }
+      .cell.l.mk {
+        background: var(--chess-mark-light);
+      }
+      .cell.d.mk {
+        background: var(--chess-mark-dark);
+      }
+      .cell.sel {
+        box-shadow:
+          inset 0 0 0 2px var(--chess-paper),
+          inset 0 0 0 5px var(--game-highlight);
+      }
+      .cell .lm {
+        position: absolute;
+        inset: 4px;
+        border: 2.5px dashed var(--game-last-move);
+        box-shadow:
+          0 0 0 1.5px var(--chess-paper),
+          inset 0 0 0 1.5px var(--chess-paper);
+        border-radius: 2px;
+      }
+      .cell.focus {
+        z-index: 2;
+        outline: 3px solid var(--focus-ring);
+        outline-offset: 2px;
+        box-shadow: 0 0 0 7px var(--focus-ring-halo);
+      }
+      .cell .chk {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+          circle at 50% 52%,
+          var(--chess-check) 0,
+          rgb(229 83 75 / 0.6) 45%,
+          transparent 70%
+        );
+      }
+      .pc-svg {
+        position: absolute;
+        inset: 4%;
+        width: 92%;
+        height: 92%;
+      }
+      .ov {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+      .dot {
+        fill: var(--game-highlight);
+        stroke: var(--chess-paper);
+      }
+      .ring-halo {
+        stroke: var(--chess-paper);
+      }
+      .ring-ink {
+        stroke: var(--game-highlight);
+      }
+      .co {
+        position: absolute;
+        font-weight: 700;
+        line-height: 1;
+        font-size: max(10px, calc(var(--cell) * 0.16));
+      }
+      .co.rank {
+        top: 3px;
+        left: 4px;
+      }
+      .co.file {
+        bottom: 3px;
+        right: 4px;
+      }
+      .co.cl {
+        color: var(--chess-coord);
+      }
+      .co.cd {
+        color: var(--chess-coord-on-dark);
+      }
+
+      .frame {
+        background: var(--game-page);
+        color: var(--fg);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgb(23 24 43 / 0.18);
+        position: relative;
+      }
+      .desk {
+        width: 1280px;
+        height: 800px;
+      }
+      .phone {
+        width: 410px;
+        height: 864px;
+        border-radius: 36px;
+        border: 10px solid #17182b;
+      }
+      .mini {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        width: 384px;
+      }
+      .appbar {
+        height: 64px;
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: center;
+        padding: 0 40px;
+        border-bottom: 1px solid var(--border);
+      }
+      .phone .appbar {
+        padding: 0 8px;
+      }
+      .back {
+        justify-self: start;
+        font-weight: 600;
+        font-size: 15px;
+        padding: 10px 12px;
+        color: var(--fg);
+        white-space: nowrap;
+      }
+      .title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .title h1 {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 700;
+      }
+      .phone .title h1 {
+        font-size: 18px;
+      }
+      .chip {
+        font-size: 12px;
+        font-weight: 600;
+        padding: 3px 9px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent-ink);
+      }
+
+      .play {
+        display: grid;
+        grid-template-columns: 584px 384px;
+        gap: 0 40px;
+        justify-content: center;
+        align-items: center;
+        height: 736px;
+      }
+      .boardcol {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .bar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        height: 44px;
+        padding: 0 10px 0 6px;
+        border-radius: 10px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+      }
+      .bar.turn {
+        border-color: var(--fg);
+        box-shadow: inset 0 0 0 1px var(--fg);
+      }
+      .avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: var(--game-board);
+        display: grid;
+        place-items: center;
+        flex: none;
+        border: 1px solid var(--game-line);
+      }
+      .av {
+        width: 28px;
+        height: 28px;
+      }
+      .bar-text {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        flex: 1;
+      }
+      .bar-text b {
+        font-size: 14px;
+        line-height: 19px;
+        font-weight: 650;
+      }
+      .sub {
+        font-size: 12px;
+        line-height: 16px;
+        color: var(--fg-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .sum-short {
+        display: none;
+      }
+      .phone .sum-full {
+        display: none;
+      }
+      .phone .sum-short {
+        display: inline;
+      }
+      .bar-end {
+        display: flex;
+        gap: 6px;
+        flex: none;
+      }
+      .badge {
+        font-size: 12px;
+        font-weight: 650;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: var(--surface-muted);
+        color: var(--fg);
+        white-space: nowrap;
+      }
+      .badge.accent {
+        background: var(--accent-soft);
+        color: var(--accent-ink);
+      }
+      .badge.ok {
+        background: var(--success-soft);
+        color: var(--success-ink);
+      }
+      .badge.win {
+        background: var(--celebration-soft);
+        color: var(--celebration-ink);
+      }
+      .badge.danger {
+        background: var(--danger-soft);
+        color: var(--danger-ink);
+      }
+
+      .side {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .status {
+        margin: 0;
+        font-size: 22px;
+        line-height: 1.3;
+        font-weight: 650;
+        text-wrap: balance;
+      }
+      .controls {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .hint {
+        margin: 0;
+        min-height: 20px;
+        font-size: 14px;
+        color: var(--fg-muted);
+      }
+      .check-line {
+        margin: 0;
+        min-height: 26px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .claim {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .small {
+        font-size: 13px;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .row.end {
+        justify-content: flex-end;
+      }
+      .btn {
+        font:
+          600 15px "Be Vietnam Pro",
+          system-ui,
+          sans-serif;
+        height: 44px;
+        padding: 0 16px;
+        border-radius: 12px;
+        border: 1.5px solid transparent;
+        white-space: nowrap;
+      }
+      .btn.primary {
+        background: var(--accent);
+        color: var(--accent-fg);
+      }
+      .btn.secondary {
+        background: var(--surface);
+        color: var(--fg);
+        border-color: var(--border-control);
+      }
+      .btn.secondary[aria-disabled="true"] {
+        background: var(--surface-muted);
+        color: var(--fg-muted);
+        border-style: dashed;
+      }
+      .btn.ghost {
+        background: transparent;
+        color: var(--fg);
+      }
+
+      .sheet {
+        background: var(--chess-sheet);
+        border: 1px solid var(--chess-sheet-line);
+        border-radius: 12px;
+        padding: 10px 6px 8px 12px;
+      }
+      .sheet-title {
+        margin: 0 0 6px;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--fg-muted);
+      }
+      .sheet-scroll {
+        max-height: 224px;
+        overflow-y: auto;
+        border-radius: 6px;
+      }
+      .sheet ol {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+      .sheet li {
+        display: grid;
+        grid-template-columns: 2.6rem 1fr 1fr;
+        align-items: center;
+        min-height: 30px;
+        border-bottom: 1px solid var(--chess-sheet-line);
+        font-size: 15px;
+      }
+      .sheet li:last-child {
+        border-bottom: none;
+      }
+      .num {
+        color: var(--fg-muted);
+        font-variant-numeric: tabular-nums;
+        font-size: 13px;
+      }
+      .mv {
+        padding: 2px 6px;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        justify-self: start;
+      }
+      .mv.cur {
+        background: var(--chess-sheet-current);
+        font-weight: 700;
+        box-shadow: inset 0 -2px 0 var(--fg);
+      }
+      .score .mv {
+        font-weight: 700;
+      }
+      .fig {
+        width: 1.45em;
+        height: 1.45em;
+      }
+      .strip-row {
+        display: flex;
+        gap: 8px;
+      }
+      .strip {
+        flex: 1;
+        min-width: 0;
+        padding: 4px 6px;
+      }
+      /* The app scrolls the strip to its newest move (scrollLeft); this static mockup shows its end. */
+      .strip .sheet-scroll {
+        max-height: none;
+        overflow: hidden;
+      }
+      .strip ol {
+        display: flex;
+        justify-content: flex-end;
+        gap: 2px;
+      }
+      .strip li {
+        display: flex;
+        border: none;
+        min-height: 34px;
+        white-space: nowrap;
+      }
+      .strip .num {
+        padding-left: 6px;
+      }
+
+      .scrim {
+        position: absolute;
+        inset: 0;
+        background: var(--overlay);
+      }
+      .dialog {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 420px;
+        background: var(--surface);
+        border-radius: 16px;
+        padding: 20px;
+        border: 1px solid var(--border);
+        box-shadow: 0 20px 60px rgb(0 0 0 / 0.35);
+      }
+      .dialog h2 {
+        margin: 0 0 4px;
+        font-size: 20px;
+      }
+      .muted {
+        margin: 0;
+        color: var(--fg-muted);
+        font-size: 14px;
+        line-height: 1.45;
+      }
+      .promo {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin: 16px 0 12px;
+      }
+      .promo-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        padding: 10px 4px 8px;
+        border-radius: 12px;
+        border: 1.5px solid var(--game-line);
+        background: var(--game-board);
+        color: #1b1e14;
+        font:
+          650 14px "Be Vietnam Pro",
+          system-ui,
+          sans-serif;
+      }
+      .pp {
+        width: 56px;
+        height: 56px;
+      }
+      .promo-btn.focused {
+        outline: 3px solid var(--focus-ring);
+        outline-offset: 2px;
+        box-shadow: 0 0 0 7px var(--focus-ring-halo);
+      }
+
+      .pcol {
+        padding: 12px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .phone .status {
+        font-size: 19px;
+      }
+      .phone .row .btn,
+      .phone .strip-row .btn {
+        padding: 0 12px;
+        font-size: 14px;
+      }
+      .result {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 12px 14px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 2px 12px;
+        align-items: center;
+      }
+      .result .badge {
+        justify-self: start;
+      }
+      .result-title {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 750;
+      }
+      .result .btn {
+        grid-column: 2;
+        grid-row: 1 / span 3;
+      }
+
+      .legend {
+        background: var(--game-page);
+        color: var(--fg);
+        padding: 16px;
+        border-radius: 12px;
+      }
+      .legend-row {
+        display: flex;
+      }
+      .legend-sq {
+        width: 52px;
+        height: 52px;
+        position: relative;
+      }
+      .legend-sq.l {
+        background: var(--game-board);
+      }
+      .legend-sq.d {
+        background: var(--chess-square-dark);
+      }
+      .legend .muted {
+        margin-top: 10px;
+      }
+      .swatches {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .sw {
+        width: 150px;
+        border-radius: 10px;
+        overflow: hidden;
+        background: #ffffff;
+        font-size: 12px;
+      }
+      .sw i {
+        display: block;
+        height: 44px;
+      }
+      .sw span {
+        display: block;
+        padding: 6px 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <defs>
+        <symbol id="p-p" viewBox="0 0 100 100">
+          <g fill="var(--pf)" stroke="var(--pe)" stroke-width="4.5" stroke-linejoin="round">
+            <path d="M24 86 Q22 86 22 83 Q22 77 30 76 H70 Q78 77 78 83 Q78 86 76 86 Z" />
+            <path d="M36 76 C38 62 42 54 44 49 H56 C58 54 62 62 64 76 Z" />
+            <rect x="35" y="43" width="30" height="8" rx="4" />
+            <circle cx="50" cy="30" r="13" />
+          </g>
+        </symbol>
+        <symbol id="p-r" viewBox="0 0 100 100">
+          <g fill="var(--pf)" stroke="var(--pe)" stroke-width="4.5" stroke-linejoin="round">
+            <path d="M22 86 Q20 86 20 83 Q20 77 28 76 H72 Q80 77 80 83 Q80 86 78 86 Z" />
+            <path d="M32 76 L35 46 H65 L68 76 Z" />
+            <path d="M28 46 V19 H38 V27 H45 V19 H55 V27 H62 V19 H72 V46 Z" />
+            <path d="M36 56 H64" fill="none" />
+          </g>
+        </symbol>
+        <symbol id="p-b" viewBox="0 0 100 100">
+          <g fill="var(--pf)" stroke="var(--pe)" stroke-width="4.5" stroke-linejoin="round">
+            <path d="M24 86 Q22 86 22 83 Q22 77 30 76 H70 Q78 77 78 83 Q78 86 76 86 Z" />
+            <path d="M37 76 C40 67 42 61 44 57 H56 C58 61 60 67 63 76 Z" />
+            <rect x="34" y="50" width="32" height="8" rx="4" />
+            <path
+              d="M50 15 C63 25 68 35 64 44 C62 48 57 50 50 50 C43 50 38 48 36 44 C32 35 37 25 50 15 Z"
+            />
+            <circle cx="50" cy="11" r="5" />
+            <path d="M57 27 L45 40" fill="none" stroke-linecap="round" />
+          </g>
+        </symbol>
+        <symbol id="p-n" viewBox="0 0 100 100">
+          <g fill="var(--pf)" stroke="var(--pe)" stroke-width="4.5" stroke-linejoin="round">
+            <path d="M24 86 Q22 86 22 83 Q22 77 30 76 H70 Q78 77 78 83 Q78 86 76 86 Z" />
+            <path
+              d="M31 76 C30 66 33 58 40 52 L41 47 C35 47 28 46 24 43 C21 40 22 34 26 32 L42 21 L45 12 L52 18 C65 19 74 31 74 47 C74 59 71 68 69 76 Z"
+            />
+            <circle cx="43" cy="29" r="3" fill="var(--pe)" stroke="none" />
+            <path
+              d="M58 22 C64 28 67 36 66 45 M63 21 C70 27 72 37 71 47"
+              fill="none"
+              stroke-linecap="round"
+            />
+          </g>
+        </symbol>
+        <symbol id="p-q" viewBox="0 0 100 100">
+          <g fill="var(--pf)" stroke="var(--pe)" stroke-width="4.5" stroke-linejoin="round">
+            <path d="M22 86 Q20 86 20 83 Q20 77 28 76 H72 Q80 77 80 83 Q80 86 78 86 Z" />
+            <path d="M33 76 L37 53 H63 L67 76 Z" />
+            <rect x="34" y="45" width="32" height="8" rx="4" />
+            <path d="M25 27 L35 45 H65 L75 27 L62 36 L56 19 L50 33 L44 19 L38 36 Z" />
+            <circle cx="25" cy="23" r="4.5" />
+            <circle cx="44" cy="16" r="4.5" />
+            <circle cx="56" cy="16" r="4.5" />
+            <circle cx="75" cy="23" r="4.5" />
+          </g>
+        </symbol>
+        <symbol id="p-k" viewBox="0 0 100 100">
+          <g fill="var(--pf)" stroke="var(--pe)" stroke-width="4.5" stroke-linejoin="round">
+            <path d="M22 86 Q20 86 20 83 Q20 77 28 76 H72 Q80 77 80 83 Q80 86 78 86 Z" />
+            <path d="M33 76 L37 53 H63 L67 76 Z" />
+            <rect x="34" y="45" width="32" height="8" rx="4" />
+            <path
+              d="M36 45 C29 37 33 27 43 28 C46 28 48 30 50 32 C52 30 54 28 57 28 C67 27 71 37 64 45 Z"
+            />
+            <path d="M46.5 8 H53.5 V14 H59 V21 H53.5 V28 H46.5 V21 H41 V14 H46.5 Z" />
+          </g>
+        </symbol>
+      </defs>
+    </svg>
+    <main class="page">
+      <div class="intro">
+        <h1>Mockup M7 · Cờ vua (add-chess-board)</h1>
+        <p>
+          Hướng người dùng chọn (04/11/2026): bàn kiểu các trang chơi cờ online — ô xanh lá và kem,
+          toạ độ nhỏ trong các ô sát mép, thanh người chơi trên và dưới bàn, bàn là phần chính, quân
+          phẳng dễ đọc. Màu là giá trị riêng của dự án; bộ quân tự vẽ từ hình cơ bản, không sao chép
+          hình của chess.com hay bộ quân nào khác. Khung (thanh trên, dòng lượt, nút, thẻ kết quả)
+          là khung chung của app. Giá trị màu và tỉ số tương phản: design §3.
+        </p>
+        <ul>
+          <li>
+            Quân Trắng thân trắng viền mực, quân Đen thân tối viền kem: luôn có một lớp đạt 3:1 trên
+            cả hai màu ô.
+          </li>
+          <li>
+            Ô đang chọn: tô vàng + khung liền trong ô. Nước vừa đi: tô vàng + khung đứt nét. Tiêu
+            điểm bàn phím: vòng chung ngoài ô. Chấm = đi tới được; bốn góc = ăn được (cả ô trống của
+            nước bắt tốt qua đường); vầng đỏ + vòng = vua bị chiếu.
+          </li>
+          <li>
+            Thanh người chơi: bên ở dưới bàn có thanh dưới bàn; đổi chỗ khi "Lật bàn". Bên phải
+            thanh là chỗ chip ("Đến lượt", kết nối) và sau này đồng hồ.
+          </li>
+          <li>
+            Cột bên: lời báo lựa chọn (đọc cho trình đọc màn hình), "Đòi hoà" chỉ khi đòi được, sổ
+            ghi ký hiệu đại số dạng hình (khung cuộn nhận tiêu điểm), "Lật bàn". Điện thoại: sổ ghi
+            là một dải ngang cùng hàng "Lật bàn".
+          </li>
+        </ul>
+        <div class="swatches">
+          <div class="sw">
+            <i style="background: linear-gradient(90deg, #ebecd0 50%, #c4c8a4 50%)"></i
+            ><span><b>Ô kem</b><br />#EBECD0 · #C4C8A4</span>
+          </div>
+          <div class="sw">
+            <i style="background: linear-gradient(90deg, #577a3a 50%, #4c6a35 50%)"></i
+            ><span><b>Ô xanh</b><br />#577A3A · #4C6A35</span>
+          </div>
+          <div class="sw">
+            <i style="background: linear-gradient(90deg, #f3f08a 50%, #d2cf6a 50%)"></i
+            ><span><b>Ô đang chọn / vừa đi (kem)</b><br />#F3F08A · #D2CF6A</span>
+          </div>
+          <div class="sw">
+            <i style="background: linear-gradient(90deg, #afb83a 50%, #8c9530 50%)"></i
+            ><span><b>Ô đang chọn / vừa đi (xanh)</b><br />#AFB83A · #8C9530</span>
+          </div>
+          <div class="sw">
+            <i style="background: linear-gradient(90deg, #ffffff 50%, #262a1e 50%)"></i
+            ><span><b>Quân Trắng thân / viền</b><br />#FFFFFF · #262A1E</span>
+          </div>
+          <div class="sw">
+            <i style="background: linear-gradient(90deg, #2b2e24 50%, #f4f4ec 50%)"></i
+            ><span><b>Quân Đen thân / viền</b><br />#2B2E24 · #F4F4EC</span>
+          </div>
+          <div class="sw">
+            <i style="background: linear-gradient(90deg, #f2f1ea 50%, #141711 50%)"></i
+            ><span><b>Nền trang</b><br />#F2F1EA · #141711</span>
+          </div>
+          <div class="sw">
+            <i style="background: linear-gradient(90deg, #2d4420 50%, #f7f7ea 50%)"></i
+            ><span><b>Toạ độ trên kem / xanh</b><br />#2D4420 · #F7F7EA</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="frame-label">
+        1 · Máy tính 1280 × 800, sáng: cùng máy, thế cờ vừa lặp lại lần thứ ba, Trắng đòi hoà được
+      </div>
+      <section class="frame desk" data-theme="light" data-game="chess">
+        <header class="appbar">
+          <a class="back">← Về menu</a>
+          <div class="title"><h1>Cờ vua</h1></div>
+          <span></span>
+        </header>
+        <div class="play">
+          <div class="boardcol">
+            <div class="bar">
+              <span class="avatar"
+                ><svg class="av" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-k" class="pc b" /></svg></span
+              ><span class="bar-text"><b>Đen</b><span class="sub">Ở máy này</span></span
+              ><span class="bar-end"></span>
+            </div>
+            <div class="board" style="--cell: 73px" role="grid" aria-label="Bàn cờ">
+              <div class="cell l">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-r" class="pc b" /></svg
+                ><span class="co rank cl">8</span>
+              </div>
+              <div class="cell d mk last"><span class="lm"></span></div>
+              <div class="cell l">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-b" class="pc b" />
+                </svg>
+              </div>
+              <div class="cell d">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-q" class="pc b" />
+                </svg>
+              </div>
+              <div class="cell l">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-k" class="pc b" />
+                </svg>
+              </div>
+              <div class="cell d"></div>
+              <div class="cell l">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-n" class="pc b" />
+                </svg>
+              </div>
+              <div class="cell d">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-r" class="pc b" />
+                </svg>
+              </div>
+              <div class="cell d">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-p" class="pc b" /></svg
+                ><span class="co rank cd">7</span>
+              </div>
+              <div class="cell l">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-p" class="pc b" />
+                </svg>
+              </div>
+              <div class="cell d">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-p" class="pc b" />
+                </svg>
+              </div>
+              <div class="cell l">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-p" class="pc b" />
+                </svg>
+              </div>
+              <div class="cell d"></div>
+              <div class="cell l">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-p" class="pc b" />
+                </svg>
+              </div>
+              <div class="cell d">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-p" class="pc b" />
+                </svg>
+              </div>
+              <div class="cell l">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-p" class="pc b" />
+                </svg>
+              </div>
+              <div class="cell l"><span class="co rank cl">6</span></div>
+              <div class="cell d"></div>
+              <div class="cell l mk last">
+                <span class="lm"></span
+                ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-n" class="pc b" />
+                </svg>
+              </div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell d"><span class="co rank cd">5</span></div>
+              <div class="cell l"></div>
+              <div class="cell d">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-b" class="pc b" />
+                </svg>
+              </div>
+              <div class="cell l"></div>
+              <div class="cell d">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-p" class="pc b" />
+                </svg>
+              </div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell l"><span class="co rank cl">4</span></div>
+              <div class="cell d"></div>
+              <div class="cell l">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-b" class="pc w" />
+                </svg>
+              </div>
+              <div class="cell d"></div>
+              <div class="cell l">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-p" class="pc w" />
+                </svg>
+              </div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell d"><span class="co rank cd">3</span></div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell l">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-n" class="pc w" />
+                </svg>
+              </div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell l">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-p" class="pc w" /></svg
+                ><span class="co rank cl">2</span>
+              </div>
+              <div class="cell d">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-p" class="pc w" />
+                </svg>
+              </div>
+              <div class="cell l">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-p" class="pc w" />
+                </svg>
+              </div>
+              <div class="cell d">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-p" class="pc w" />
+                </svg>
+              </div>
+              <div class="cell l"></div>
+              <div class="cell d">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-p" class="pc w" />
+                </svg>
+              </div>
+              <div class="cell l">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-p" class="pc w" />
+                </svg>
+              </div>
+              <div class="cell d">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-p" class="pc w" />
+                </svg>
+              </div>
+              <div class="cell d">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-r" class="pc w" /></svg
+                ><span class="co rank cd">1</span><span class="co file cd">a</span>
+              </div>
+              <div class="cell l">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-n" class="pc w" /></svg
+                ><span class="co file cl">b</span>
+              </div>
+              <div class="cell d">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-b" class="pc w" /></svg
+                ><span class="co file cd">c</span>
+              </div>
+              <div class="cell l">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-q" class="pc w" /></svg
+                ><span class="co file cl">d</span>
+              </div>
+              <div class="cell d">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-k" class="pc w" /></svg
+                ><span class="co file cd">e</span>
+              </div>
+              <div class="cell l"><span class="co file cl">f</span></div>
+              <div class="cell d"><span class="co file cd">g</span></div>
+              <div class="cell l">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-r" class="pc w" /></svg
+                ><span class="co file cl">h</span>
+              </div>
+            </div>
+            <div class="bar turn">
+              <span class="avatar"
+                ><svg class="av" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-k" class="pc w" /></svg></span
+              ><span class="bar-text"><b>Trắng</b><span class="sub">Ở máy này</span></span
+              ><span class="bar-end"><span class="badge accent">Đến lượt</span></span>
+            </div>
+          </div>
+          <div class="side">
+            <p class="status" role="status">Đến lượt Trắng</p>
+            <div class="controls">
+              <p class="hint" aria-live="polite"></p>
+              <div class="claim">
+                <button class="btn secondary" aria-describedby="claim-why">Đòi hoà</button
+                ><span class="muted small" id="claim-why">Thế cờ này đã lặp lại ba lần</span>
+              </div>
+              <section class="sheet">
+                <h2 class="sheet-title">Sổ ghi</h2>
+                <div class="sheet-scroll" role="region" aria-label="Sổ ghi" tabindex="0">
+                  <ol>
+                    <li>
+                      <span class="num">1.</span><span class="mv">e4</span
+                      ><span class="mv">e5</span>
+                    </li>
+                    <li>
+                      <span class="num">2.</span
+                      ><span class="mv"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-n" class="pc ink" /></svg
+                        >f3</span
+                      ><span class="mv"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-n" class="pc ink" /></svg
+                        >c6</span
+                      >
+                    </li>
+                    <li>
+                      <span class="num">3.</span
+                      ><span class="mv"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-b" class="pc ink" /></svg
+                        >c4</span
+                      ><span class="mv"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-b" class="pc ink" /></svg
+                        >c5</span
+                      >
+                    </li>
+                    <li>
+                      <span class="num">4.</span
+                      ><span class="mv"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-n" class="pc ink" /></svg
+                        >g1</span
+                      ><span class="mv"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-n" class="pc ink" /></svg
+                        >b8</span
+                      >
+                    </li>
+                    <li>
+                      <span class="num">5.</span
+                      ><span class="mv"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-n" class="pc ink" /></svg
+                        >f3</span
+                      ><span class="mv"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-n" class="pc ink" /></svg
+                        >c6</span
+                      >
+                    </li>
+                    <li>
+                      <span class="num">6.</span
+                      ><span class="mv"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-n" class="pc ink" /></svg
+                        >g1</span
+                      ><span class="mv"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-n" class="pc ink" /></svg
+                        >b8</span
+                      >
+                    </li>
+                    <li>
+                      <span class="num">7.</span
+                      ><span class="mv"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-n" class="pc ink" /></svg
+                        >f3</span
+                      ><span class="mv cur"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-n" class="pc ink" /></svg
+                        >c6</span
+                      >
+                    </li>
+                  </ol>
+                </div>
+              </section>
+              <div class="row">
+                <button class="btn secondary" aria-pressed="false">Lật bàn</button>
+              </div>
+            </div>
+            <div class="row">
+              <button class="btn secondary">Hoàn tác</button
+              ><button class="btn secondary" aria-disabled="true">Làm lại</button
+              ><button class="btn primary">Ván mới</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="frame-label">
+        2 · Máy tính 1280 × 800, tối: online, bạn cầm Đen (bàn lật), bộ chọn phong cấp đang mở
+      </div>
+      <section class="frame desk" data-theme="dark" data-game="chess">
+        <header class="appbar">
+          <a class="back">← Về menu</a>
+          <div class="title">
+            <h1>Cờ vua</h1>
+            <span class="chip">Online</span>
+          </div>
+          <span></span>
+        </header>
+        <div class="play">
+          <div class="boardcol">
+            <div class="bar">
+              <span class="avatar"
+                ><svg class="av" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-k" class="pc w" /></svg></span
+              ><span class="bar-text"
+                ><b>Minh · Trắng</b
+                ><span class="sub"
+                  >Chơi từ xa · <span class="sum-full">Hơn 6 điểm: Hậu</span
+                  ><span class="sum-short">+6</span></span
+                ></span
+              ><span class="bar-end"></span>
+            </div>
+            <div class="board" style="--cell: 73px" role="grid" aria-label="Bàn cờ">
+              <div class="cell l"><span class="co rank cl">1</span></div>
+              <div class="cell d">
+                <svg class="ov" viewBox="0 0 100 100" aria-hidden="true">
+                  <circle class="dot" cx="50" cy="50" r="13" stroke-width="3" />
+                </svg>
+              </div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell l">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-k" class="pc w" />
+                </svg>
+              </div>
+              <div class="cell d"></div>
+              <div class="cell d"><span class="co rank cd">2</span></div>
+              <div class="cell l mk sel">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-p" class="pc b" />
+                </svg>
+              </div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell l"><span class="co rank cl">3</span></div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell l mk last">
+                <span class="lm"></span
+                ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-q" class="pc w" />
+                </svg>
+              </div>
+              <div class="cell d"></div>
+              <div class="cell d"><span class="co rank cd">4</span></div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell l mk last"><span class="lm"></span></div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell l"><span class="co rank cl">5</span></div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell d">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-p" class="pc b" /></svg
+                ><span class="co rank cd">6</span>
+              </div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell l"><span class="co rank cl">7</span></div>
+              <div class="cell d">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-k" class="pc b" />
+                </svg>
+              </div>
+              <div class="cell l">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-p" class="pc b" />
+                </svg>
+              </div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell d">
+                <span class="co rank cd">8</span><span class="co file cd">h</span>
+              </div>
+              <div class="cell l"><span class="co file cl">g</span></div>
+              <div class="cell d"><span class="co file cd">f</span></div>
+              <div class="cell l"><span class="co file cl">e</span></div>
+              <div class="cell d"><span class="co file cd">d</span></div>
+              <div class="cell l"><span class="co file cl">c</span></div>
+              <div class="cell d"><span class="co file cd">b</span></div>
+              <div class="cell l"><span class="co file cl">a</span></div>
+            </div>
+            <div class="bar turn">
+              <span class="avatar"
+                ><svg class="av" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-k" class="pc b" /></svg></span
+              ><span class="bar-text"><b>Bạn · Đen</b><span class="sub">Ở máy này</span></span
+              ><span class="bar-end"
+                ><span class="badge ok">Đã kết nối</span
+                ><span class="badge accent">Đến lượt</span></span
+              >
+            </div>
+          </div>
+          <div class="side">
+            <p class="status" role="status">Minh vừa đi Hậu c4 tới b3. Đến lượt bạn (Đen)</p>
+            <div class="controls">
+              <p class="hint" aria-live="polite">Đã chọn Tốt g2: đi được g1 (phong cấp)</p>
+              <section class="sheet">
+                <h2 class="sheet-title">Sổ ghi</h2>
+                <div class="sheet-scroll" role="region" aria-label="Sổ ghi" tabindex="0">
+                  <ol>
+                    <li>
+                      <span class="num">44.</span
+                      ><span class="mv"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-k" class="pc ink" /></svg
+                        >c1</span
+                      ><span class="mv">g3</span>
+                    </li>
+                    <li>
+                      <span class="num">45.</span
+                      ><span class="mv"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-k" class="pc ink" /></svg
+                        >b1</span
+                      ><span class="mv">g2</span>
+                    </li>
+                    <li>
+                      <span class="num">46.</span
+                      ><span class="mv"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-q" class="pc ink" /></svg
+                        >d4+</span
+                      ><span class="mv"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-k" class="pc ink" /></svg
+                        >g8</span
+                      >
+                    </li>
+                    <li>
+                      <span class="num">47.</span
+                      ><span class="mv"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-q" class="pc ink" /></svg
+                        >c4</span
+                      ><span class="mv"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-k" class="pc ink" /></svg
+                        >g7</span
+                      >
+                    </li>
+                    <li>
+                      <span class="num">48.</span
+                      ><span class="mv cur"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-q" class="pc ink" /></svg
+                        >b3</span
+                      ><span class="mv"></span>
+                    </li>
+                  </ol>
+                </div>
+              </section>
+              <div class="row">
+                <button class="btn secondary" aria-pressed="false">Lật bàn</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="scrim"></div>
+        <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="promo-title">
+          <h2 id="promo-title">Tốt g2 → g1</h2>
+          <p class="muted">Chọn quân thay cho Tốt.</p>
+          <div class="promo">
+            <button class="promo-btn focused">
+              <svg class="pp" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-q" class="pc b" /></svg
+              ><span>Hậu</span>
+            </button>
+            <button class="promo-btn">
+              <svg class="pp" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-r" class="pc b" /></svg
+              ><span>Xe</span>
+            </button>
+            <button class="promo-btn">
+              <svg class="pp" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-b" class="pc b" /></svg
+              ><span>Tượng</span>
+            </button>
+            <button class="promo-btn">
+              <svg class="pp" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-n" class="pc b" /></svg
+              ><span>Mã</span>
+            </button>
+          </div>
+          <div class="row end"><button class="btn ghost">Huỷ</button></div>
+        </div>
+      </section>
+
+      <div class="frame-label">
+        2b · Như khung 2, trước khi mở bộ chọn: Tốt g2 đang chọn, ô g1 tới được, có tiêu điểm bàn
+        phím
+      </div>
+      <section class="frame desk" data-theme="dark" data-game="chess">
+        <header class="appbar">
+          <a class="back">← Về menu</a>
+          <div class="title">
+            <h1>Cờ vua</h1>
+            <span class="chip">Online</span>
+          </div>
+          <span></span>
+        </header>
+        <div class="play">
+          <div class="boardcol">
+            <div class="bar">
+              <span class="avatar"
+                ><svg class="av" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-k" class="pc w" /></svg></span
+              ><span class="bar-text"
+                ><b>Minh · Trắng</b
+                ><span class="sub"
+                  >Chơi từ xa · <span class="sum-full">Hơn 6 điểm: Hậu</span
+                  ><span class="sum-short">+6</span></span
+                ></span
+              ><span class="bar-end"></span>
+            </div>
+            <div class="board" style="--cell: 73px" role="grid" aria-label="Bàn cờ">
+              <div class="cell l"><span class="co rank cl">1</span></div>
+              <div class="cell d focus">
+                <svg class="ov" viewBox="0 0 100 100" aria-hidden="true">
+                  <circle class="dot" cx="50" cy="50" r="13" stroke-width="3" />
+                </svg>
+              </div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell l">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-k" class="pc w" />
+                </svg>
+              </div>
+              <div class="cell d"></div>
+              <div class="cell d"><span class="co rank cd">2</span></div>
+              <div class="cell l mk sel">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-p" class="pc b" />
+                </svg>
+              </div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell l"><span class="co rank cl">3</span></div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell l mk last">
+                <span class="lm"></span
+                ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-q" class="pc w" />
+                </svg>
+              </div>
+              <div class="cell d"></div>
+              <div class="cell d"><span class="co rank cd">4</span></div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell l mk last"><span class="lm"></span></div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell l"><span class="co rank cl">5</span></div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell d">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-p" class="pc b" /></svg
+                ><span class="co rank cd">6</span>
+              </div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell l"><span class="co rank cl">7</span></div>
+              <div class="cell d">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-k" class="pc b" />
+                </svg>
+              </div>
+              <div class="cell l">
+                <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-p" class="pc b" />
+                </svg>
+              </div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell l"></div>
+              <div class="cell d"></div>
+              <div class="cell d">
+                <span class="co rank cd">8</span><span class="co file cd">h</span>
+              </div>
+              <div class="cell l"><span class="co file cl">g</span></div>
+              <div class="cell d"><span class="co file cd">f</span></div>
+              <div class="cell l"><span class="co file cl">e</span></div>
+              <div class="cell d"><span class="co file cd">d</span></div>
+              <div class="cell l"><span class="co file cl">c</span></div>
+              <div class="cell d"><span class="co file cd">b</span></div>
+              <div class="cell l"><span class="co file cl">a</span></div>
+            </div>
+            <div class="bar turn">
+              <span class="avatar"
+                ><svg class="av" viewBox="0 0 100 100" aria-hidden="true">
+                  <use href="#p-k" class="pc b" /></svg></span
+              ><span class="bar-text"><b>Bạn · Đen</b><span class="sub">Ở máy này</span></span
+              ><span class="bar-end"
+                ><span class="badge ok">Đã kết nối</span
+                ><span class="badge accent">Đến lượt</span></span
+              >
+            </div>
+          </div>
+          <div class="side">
+            <p class="status" role="status">Minh vừa đi Hậu c4 tới b3. Đến lượt bạn (Đen)</p>
+            <div class="controls">
+              <p class="hint" aria-live="polite">Đã chọn Tốt g2: đi được g1 (phong cấp)</p>
+              <section class="sheet">
+                <h2 class="sheet-title">Sổ ghi</h2>
+                <div class="sheet-scroll" role="region" aria-label="Sổ ghi" tabindex="0">
+                  <ol>
+                    <li>
+                      <span class="num">44.</span
+                      ><span class="mv"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-k" class="pc ink" /></svg
+                        >c1</span
+                      ><span class="mv">g3</span>
+                    </li>
+                    <li>
+                      <span class="num">45.</span
+                      ><span class="mv"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-k" class="pc ink" /></svg
+                        >b1</span
+                      ><span class="mv">g2</span>
+                    </li>
+                    <li>
+                      <span class="num">46.</span
+                      ><span class="mv"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-q" class="pc ink" /></svg
+                        >d4+</span
+                      ><span class="mv"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-k" class="pc ink" /></svg
+                        >g8</span
+                      >
+                    </li>
+                    <li>
+                      <span class="num">47.</span
+                      ><span class="mv"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-q" class="pc ink" /></svg
+                        >c4</span
+                      ><span class="mv"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-k" class="pc ink" /></svg
+                        >g7</span
+                      >
+                    </li>
+                    <li>
+                      <span class="num">48.</span
+                      ><span class="mv cur"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-q" class="pc ink" /></svg
+                        >b3</span
+                      ><span class="mv"></span>
+                    </li>
+                  </ol>
+                </div>
+              </section>
+              <div class="row">
+                <button class="btn secondary" aria-pressed="false">Lật bàn</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="frame-label">
+        3–4 · Điện thoại 390 px: sáng, kết thúc bằng chiếu hết; tối, Trắng bị chiếu, Mã b1 đang
+        chọn, tiêu điểm ở c3
+      </div>
+      <div class="phones">
+        <section class="frame phone" data-theme="light" data-game="chess">
+          <header class="appbar">
+            <a class="back">← Về menu</a>
+            <div class="title"><h1>Cờ vua</h1></div>
+            <span></span>
+          </header>
+          <div class="pcol">
+            <div class="result" role="status">
+              <span class="badge">Kết thúc</span>
+              <p class="result-title">Trắng thắng!</p>
+              <p class="muted">Chiếu hết</p>
+              <button class="btn primary">Ván mới</button>
+            </div>
+            <div class="boardcol">
+              <div class="bar">
+                <span class="avatar"
+                  ><svg class="av" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-k" class="pc b" /></svg></span
+                ><span class="bar-text"><b>Đen</b><span class="sub">Ở máy này</span></span
+                ><span class="bar-end"></span>
+              </div>
+              <div class="board" style="--cell: 44.75px" role="grid" aria-label="Bàn cờ">
+                <div class="cell l">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-r" class="pc b" /></svg
+                  ><span class="co rank cl">8</span>
+                </div>
+                <div class="cell d"></div>
+                <div class="cell l">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-b" class="pc b" />
+                  </svg>
+                </div>
+                <div class="cell d">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-q" class="pc b" />
+                  </svg>
+                </div>
+                <div class="cell l">
+                  <span class="chk"></span
+                  ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-k" class="pc b" /></svg
+                  ><svg class="ov" viewBox="0 0 100 100" aria-hidden="true">
+                    <circle class="ring-halo" cx="50" cy="52" r="44" stroke-width="6" fill="none" />
+                    <circle
+                      class="ring-ink"
+                      cx="50"
+                      cy="52"
+                      r="44"
+                      stroke-width="2.5"
+                      fill="none"
+                    />
+                  </svg>
+                </div>
+                <div class="cell d">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-b" class="pc b" />
+                  </svg>
+                </div>
+                <div class="cell l"></div>
+                <div class="cell d">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-r" class="pc b" />
+                  </svg>
+                </div>
+                <div class="cell d">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-p" class="pc b" /></svg
+                  ><span class="co rank cd">7</span>
+                </div>
+                <div class="cell l">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-p" class="pc b" />
+                  </svg>
+                </div>
+                <div class="cell d">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-p" class="pc b" />
+                  </svg>
+                </div>
+                <div class="cell l">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-p" class="pc b" />
+                  </svg>
+                </div>
+                <div class="cell d"></div>
+                <div class="cell l mk last">
+                  <span class="lm"></span
+                  ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-q" class="pc w" />
+                  </svg>
+                </div>
+                <div class="cell d">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-p" class="pc b" />
+                  </svg>
+                </div>
+                <div class="cell l">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-p" class="pc b" />
+                  </svg>
+                </div>
+                <div class="cell l"><span class="co rank cl">6</span></div>
+                <div class="cell d"></div>
+                <div class="cell l">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-n" class="pc b" />
+                  </svg>
+                </div>
+                <div class="cell d"></div>
+                <div class="cell l"></div>
+                <div class="cell d">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-n" class="pc b" />
+                  </svg>
+                </div>
+                <div class="cell l"></div>
+                <div class="cell d"></div>
+                <div class="cell d"><span class="co rank cd">5</span></div>
+                <div class="cell l"></div>
+                <div class="cell d"></div>
+                <div class="cell l"></div>
+                <div class="cell d">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-p" class="pc b" />
+                  </svg>
+                </div>
+                <div class="cell l"></div>
+                <div class="cell d"></div>
+                <div class="cell l mk last"><span class="lm"></span></div>
+                <div class="cell l"><span class="co rank cl">4</span></div>
+                <div class="cell d"></div>
+                <div class="cell l">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-b" class="pc w" />
+                  </svg>
+                </div>
+                <div class="cell d"></div>
+                <div class="cell l">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-p" class="pc w" />
+                  </svg>
+                </div>
+                <div class="cell d"></div>
+                <div class="cell l"></div>
+                <div class="cell d"></div>
+                <div class="cell d"><span class="co rank cd">3</span></div>
+                <div class="cell l"></div>
+                <div class="cell d"></div>
+                <div class="cell l"></div>
+                <div class="cell d"></div>
+                <div class="cell l"></div>
+                <div class="cell d"></div>
+                <div class="cell l"></div>
+                <div class="cell l">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-p" class="pc w" /></svg
+                  ><span class="co rank cl">2</span>
+                </div>
+                <div class="cell d">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-p" class="pc w" />
+                  </svg>
+                </div>
+                <div class="cell l">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-p" class="pc w" />
+                  </svg>
+                </div>
+                <div class="cell d">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-p" class="pc w" />
+                  </svg>
+                </div>
+                <div class="cell l"></div>
+                <div class="cell d">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-p" class="pc w" />
+                  </svg>
+                </div>
+                <div class="cell l">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-p" class="pc w" />
+                  </svg>
+                </div>
+                <div class="cell d">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-p" class="pc w" />
+                  </svg>
+                </div>
+                <div class="cell d">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-r" class="pc w" /></svg
+                  ><span class="co rank cd">1</span><span class="co file cd">a</span>
+                </div>
+                <div class="cell l">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-n" class="pc w" /></svg
+                  ><span class="co file cl">b</span>
+                </div>
+                <div class="cell d">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-b" class="pc w" /></svg
+                  ><span class="co file cd">c</span>
+                </div>
+                <div class="cell l"><span class="co file cl">d</span></div>
+                <div class="cell d">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-k" class="pc w" /></svg
+                  ><span class="co file cd">e</span>
+                </div>
+                <div class="cell l"><span class="co file cl">f</span></div>
+                <div class="cell d">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-n" class="pc w" /></svg
+                  ><span class="co file cd">g</span>
+                </div>
+                <div class="cell l">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-r" class="pc w" /></svg
+                  ><span class="co file cl">h</span>
+                </div>
+              </div>
+              <div class="bar">
+                <span class="avatar"
+                  ><svg class="av" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-k" class="pc w" /></svg></span
+                ><span class="bar-text"
+                  ><b>Trắng</b
+                  ><span class="sub"
+                    >Ở máy này · <span class="sum-full">Hơn 1 điểm: Tốt</span
+                    ><span class="sum-short">+1</span></span
+                  ></span
+                ><span class="bar-end"><span class="badge win">Thắng</span></span>
+              </div>
+            </div>
+            <div class="strip-row">
+              <section class="sheet strip">
+                <div class="sheet-scroll" role="region" aria-label="Sổ ghi" tabindex="0">
+                  <ol>
+                    <li>
+                      <span class="num">1.</span><span class="mv">e4</span
+                      ><span class="mv">e5</span>
+                    </li>
+                    <li>
+                      <span class="num">2.</span
+                      ><span class="mv"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-b" class="pc ink" /></svg
+                        >c4</span
+                      ><span class="mv"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-n" class="pc ink" /></svg
+                        >c6</span
+                      >
+                    </li>
+                    <li>
+                      <span class="num">3.</span
+                      ><span class="mv"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-q" class="pc ink" /></svg
+                        >h5</span
+                      ><span class="mv"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-n" class="pc ink" /></svg
+                        >f6</span
+                      >
+                    </li>
+                    <li>
+                      <span class="num">4.</span
+                      ><span class="mv cur"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-q" class="pc ink" /></svg
+                        >xf7#</span
+                      ><span class="mv"></span>
+                    </li>
+                    <li class="score"><span class="num"></span><span class="mv">1–0</span></li>
+                  </ol>
+                </div>
+              </section>
+              <button class="btn secondary" aria-pressed="false">Lật bàn</button>
+            </div>
+            <div class="row">
+              <button class="btn secondary">Hoàn tác</button
+              ><button class="btn secondary" aria-disabled="true">Làm lại</button>
+            </div>
+          </div>
+        </section>
+        <section class="frame phone" data-theme="dark" data-game="chess">
+          <header class="appbar">
+            <a class="back">← Về menu</a>
+            <div class="title"><h1>Cờ vua</h1></div>
+            <span></span>
+          </header>
+          <div class="pcol">
+            <p class="status" role="status">Đến lượt Trắng</p>
+            <div class="boardcol">
+              <div class="bar">
+                <span class="avatar"
+                  ><svg class="av" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-k" class="pc b" /></svg></span
+                ><span class="bar-text"><b>Đen</b><span class="sub">Ở máy này</span></span
+                ><span class="bar-end"></span>
+              </div>
+              <div class="board" style="--cell: 44.75px" role="grid" aria-label="Bàn cờ">
+                <div class="cell l">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-r" class="pc b" /></svg
+                  ><span class="co rank cl">8</span>
+                </div>
+                <div class="cell d"></div>
+                <div class="cell l">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-b" class="pc b" />
+                  </svg>
+                </div>
+                <div class="cell d">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-q" class="pc b" />
+                  </svg>
+                </div>
+                <div class="cell l">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-k" class="pc b" />
+                  </svg>
+                </div>
+                <div class="cell d"></div>
+                <div class="cell l"></div>
+                <div class="cell d">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-r" class="pc b" />
+                  </svg>
+                </div>
+                <div class="cell d">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-p" class="pc b" /></svg
+                  ><span class="co rank cd">7</span>
+                </div>
+                <div class="cell l">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-p" class="pc b" />
+                  </svg>
+                </div>
+                <div class="cell d">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-p" class="pc b" />
+                  </svg>
+                </div>
+                <div class="cell l">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-p" class="pc b" />
+                  </svg>
+                </div>
+                <div class="cell d"></div>
+                <div class="cell l">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-p" class="pc b" />
+                  </svg>
+                </div>
+                <div class="cell d">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-p" class="pc b" />
+                  </svg>
+                </div>
+                <div class="cell l">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-p" class="pc b" />
+                  </svg>
+                </div>
+                <div class="cell l"><span class="co rank cl">6</span></div>
+                <div class="cell d"></div>
+                <div class="cell l">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-n" class="pc b" />
+                  </svg>
+                </div>
+                <div class="cell d"></div>
+                <div class="cell l"></div>
+                <div class="cell d">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-n" class="pc b" />
+                  </svg>
+                </div>
+                <div class="cell l"></div>
+                <div class="cell d"></div>
+                <div class="cell d"><span class="co rank cd">5</span></div>
+                <div class="cell l"></div>
+                <div class="cell d mk last"><span class="lm"></span></div>
+                <div class="cell l"></div>
+                <div class="cell d"></div>
+                <div class="cell l"></div>
+                <div class="cell d"></div>
+                <div class="cell l"></div>
+                <div class="cell l"><span class="co rank cl">4</span></div>
+                <div class="cell d mk last">
+                  <span class="lm"></span
+                  ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-b" class="pc b" />
+                  </svg>
+                </div>
+                <div class="cell l">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-b" class="pc w" />
+                  </svg>
+                </div>
+                <div class="cell d">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-p" class="pc w" />
+                  </svg>
+                </div>
+                <div class="cell l">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-p" class="pc w" />
+                  </svg>
+                </div>
+                <div class="cell d"></div>
+                <div class="cell l"></div>
+                <div class="cell d"></div>
+                <div class="cell d"><span class="co rank cd">3</span></div>
+                <div class="cell l"></div>
+                <div class="cell d focus">
+                  <svg class="ov" viewBox="0 0 100 100" aria-hidden="true">
+                    <circle class="dot" cx="50" cy="50" r="13" stroke-width="3" />
+                  </svg>
+                </div>
+                <div class="cell l"></div>
+                <div class="cell d"></div>
+                <div class="cell l">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-n" class="pc w" />
+                  </svg>
+                </div>
+                <div class="cell d"></div>
+                <div class="cell l"></div>
+                <div class="cell l">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-p" class="pc w" /></svg
+                  ><span class="co rank cl">2</span>
+                </div>
+                <div class="cell d">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-p" class="pc w" />
+                  </svg>
+                </div>
+                <div class="cell l"></div>
+                <div class="cell d">
+                  <svg class="ov" viewBox="0 0 100 100" aria-hidden="true">
+                    <circle class="dot" cx="50" cy="50" r="13" stroke-width="3" />
+                  </svg>
+                </div>
+                <div class="cell l"></div>
+                <div class="cell d">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-p" class="pc w" />
+                  </svg>
+                </div>
+                <div class="cell l">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-p" class="pc w" />
+                  </svg>
+                </div>
+                <div class="cell d">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-p" class="pc w" />
+                  </svg>
+                </div>
+                <div class="cell d">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-r" class="pc w" /></svg
+                  ><span class="co rank cd">1</span><span class="co file cd">a</span>
+                </div>
+                <div class="cell l mk sel">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-n" class="pc w" /></svg
+                  ><span class="co file cl">b</span>
+                </div>
+                <div class="cell d">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-b" class="pc w" /></svg
+                  ><span class="co file cd">c</span>
+                </div>
+                <div class="cell l">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-q" class="pc w" /></svg
+                  ><span class="co file cl">d</span>
+                </div>
+                <div class="cell d">
+                  <span class="chk"></span
+                  ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-k" class="pc w" /></svg
+                  ><svg class="ov" viewBox="0 0 100 100" aria-hidden="true">
+                    <circle class="ring-halo" cx="50" cy="52" r="44" stroke-width="6" fill="none" />
+                    <circle
+                      class="ring-ink"
+                      cx="50"
+                      cy="52"
+                      r="44"
+                      stroke-width="2.5"
+                      fill="none"
+                    /></svg
+                  ><span class="co file cd">e</span>
+                </div>
+                <div class="cell l"><span class="co file cl">f</span></div>
+                <div class="cell d"><span class="co file cd">g</span></div>
+                <div class="cell l">
+                  <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-r" class="pc w" /></svg
+                  ><span class="co file cl">h</span>
+                </div>
+              </div>
+              <div class="bar turn">
+                <span class="avatar"
+                  ><svg class="av" viewBox="0 0 100 100" aria-hidden="true">
+                    <use href="#p-k" class="pc w" /></svg></span
+                ><span class="bar-text"><b>Trắng</b><span class="sub">Ở máy này</span></span
+                ><span class="bar-end"><span class="badge accent">Đến lượt</span></span>
+              </div>
+            </div>
+            <p class="hint" aria-live="polite">Đã chọn Mã b1: đi được c3, d2</p>
+            <p class="check-line"><span class="badge danger">Chiếu!</span> Trắng đang bị chiếu</p>
+            <div class="strip-row">
+              <section class="sheet strip">
+                <div class="sheet-scroll" role="region" aria-label="Sổ ghi" tabindex="0">
+                  <ol>
+                    <li>
+                      <span class="num">1.</span><span class="mv">e4</span
+                      ><span class="mv">e5</span>
+                    </li>
+                    <li>
+                      <span class="num">2.</span
+                      ><span class="mv"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-n" class="pc ink" /></svg
+                        >f3</span
+                      ><span class="mv"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-n" class="pc ink" /></svg
+                        >c6</span
+                      >
+                    </li>
+                    <li>
+                      <span class="num">3.</span
+                      ><span class="mv"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-b" class="pc ink" /></svg
+                        >c4</span
+                      ><span class="mv"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-b" class="pc ink" /></svg
+                        >c5</span
+                      >
+                    </li>
+                    <li>
+                      <span class="num">4.</span><span class="mv">c3</span
+                      ><span class="mv"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-n" class="pc ink" /></svg
+                        >f6</span
+                      >
+                    </li>
+                    <li>
+                      <span class="num">5.</span><span class="mv">d4</span
+                      ><span class="mv">exd4</span>
+                    </li>
+                    <li>
+                      <span class="num">6.</span><span class="mv">cxd4</span
+                      ><span class="mv cur"
+                        ><svg class="fig" viewBox="0 0 100 100" aria-hidden="true">
+                          <use href="#p-b" class="pc ink" /></svg
+                        >b4+</span
+                      >
+                    </li>
+                  </ol>
+                </div>
+              </section>
+              <button class="btn secondary" aria-pressed="false">Lật bàn</button>
+            </div>
+            <div class="row">
+              <button class="btn secondary">Hoàn tác</button
+              ><button class="btn secondary" aria-disabled="true">Làm lại</button
+              ><button class="btn primary">Ván mới</button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="frame-label">
+        5 · Bắt tốt qua đường là ăn quân; bộ quân trên hai màu ô, sáng và tối
+      </div>
+      <div class="extras">
+        <section class="frame mini" data-theme="light" data-game="chess">
+          <div class="board" style="--cell: 44px" role="grid" aria-label="Bàn cờ">
+            <div class="cell l">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-r" class="pc b" /></svg
+              ><span class="co rank cl">8</span>
+            </div>
+            <div class="cell d">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-n" class="pc b" />
+              </svg>
+            </div>
+            <div class="cell l">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-b" class="pc b" />
+              </svg>
+            </div>
+            <div class="cell d">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-q" class="pc b" />
+              </svg>
+            </div>
+            <div class="cell l">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-k" class="pc b" />
+              </svg>
+            </div>
+            <div class="cell d">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-b" class="pc b" />
+              </svg>
+            </div>
+            <div class="cell l">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-n" class="pc b" />
+              </svg>
+            </div>
+            <div class="cell d">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-r" class="pc b" />
+              </svg>
+            </div>
+            <div class="cell d"><span class="co rank cd">7</span></div>
+            <div class="cell l">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc b" />
+              </svg>
+            </div>
+            <div class="cell d">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc b" />
+              </svg>
+            </div>
+            <div class="cell l mk last"><span class="lm"></span></div>
+            <div class="cell d">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc b" />
+              </svg>
+            </div>
+            <div class="cell l">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc b" />
+              </svg>
+            </div>
+            <div class="cell d">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc b" />
+              </svg>
+            </div>
+            <div class="cell l">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc b" />
+              </svg>
+            </div>
+            <div class="cell l">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc b" /></svg
+              ><span class="co rank cl">6</span>
+            </div>
+            <div class="cell d"></div>
+            <div class="cell l"></div>
+            <div class="cell d">
+              <svg class="ov" viewBox="0 0 100 100" aria-hidden="true">
+                <path
+                  class="dot"
+                  d="M3 3 L25 3 L3 25 Z"
+                  stroke-width="2.5"
+                  stroke-linejoin="round"
+                />
+                <path
+                  class="dot"
+                  d="M97 3 L75 3 L97 25 Z"
+                  stroke-width="2.5"
+                  stroke-linejoin="round"
+                />
+                <path
+                  class="dot"
+                  d="M3 97 L25 97 L3 75 Z"
+                  stroke-width="2.5"
+                  stroke-linejoin="round"
+                />
+                <path
+                  class="dot"
+                  d="M97 97 L75 97 L97 75 Z"
+                  stroke-width="2.5"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </div>
+            <div class="cell l">
+              <svg class="ov" viewBox="0 0 100 100" aria-hidden="true">
+                <circle class="dot" cx="50" cy="50" r="13" stroke-width="3" />
+              </svg>
+            </div>
+            <div class="cell d"></div>
+            <div class="cell l"></div>
+            <div class="cell d"></div>
+            <div class="cell d"><span class="co rank cd">5</span></div>
+            <div class="cell l"></div>
+            <div class="cell d"></div>
+            <div class="cell l mk last">
+              <span class="lm"></span
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc b" />
+              </svg>
+            </div>
+            <div class="cell d mk sel">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc w" />
+              </svg>
+            </div>
+            <div class="cell l"></div>
+            <div class="cell d"></div>
+            <div class="cell l"></div>
+            <div class="cell l"><span class="co rank cl">4</span></div>
+            <div class="cell d"></div>
+            <div class="cell l"></div>
+            <div class="cell d"></div>
+            <div class="cell l"></div>
+            <div class="cell d"></div>
+            <div class="cell l"></div>
+            <div class="cell d"></div>
+            <div class="cell d"><span class="co rank cd">3</span></div>
+            <div class="cell l"></div>
+            <div class="cell d"></div>
+            <div class="cell l"></div>
+            <div class="cell d"></div>
+            <div class="cell l"></div>
+            <div class="cell d"></div>
+            <div class="cell l"></div>
+            <div class="cell l">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc w" /></svg
+              ><span class="co rank cl">2</span>
+            </div>
+            <div class="cell d">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc w" />
+              </svg>
+            </div>
+            <div class="cell l">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc w" />
+              </svg>
+            </div>
+            <div class="cell d">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc w" />
+              </svg>
+            </div>
+            <div class="cell l"></div>
+            <div class="cell d">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc w" />
+              </svg>
+            </div>
+            <div class="cell l">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc w" />
+              </svg>
+            </div>
+            <div class="cell d">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc w" />
+              </svg>
+            </div>
+            <div class="cell d">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-r" class="pc w" /></svg
+              ><span class="co rank cd">1</span><span class="co file cd">a</span>
+            </div>
+            <div class="cell l">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-n" class="pc w" /></svg
+              ><span class="co file cl">b</span>
+            </div>
+            <div class="cell d">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-b" class="pc w" /></svg
+              ><span class="co file cd">c</span>
+            </div>
+            <div class="cell l">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-q" class="pc w" /></svg
+              ><span class="co file cl">d</span>
+            </div>
+            <div class="cell d">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-k" class="pc w" /></svg
+              ><span class="co file cd">e</span>
+            </div>
+            <div class="cell l">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-b" class="pc w" /></svg
+              ><span class="co file cl">f</span>
+            </div>
+            <div class="cell d">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-n" class="pc w" /></svg
+              ><span class="co file cd">g</span>
+            </div>
+            <div class="cell l">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-r" class="pc w" /></svg
+              ><span class="co file cl">h</span>
+            </div>
+          </div>
+          <p class="muted">
+            Sau 1. e4 a6 2. e5 d5, Tốt e5 đang chọn: e6 đi tới được (chấm), d6 trống nhưng là nước
+            bắt tốt qua đường nên mang dấu ăn quân (bốn góc).
+          </p>
+        </section>
+        <section class="frame mini" data-theme="dark" data-game="chess">
+          <div class="board" style="--cell: 44px" role="grid" aria-label="Bàn cờ">
+            <div class="cell l">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-r" class="pc b" /></svg
+              ><span class="co rank cl">8</span>
+            </div>
+            <div class="cell d">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-n" class="pc b" />
+              </svg>
+            </div>
+            <div class="cell l">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-b" class="pc b" />
+              </svg>
+            </div>
+            <div class="cell d">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-q" class="pc b" />
+              </svg>
+            </div>
+            <div class="cell l">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-k" class="pc b" />
+              </svg>
+            </div>
+            <div class="cell d">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-b" class="pc b" />
+              </svg>
+            </div>
+            <div class="cell l">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-n" class="pc b" />
+              </svg>
+            </div>
+            <div class="cell d">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-r" class="pc b" />
+              </svg>
+            </div>
+            <div class="cell d"><span class="co rank cd">7</span></div>
+            <div class="cell l">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc b" />
+              </svg>
+            </div>
+            <div class="cell d">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc b" />
+              </svg>
+            </div>
+            <div class="cell l mk last"><span class="lm"></span></div>
+            <div class="cell d">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc b" />
+              </svg>
+            </div>
+            <div class="cell l">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc b" />
+              </svg>
+            </div>
+            <div class="cell d">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc b" />
+              </svg>
+            </div>
+            <div class="cell l">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc b" />
+              </svg>
+            </div>
+            <div class="cell l">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc b" /></svg
+              ><span class="co rank cl">6</span>
+            </div>
+            <div class="cell d"></div>
+            <div class="cell l"></div>
+            <div class="cell d">
+              <svg class="ov" viewBox="0 0 100 100" aria-hidden="true">
+                <path
+                  class="dot"
+                  d="M3 3 L25 3 L3 25 Z"
+                  stroke-width="2.5"
+                  stroke-linejoin="round"
+                />
+                <path
+                  class="dot"
+                  d="M97 3 L75 3 L97 25 Z"
+                  stroke-width="2.5"
+                  stroke-linejoin="round"
+                />
+                <path
+                  class="dot"
+                  d="M3 97 L25 97 L3 75 Z"
+                  stroke-width="2.5"
+                  stroke-linejoin="round"
+                />
+                <path
+                  class="dot"
+                  d="M97 97 L75 97 L97 75 Z"
+                  stroke-width="2.5"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </div>
+            <div class="cell l">
+              <svg class="ov" viewBox="0 0 100 100" aria-hidden="true">
+                <circle class="dot" cx="50" cy="50" r="13" stroke-width="3" />
+              </svg>
+            </div>
+            <div class="cell d"></div>
+            <div class="cell l"></div>
+            <div class="cell d"></div>
+            <div class="cell d"><span class="co rank cd">5</span></div>
+            <div class="cell l"></div>
+            <div class="cell d"></div>
+            <div class="cell l mk last">
+              <span class="lm"></span
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc b" />
+              </svg>
+            </div>
+            <div class="cell d mk sel">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc w" />
+              </svg>
+            </div>
+            <div class="cell l"></div>
+            <div class="cell d"></div>
+            <div class="cell l"></div>
+            <div class="cell l"><span class="co rank cl">4</span></div>
+            <div class="cell d"></div>
+            <div class="cell l"></div>
+            <div class="cell d"></div>
+            <div class="cell l"></div>
+            <div class="cell d"></div>
+            <div class="cell l"></div>
+            <div class="cell d"></div>
+            <div class="cell d"><span class="co rank cd">3</span></div>
+            <div class="cell l"></div>
+            <div class="cell d"></div>
+            <div class="cell l"></div>
+            <div class="cell d"></div>
+            <div class="cell l"></div>
+            <div class="cell d"></div>
+            <div class="cell l"></div>
+            <div class="cell l">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc w" /></svg
+              ><span class="co rank cl">2</span>
+            </div>
+            <div class="cell d">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc w" />
+              </svg>
+            </div>
+            <div class="cell l">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc w" />
+              </svg>
+            </div>
+            <div class="cell d">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc w" />
+              </svg>
+            </div>
+            <div class="cell l"></div>
+            <div class="cell d">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc w" />
+              </svg>
+            </div>
+            <div class="cell l">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc w" />
+              </svg>
+            </div>
+            <div class="cell d">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc w" />
+              </svg>
+            </div>
+            <div class="cell d">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-r" class="pc w" /></svg
+              ><span class="co rank cd">1</span><span class="co file cd">a</span>
+            </div>
+            <div class="cell l">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-n" class="pc w" /></svg
+              ><span class="co file cl">b</span>
+            </div>
+            <div class="cell d">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-b" class="pc w" /></svg
+              ><span class="co file cd">c</span>
+            </div>
+            <div class="cell l">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-q" class="pc w" /></svg
+              ><span class="co file cl">d</span>
+            </div>
+            <div class="cell d">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-k" class="pc w" /></svg
+              ><span class="co file cd">e</span>
+            </div>
+            <div class="cell l">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-b" class="pc w" /></svg
+              ><span class="co file cl">f</span>
+            </div>
+            <div class="cell d">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-n" class="pc w" /></svg
+              ><span class="co file cd">g</span>
+            </div>
+            <div class="cell l">
+              <svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-r" class="pc w" /></svg
+              ><span class="co file cl">h</span>
+            </div>
+          </div>
+          <p class="muted">
+            Sau 1. e4 a6 2. e5 d5, Tốt e5 đang chọn: e6 đi tới được (chấm), d6 trống nhưng là nước
+            bắt tốt qua đường nên mang dấu ăn quân (bốn góc).
+          </p>
+        </section>
+        <div class="legend" data-theme="light" data-game="chess">
+          <div class="legend-row">
+            <span class="legend-sq l"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-k" class="pc w" /></svg></span
+            ><span class="legend-sq d"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-k" class="pc w" /></svg></span
+            ><span class="legend-sq l"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-q" class="pc w" /></svg></span
+            ><span class="legend-sq d"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-q" class="pc w" /></svg></span
+            ><span class="legend-sq l"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-r" class="pc w" /></svg></span
+            ><span class="legend-sq d"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-r" class="pc w" /></svg></span
+            ><span class="legend-sq l"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-b" class="pc w" /></svg></span
+            ><span class="legend-sq d"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-b" class="pc w" /></svg></span
+            ><span class="legend-sq l"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-n" class="pc w" /></svg></span
+            ><span class="legend-sq d"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-n" class="pc w" /></svg></span
+            ><span class="legend-sq l"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc w" /></svg></span
+            ><span class="legend-sq d"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc w" /></svg
+            ></span>
+          </div>
+          <div class="legend-row">
+            <span class="legend-sq l"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-k" class="pc b" /></svg></span
+            ><span class="legend-sq d"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-k" class="pc b" /></svg></span
+            ><span class="legend-sq l"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-q" class="pc b" /></svg></span
+            ><span class="legend-sq d"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-q" class="pc b" /></svg></span
+            ><span class="legend-sq l"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-r" class="pc b" /></svg></span
+            ><span class="legend-sq d"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-r" class="pc b" /></svg></span
+            ><span class="legend-sq l"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-b" class="pc b" /></svg></span
+            ><span class="legend-sq d"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-b" class="pc b" /></svg></span
+            ><span class="legend-sq l"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-n" class="pc b" /></svg></span
+            ><span class="legend-sq d"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-n" class="pc b" /></svg></span
+            ><span class="legend-sq l"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc b" /></svg></span
+            ><span class="legend-sq d"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc b" /></svg
+            ></span>
+          </div>
+          <p class="muted">Sáng: Vua, Hậu, Xe, Tượng, Mã, Tốt trên ô kem và ô xanh</p>
+        </div>
+        <div class="legend" data-theme="dark" data-game="chess">
+          <div class="legend-row">
+            <span class="legend-sq l"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-k" class="pc w" /></svg></span
+            ><span class="legend-sq d"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-k" class="pc w" /></svg></span
+            ><span class="legend-sq l"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-q" class="pc w" /></svg></span
+            ><span class="legend-sq d"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-q" class="pc w" /></svg></span
+            ><span class="legend-sq l"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-r" class="pc w" /></svg></span
+            ><span class="legend-sq d"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-r" class="pc w" /></svg></span
+            ><span class="legend-sq l"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-b" class="pc w" /></svg></span
+            ><span class="legend-sq d"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-b" class="pc w" /></svg></span
+            ><span class="legend-sq l"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-n" class="pc w" /></svg></span
+            ><span class="legend-sq d"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-n" class="pc w" /></svg></span
+            ><span class="legend-sq l"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc w" /></svg></span
+            ><span class="legend-sq d"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc w" /></svg
+            ></span>
+          </div>
+          <div class="legend-row">
+            <span class="legend-sq l"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-k" class="pc b" /></svg></span
+            ><span class="legend-sq d"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-k" class="pc b" /></svg></span
+            ><span class="legend-sq l"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-q" class="pc b" /></svg></span
+            ><span class="legend-sq d"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-q" class="pc b" /></svg></span
+            ><span class="legend-sq l"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-r" class="pc b" /></svg></span
+            ><span class="legend-sq d"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-r" class="pc b" /></svg></span
+            ><span class="legend-sq l"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-b" class="pc b" /></svg></span
+            ><span class="legend-sq d"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-b" class="pc b" /></svg></span
+            ><span class="legend-sq l"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-n" class="pc b" /></svg></span
+            ><span class="legend-sq d"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-n" class="pc b" /></svg></span
+            ><span class="legend-sq l"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc b" /></svg></span
+            ><span class="legend-sq d"
+              ><svg class="pc-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <use href="#p-p" class="pc b" /></svg
+            ></span>
+          </div>
+          <p class="muted">Tối: Vua, Hậu, Xe, Tượng, Mã, Tốt trên ô kem và ô xanh</p>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

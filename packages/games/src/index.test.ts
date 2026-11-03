@@ -1,7 +1,9 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 
+import { AI_GAMES, findAiGame } from "./ai";
 import {
   caro,
+  chess,
   findGame,
   GAME_IDS,
   GAMES,
@@ -18,6 +20,8 @@ describe("game registry", () => {
     expect(isRegisteredGameId("caro")).toBe(true);
     expect(findGame("ludo")).toBe(ludo);
     expect(isRegisteredGameId("ludo")).toBe(true);
+    expect(findGame("chess")).toBe(chess);
+    expect(isRegisteredGameId("chess")).toBe(true);
   });
 
   it("returns undefined for an unknown id", () => {
@@ -39,8 +43,22 @@ describe("game registry", () => {
   });
 
   it("types RegisteredGameId as the union of literal ids", () => {
-    expectTypeOf<RegisteredGameId>().toEqualTypeOf<"tictactoe" | "caro" | "ludo">();
+    expectTypeOf<RegisteredGameId>().toEqualTypeOf<"tictactoe" | "caro" | "ludo" | "chess">();
     // Forgetting `as const satisfies` on a game would widen this union to string.
     expectTypeOf<string>().not.toExtend<RegisteredGameId>();
+  });
+});
+
+describe("AI_GAMES", () => {
+  it("lists exactly the games of GAMES that the AI plays, in the same order", () => {
+    expect(AI_GAMES.map((game) => game.id)).toEqual(
+      GAMES.filter((game) => game.meta.supportsAI).map((game) => game.id),
+    );
+  });
+
+  it("finds a game the AI plays, and no other", () => {
+    expect(findAiGame("caro")).toBe(caro);
+    expect(findAiGame("chess")).toBeUndefined();
+    expect(findAiGame("no-such-game")).toBeUndefined();
   });
 });

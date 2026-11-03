@@ -34,7 +34,7 @@ Luật của dự án thắng:
 
 - Màu, bo góc, bóng chỉ lấy từ token trong `packages/ui/src/styles.css`. Màu mới = token mới, có giá trị **sáng và tối**: thêm vào `:root`, vào khối `@media (prefers-color-scheme: dark)` **và** khối `:root[data-theme="dark"]` (hai khối tối giống hệt nhau), rồi một dòng `--color-*` trong `@theme inline`. Không viết hex/oklch/`bg-blue-500` trong component.
 - Ghép class bằng `cn()`, biến thể bằng `cva()`; component nhận `className`. CSS riêng chỉ khi Tailwind không làm được (CSS Module cạnh component, plan.md §4.3).
-- Icon chỉ import từ `@board-games/ui` (`packages/ui/src/icons.ts`); icon trang trí `aria-hidden`, nút chỉ có icon có `aria-label`. Quân và bàn cờ là SVG tự vẽ trong `apps/web/src/games/<id>/`.
+- Icon chỉ import từ `@board-games/ui` (`packages/ui/src/icons.ts`); icon trang trí `aria-hidden`, nút chỉ có icon có `aria-label`. Quân và bàn cờ là SVG tự vẽ trong `apps/web/src/games/<id>/`; ngoại lệ đã chốt: quân Cờ vua là bộ "staunty" của Lichess (CC BY-NC-SA 4.0), file nguyên vẹn ở `apps/web/public/pieces/staunty/` kèm giấy phép.
 - Không chữ hiển thị cứng: khoá mới trong `apps/web/messages/vi.json` **và** `en.json`, `ja.json` (kể cả `aria-label`, chữ trong SVG).
 - Font: giữ Be Vietnam Pro + Noto Sans JP. Font mới phải có subset `vietnamese` trong `next/font`, Noto Sans JP vẫn là dự phòng chữ Nhật; kiểm chữ có dấu chồng ("Hoàn tác", "Đến lượt", "Ngẫu nhiên") ở mọi cỡ chữ.
 - Không thêm thư viện khi chưa review: khai báo trong `catalog` của `pnpm-workspace.yaml`, tôn trọng tuổi phiên bản tối thiểu, không `allowBuilds: true`, ghi phiên bản và lý do vào `design.md`.
@@ -75,8 +75,8 @@ Luật của dự án thắng:
   - **Tic-tac-toe**: tối giản, vui; nét dày, X/O có cá tính, ăn mừng nhẹ.
   - **Cờ caro**: "giấy vở ô li", dấu như bút bi (X xanh, O đỏ hay tương tự), hàng thắng như được khoanh/gạch.
   - **Cờ cá ngựa**: nhiều màu, tính xã hội, cảm hứng tranh dân gian (tự vẽ, không sao chép tranh có bản quyền).
-  - **Cờ vua** (M7): cổ điển, gỗ cao cấp.
-- Chỉ dùng hình tự làm; không bắt chước giao diện game thương mại.
+  - **Cờ vua** (M7, chốt ở `add-chess-board`): bàn xanh–kem kiểu trang chơi cờ online, quân "staunty" của Lichess, thanh người chơi trên và dưới bàn.
+- Chỉ dùng hình tự làm; không chép tài sản hay bắt chước giao diện game thương mại. **Ngoại lệ duy nhất**: bộ quân Cờ vua "staunty" (người dùng chốt ngày 04/11/2026, change `add-chess-board`). Mọi hình khác của bên thứ ba cần: quyết định của người dùng ghi trong proposal của một change, kiểm giấy phép, nguồn kèm SHA, một mục trong `apps/web/public/third-party-licenses.txt`, và file giữ nguyên không sửa.
 
 ## Checklist UX bàn cờ
 

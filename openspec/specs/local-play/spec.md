@@ -317,7 +317,7 @@ Ván trên thiết bị này (cùng máy và đấu với máy) SHALL có số n
 
 ### Requirement: Bảng người chơi
 
-Màn hình chơi SHALL có bảng người chơi liệt kê mọi ghế theo thứ tự lượt; mỗi ghế ghi tên hoặc ký hiệu của người đó trong game, quân hoặc màu kèm ký hiệu, và loại người chơi (ở thiết bị này, máy kèm mức độ, hoặc người ở xa). Khi ván chưa kết thúc, ghế đang đến lượt SHALL được đánh dấu bằng chữ "Đến lượt", không chỉ bằng màu. Bảng MUST NOT là vùng thông báo cho trình đọc màn hình.
+Màn hình chơi SHALL có bảng người chơi liệt kê mọi ghế theo thứ tự lượt; mỗi ghế ghi tên hoặc ký hiệu của người đó trong game, quân hoặc màu kèm ký hiệu, và loại người chơi (ở thiết bị này, máy kèm mức độ, hoặc người ở xa). Khi ván chưa kết thúc, ghế đang đến lượt SHALL được đánh dấu bằng chữ "Đến lượt", không chỉ bằng màu. Bảng MUST NOT là vùng thông báo cho trình đọc màn hình. Game hai người đặt ghế quanh bàn (Cờ vua) SHALL thay bảng bằng hai thanh ghế trên và dưới bàn theo hướng bàn.
 
 #### Scenario: Ván cùng máy
 
@@ -343,6 +343,11 @@ Màn hình chơi SHALL có bảng người chơi liệt kê mọi ghế theo th�
 
 - **WHEN** người chơi mở ván Cờ cá ngựa 4 người cùng máy ở khung 1280 × 800 và vừa gieo được 6 với bốn ngựa đi được
 - **THEN** bàn, dòng lượt, bảng người chơi, xúc xắc, cả bốn lựa chọn ngựa và các nút của ván nằm trong màn hình mà không cần cuộn
+
+#### Scenario: Thanh người chơi quanh bàn Cờ vua
+
+- **WHEN** người chơi mở một ván Cờ vua cùng máy mới
+- **THEN** thanh của Đen ở ngay trên bàn, thanh của Trắng ở ngay dưới bàn ghi "Đến lượt", và cột bên không có bảng người chơi
 
 ### Requirement: Lý do nút không bấm được
 

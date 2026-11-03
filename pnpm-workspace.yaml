@@ -48,6 +48,11 @@ catalog:
   jsdom: ^30.1.3
   vitest: ^5.0.5
 
+  # game rules
+  # Pinned exactly: the chess adapter calls one internal method (`_moves`), checked by its tests
+  # against the public API (design of add-chess-rules §2). Renovate opens a PR of its own for it.
+  chess.js: 1.4.0
+
   # app & ui
   "@tailwindcss/postcss": ^4.3.3
   "@types/node": ^24.19.2

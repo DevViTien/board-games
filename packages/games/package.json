@@ -6,9 +6,11 @@
   "exports": {
     ".": "./src/index.ts",
     "./ids": "./src/ids.ts",
+    "./ai": "./src/ai.ts",
     "./tictactoe": "./src/tictactoe/index.ts",
     "./caro": "./src/caro/index.ts",
-    "./ludo": "./src/ludo/index.ts"
+    "./ludo": "./src/ludo/index.ts",
+    "./chess": "./src/chess/index.ts"
   },
   "scripts": {
     "lint": "eslint .",
@@ -17,7 +19,8 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@board-games/engine": "workspace:*"
+    "@board-games/engine": "workspace:*",
+    "chess.js": "catalog:"
   },
   "devDependencies": {
     "@board-games/config": "workspace:*",
