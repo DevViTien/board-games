@@ -55,18 +55,18 @@ export function ConfirmDialog({
       onClose={() => {
         if (open) onCancel();
       }}
-      className="m-auto w-[calc(100%-2rem)] max-w-sm rounded-card border border-border bg-surface p-6 text-fg shadow-lg backdrop:bg-overlay"
+      className="m-auto w-[calc(100%-2rem)] max-w-sm rounded-card border border-border bg-surface p-6 text-fg shadow-raised backdrop:bg-overlay"
     >
-      <h2 id={titleId} className="text-lg font-semibold">
+      <h2 id={titleId} className="text-heading">
         {title}
       </h2>
       {description !== undefined && (
-        <p id={descriptionId} className="mt-2 text-sm text-fg-muted">
+        <p id={descriptionId} className="mt-2 text-body text-fg-muted">
           {description}
         </p>
       )}
       {/* Cancel comes first: showModal() focuses it, so Enter right away never discards anything. */}
-      <div className="mt-6 flex justify-end gap-2">
+      <div className="mt-6 flex flex-wrap justify-end gap-2">
         <Button variant="secondary" onClick={onCancel}>
           {cancelLabel}
         </Button>

@@ -52,7 +52,7 @@ describe("RadioGroup", () => {
     expect(radio("Khó")).not.toBeChecked();
   });
 
-  it("has a check mark for the chosen option, which forced colours show instead of its background", async () => {
+  it("shows a check mark on the chosen option only, so it never looks like a main button", async () => {
     render(<Levels />);
     const checkMarks = () =>
       screen
@@ -63,7 +63,7 @@ describe("RadioGroup", () => {
     expect(checkMarks()).toEqual(["medium"]);
     await userEvent.click(screen.getByText("Khó"));
     expect(checkMarks()).toEqual(["hard"]);
-    expect(radio("Khó").closest("label")?.querySelector("svg")).toHaveClass("forced-colors:block");
+    expect(radio("Khó").closest("label")?.querySelector("svg")).not.toHaveClass("hidden");
   });
 
   it("changes the value when an option is clicked", async () => {
@@ -113,5 +113,33 @@ describe("RadioGroup", () => {
     expect(radio("Vừa")).toHaveFocus();
     await user.tab();
     expect(screen.getByRole("button", { name: "after" })).toHaveFocus();
+  });
+});
+
+describe("RadioGroup with icons", () => {
+  function Sun() {
+    return <svg data-testid="icon" />;
+  }
+
+  it("keeps each option named by its label, the legend read out even when hidden", () => {
+    render(
+      <RadioGroup
+        legend="Giao diện"
+        hideLegend
+        compact
+        size="sm"
+        options={[
+          { value: "light", label: "Sáng", icon: Sun },
+          { value: "dark", label: "Tối", icon: Sun },
+        ]}
+        value="light"
+        onChange={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("group", { name: "Giao diện" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Sáng", checked: true })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Tối", checked: false })).toBeInTheDocument();
+    expect(screen.getAllByTestId("icon")).toHaveLength(2);
   });
 });

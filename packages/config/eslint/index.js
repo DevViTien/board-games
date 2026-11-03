@@ -66,6 +66,12 @@ const WEB_REGISTRY_FREE_EXCEPTIONS = ["**/*.test.{ts,tsx}", "src/features/menu/m
  */
 const WEB_GAME_UI_FILES = ["src/games/**"];
 
+/**
+ * Each game's picture and the map of them, drawn on the server for the menu and the setup screen:
+ * they must not reach a game's board, rules or UI entry, or every board would load with the menu.
+ */
+const WEB_GAME_ARTWORK_FILES = ["src/games/artwork.ts", "src/games/*/Artwork.tsx"];
+
 /** Files that frameworks require to use a default export. */
 const NEXT_DEFAULT_EXPORT_FILES = [
   "**/app/**/{page,layout,template,loading,error,global-error,not-found,default,forbidden,unauthorized}.tsx",
@@ -172,6 +178,39 @@ function boundaries(layer) {
                 allowTypeImports: true,
                 message:
                   "This would put every game's rules in this game's chunk: import from the game's own subpath (@board-games/games/<id>).",
+              },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      files: WEB_GAME_ARTWORK_FILES,
+      rules: {
+        // Replaces the game UI block's rule for these files, so it repeats its path.
+        "@typescript-eslint/no-restricted-imports": [
+          "error",
+          {
+            paths: [
+              {
+                name: "@board-games/games",
+                allowTypeImports: true,
+                message:
+                  "An artwork is drawn on the server for the menu: it must not bring any game's rules.",
+              },
+            ],
+            patterns: [
+              {
+                regex: "^@board-games/games/",
+                allowTypeImports: true,
+                message:
+                  "An artwork is drawn on the server for the menu: it must not bring the game's rules.",
+              },
+              {
+                // The registry, a game's entry (`.`, `./index`, `./caro`) and its board.
+                regex: "(^|/)(registry|index|Board[\w.-]*)$|^\.{1,2}$|^\./(?!types$)[\w-]+$",
+                message:
+                  "An artwork is drawn on the server for the menu: importing a board, a game's entry or the registry would put every board in the menu's bundle (design of add-design-foundation).",
               },
             ],
           },

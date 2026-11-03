@@ -17,12 +17,22 @@ Mỗi thẻ SHALL hiện tên game, số người chơi (một số nếu cố �
 
 ### Requirement: Vào chơi từ menu
 
-Chọn một thẻ chơi được SHALL mở màn hình bắt đầu ván của game đó, nơi người chơi chọn chế độ trước khi vào bàn cờ. Lối vào trên thẻ luôn ghi "Chơi". Thẻ "Sắp có" MUST NOT mở được và MUST NOT nhận tiêu điểm bàn phím như một liên kết.
+Thẻ chơi được SHALL có hai lối vào: "Chơi" mở màn hình bắt đầu ván của game đó, nơi người chơi chọn chế độ trước khi vào bàn cờ; "Online" mở cùng màn hình đó với chế độ "Online" được chọn sẵn. Mỗi lối vào SHALL được mô tả bằng tên game cho trình đọc màn hình. Thẻ "Sắp có" MUST NOT mở được và MUST NOT nhận tiêu điểm bàn phím như một liên kết.
 
 #### Scenario: Mở game chơi được
 
 - **WHEN** người chơi chọn "Chơi" trên thẻ Tic-tac-toe
 - **THEN** màn hình bắt đầu ván Tic-tac-toe mở ra
+
+#### Scenario: Mở game để chơi online
+
+- **WHEN** người chơi chọn "Online" trên thẻ Cờ caro
+- **THEN** màn hình bắt đầu ván Cờ caro mở ra với chế độ "Online" được chọn và nút chính là "Tạo phòng"
+
+#### Scenario: Lối vào nêu tên game
+
+- **WHEN** trình đọc màn hình đọc lối "Online" trên thẻ Cờ cá ngựa
+- **THEN** lối đó được đọc là "Online" kèm mô tả "Cờ cá ngựa"
 
 #### Scenario: Thẻ sắp có không mở được
 
@@ -82,12 +92,12 @@ Menu SHALL hiện mọi game đã có luật trong app dưới dạng chơi đư
 #### Scenario: Thẻ Cờ caro
 
 - **WHEN** menu hiện bằng tiếng Việt thẻ Cờ caro
-- **THEN** thẻ ghi "2 người" và "~10 phút", lối vào ghi "Chơi" và không có nhãn "Sắp có"
+- **THEN** thẻ ghi "2 người" và "~10 phút", có hai lối vào "Chơi" và "Online", và không có nhãn "Sắp có"
 
 #### Scenario: Thẻ Cờ cá ngựa
 
 - **WHEN** menu hiện bằng tiếng Việt thẻ Cờ cá ngựa
-- **THEN** thẻ ghi "2–4 người" và "~20 phút", lối vào ghi "Chơi" và không có nhãn "Sắp có"
+- **THEN** thẻ ghi "2–4 người" và "~20 phút", có hai lối vào "Chơi" và "Online", và không có nhãn "Sắp có"
 
 ### Requirement: Tuỳ chọn luật trong mục tiếp tục ván dở
 

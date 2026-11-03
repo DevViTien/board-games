@@ -35,7 +35,7 @@ App chơi cờ trên trình duyệt: cùng máy, với máy và online với b�
 
 1. `pnpm dev` (chạy cả app ở cổng 3000 lẫn server realtime ở cổng 3001; không có `REDIS_URL` thì phòng nằm trong bộ nhớ, mất khi tắt server).
 2. Mở http://localhost:3000/play/tictactoe, chọn **Online**, nhập tên, bấm **Tạo phòng**.
-3. Sao chép link mời và mở trong cửa sổ ẩn danh hoặc trình duyệt khác (mỗi trình duyệt là một người chơi; hai tab cùng trình duyệt là cùng một người), nhập tên rồi bấm **Vào chơi**.
+3. Sao chép link mời và mở trong cửa sổ ẩn danh hoặc trình duyệt khác (mỗi trình duyệt nhớ một danh tính; hai tab chưa có tên là hai người khác nhau cho tới khi một tab đặt tên, và tab nào đã ngồi ghế trong một phòng thì giữ đúng ghế đó, kể cả khi tải lại), nhập tên rồi bấm **Vào chơi**.
 
 Điện thoại trong cùng mạng LAN mở được `http://<IP máy>:3000`, nhưng app tìm server realtime ở `ws://localhost:3001` khi chạy `next dev`; khi đó đặt `REALTIME_URL=ws://<IP máy>:3001/api/realtime` cho `next dev`. Ngoài `next dev`, không đặt `REALTIME_URL` thì app dùng cùng origin (`/api/realtime`, như trên Vercel).
 

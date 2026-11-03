@@ -1,14 +1,17 @@
 "use client";
 
-import { useId } from "react";
+import { type ComponentType, useId } from "react";
 
 import { CheckIcon } from "../icons";
 import { cn } from "../lib/cn";
+import { segmentItem, segmentTrack } from "./segmented";
 
 interface RadioOption<Value extends string> {
   readonly value: Value;
   /** Already translated. */
   readonly label: string;
+  /** Drawn before the label, hidden from screen readers. */
+  readonly icon?: ComponentType<{ readonly className?: string; readonly "aria-hidden"?: boolean }>;
 }
 
 interface RadioGroupProps<Value extends string> {
@@ -17,55 +20,58 @@ interface RadioGroupProps<Value extends string> {
   readonly options: readonly RadioOption<Value>[];
   readonly value: Value;
   readonly onChange: (value: Value) => void;
-  readonly className?: string;
+  /** `sm` for a bar (the theme on the menu); `md` by default. */
+  readonly size?: "sm" | "md";
+  /** The legend is only read out, for a group whose purpose shows (icons in a bar). */
+  readonly hideLegend?: boolean;
+  /** Below 640 px, options with an icon show only it; their label is still read out. */
+  readonly compact?: boolean;
+  /** The options grow to fill the track's whole width (a form), instead of keeping their own. */
+  readonly fill?: boolean;
+  readonly className?: string | undefined;
 }
 
 /**
  * One choice among a few, built on native radio buttons in a `<fieldset>`: the browser gives the
  * group its name (the `<legend>`), one Tab stop, arrow keys to move the choice, and announces which
- * option is checked, without any script of ours. The radios are visually hidden; their labels look
- * like a segmented control and show the focus ring of the radio inside. In forced colours, where
- * backgrounds are dropped, a check mark shows the chosen option.
+ * option is checked, without any script of ours. The radios are visually hidden; their labels form
+ * a segmented control, the chosen one raised with a check mark (also what forced colours show),
+ * and show the focus ring of the radio inside. Options wrap rather than scroll on a narrow screen.
  */
 export function RadioGroup<Value extends string>({
   legend,
   options,
   value,
   onChange,
+  size = "md",
+  hideLegend = false,
+  compact = false,
+  fill = false,
   className,
 }: RadioGroupProps<Value>) {
   const name = useId();
 
   return (
-    <fieldset className={cn("flex flex-col gap-2", className)}>
-      <legend className="mb-2 text-sm font-medium text-fg-muted">{legend}</legend>
-      <div className="flex flex-wrap gap-2">
-        {options.map((option) => (
-          <label
-            key={option.value}
-            className={cn(
-              "inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-card border border-border bg-surface px-4 text-sm font-medium text-fg transition-colors",
-              "hover:bg-surface-muted",
-              "has-checked:border-accent has-checked:bg-accent has-checked:text-accent-fg",
-              "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-focus-ring",
-            )}
-          >
+    <fieldset className={cn("flex min-w-0 flex-col", className)}>
+      <legend className={cn("mb-2 text-caption text-fg-muted", hideLegend && "sr-only")}>
+        {legend}
+      </legend>
+      <div className={cn(segmentTrack(), !fill && "self-start")}>
+        {options.map(({ value: option, label, icon: Icon }) => (
+          <label key={option} className={cn(segmentItem({ size, fill }), "focus-ring-within")}>
             <input
               type="radio"
               name={name}
-              value={option.value}
-              checked={option.value === value}
+              value={option}
+              checked={option === value}
               onChange={() => {
-                onChange(option.value);
+                onChange(option);
               }}
               className="sr-only"
             />
-            {/* Forced colours (Windows high contrast) drop the background that marks the choice;
-                a check mark, drawn in the text colour, still shows it there. */}
-            {option.value === value && (
-              <CheckIcon aria-hidden className="hidden size-4 shrink-0 forced-colors:block" />
-            )}
-            {option.label}
+            {option === value && <CheckIcon aria-hidden className="size-4 shrink-0" />}
+            {Icon !== undefined && <Icon aria-hidden className="size-4 shrink-0" />}
+            <span className={cn(compact && Icon !== undefined && "max-sm:sr-only")}>{label}</span>
           </label>
         ))}
       </div>

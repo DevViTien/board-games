@@ -8,12 +8,17 @@ Chơi online với bạn bè trên giao diện: tạo phòng, mời bằng link 
 
 ### Requirement: Mở trang phòng
 
-Hệ thống SHALL mở trang phòng tại `/room/<mã phòng>`. Mã phòng viết thường SHALL được chuyển sang dạng chuẩn viết hoa; mã sai định dạng MUST hiện trang "không tìm thấy". Trang phòng SHALL vào phòng với danh tính đã nhớ (capability `player-identity`) và hiện "Đang vào phòng…" cho tới khi nhận được trạng thái phòng. Quá 10 giây chưa vào được, trang SHALL báo chưa kết nối được máy chủ và có lối về menu, trong khi vẫn tiếp tục thử.
+Hệ thống SHALL mở trang phòng tại `/room/<mã phòng>`. Mã phòng viết thường SHALL được chuyển sang dạng chuẩn viết hoa; mã sai định dạng MUST hiện trang "không tìm thấy". Trang phòng SHALL vào phòng với danh tính đã nhớ (capability `player-identity`), hoặc chưa kèm tên khi trình duyệt chưa nhớ tên nào, và hiện "Đang vào phòng…" cho tới khi nhận được trạng thái phòng. Quá 10 giây chưa vào được, trang SHALL báo chưa kết nối được máy chủ và có lối về menu, trong khi vẫn tiếp tục thử.
 
 #### Scenario: Mở link mời
 
 - **WHEN** người chơi đã có tên tạm mở link mời của một phòng Tic-tac-toe chỉ có người tạo
 - **THEN** trang phòng hiện sảnh chờ có tên người tạo ở ghế đầu tiên và nút "Vào chơi"
+
+#### Scenario: Mở link mời khi chưa có tên
+
+- **WHEN** người chơi chưa từng nhập tên tạm mở link mời của một phòng Tic-tac-toe chỉ có người tạo
+- **THEN** trang phòng hiện sảnh chờ có tên người tạo ở ghế đầu tiên, ô tên tạm trống và nút "Vào chơi"
 
 #### Scenario: Mã phòng viết thường trên đường dẫn
 
@@ -225,7 +230,7 @@ Khi 10 phút không có thay đổi nào của phòng và người chơi không 
 
 ### Requirement: Phòng không vào được
 
-Trang phòng SHALL hiện trang báo lỗi đã dịch, có lối về menu, khi phòng không tồn tại hoặc đã hết hạn, khi phòng đã đủ người mà người chơi chưa có ghế, hoặc khi không dựng được ván từ dữ liệu của phòng (khi đó có thêm nút thử lại). Khi phiên bản app đang mở đã cũ hơn server, trang SHALL báo app vừa được cập nhật và có nút tải lại trang. Các trường hợp này SHALL đóng kết nối tới server và MUST NOT tự kết nối lại; nút thử lại mở phòng từ đầu.
+Trang phòng SHALL hiện trang báo lỗi đã dịch, có lối về menu, khi phòng không tồn tại hoặc đã hết hạn, khi phòng đã đủ người mà người chơi chưa có ghế, hoặc khi không dựng được ván từ dữ liệu của phòng (khi đó có thêm nút thử lại). Khi phiên bản app đang mở đã cũ hơn server, trang SHALL báo ứng dụng vừa được cập nhật và có nút tải lại trang. Các trường hợp này SHALL đóng kết nối tới server và MUST NOT tự kết nối lại; nút thử lại mở phòng từ đầu.
 
 #### Scenario: Phòng không tồn tại
 
@@ -238,16 +243,21 @@ Trang phòng SHALL hiện trang báo lỗi đã dịch, có lối về menu, khi
 - **THEN** trang báo phòng đã đủ người kèm lối về menu
 - **AND** trang không kết nối lại tới server
 
-#### Scenario: App vừa cập nhật
+#### Scenario: Ứng dụng vừa cập nhật
 
 - **WHEN** server từ chối kết nối vì phiên bản app đang mở đã cũ
-- **THEN** trang báo app vừa được cập nhật và có nút tải lại trang
+- **THEN** trang báo ứng dụng vừa được cập nhật và có nút tải lại trang
 
 #### Scenario: Dữ liệu phòng hỏng
 
 - **WHEN** trạng thái phòng nhận được không dựng lại được thành ván
 - **THEN** trang báo không mở được phòng, có nút thử lại và lối về menu
 - **AND** trang không kết nối lại tới server cho tới khi người chơi bấm thử lại
+
+#### Scenario: Trang báo lỗi thay cho màn hình đang mở
+
+- **WHEN** phòng trở nên không vào được trong lúc trang đang hiện "đang vào phòng", sảnh chờ hoặc ván
+- **THEN** trang báo lỗi thay cho màn hình đó và tiêu đề của trang báo lỗi nhận focus
 
 ### Requirement: Chơi lại trong phòng
 
@@ -265,7 +275,7 @@ Khi ván online đã có kết quả, màn hình SHALL có nút "Chơi lại"; b
 
 ### Requirement: Tạo phòng
 
-Hệ thống SHALL tạo phòng online cho một game từ màn hình bắt đầu ván (capability `game-setup`) và mở trang phòng của phòng vừa tạo, với người tạo ngồi ghế đầu tiên. Không tạo được phòng (mất mạng, server không trả lời trong 10 giây, server báo lỗi) MUST báo lỗi ngay trên màn hình bắt đầu ván và cho bấm lại; khi server báo phiên bản app đang mở đã cũ, lời báo SHALL nói app vừa được cập nhật và có nút tải lại trang.
+Hệ thống SHALL tạo phòng online cho một game từ màn hình bắt đầu ván (capability `game-setup`) và mở trang phòng của phòng vừa tạo, với người tạo ngồi ghế đầu tiên. Không tạo được phòng (mất mạng, server không trả lời trong 10 giây, server báo lỗi) MUST báo lỗi ngay trên màn hình bắt đầu ván và cho bấm lại; khi server báo phiên bản app đang mở đã cũ, lời báo SHALL nói ứng dụng vừa được cập nhật và có nút tải lại trang.
 
 #### Scenario: Tạo phòng thành công
 
@@ -275,7 +285,7 @@ Hệ thống SHALL tạo phòng online cho một game từ màn hình bắt đ�
 #### Scenario: App cũ khi tạo phòng
 
 - **WHEN** server từ chối tạo phòng vì phiên bản app đang mở đã cũ
-- **THEN** màn hình bắt đầu ván báo app vừa được cập nhật và có nút tải lại trang
+- **THEN** màn hình bắt đầu ván báo ứng dụng vừa được cập nhật và có nút tải lại trang
 
 #### Scenario: Không kết nối được server
 
@@ -451,3 +461,22 @@ Trong ván online, mỗi nước không do người chơi trên thiết bị nà
 
 - **WHEN** ván Cờ cá ngựa online 3 người có một ghế máy đã kết thúc, một người bấm "Chơi lại", ghế máy được xoay vào ghế đầu và người chơi nay ở ghế "Xanh dương"
 - **THEN** lời báo trên màn hình người chơi là "Ván mới: bạn cầm Xanh dương, máy đi trước"
+
+### Requirement: Bảng người chơi khi chơi online
+
+Trong ván online, bảng người chơi SHALL ghi ghế của người ở thiết bị này là "Bạn", ghế của người khác bằng tên họ chọn, và ghế máy là máy. Ghế "Bạn" SHALL kèm trạng thái kết nối của thiết bị này bằng chữ khác với dòng báo kết nối của màn hình: "Đã kết nối", hoặc "Mất kết nối" khi mất kết nối quá 1,5 giây hay khi đã tạm ngắt.
+
+#### Scenario: Hai người trong phòng
+
+- **WHEN** Lan và Minh đang chơi Tic-tac-toe online và Lan nhìn màn hình của mình
+- **THEN** bảng người chơi của Lan có ghế "Bạn" kèm "Đã kết nối" và ghế "Minh"
+
+#### Scenario: Mất kết nối
+
+- **WHEN** kết nối của Lan bị mất quá 1,5 giây giữa ván online
+- **THEN** ghế "Bạn" trong bảng người chơi của Lan ghi "Mất kết nối" và màn hình vẫn có dòng "Đang kết nối lại…"
+
+#### Scenario: Cờ cá ngựa online vừa màn hình máy tính
+
+- **WHEN** người chơi trong phòng Cờ cá ngựa 4 ghế ở khung 1280 × 800 vừa gieo được 6 với bốn ngựa đi được
+- **THEN** bàn, chỗ dành cho dòng báo kết nối, dòng lượt, bảng người chơi, xúc xắc và cả bốn lựa chọn ngựa nằm trong màn hình mà không cần cuộn

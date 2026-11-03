@@ -1,0 +1,1226 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mockup M6.5 – Board Games Hub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --paper: #f6f5f1;
+        --surface: #ffffff;
+        --sunk: #efede6;
+        --ink: #17182b;
+        --muted: #5e6072;
+        --line: #e2e0d8;
+        --control: #8e8c84;
+        --accent: #5b34e6;
+        --accent-press: #3a1fa8;
+        --accent-soft: #ece7ff;
+        --spark: #ff7a2f;
+        --spark-soft: #ffe9db;
+        --jade: #138a62;
+        --jade-soft: #dff5ec;
+        --danger: #c8372d;
+        /* ludo, folk palette */
+        --son: #c8372d;
+        --cham: #2c4a8c;
+        --hoe: #d99a12;
+        --luc: #2e8b57;
+        --diep: #fbf4e4;
+        /* caro, notebook */
+        --vo: #fdfdf8;
+        --o-li: #bcd3ea;
+        --le: #e58a8a;
+        --pen-blue: #1f3fa8;
+        --pen-red: #c42b2b;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #d9d7cf;
+        font-family: "Be Vietnam Pro", system-ui, sans-serif;
+        color: var(--ink);
+      }
+      .page {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 56px;
+        padding: 48px 24px 96px;
+      }
+      .intro {
+        max-width: 1280px;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .intro h1 {
+        margin: 0;
+        font-size: 32px;
+        font-weight: 800;
+      }
+      .intro p {
+        margin: 0;
+        color: #3c3e52;
+        line-height: 1.55;
+        max-width: 900px;
+      }
+      .frame-label {
+        width: 100%;
+        max-width: 1280px;
+        font-weight: 700;
+        font-size: 15px;
+        color: #3c3e52;
+        margin-bottom: -44px;
+      }
+      .frame {
+        background: var(--paper);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(23, 24, 43, 0.18);
+      }
+      .desk {
+        width: 1280px;
+        height: 800px;
+      }
+      .phone {
+        width: 390px;
+        height: 844px;
+        border-radius: 36px;
+        border: 10px solid #17182b;
+      }
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+      .appbar {
+        height: 72px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 40px;
+        border-bottom: 1px solid var(--line);
+        background: var(--paper);
+      }
+      .brand {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        font-weight: 800;
+        font-size: 18px;
+      }
+      .seg {
+        display: flex;
+        gap: 2px;
+        padding: 3px;
+        background: var(--sunk);
+        border-radius: 12px;
+      }
+      .seg span {
+        padding: 6px 10px;
+        border-radius: 9px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .seg .on {
+        background: var(--surface);
+        box-shadow: 0 1px 3px rgba(23, 24, 43, 0.18);
+        font-weight: 700;
+      }
+      .btn {
+        height: 48px;
+        padding: 0 20px;
+        border-radius: 14px;
+        font:
+          600 16px "Be Vietnam Pro",
+          sans-serif;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        justify-content: center;
+        white-space: nowrap;
+        cursor: pointer;
+      }
+      .btn-primary {
+        background: var(--accent);
+        color: #fff;
+        border: 0;
+        box-shadow: 0 2px 0 var(--accent-press);
+        font-weight: 700;
+      }
+      .btn-secondary {
+        background: var(--surface);
+        color: var(--ink);
+        border: 1.5px solid var(--ink);
+      }
+      .btn-ghost {
+        background: transparent;
+        color: var(--ink);
+        border: 0;
+      }
+      .btn-off {
+        background: var(--paper);
+        color: #6f7082;
+        border: 1.5px dashed #b9b7ae;
+      }
+      .chip {
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 700;
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 20px;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .player {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 14px;
+        border-radius: 16px;
+        border: 1.5px solid var(--line);
+        background: var(--surface);
+      }
+      .player.turn {
+        border-color: var(--ink);
+        box-shadow: 0 0 0 3px var(--accent-soft);
+      }
+      .avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        flex: none;
+      }
+      .pname {
+        font-weight: 700;
+        font-size: 15px;
+      }
+      .pmeta {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .turnpill {
+        margin-left: auto;
+        font-size: 12px;
+        font-weight: 800;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: var(--ink);
+        color: #fff;
+      }
+      .side {
+        width: 380px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .status {
+        font-size: 26px;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+      }
+      .dots span {
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--muted);
+        margin-right: 3px;
+      }
+      /* dark frame */
+      .dark {
+        --paper: #121322;
+        --surface: #1b1c30;
+        --sunk: #24253b;
+        --ink: #f1f0f7;
+        --muted: #a6a7bc;
+        --line: #2c2e47;
+        --accent: #a894ff;
+        --accent-press: #6f5bd6;
+        --accent-soft: #2d2752;
+      }
+      .dark .btn-primary {
+        color: #121322;
+      }
+      .dark .turnpill {
+        background: #f1f0f7;
+        color: #121322;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="intro">
+        <h1>Mockup M6.5 · Board Games Hub</h1>
+        <p>
+          Hướng đề xuất: khung chung (nền giấy trung tính, chữ mực đậm, nút chính tím, điểm nhấn
+          cam, thành công màu ngọc) và mỗi game một bản sắc riêng. Đây là ảnh tĩnh để duyệt hướng;
+          số liệu tương phản cụ thể sẽ tính và ghi vào design.md của change. Chữ trên ảnh là tiếng
+          Việt; bản en/ja dùng cùng bố cục.
+        </p>
+      </div>
+
+      <!-- 1. Foundation -->
+      <div class="frame-label">1 · Hệ thống chung</div>
+      <section
+        class="frame desk"
+        style="height: auto; padding: 48px 56px; display: flex; flex-direction: column; gap: 32px"
+      >
+        <div style="display: flex; justify-content: space-between; align-items: flex-end">
+          <div>
+            <span class="muted" style="font-weight: 600; font-size: 14px"
+              >Khung chung, mỗi game một bản sắc</span
+            >
+            <h2
+              style="
+                font-size: 48px;
+                font-weight: 800;
+                letter-spacing: -0.02em;
+                line-height: 1.05;
+                margin-top: 6px;
+              "
+            >
+              Chơi cờ cùng bạn bè
+            </h2>
+          </div>
+          <div class="brand">
+            <svg width="36" height="36" viewBox="0 0 40 40" aria-hidden="true">
+              <rect x="2" y="2" width="16" height="16" rx="5" fill="#5B34E6" />
+              <rect x="22" y="2" width="16" height="16" rx="8" fill="#FF7A2F" />
+              <rect x="2" y="22" width="16" height="16" rx="8" fill="#138A62" />
+              <rect x="22" y="22" width="16" height="16" rx="5" fill="#17182B" /></svg
+            >Board Games Hub
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 24px">
+          <div class="card" style="padding: 24px; display: flex; flex-direction: column; gap: 16px">
+            <h3 style="font-size: 20px; font-weight: 700">Màu khung chung</h3>
+            <div
+              id="swatches"
+              style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px"
+            ></div>
+            <p class="muted" style="font-size: 13px">
+              Ô lớn: chế độ sáng · dải dưới: chế độ tối. Màu nhấn tím khác mọi màu quân Cờ cá ngựa
+              (son, chàm, hoè, lục).
+            </p>
+          </div>
+          <div class="card" style="padding: 24px; display: flex; flex-direction: column; gap: 12px">
+            <h3 style="font-size: 20px; font-weight: 700">Cỡ chữ · Be Vietnam Pro</h3>
+            <div>
+              <span class="muted" style="font-size: 12px">Hiển thị 48 / 800</span>
+              <div
+                style="font-size: 48px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1"
+              >
+                Bạn thắng!
+              </div>
+            </div>
+            <div>
+              <span class="muted" style="font-size: 12px">Tiêu đề 32 / 700</span>
+              <div style="font-size: 32px; font-weight: 700">Cờ cá ngựa</div>
+            </div>
+            <div>
+              <span class="muted" style="font-size: 12px">Trạng thái 26 / 800</span>
+              <div class="status">Đến lượt Đỏ · gieo xúc xắc</div>
+            </div>
+            <div>
+              <span class="muted" style="font-size: 12px">Thân 16 / 400</span>
+              <div style="font-size: 16px">
+                Hoàn tác không gieo lại được. Ngẫu nhiên ai đi trước.
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          class="card"
+          style="padding: 24px; display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-end"
+        >
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <span class="muted" style="font-size: 13px; font-weight: 600">Nút</span>
+            <div style="display: flex; gap: 10px">
+              <button class="btn btn-primary">Bắt đầu</button
+              ><button class="btn btn-secondary">Ván mới</button
+              ><button class="btn btn-ghost">↶ Hoàn tác</button
+              ><button class="btn btn-off" aria-disabled="true">Làm lại</button>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <span class="muted" style="font-size: 13px; font-weight: 600"
+              >Lựa chọn — đã chọn khác hẳn nút chính</span
+            >
+            <div
+              class="seg"
+              role="radiogroup"
+              aria-label="Mức độ"
+              style="border-radius: 14px; padding: 4px"
+            >
+              <span style="padding: 10px 18px">Dễ</span
+              ><span class="on" style="padding: 10px 16px">✓ Vừa</span
+              ><span style="padding: 10px 18px">Khó</span>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <label for="c1" class="muted" style="font-size: 13px; font-weight: 600">Mã phòng</label>
+            <div style="display: flex; gap: 8px">
+              <input
+                id="c1"
+                value="K7QM2X"
+                style="
+                  width: 150px;
+                  height: 48px;
+                  padding: 0 14px;
+                  border: 1.5px solid var(--control);
+                  border-radius: 14px;
+                  font:
+                    700 18px ui-monospace,
+                    monospace;
+                  letter-spacing: 0.12em;
+                "
+              /><button class="btn btn-secondary">Vào phòng</button>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px">
+            <span class="chip" style="background: var(--accent-soft); color: #3a1fa8"
+              >19×19 · Tự do</span
+            ><span class="chip" style="background: var(--jade-soft); color: #0d6b4b"
+              >● Đã kết nối</span
+            ><span class="chip" style="background: var(--spark-soft); color: #a6430c"
+              >Máy · Khó</span
+            >
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px">
+          <div
+            style="
+              border-radius: 20px;
+              padding: 20px;
+              background: var(--accent-soft);
+              color: #2a1a73;
+            "
+          >
+            <b style="font-size: 18px">Tic-tac-toe</b>
+            <p style="font-size: 14px; line-height: 1.45; margin-top: 8px">
+              Tối giản, tinh nghịch: ô bo tròn như sticker, X cam, O tím, vạch thắng bằng bút dạ.
+            </p>
+          </div>
+          <div
+            style="
+              border-radius: 20px;
+              padding: 20px;
+              background: var(--vo);
+              color: var(--pen-blue);
+              border: 1px solid var(--line);
+            "
+          >
+            <b style="font-size: 18px">Cờ caro</b>
+            <p style="font-size: 14px; line-height: 1.45; margin-top: 8px">
+              Vở ô li: kẻ xanh nhạt, lề đỏ, X bút bi xanh, O bút đỏ, gạch hàng thắng như học trò.
+            </p>
+          </div>
+          <div style="border-radius: 20px; padding: 20px; background: var(--diep); color: #5a2a10">
+            <b style="font-size: 18px">Cờ cá ngựa</b>
+            <p style="font-size: 14px; line-height: 1.45; margin-top: 8px">
+              Rực rỡ, dân gian: son, chàm, hoè, lục trên nền giấy điệp; góc đang tới lượt sáng lên.
+            </p>
+          </div>
+          <div style="border-radius: 20px; padding: 20px; background: #3b2a1e; color: #f5e9d8">
+            <b style="font-size: 18px">Cờ vua (M7)</b>
+            <p style="font-size: 14px; line-height: 1.45; margin-top: 8px">
+              Cổ điển: gỗ sồi và óc chó, quân SVG nét gọn, lịch sử nước đi kiểu sổ ghi.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Menu -->
+      <div class="frame-label">2 · Menu</div>
+      <section class="frame desk" style="height: 860px">
+        <div class="appbar">
+          <div class="brand">
+            <svg width="32" height="32" viewBox="0 0 40 40" aria-hidden="true">
+              <rect x="2" y="2" width="16" height="16" rx="5" fill="#5B34E6" />
+              <rect x="22" y="2" width="16" height="16" rx="8" fill="#FF7A2F" />
+              <rect x="2" y="22" width="16" height="16" rx="8" fill="#138A62" />
+              <rect x="22" y="22" width="16" height="16" rx="5" fill="#17182B" /></svg
+            >Board Games Hub
+          </div>
+          <div style="display: flex; gap: 12px; align-items: center">
+            <div class="seg" aria-label="Ngôn ngữ">
+              <span class="on">VI</span><span>EN</span><span>日本語</span>
+            </div>
+            <button
+              class="btn btn-ghost"
+              style="height: 40px; padding: 0 10px"
+              aria-label="Giao diện tối"
+            >
+              ☾
+            </button>
+          </div>
+        </div>
+        <div
+          style="padding: 40px 40px 0; display: grid; grid-template-columns: 1fr 380px; gap: 32px"
+        >
+          <div style="display: flex; flex-direction: column; gap: 10px; justify-content: center">
+            <h2
+              style="font-size: 48px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.05"
+            >
+              Chơi cờ cùng bạn bè,<br />ngay trên trình duyệt
+            </h2>
+            <p class="muted" style="font-size: 17px">
+              Cùng máy, đấu với máy hoặc gửi link mời — không cần tài khoản.
+            </p>
+          </div>
+          <div class="card" style="padding: 20px; display: flex; flex-direction: column; gap: 14px">
+            <b style="font-size: 16px">Vào phòng bằng mã</b>
+            <div style="display: flex; gap: 8px">
+              <input
+                aria-label="Mã phòng"
+                placeholder="VD: K7QM2X"
+                style="
+                  flex: 1;
+                  min-width: 0;
+                  height: 48px;
+                  padding: 0 14px;
+                  border: 1.5px solid var(--control);
+                  border-radius: 14px;
+                  font:
+                    700 17px ui-monospace,
+                    monospace;
+                  letter-spacing: 0.1em;
+                "
+              /><button class="btn btn-primary">Vào phòng</button>
+            </div>
+            <div
+              style="
+                border-top: 1px solid var(--line);
+                padding-top: 12px;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+              "
+            >
+              <span class="muted" style="font-size: 13px; font-weight: 600">Tiếp tục ván dở</span>
+              <a
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  padding: 10px 12px;
+                  border-radius: 12px;
+                  background: var(--sunk);
+                  color: var(--ink);
+                  text-decoration: none;
+                  font-weight: 600;
+                  font-size: 14px;
+                "
+                >Cờ caro · Với máy · Vừa <span class="muted">15×15 ›</span></a
+              >
+            </div>
+          </div>
+        </div>
+        <div
+          id="menuCards"
+          style="
+            padding: 28px 40px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+          "
+        ></div>
+        <div
+          style="
+            margin: 0 40px;
+            padding: 14px 18px;
+            border: 1.5px dashed #b9b7ae;
+            border-radius: 16px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            color: var(--muted);
+          "
+        >
+          <b style="color: var(--ink)">Cờ vua</b> · 2 người · ~20 phút
+          <span class="chip" style="margin-left: auto; background: var(--sunk); color: var(--muted)"
+            >Sắp có</span
+          >
+        </div>
+      </section>
+
+      <!-- 3. Tic-tac-toe won -->
+      <div class="frame-label">3 · Tic-tac-toe · vừa thắng</div>
+      <section class="frame desk" style="background: var(--accent-soft)">
+        <div class="appbar" style="background: transparent; border-color: #d8cffb">
+          <a class="btn btn-ghost" style="height: 40px; padding: 0 6px">← Menu</a
+          ><b style="font-size: 20px">Tic-tac-toe</b><span style="width: 80px"></span>
+        </div>
+        <div
+          style="
+            display: flex;
+            gap: 48px;
+            justify-content: center;
+            align-items: center;
+            height: 728px;
+            position: relative;
+          "
+        >
+          <div id="tttConfetti" style="position: absolute; inset: 0; pointer-events: none"></div>
+          <div style="position: relative; width: 420px; height: 420px">
+            <div
+              id="ttt"
+              style="
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 14px;
+                width: 420px;
+                height: 420px;
+              "
+            ></div>
+            <svg
+              width="420"
+              height="420"
+              viewBox="0 0 420 420"
+              style="position: absolute; inset: 0"
+              aria-hidden="true"
+            >
+              <path
+                d="M30 48 C150 52 280 44 392 50"
+                stroke="#FF7A2F"
+                stroke-width="14"
+                stroke-linecap="round"
+                fill="none"
+                opacity=".9"
+              />
+            </svg>
+          </div>
+          <div class="side">
+            <div
+              class="card"
+              style="
+                padding: 24px;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+              "
+            >
+              <span class="chip" style="background: var(--spark-soft); color: #a6430c"
+                >🏆 Kết thúc</span
+              >
+              <div
+                style="
+                  font-size: 44px;
+                  font-weight: 800;
+                  letter-spacing: -0.02em;
+                  line-height: 1.05;
+                "
+              >
+                Bạn thắng!
+              </div>
+              <p class="muted">Ba X thẳng hàng ở hàng trên cùng.</p>
+              <div style="display: flex; gap: 10px; margin-top: 6px">
+                <button class="btn btn-primary">Ván mới</button
+                ><button class="btn btn-secondary">Về menu</button>
+              </div>
+            </div>
+            <div class="player">
+              <div class="avatar" style="background: var(--spark-soft)">
+                <svg width="20" height="20" viewBox="0 0 20 20">
+                  <path
+                    d="M4 4l12 12M16 4L4 16"
+                    stroke="#FF7A2F"
+                    stroke-width="4"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              </div>
+              <div>
+                <div class="pname">Bạn · X</div>
+                <div class="pmeta">Thắng 3 · Hoà 1</div>
+              </div>
+            </div>
+            <div class="player">
+              <div class="avatar" style="background: var(--accent-soft)">
+                <svg width="20" height="20" viewBox="0 0 20 20">
+                  <circle cx="10" cy="10" r="6.5" stroke="#5B34E6" stroke-width="4" fill="none" />
+                </svg>
+              </div>
+              <div>
+                <div class="pname">Máy · O</div>
+                <div class="pmeta">Mức Vừa · Thắng 1</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. Caro -->
+      <div class="frame-label">4 · Cờ caro · vở ô li · máy đang nghĩ</div>
+      <section class="frame desk">
+        <div class="appbar">
+          <a class="btn btn-ghost" style="height: 40px; padding: 0 6px">← Menu</a>
+          <div style="display: flex; gap: 10px; align-items: center">
+            <b style="font-size: 20px">Cờ caro</b
+            ><span class="chip" style="background: var(--accent-soft); color: #3a1fa8"
+              >15×15 · Chặn hai đầu</span
+            >
+          </div>
+          <span style="width: 80px"></span>
+        </div>
+        <div
+          style="
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            align-items: center;
+            height: 728px;
+          "
+        >
+          <div
+            id="caroWrap"
+            style="
+              position: relative;
+              width: 600px;
+              height: 600px;
+              border-radius: 6px;
+              box-shadow:
+                0 1px 0 #d9d6c8,
+                0 8px 24px rgba(23, 24, 43, 0.12);
+            "
+          ></div>
+          <div class="side">
+            <div class="status">
+              Máy đang nghĩ <span class="dots"><span></span><span></span><span></span></span>
+            </div>
+            <p class="muted">Bạn vừa đánh hàng 7, cột 9.</p>
+            <div class="player">
+              <div class="avatar" style="background: #e6ecfa">
+                <b style="color: var(--pen-blue); font-size: 20px">X</b>
+              </div>
+              <div>
+                <div class="pname">Bạn</div>
+                <div class="pmeta">Bút xanh · đi trước</div>
+              </div>
+            </div>
+            <div class="player turn">
+              <div class="avatar" style="background: #fbe7e7">
+                <b style="color: var(--pen-red); font-size: 20px">O</b>
+              </div>
+              <div>
+                <div class="pname">Máy</div>
+                <div class="pmeta">Bút đỏ · mức Vừa</div>
+              </div>
+              <span class="turnpill">Đến lượt</span>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 8px">
+              <button class="btn btn-ghost">↶ Hoàn tác</button
+              ><button class="btn btn-off" aria-disabled="true">Làm lại</button
+              ><button class="btn btn-secondary" style="margin-left: auto">Ván mới</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. Ludo -->
+      <div class="frame-label">5 · Cờ cá ngựa · 4 người · đến lượt Đỏ</div>
+      <section class="frame desk" style="background: var(--diep)">
+        <div class="appbar" style="background: transparent; border-color: #eadfc6">
+          <a class="btn btn-ghost" style="height: 40px; padding: 0 6px">← Menu</a
+          ><b style="font-size: 20px">Cờ cá ngựa</b><span style="width: 80px"></span>
+        </div>
+        <div
+          style="
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            align-items: center;
+            height: 728px;
+          "
+        >
+          <div id="ludoWrap" style="width: 600px; height: 600px"></div>
+          <div class="side">
+            <div class="status">
+              Đến lượt <span style="color: var(--son)">Đỏ</span> · gieo xúc xắc
+            </div>
+            <div style="display: flex; gap: 16px; align-items: center">
+              <div id="dieDesk"></div>
+              <button
+                class="btn"
+                style="
+                  height: 64px;
+                  padding: 0 28px;
+                  font-size: 18px;
+                  font-weight: 800;
+                  background: var(--son);
+                  color: #fff;
+                  border: 0;
+                  box-shadow: 0 3px 0 #8e2119;
+                  border-radius: 18px;
+                "
+              >
+                Gieo xúc xắc
+              </button>
+            </div>
+            <p class="muted" style="font-size: 14px">Lượt trước: Lục gieo được 3, đá ngựa Chàm.</p>
+            <div id="ludoPlayers" style="display: flex; flex-direction: column; gap: 8px"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. Ludo phone -->
+      <div class="frame-label" style="max-width: 1280px">
+        6 · Cờ cá ngựa · điện thoại 390 px · chọn ngựa sau khi gieo 6
+      </div>
+      <div style="width: 1280px; display: flex; gap: 40px; align-items: flex-start">
+        <section
+          class="frame phone"
+          style="background: var(--diep); display: flex; flex-direction: column"
+        >
+          <div
+            style="
+              height: 56px;
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              padding: 0 12px;
+            "
+          >
+            <a class="btn btn-ghost" style="height: 40px; padding: 0 6px; font-size: 15px">← Menu</a
+            ><b>Cờ cá ngựa</b><span style="width: 56px"></span>
+          </div>
+          <div id="phoneStrip" style="display: flex; gap: 6px; padding: 0 12px 10px"></div>
+          <div id="ludoPhone" style="padding: 0 10px"></div>
+          <div style="padding: 12px 16px; display: flex; flex-direction: column; gap: 10px">
+            <div style="display: flex; gap: 12px; align-items: center">
+              <div id="diePhone"></div>
+              <div>
+                <div style="font-size: 20px; font-weight: 800">Đỏ gieo được 6</div>
+                <div class="muted" style="font-size: 14px">Chọn ngựa để đi · được gieo thêm</div>
+              </div>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px">
+              <button
+                class="btn"
+                style="
+                  height: auto;
+                  min-height: 48px;
+                  padding: 8px 14px;
+                  background: #fff;
+                  border: 1.5px solid var(--son);
+                  color: var(--ink);
+                  font-size: 15px;
+                "
+              >
+                ● Ngựa 1 · ra chuồng
+              </button>
+              <button
+                class="btn"
+                style="
+                  height: auto;
+                  min-height: 48px;
+                  padding: 8px 14px;
+                  background: #fff;
+                  border: 1.5px solid var(--son);
+                  color: var(--ink);
+                  font-size: 15px;
+                "
+              >
+                ● Ngựa 3 · tới ô 22, đá Chàm
+              </button>
+            </div>
+          </div>
+        </section>
+        <div
+          style="
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-top: 24px;
+            color: #3c3e52;
+            line-height: 1.55;
+          "
+        >
+          <b style="font-size: 18px; color: var(--ink)">Điểm chính trên điện thoại</b>
+          <span
+            >• Dải người chơi gọn phía trên, người đang tới lượt có viền đậm và chữ "Lượt".</span
+          >
+          <span
+            >• Bàn rộng hết khổ (khoảng 370 px), góc chuồng của người đang tới lượt sáng lên.</span
+          >
+          <span
+            >• Xúc xắc to, khung theo màu người đang gieo; lựa chọn ngựa là các nút xuống dòng được,
+            không tràn màn hình.</span
+          >
+          <span>• Nút chạm tối thiểu 48 px; ký hiệu ●■▲◆ đi kèm màu.</span>
+        </div>
+      </div>
+
+      <!-- 7. Caro dark -->
+      <div class="frame-label">7 · Cờ caro · chế độ tối · vừa thắng</div>
+      <section class="frame desk dark">
+        <div class="appbar">
+          <a class="btn btn-ghost" style="height: 40px; padding: 0 6px; color: var(--ink)"
+            >← Menu</a
+          >
+          <div style="display: flex; gap: 10px; align-items: center">
+            <b style="font-size: 20px">Cờ caro</b
+            ><span class="chip" style="background: #2d2752; color: #d9d0ff"
+              >15×15 · Chặn hai đầu</span
+            >
+          </div>
+          <span style="width: 80px"></span>
+        </div>
+        <div
+          style="
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            align-items: center;
+            height: 728px;
+            color: var(--ink);
+          "
+        >
+          <div
+            id="caroDarkWrap"
+            style="position: relative; width: 600px; height: 600px; border-radius: 6px"
+          ></div>
+          <div class="side">
+            <span class="chip" style="background: #3a2a1e; color: #ffb98c; align-self: flex-start"
+              >🏆 Kết thúc</span
+            >
+            <div style="font-size: 44px; font-weight: 800; letter-spacing: -0.02em">Bạn thắng!</div>
+            <p class="muted">Năm X liền nhau theo đường chéo.</p>
+            <div style="display: flex; gap: 10px">
+              <button class="btn btn-primary">Ván mới</button
+              ><button
+                class="btn btn-secondary"
+                style="background: transparent; color: var(--ink); border-color: var(--ink)"
+              >
+                Về menu
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+    <script>
+      // ---------- swatches ----------
+      const sw = [
+        ["Giấy", "nền", "#F6F5F1", "#121322"],
+        ["Mặt", "thẻ, bàn", "#FFFFFF", "#1B1C30"],
+        ["Mực", "chữ chính", "#17182B", "#F1F0F7"],
+        ["Mực nhạt", "chữ phụ", "#5E6072", "#A6A7BC"],
+        ["Tím", "nút chính", "#5B34E6", "#A894FF"],
+        ["Cam", "điểm nhấn, ăn mừng", "#FF7A2F", "#FF9A5C"],
+        ["Ngọc", "thành công", "#138A62", "#4CD3A0"],
+        ["Son", "lỗi", "#C8372D", "#FF8A7E"],
+      ];
+      document.getElementById("swatches").innerHTML = sw
+        .map(
+          ([n, r, l, d]) =>
+            `<div style="display:flex;flex-direction:column;gap:5px"><div style="height:52px;border-radius:12px;border:1px solid #E2E0D8;background:${l}"></div><div style="height:20px;border-radius:7px;background:${d}"></div><b style="font-size:13px">${n}</b><span style="font-size:12px;color:#5E6072">${r}</span></div>`,
+        )
+        .join("");
+
+      // ---------- menu cards ----------
+      function miniTTT() {
+        return `<svg viewBox="0 0 120 120" width="120" height="120" aria-hidden="true">${[0, 1, 2].map((r) => [0, 1, 2].map((c) => `<rect x="${4 + c * 40}" y="${4 + r * 40}" width="34" height="34" rx="9" fill="#fff"/>`).join("")).join("")}<path d="M12 12l18 18M30 12L12 30" stroke="#FF7A2F" stroke-width="6" stroke-linecap="round"/><circle cx="61" cy="61" r="9" stroke="#5B34E6" stroke-width="6" fill="none"/><path d="M92 92l18 18M110 92l-18 18" stroke="#FF7A2F" stroke-width="6" stroke-linecap="round"/></svg>`;
+      }
+      function miniCaro() {
+        let g = "";
+        for (let i = 0; i <= 8; i++) {
+          g += `<line x1="${i * 15}" y1="0" x2="${i * 15}" y2="120" stroke="#BCD3EA" stroke-width="1"/><line x1="0" y1="${i * 15}" x2="120" y2="${i * 15}" stroke="#BCD3EA" stroke-width="1"/>`;
+        }
+        const xs = [
+            [2, 5],
+            [3, 4],
+            [4, 3],
+            [5, 2],
+          ],
+          os = [
+            [3, 3],
+            [4, 4],
+            [2, 4],
+          ];
+        xs.forEach(
+          ([c, r]) =>
+            (g += `<path d="M${c * 15 + 3} ${r * 15 + 3}l9 9M${c * 15 + 12} ${r * 15 + 3}l-9 9" stroke="#1F3FA8" stroke-width="2.4" stroke-linecap="round"/>`),
+        );
+        os.forEach(
+          ([c, r]) =>
+            (g += `<circle cx="${c * 15 + 7.5}" cy="${r * 15 + 7.5}" r="4.6" stroke="#C42B2B" stroke-width="2.2" fill="none"/>`),
+        );
+        return `<svg viewBox="0 0 120 120" width="120" height="120" aria-hidden="true"><rect width="120" height="120" fill="#FDFDF8"/>${g}<line x1="22" y1="0" x2="22" y2="120" stroke="#E58A8A" stroke-width="1.5"/></svg>`;
+      }
+      function miniLudo() {
+        const c = ["#C8372D", "#2E8B57", "#2C4A8C", "#D99A12"];
+        return `<svg viewBox="0 0 120 120" width="120" height="120" aria-hidden="true"><rect width="120" height="120" rx="14" fill="#FBF4E4"/><rect x="6" y="6" width="44" height="44" rx="10" fill="${c[1]}"/><rect x="70" y="6" width="44" height="44" rx="10" fill="${c[0]}"/><rect x="6" y="70" width="44" height="44" rx="10" fill="${c[3]}"/><rect x="70" y="70" width="44" height="44" rx="10" fill="${c[2]}"/><path d="M60 50l10 10-10 10-10-10z" fill="#17182B"/>${[
+          [28, 28],
+          [92, 28],
+          [28, 92],
+          [92, 92],
+        ]
+          .map(([x, y]) => `<circle cx="${x}" cy="${y}" r="9" fill="#FBF4E4"/>`)
+          .join("")}</svg>`;
+      }
+      const cards = [
+        ["Tic-tac-toe", "2 người · ~2 phút", "#ECE7FF", miniTTT(), "Dễ làm quen"],
+        ["Cờ caro", "2 người · ~10 phút", "#EAF1FA", miniCaro(), "Bàn 15×15 / 19×19"],
+        [
+          "Cờ cá ngựa",
+          "2–4 người · ~20 phút",
+          "#FBF1DD",
+          miniLudo(),
+          "Có thể chơi online cùng máy",
+        ],
+      ];
+      document.getElementById("menuCards").innerHTML = cards
+        .map(
+          ([n, m, bg, art, tag]) =>
+            `<article class="card" style="overflow:hidden;display:flex;flex-direction:column"><div style="height:170px;background:${bg};display:grid;place-items:center">${art}</div><div style="padding:18px 20px;display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:20px">${n}</b><span class="muted" style="font-size:13px;font-weight:600">${m}</span></div><span class="muted" style="font-size:14px">${tag}</span><div style="display:flex;gap:8px;margin-top:10px"><button class="btn btn-primary" style="flex:1">Chơi</button><button class="btn btn-secondary" aria-label="Chơi ${n} online">Online</button></div></div></article>`,
+        )
+        .join("");
+
+      // ---------- tic-tac-toe ----------
+      const T = ["X", "X", "X", "O", "O", "", "", "O", ""];
+      document.getElementById("ttt").innerHTML = T.map((v) => {
+        const mark =
+          v === "X"
+            ? `<svg width="76" height="76" viewBox="0 0 76 76"><path d="M14 14l48 48M62 14L14 62" stroke="#FF7A2F" stroke-width="12" stroke-linecap="round"/></svg>`
+            : v === "O"
+              ? `<svg width="76" height="76" viewBox="0 0 76 76"><circle cx="38" cy="38" r="24" stroke="#5B34E6" stroke-width="11" fill="none"/></svg>`
+              : "";
+        return `<div style="background:${v ? "#fff" : "rgba(255,255,255,.55)"};border-radius:26px;display:grid;place-items:center;box-shadow:${v ? "0 4px 0 #D3C7FB" : "none"};border:${v ? "0" : "2px dashed #B7A8F2"}">${mark}</div>`;
+      }).join("");
+      document.getElementById("tttConfetti").innerHTML = Array.from({ length: 60 }, (_, i) => [
+        ((i * 97) % 1240) + 20,
+        ((i * 53) % 700) + 10,
+        i,
+      ])
+        .filter(([x, y]) => x < 190 || x > 1090 || y < 130 || y > 670)
+        .slice(0, 26)
+        .map(([x, y, i]) => {
+          const col = ["#FF7A2F", "#5B34E6", "#138A62", "#FFC94D"][i % 4];
+          return `<span style="position:absolute;left:${x}px;top:${y}px;width:${8 + (i % 3) * 3}px;height:${4 + (i % 2) * 4}px;background:${col};border-radius:2px;transform:rotate(${i * 37}deg);opacity:.75"></span>`;
+        })
+        .join("");
+
+      // ---------- caro ----------
+      function caroBoard(el, { paper, grid, margin, x, o, win, last, dark }) {
+        const N = 15,
+          S = 40,
+          W = N * S;
+        let s = `<svg viewBox="0 0 ${W} ${W}" width="${W}" height="${W}" role="img" aria-label="Bàn cờ caro 15×15"><rect width="${W}" height="${W}" fill="${paper}"/>`;
+        for (let i = 0; i <= N; i++) {
+          s += `<line x1="${i * S}" y1="0" x2="${i * S}" y2="${W}" stroke="${grid}" stroke-width="${i % 5 === 0 ? 1.6 : 1}"/><line x1="0" y1="${i * S}" x2="${W}" y2="${i * S}" stroke="${grid}" stroke-width="${i % 5 === 0 ? 1.6 : 1}"/>`;
+        }
+        s += `<line x1="${S * 1 + 6}" y1="0" x2="${S * 1 + 6}" y2="${W}" stroke="${margin}" stroke-width="2"/>`;
+        [
+          [3, 3],
+          [3, 11],
+          [7, 7],
+          [11, 3],
+          [11, 11],
+        ].forEach(([c, r]) => (s += `<circle cx="${c * S}" cy="${r * S}" r="3" fill="${grid}"/>`));
+        const X = (c, r) =>
+          `<path d="M${c * S + 9} ${r * S + 10}q12 9 22 21M${c * S + 31} ${r * S + 9}q-11 11 -22 22" stroke="${x}" stroke-width="3.4" stroke-linecap="round" fill="none"/>`;
+        const O = (c, r) =>
+          `<path d="M${c * S + 20} ${r * S + 8}c8 0 12 6 12 12c0 7-5 12-12 12c-7 0-12-5-12-12c0-6 5-11 13-12" stroke="${o}" stroke-width="3.2" stroke-linecap="round" fill="none"/>`;
+        const xs = [
+            [6, 6],
+            [7, 7],
+            [8, 6],
+            [8, 8],
+            [9, 7],
+            [6, 8],
+            [5, 5],
+          ],
+          os = [
+            [7, 6],
+            [6, 7],
+            [9, 6],
+            [7, 8],
+            [10, 8],
+            [5, 9],
+          ];
+        if (win) {
+          xs.splice(0, xs.length, [4, 4], [5, 5], [6, 6], [7, 7], [8, 8], [9, 6], [6, 8]);
+        }
+        xs.forEach((p) => (s += X(...p)));
+        os.forEach((p) => (s += O(...p)));
+        if (last) {
+          s += `<circle cx="${last[0] * S + 20}" cy="${last[1] * S + 20}" r="17" stroke="${dark ? "#A6A7BC" : "#7E7C74"}" stroke-width="1.6" stroke-dasharray="3 3" fill="none"/>`;
+        }
+        if (win) {
+          s += `<path d="M${4 * S + 6} ${4 * S + 8}L${8 * S + 34} ${8 * S + 33}" stroke="${x}" stroke-width="5" stroke-linecap="round" opacity=".85"/><ellipse cx="${6.5 * S}" cy="${6.5 * S}" rx="${3.4 * S}" ry="${0.9 * S}" transform="rotate(45 ${6.5 * S} ${6.5 * S})" stroke="${dark ? "#FF9A5C" : "#FF7A2F"}" stroke-width="3" fill="none"/>`;
+        }
+        el.innerHTML = s + `</svg>`;
+      }
+      caroBoard(document.getElementById("caroWrap"), {
+        paper: "#FDFDF8",
+        grid: "#BCD3EA",
+        margin: "#E58A8A",
+        x: "#1F3FA8",
+        o: "#C42B2B",
+        last: [6, 8],
+      });
+      caroBoard(document.getElementById("caroDarkWrap"), {
+        paper: "#161A2E",
+        grid: "#2F3C5E",
+        margin: "#6B3A48",
+        x: "#8FB0FF",
+        o: "#FF8E8E",
+        win: true,
+        dark: true,
+      });
+
+      // ---------- ludo ----------
+      const COL = { son: "#C8372D", cham: "#2C4A8C", hoe: "#D99A12", luc: "#2E8B57" };
+      const SYM = { son: "●", luc: "■", cham: "▲", hoe: "◆" };
+      function ludoBoard(el, size, turn) {
+        const N = 17,
+          S = size / N;
+        let s = `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" role="img" aria-label="Bàn cờ cá ngựa"><rect width="${size}" height="${size}" rx="${S * 0.8}" fill="#FBF4E4" stroke="#5A2A10" stroke-width="2"/>`;
+        // yards are 7×7, arms 3 wide, home columns 6 steps long (like the real board)
+        const yards = [
+          ["luc", 0, 0],
+          ["son", 10, 0],
+          ["hoe", 0, 10],
+          ["cham", 10, 10],
+        ];
+        yards.forEach(([k, cx, cy]) => {
+          const on = k === turn;
+          s += `<rect x="${cx * S + S * 0.3}" y="${cy * S + S * 0.3}" width="${S * 6.4}" height="${S * 6.4}" rx="${S * 1.1}" fill="${COL[k]}" ${on ? `stroke="#17182B" stroke-width="4"` : 'opacity=".9"'}/>`;
+          if (on)
+            s += `<rect x="${cx * S + S * 0.04}" y="${cy * S + S * 0.04}" width="${S * 6.92}" height="${S * 6.92}" rx="${S * 1.3}" fill="none" stroke="${COL[k]}" stroke-width="3" stroke-dasharray="6 5"/>`;
+          s += `<rect x="${cx * S + S * 1.3}" y="${cy * S + S * 1.3}" width="${S * 4.4}" height="${S * 4.4}" rx="${S * 0.9}" fill="#FBF4E4"/>`;
+          [
+            [1.75, 1.75],
+            [3.85, 1.75],
+            [1.75, 3.85],
+            [3.85, 3.85],
+          ].forEach(([dx, dy], i) => {
+            if ((k === "son" || k === "cham") && i < 1) return;
+            s += piece(cx * S + dx * S, cy * S + dy * S, S * 1.4, k);
+          });
+        });
+        const lane = (c, r) =>
+          (c === 8 && r >= 1 && r <= 6) ||
+          (c === 8 && r >= 10 && r <= 15) ||
+          (r === 8 && c >= 1 && c <= 6) ||
+          (r === 8 && c >= 10 && c <= 15);
+        for (let r = 0; r < N; r++)
+          for (let c = 0; c < N; c++) {
+            const inV = c >= 7 && c <= 9,
+              inH = r >= 7 && r <= 9;
+            if (!(inV || inH) || (inV && inH)) continue;
+            let fill = "#FFFDF7";
+            if (c === 8 && r >= 1 && r <= 6) fill = "#F4D9D6";
+            if (c === 8 && r >= 10 && r <= 15) fill = "#F7E6C2";
+            if (r === 8 && c >= 1 && c <= 6) fill = "#D5EBDD";
+            if (r === 8 && c >= 10 && c <= 15) fill = "#D4DCEE";
+            s += `<rect x="${c * S}" y="${r * S}" width="${S}" height="${S}" fill="${fill}" stroke="#8A7E66" stroke-width="1"/>`;
+            if (lane(c, r)) {
+              const n = c === 8 ? (r < 8 ? r : 16 - r) : c < 8 ? c : 16 - c;
+              s += `<text x="${c * S + S / 2}" y="${r * S + S * 0.68}" text-anchor="middle" font-size="${S * 0.44}" font-weight="700" fill="#3D2A1A" font-family="Be Vietnam Pro">${n}</text>`;
+            }
+          }
+        // gates (chân chuồng): the track cell right before each home column
+        [
+          [9, 0, "son"],
+          [16, 9, "cham"],
+          [7, 16, "hoe"],
+          [0, 7, "luc"],
+        ].forEach(
+          ([c, r, k]) =>
+            (s += `<rect x="${c * S + 3}" y="${r * S + 3}" width="${S - 6}" height="${S - 6}" rx="4" fill="none" stroke="${COL[k]}" stroke-width="2.5" stroke-dasharray="4 3"/>`),
+        );
+        const a = 7 * S,
+          b = 10 * S,
+          m = 8.5 * S;
+        s += `<rect x="${a}" y="${a}" width="${3 * S}" height="${3 * S}" fill="#FBF4E4" stroke="#8A7E66"/><path d="M${a} ${a}L${m} ${m}L${b} ${a}z" fill="${COL.son}" opacity=".85"/><path d="M${b} ${a}L${m} ${m}L${b} ${b}z" fill="${COL.cham}" opacity=".85"/><path d="M${b} ${b}L${m} ${m}L${a} ${b}z" fill="${COL.hoe}" opacity=".85"/><path d="M${a} ${b}L${m} ${m}L${a} ${a}z" fill="${COL.luc}" opacity=".85"/>`;
+        s += piece(9 * S + S * 0.08, 4 * S + S * 0.08, S * 0.84, "son");
+        s += `<circle cx="${9 * S + S / 2}" cy="${4 * S + S / 2}" r="${S * 0.62}" fill="none" stroke="#17182B" stroke-width="2" stroke-dasharray="3 3"/>`;
+        s += piece(14 * S + S * 0.08, 7 * S + S * 0.08, S * 0.84, "luc");
+        s += piece(2 * S + S * 0.08, 9 * S + S * 0.08, S * 0.84, "cham");
+        el.innerHTML = s + `</svg>`;
+      }
+      function piece(x, y, d, k) {
+        const r = d / 2;
+        return `<g><circle cx="${x + r}" cy="${y + r + 1.5}" r="${r}" fill="rgba(0,0,0,.22)"/><circle cx="${x + r}" cy="${y + r}" r="${r}" fill="${COL[k]}" stroke="#FFFDF7" stroke-width="2"/><text x="${x + r}" y="${y + r + r * 0.36}" text-anchor="middle" font-size="${r * 1.05}" fill="#FFFDF7">${SYM[k]}</text></g>`;
+      }
+      function die(el, n, col, sz) {
+        const p = {
+          1: [[0.5, 0.5]],
+          2: [
+            [0.28, 0.28],
+            [0.72, 0.72],
+          ],
+          3: [
+            [0.25, 0.25],
+            [0.5, 0.5],
+            [0.75, 0.75],
+          ],
+          4: [
+            [0.28, 0.28],
+            [0.72, 0.28],
+            [0.28, 0.72],
+            [0.72, 0.72],
+          ],
+          5: [
+            [0.26, 0.26],
+            [0.74, 0.26],
+            [0.5, 0.5],
+            [0.26, 0.74],
+            [0.74, 0.74],
+          ],
+          6: [
+            [0.28, 0.22],
+            [0.72, 0.22],
+            [0.28, 0.5],
+            [0.72, 0.5],
+            [0.28, 0.78],
+            [0.72, 0.78],
+          ],
+        }[n];
+        el.innerHTML = `<svg width="${sz}" height="${sz}" viewBox="0 0 100 100" role="img" aria-label="Xúc xắc ${n}"><rect x="4" y="4" width="92" height="92" rx="20" fill="#FFFDF7" stroke="${col}" stroke-width="7"/>${p.map(([a, b]) => `<circle cx="${a * 100}" cy="${b * 100}" r="8.5" fill="#17182B"/>`).join("")}</svg>`;
+      }
+      ludoBoard(document.getElementById("ludoWrap"), 600, "son");
+      ludoBoard(document.getElementById("ludoPhone"), 350, "son");
+      die(document.getElementById("dieDesk"), 5, "#C8372D", 72);
+      die(document.getElementById("diePhone"), 6, "#C8372D", 64);
+      const LP = [
+        ["son", "Đỏ", "Bạn", true],
+        ["cham", "Chàm", "Minh · online"],
+        ["hoe", "Vàng", "Máy · Vừa"],
+        ["luc", "Lục", "Máy · Vừa"],
+      ];
+      document.getElementById("ludoPlayers").innerHTML = LP.map(
+        ([k, n, who, on]) =>
+          `<div class="player ${on ? "turn" : ""}" style="padding:10px 12px"><div class="avatar" style="background:${COL[k]};color:#fff;font-size:18px;width:36px;height:36px">${SYM[k]}</div><div><div class="pname">${n} · ${who}</div><div class="pmeta">${k === "son" ? "1 ngựa đã ra" : k === "cham" ? "2 ngựa trên đường" : "Chưa ra quân"}</div></div>${on ? '<span class="turnpill">Lượt</span>' : ""}</div>`,
+      ).join("");
+      document.getElementById("phoneStrip").innerHTML = LP.map(
+        ([k, n, who, on]) =>
+          `<div style="flex:1;border-radius:12px;padding:6px 4px;text-align:center;background:#fff;border:${on ? "2px solid #17182B" : "1px solid #EADFC6"}"><div style="width:22px;height:22px;border-radius:50%;background:${COL[k]};color:#fff;font-size:12px;display:grid;place-items:center;margin:0 auto 2px">${SYM[k]}</div><div style="font-size:12px;font-weight:700">${n}</div><div style="font-size:11px;color:#5E6072">${on ? "Lượt" : who.split(" ")[0]}</div></div>`,
+      ).join("");
+    </script>
+  </body>
+</html>
