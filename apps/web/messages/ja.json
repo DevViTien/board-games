@@ -18,7 +18,8 @@
     "heroTitle": "友だちとボードゲーム、ブラウザですぐに",
     "heroLead": "同じ端末で、コンピューターと、または招待リンクで。アカウントは不要です。",
     "online": "オンライン",
-    "joinPlaceholder": "例：ABC234"
+    "joinPlaceholder": "例：ABC234",
+    "thirdPartyLicenses": "サードパーティのライセンス"
   },
   "Games": {
     "tictactoe": {
@@ -142,7 +143,110 @@
       }
     },
     "chess": {
-      "name": "チェス"
+      "name": "チェス",
+      "tagline": "8×8の定番：キャスリング、プロモーション、アンパッサン",
+      "players": {
+        "white": "白",
+        "black": "黒"
+      },
+      "pieces": {
+        "k": "キング",
+        "q": "クイーン",
+        "r": "ルーク",
+        "b": "ビショップ",
+        "n": "ナイト",
+        "p": "ポーン"
+      },
+      "piecesPlural": {
+        "k": "キング",
+        "q": "クイーン",
+        "r": "ルーク",
+        "b": "ビショップ",
+        "n": "ナイト",
+        "p": "ポーン"
+      },
+      "colour": {
+        "w": "白",
+        "b": "黒"
+      },
+      "square": {
+        "piece": "{square}の{colour}の{piece}",
+        "empty": "{square}は空き",
+        "target": "移動できます",
+        "capture": "駒を取れます",
+        "inCheck": "チェックされています"
+      },
+      "selection": {
+        "chosen": "{square}の{piece}を選択：{moves}",
+        "quiet": "{squares}に移動可",
+        "capture": "{squares}で取れる",
+        "noMoves": "{square}の{piece}は動けません"
+      },
+      "check": {
+        "badge": "チェック！",
+        "line": "{player}がチェックされています"
+      },
+      "claim": {
+        "button": "引き分けを申請",
+        "threefold": "同じ局面が3回現れました",
+        "fifty": "50手の間ポーンの移動も駒取りもありません"
+      },
+      "flip": "盤を反転",
+      "promotion": {
+        "title": "ポーン {from} → {to}",
+        "description": "ポーンを昇格させる駒を選んでください。",
+        "cancel": "キャンセル",
+        "choice": {
+          "q": "クイーン",
+          "r": "ルーク",
+          "b": "ビショップ",
+          "n": "ナイト"
+        }
+      },
+      "sheet": {
+        "title": "棋譜",
+        "empty": "まだ指し手はありません",
+        "score": {
+          "white": "白の勝ち",
+          "black": "黒の勝ち",
+          "draw": "引き分け"
+        }
+      },
+      "san": {
+        "quiet": "{piece} {to}",
+        "quietFrom": "{piece} {from} {to}",
+        "capture": "{piece}が{to}で取る",
+        "captureFrom": "{from}の{piece}が{to}で取る",
+        "castleKing": "キング側キャスリング",
+        "castleQueen": "クイーン側キャスリング",
+        "promotion": "{move}、{piece}に昇格",
+        "check": "{move}、チェック",
+        "mate": "{move}、チェックメイト"
+      },
+      "move": {
+        "quiet": "{piece}を{from}から{to}へ動かしました",
+        "capture": "{from}の{piece}で{to}の駒を取りました",
+        "castleKing": "キング側にキャスリングしました",
+        "castleQueen": "クイーン側にキャスリングしました",
+        "promotion": "{move}、{piece}に昇格",
+        "check": "{move}、チェック",
+        "mate": "{move}、チェックメイト",
+        "claim": "引き分けを申請しました"
+      },
+      "summary": {
+        "full": "{points}点リード：{pieces}",
+        "short": "+{points}",
+        "piece": "{count, plural, =1 {{piece}} other {{plural}×#}}"
+      },
+      "result": {
+        "checkmate": "チェックメイト",
+        "stalemate": "{player}はチェックされていませんが指せる手がありません",
+        "insufficient-material": "どちらもチェックメイトできる駒がありません",
+        "threefold-claim": "{player}が引き分けを申請：同じ局面が3回",
+        "fifty-move-claim": "{player}が50手ルールで引き分けを申請",
+        "fivefold-repetition": "同じ局面が5回現れました",
+        "seventy-five-move": "75手の間ポーンの移動も駒取りもありません"
+      }
     }
   },
   "Modes": {

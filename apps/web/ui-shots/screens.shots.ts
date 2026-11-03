@@ -1,12 +1,15 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 
 import {
   board,
   cell,
+  chessRecord,
+  chessSquare,
   choose,
   continueSection,
   countMarks,
   horseChoices,
+  longChessGame,
   LUDO_FOUR_CHOICES,
   ludoRecord,
   MENU_HEADING,
@@ -14,11 +17,13 @@ import {
   openFakeRoom,
   PAGE_WITHOUT_STORAGE,
   play,
+  playChess,
   players,
   playFirstEmptyCell,
   pressStart,
   rollButton,
   ROOM_URL,
+  savedChessGame,
   savedLudoGame,
   startAiGame,
   startLocalGame,
@@ -77,6 +82,10 @@ test("setup screens", async ({ page }) => {
   await page.goto("/play/ludo");
   await choose(page, "Số người chơi", "4 người");
   await shoot(page, "04-setup-ludo");
+
+  await page.goto("/play/chess");
+  await expect(page.getByRole("group", { name: "Chế độ" })).toBeVisible();
+  await shoot(page, "03b-setup-chess");
 
   // The menu's "Online": the mode chosen by the address.
   await page.goto("/play/caro?mode=online");
@@ -485,4 +494,100 @@ test("Cờ cá ngựa before the first roll", async ({ page }) => {
   await expect(page.locator("[data-ludo-hint]")).toHaveText(/gieo được [1-6]/);
   await page.waitForTimeout(600);
   await shoot(page, "13c-ludo-after-roll");
+});
+
+/** Opens a same-device Cờ vua game saved with `moves` (UCI). */
+async function openChess(page: Page, moves: readonly string[]): Promise<void> {
+  await page.goto(PAGE_WITHOUT_STORAGE);
+  await writeSaved(page, "chess:local", savedChessGame(moves));
+  await page.goto("/play/chess/local");
+  await expect(board(page)).toBeVisible();
+}
+
+// 1. e4 e5 2. Nf3 Nc6 3. Bc4 Bc5 4. c3 Nf6 5. d4 exd4 6. cxd4 Bb4+
+const CHESS_CHECK = [
+  "e2e4",
+  "e7e5",
+  "g1f3",
+  "b8c6",
+  "f1c4",
+  "f8c5",
+  "c2c3",
+  "g8f6",
+  "d2d4",
+  "e5d4",
+  "c3d4",
+  "c5b4",
+];
+
+test("Cờ vua on one device: the start, a knight selected, a capture to make", async ({ page }) => {
+  await openChess(page, []);
+  await shoot(page, "20-chess-start");
+
+  // 1. e4 d5: the pawn on e4 may take on d5 or go to e5; then the knight on g1.
+  await openChess(page, ["e2e4", "d7d5", "g1f3", "a7a6"]);
+  await chessSquare(page, "e4").click();
+  await expect(page.getByText("Đã chọn Tốt e4: đi được e5, ăn d5")).toBeVisible();
+  await shoot(page, "20b-chess-selected");
+});
+
+test("Cờ vua: White in check, then the promotion picker", async ({ page }) => {
+  await openChess(page, CHESS_CHECK);
+  await expect(page.getByText("Chiếu!")).toBeVisible();
+  await shoot(page, "20c-chess-check");
+
+  await openChess(page, ["a2a4", "b7b5", "a4b5", "a7a6", "b5a6", "c8b7", "a6b7", "b8c6"]);
+  await playChess(page, "b7b8");
+  await expect(page.getByRole("dialog", { name: "Tốt b7 → b8" })).toBeVisible();
+  await shoot(page, "20d-chess-promotion");
+});
+
+test("Cờ vua: checkmate, a long score sheet, and the claim of a draw", async ({ page }) => {
+  await openChess(page, ["f2f3", "e7e5", "g2g4"]);
+  await playChess(page, "d8h4");
+  await expect(status(page)).toHaveText("Đen thắng!");
+  await shoot(page, "20e-chess-checkmate");
+
+  await openChess(page, longChessGame(120));
+  await shoot(page, "20f-chess-long-sheet");
+
+  await openChess(page, ["g1f3", "g8f6", "f3g1", "f6g8", "g1f3", "g8f6", "f3g1", "f6g8"]);
+  await expect(page.getByRole("button", { name: "Đòi hoà" })).toBeVisible();
+  await shoot(page, "20i-chess-claim");
+});
+
+test("Cờ vua at 360 px, and the focus beside a selected square", async ({ page }) => {
+  await openChess(page, ["e2e4", "e7e5"]);
+  await page.setViewportSize({ width: 360, height: 780 });
+  await shoot(page, "20g-chess-360");
+
+  // The focus on a dark square next to the selected knight, then on the last move's square.
+  await chessSquare(page, "g1").focus();
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("ArrowLeft");
+  await expect(chessSquare(page, "f1")).toBeFocused();
+  await shoot(page, "20h-chess-focus");
+  await page.keyboard.press("Escape");
+  await chessSquare(page, "e6").focus();
+  await page.keyboard.press("ArrowDown");
+  await expect(chessSquare(page, "e5")).toBeFocused();
+  await shoot(page, "20h2-chess-focus-last-move");
+});
+
+test("an online Cờ vua game, holding Black", async ({ page }) => {
+  await openFakeRoom(
+    page,
+    {
+      gameId: "chess",
+      seats: [
+        { kind: "human", name: "Minh" },
+        { kind: "human", name: "Lan" },
+      ],
+      record: chessRecord(["e2e4", "e7e5", "g1f3"]),
+    },
+    1,
+  );
+  await expect(board(page)).toBeVisible();
+  await expect(page.getByRole("group", { name: "Bạn · Đen" })).toBeVisible();
+  await shoot(page, "21-online-chess-black");
 });

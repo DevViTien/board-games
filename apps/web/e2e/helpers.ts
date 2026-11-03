@@ -1,5 +1,5 @@
 import { applyEntry, createSession, type GameRecord, toRecord } from "@board-games/engine";
-import { ludo, LUDO_DEFAULT_OPTIONS } from "@board-games/games";
+import { chess, type ChessMove, ludo, LUDO_DEFAULT_OPTIONS } from "@board-games/games";
 import {
   CLOSE_CODE,
   type RoomCode,
@@ -455,4 +455,73 @@ export async function openFakeRoom(
       );
     },
   };
+}
+
+/** A Chess move by its squares (`e2e4`, `b7b8n`), or "claim": the claim of a draw. */
+function chessMove(move: string): ChessMove {
+  if (move === "claim") return { type: "claim-draw" };
+  // Unchecked here: the rules check it when it is applied.
+  const squares = { from: move.slice(0, 2), to: move.slice(2, 4) };
+  const promotion = move[4];
+  return (promotion === undefined ? squares : { ...squares, promotion }) as unknown as ChessMove;
+}
+
+/**
+ * The record of a Cờ vua game of `moves` (UCI), built with the engine's `applyEntry`, so a move the
+ * rules refuse fails here, not in the app.
+ */
+export function chessRecord(moves: readonly string[]): GameRecord {
+  const created = createSession(chess, { playerCount: 2, options: {} });
+  if (!created.ok) throw new Error(created.error);
+  let session = created.value;
+  for (const [index, move] of moves.entries()) {
+    const played = applyEntry(chess, session, { move: chessMove(move) });
+    if (!played.ok) throw new Error(`move ${index + 1} (${move}): ${played.error}`);
+    session = played.value;
+  }
+  return JSON.parse(JSON.stringify(toRecord(session))) as GameRecord;
+}
+
+/** A saved same-device Cờ vua game (slot "chess:local") of `moves` (UCI). */
+export function savedChessGame(moves: readonly string[]): unknown {
+  return {
+    version: 2,
+    savedAt: "2026-11-04T08:00:00.000Z",
+    inProgress: true,
+    mode: { kind: "local" },
+    record: chessRecord(moves),
+  };
+}
+
+/**
+ * `plies` legal half-moves (UCI) that end nothing: each the first legal move, in an order turning
+ * with the ply, that leaves the game on (no mate, no draw). For a long score sheet.
+ */
+export function longChessGame(plies: number): readonly string[] {
+  const moves: string[] = [];
+  let state = chess.setup();
+  for (let ply = 0; ply < plies; ply += 1) {
+    const legal = chess
+      .legalMoves(state)
+      .filter((move): move is Extract<ChessMove, { from: string }> => "from" in move);
+    const next = legal
+      .map((_move, index) => legal[(index + ply * 7) % legal.length])
+      .find((move) => move !== undefined && chess.result(chess.applyMove(state, move)) === null);
+    if (next === undefined) throw new Error(`no move to keep the game on at ply ${ply}`);
+    moves.push(`${next.from}${next.to}${next.promotion ?? ""}`);
+    state = chess.applyMove(state, next);
+  }
+  return moves;
+}
+
+/** The button of a chess square by its coordinates, whatever stands on it. */
+export const chessSquare = (page: Page, square: string) =>
+  page.locator(`[data-square="${square}"]`);
+
+/** Plays `moves` (UCI, no promotion) with the mouse: a click on the piece, then on its square. */
+export async function playChess(page: Page, ...moves: readonly string[]): Promise<void> {
+  for (const move of moves) {
+    await chessSquare(page, move.slice(0, 2)).click();
+    await chessSquare(page, move.slice(2, 4)).click();
+  }
 }

@@ -49,6 +49,10 @@ describe("/play/[gameId]/[mode]", () => {
     },
   );
 
+  it("renders the same-device play route of Cờ vua", async () => {
+    expect((await open("chess", "local")).props).toEqual({ gameId: "chess", mode: "local" });
+  });
+
   it("renders the same-device play route of a game without an AI", async () => {
     expect((await open("no-ai", "local")).props).toEqual({ gameId: "no-ai", mode: "local" });
   });
@@ -58,6 +62,8 @@ describe("/play/[gameId]/[mode]", () => {
     ["khong-co-game-nay", "local"],
     ["khong-co-game-nay", "ai"],
     ["no-ai", "ai"],
+    // Không có đấu với máy: Cờ vua has no AI.
+    ["chess", "ai"],
   ])("calls notFound for /play/%s/%s", async (gameId, mode) => {
     await expect(open(gameId, mode)).rejects.toBe(NOT_FOUND);
   });

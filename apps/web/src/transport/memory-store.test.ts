@@ -17,7 +17,7 @@ describe("createMemoryStore", () => {
     const store = createMemoryStore({
       "tictactoe:local": { settings: LOCAL, record: {}, savedAt: "2026-10-29T10:00:00.000Z" },
       "tictactoe:ai": { settings: AI_EASY, record: {}, savedAt: "2026-10-30T10:00:00.000Z" },
-      "chess:local": { settings: LOCAL, record: {}, savedAt: "2026-10-31T10:00:00.000Z" },
+      "go:local": { settings: LOCAL, record: {}, savedAt: "2026-10-31T10:00:00.000Z" },
     });
 
     expect(await store.listInProgress()).toEqual([

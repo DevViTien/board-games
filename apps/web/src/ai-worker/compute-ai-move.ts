@@ -1,5 +1,5 @@
 import { chooseMove, createRng } from "@board-games/engine";
-import { findGame } from "@board-games/games";
+import { findAiGame } from "@board-games/games/ai";
 
 import type { AiRequest } from "@/transport/types";
 
@@ -17,10 +17,10 @@ export type AiWorkerResponse =
 /**
  * The AI's move for a request, in a Worker or on the main thread. `now` reads milliseconds; pass
  * `() => performance.now()`, never the bare method, which throws once detached from `performance`.
- * Throws when the game is unknown or the AI cannot choose a move.
+ * Throws when the game is unknown or has no AI (`AI_GAMES`), or the AI cannot choose a move.
  */
 export function computeAiMove(request: AiRequest, now: () => number): unknown {
-  const game = findGame(request.gameId);
+  const game = findAiGame(request.gameId);
   if (game === undefined) throw new Error(`Unknown game "${request.gameId}"`);
   const chosen = chooseMove(game, request.state, {
     level: request.level,

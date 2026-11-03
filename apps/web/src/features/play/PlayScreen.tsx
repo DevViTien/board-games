@@ -20,7 +20,7 @@ import {
 
 import { Confetti } from "./Confetti";
 import { ConnectionNotice } from "./ConnectionNotice";
-import { PlayerPanel } from "./PlayerPanel";
+import { PlayerPanel, SeatBar } from "./PlayerPanel";
 import { PlayLoading } from "./PlayLoading";
 import { ResultCard } from "./ResultCard";
 import { isAiThinking, unavailableReasons } from "./unavailable-reason";
@@ -418,23 +418,21 @@ export function PlayScreen<State, Move, Outcome>({
       className="lg:my-1.5 lg:[grid-area:status]"
     />
   );
-  const players = (
-    <PlayerPanel
-      ui={ui}
-      state={snapshot.state}
-      seats={snapshot.seats}
-      currentPlayer={snapshot.currentPlayer}
-      result={snapshot.result}
-      viewer={snapshot.viewer}
-      connectionLost={
-        snapshot.connection === null
-          ? null
-          : snapshot.connection === CONNECTION_STATUS.Idle || connectionLost
-      }
-      thinking={thinking}
-      className="lg:my-1.5 lg:[grid-area:players]"
-    />
-  );
+  // The seats as the players' panel and the bars around a board (`BoardParts.seatOrder`) show them.
+  const seatProps = {
+    ui,
+    state: snapshot.state,
+    seats: snapshot.seats,
+    currentPlayer: snapshot.currentPlayer,
+    result: snapshot.result,
+    viewer: snapshot.viewer,
+    connectionLost:
+      snapshot.connection === null
+        ? null
+        : snapshot.connection === CONNECTION_STATUS.Idle || connectionLost,
+    thinking,
+  } as const;
+  const players = <PlayerPanel {...seatProps} className="lg:my-1.5 lg:[grid-area:players]" />;
   // Why undo or redo cannot be pressed: read with the button, shown in words while the button has
   // the focus or was just pressed.
   // Shown as a note under the buttons, over the space below them, so the column never moves.
@@ -515,23 +513,42 @@ export function PlayScreen<State, Move, Outcome>({
   // every row and the rest stacks beside it, centred on the board's height. The board gets its room
   // as `--board-room`: the width on a phone, and on a laptop a square that leaves the column and the
   // bar on screen. While the AI thinks, the board is busy for assistive technology.
-  const layout: BoardLayout = ({ board, controls }) => (
+  //
+  // A board that names its seats' places (`seatOrder`, Chess) gets a bar for each seat right above
+  // and right below it instead of the panel, and its room leaves the two bars on screen as well.
+  const layout: BoardLayout = ({ board, controls, seatOrder }) => (
     <div
       className={cn(
         "grid w-full grid-cols-[minmax(0,1fr)] gap-y-4 [--board-room:100%]",
         "lg:grid-cols-[auto_minmax(20rem,24rem)] lg:grid-rows-[minmax(0,1fr)_repeat(5,auto)_minmax(0,1fr)] lg:justify-center lg:gap-x-10 lg:gap-y-0",
         "lg:[grid-template-areas:'board_.'_'board_notice'_'board_status'_'board_players'_'board_controls'_'board_buttons'_'board_.']",
-        "lg:[--board-room:min(100vw_-_34rem,100dvh_-_10rem)]",
+        seatOrder === undefined
+          ? "lg:[--board-room:min(100vw_-_34rem,100dvh_-_10rem)]"
+          : // The screen's height less the top bar and the page's padding (7.25rem, a little
+            // room kept), less the two bars (2 × 2.75rem) and their gaps (2 × 0.375rem).
+            "lg:[--board-room:min(100vw_-_34rem,100dvh_-_7.25rem_-_6.25rem)]",
       )}
     >
       {notice}
       {statusLine}
-      {players}
+      {seatOrder === undefined && players}
       <div
-        aria-busy={thinking}
+        aria-busy={seatOrder === undefined ? thinking : undefined}
         className="min-w-0 lg:self-center lg:[grid-area:board] aria-busy:[&_*]:cursor-progress"
       >
-        {board}
+        {seatOrder === undefined ? (
+          board
+        ) : (
+          // As wide as the board on a laptop (`w-min`: the bars' words truncate), the page's width
+          // on a phone.
+          <div className="flex flex-col gap-1.5 lg:mx-auto lg:w-min">
+            <SeatBar {...seatProps} player={seatOrder[0]} />
+            <div aria-busy={thinking} className="aria-busy:[&_*]:cursor-progress">
+              {board}
+            </div>
+            <SeatBar {...seatProps} player={seatOrder[1]} />
+          </div>
+        )}
       </div>
       {controls !== null && controls !== undefined && (
         <div className="min-w-0 lg:my-1.5 lg:[grid-area:controls]">{controls}</div>

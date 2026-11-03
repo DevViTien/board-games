@@ -10,6 +10,8 @@ import { type ChosenOptions, matchOptionChoices } from "@/lib/option-choices";
 import { PLANNED_GAMES } from "./planned-games";
 
 /** Every id that can appear on the menu, so card names stay checked translation keys. */
+// No planned game since M7 (`never`); kept so that one added later is checked the same way.
+// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 type MenuGameId = RegisteredGameId | (typeof PLANNED_GAMES)[number]["id"];
 
 interface CardInfo {

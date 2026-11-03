@@ -13,6 +13,8 @@ import { PlayLinks } from "./PlayLinks";
 interface MenuPageProps {
   /** The theme the page is rendered in, from the request's cookie; the system's by default. */
   readonly theme?: Theme;
+  /** The game cards, in order: the menu of every registered and planned game by default (tests). */
+  readonly cards?: readonly MenuGame[];
 }
 
 /** "2 người · ~10 phút": each part its own element, so each reads and wraps on its own. */
@@ -31,7 +33,7 @@ function GameFacts({ game }: { readonly game: MenuGame }) {
   );
 }
 
-export function MenuPage({ theme = THEME.System }: MenuPageProps) {
+export function MenuPage({ theme = THEME.System, cards = buildMenu() }: MenuPageProps) {
   const t = useTranslations("Menu");
   const tGames = useTranslations("Games");
 
@@ -53,7 +55,7 @@ export function MenuPage({ theme = THEME.System }: MenuPageProps) {
         </div>
 
         <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {buildMenu().map((game) => {
+          {cards.map((game) => {
             const headingId = `game-${game.id}`;
             if (game.kind === "planned") {
               // Not a link nor a card: a thin dashed row, below the playable games.
@@ -95,6 +97,16 @@ export function MenuPage({ theme = THEME.System }: MenuPageProps) {
           })}
         </ul>
       </main>
+      {/* Attribution of the third-party code and art shipped with the app (chess.js, the
+          "staunty" pieces): a static file, so a plain link. */}
+      <footer className="mx-auto max-w-6xl px-4 pb-8 sm:px-6 lg:px-10">
+        <a
+          href="/third-party-licenses.txt"
+          className="focus-ring rounded-sm text-small text-fg-muted underline underline-offset-2 hover:text-fg"
+        >
+          {t("thirdPartyLicenses")}
+        </a>
+      </footer>
     </>
   );
 }

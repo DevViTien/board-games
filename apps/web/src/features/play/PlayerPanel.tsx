@@ -3,6 +3,7 @@
 import type { GameResult, PlayerIndex } from "@board-games/engine";
 import { Badge, cn } from "@board-games/ui";
 import { useTranslations } from "next-intl";
+import { useId } from "react";
 
 import type { GameUI } from "@/games/types";
 import type { SeatView } from "@/transport/types";
@@ -61,17 +62,23 @@ function ThinkingDots() {
   );
 }
 
-/**
- * Every seat in the order of play, as compact rows: the seat's mark, its name as the mode tells it
- * ("X", "You · X", "Computer · O", "Minh · O"), and a line under it with the chips (whose turn it
- * is, in words, never colour alone; the winner; online, whether this device is connected, in words
- * other than the connection line's) and words saying who plays the seat (this device, the AI and
- * its level, a remote player) and how it fares. At most 40 px high beside the board, where the turn
- * chip sits at the end of the row; on a phone's narrow tile the chips never get cut: the words
- * shorten (`SeatSummary.short`), then wrap under them. Not a live region: the play screen's turn
- * line is the one status of the page.
- */
-export function PlayerPanel<State>({
+/** A seat as the panel and the bars around the board show it. */
+interface SeatRow {
+  readonly player: PlayerIndex;
+  readonly label: string;
+  readonly name: string;
+  readonly badge: SeatBadge;
+  readonly connection: "lost" | "connected" | null;
+  readonly thinkingHere: boolean;
+  /** Who plays the seat and how it fares, in full and on a narrow tile ("" for nothing). */
+  readonly wide: string;
+  readonly narrow: string;
+}
+
+type SeatRowsProps<State> = Omit<PlayerPanelProps<State>, "className">;
+
+/** Every seat's row: its name as the mode tells it, its chips and its words (see `PlayerPanel`). */
+function useSeatRows<State>({
   ui,
   state,
   seats,
@@ -80,17 +87,15 @@ export function PlayerPanel<State>({
   viewer,
   connectionLost,
   thinking,
-  className,
-}: PlayerPanelProps<State>) {
+}: SeatRowsProps<State>): readonly SeatRow[] {
   const t = useTranslations("Play");
   const tLevels = useTranslations("Levels");
   const playerLabel = ui.usePlayerLabel();
   const useSeatSummary = ui.useSeatSummary ?? noSummary;
   const summary = useSeatSummary();
-  const { SeatMark } = ui;
   const online = connectionLost !== null;
 
-  const rows = seats.map((seat, index) => {
+  return seats.map((seat, index) => {
     const player = index;
     const label = playerLabel(player, state);
     const seatSummary = summary(player, state);
@@ -140,6 +145,86 @@ export function PlayerPanel<State>({
       narrow: words(true),
     } as const;
   });
+}
+
+/** A seat's chips: whose turn it is or who won, and, online, this device's connection. */
+function SeatChips({
+  row,
+  turnClassName,
+}: {
+  readonly row: SeatRow;
+  /** Where the turn or winner chip goes (the panel pins it to the row's end beside the board). */
+  readonly turnClassName?: string;
+}) {
+  const t = useTranslations("Play");
+  return (
+    <>
+      {row.badge !== null && (
+        <Badge
+          variant={row.badge === "turn" ? "ink" : "celebration"}
+          className={cn("shrink-0 px-1.5 py-0 leading-4", turnClassName)}
+        >
+          {row.badge === "turn" ? t("turnBadge") : t("winnerBadge")}
+        </Badge>
+      )}
+      {row.connection !== null && (
+        <Badge
+          variant={row.connection === "lost" ? "warning" : "success"}
+          className="shrink-0 px-1.5 py-0 leading-4"
+        >
+          <span aria-hidden className="size-1.5 rounded-full bg-current" />
+          {row.connection === "lost" ? t("connectionBadge.lost") : t("connectionBadge.connected")}
+        </Badge>
+      )}
+    </>
+  );
+}
+
+/** The words under a seat's name: in full beside the board, shorter on a phone. */
+function SeatWords({ row }: { readonly row: SeatRow }) {
+  if (row.wide === row.narrow) {
+    return row.wide === "" ? null : <span className="max-w-full min-w-0 truncate">{row.wide}</span>;
+  }
+  return (
+    <>
+      <span className="max-w-full min-w-0 truncate max-lg:hidden">{row.wide}</span>
+      <span className="max-w-full min-w-0 truncate lg:hidden">{row.narrow}</span>
+    </>
+  );
+}
+
+/** A seat's mark, the game's own or its symbol. */
+function SeatMarkOf<State>({
+  ui,
+  row,
+  state,
+}: {
+  readonly ui: PlayerPanelProps<State>["ui"];
+  readonly row: SeatRow;
+  readonly state: State;
+}) {
+  const { SeatMark } = ui;
+  return SeatMark === undefined ? (
+    <SymbolMark player={row.player} symbol={row.label} />
+  ) : (
+    <SeatMark player={row.player} state={state} />
+  );
+}
+
+/**
+ * Every seat in the order of play, as compact rows: the seat's mark, its name as the mode tells it
+ * ("X", "You · X", "Computer · O", "Minh · O"), and a line under it with the chips (whose turn it
+ * is, in words, never colour alone; the winner; online, whether this device is connected, in words
+ * other than the connection line's) and words saying who plays the seat (this device, the AI and
+ * its level, a remote player) and how it fares. At most 40 px high beside the board, where the turn
+ * chip sits at the end of the row; on a phone's narrow tile the chips never get cut: the words
+ * shorten (`SeatSummary.short`), then wrap under them. Not a live region: the play screen's turn
+ * line is the one status of the page.
+ */
+export function PlayerPanel<State>({ className, ...props }: PlayerPanelProps<State>) {
+  const t = useTranslations("Play");
+  const rows = useSeatRows(props);
+  const { ui, state, seats } = props;
 
   return (
     <ul
@@ -150,7 +235,8 @@ export function PlayerPanel<State>({
         className,
       )}
     >
-      {rows.map(({ player, label, name, badge, connection, thinkingHere, wide, narrow }) => {
+      {rows.map((row) => {
+        const { player, name, badge, connection, thinkingHere, wide, narrow } = row;
         const hasLine =
           badge !== null || connection !== null || thinkingHere || wide !== "" || narrow !== "";
         return (
@@ -165,50 +251,24 @@ export function PlayerPanel<State>({
             )}
           >
             <span className="size-7 shrink-0">
-              {SeatMark === undefined ? (
-                <SymbolMark player={player} symbol={label} />
-              ) : (
-                <SeatMark player={player} state={state} />
-              )}
+              <SeatMarkOf ui={ui} row={row} state={state} />
             </span>
             {/* Room kept at the end of the row for the chip beside the board. */}
             <span className={cn("min-w-0 flex-1", badge !== null && "lg:pr-24")}>
               <span className="block truncate text-small leading-5 font-semibold">{name}</span>
               {hasLine && (
                 <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-caption leading-4 font-normal text-fg-muted">
-                  {badge !== null && (
-                    <Badge
-                      variant={badge === "turn" ? "ink" : "celebration"}
-                      className="shrink-0 px-1.5 py-0 leading-4 lg:absolute lg:top-1/2 lg:right-2 lg:-translate-y-1/2"
-                    >
-                      {badge === "turn" ? t("turnBadge") : t("winnerBadge")}
-                    </Badge>
-                  )}
-                  {connection !== null && (
-                    <Badge
-                      variant={connection === "lost" ? "warning" : "success"}
-                      className="shrink-0 px-1.5 py-0 leading-4"
-                    >
-                      <span aria-hidden className="size-1.5 rounded-full bg-current" />
-                      {connection === "lost"
-                        ? t("connectionBadge.lost")
-                        : t("connectionBadge.connected")}
-                    </Badge>
-                  )}
+                  <SeatChips
+                    row={row}
+                    turnClassName="lg:absolute lg:top-1/2 lg:right-2 lg:-translate-y-1/2"
+                  />
                   {thinkingHere && (
                     <span className="inline-flex shrink-0 items-center gap-1.5">
                       <ThinkingDots />
                       {t("thinking")}
                     </span>
                   )}
-                  {wide === narrow ? (
-                    wide !== "" && <span className="max-w-full min-w-0 truncate">{wide}</span>
-                  ) : (
-                    <>
-                      <span className="max-w-full min-w-0 truncate max-lg:hidden">{wide}</span>
-                      <span className="max-w-full min-w-0 truncate lg:hidden">{narrow}</span>
-                    </>
-                  )}
+                  <SeatWords row={row} />
                 </span>
               )}
             </span>
@@ -216,5 +276,59 @@ export function PlayerPanel<State>({
         );
       })}
     </ul>
+  );
+}
+
+interface SeatBarProps<State> extends PlayerPanelProps<State> {
+  /** The seat the bar is for. */
+  readonly player: PlayerIndex;
+}
+
+/**
+ * One seat as a bar along the board's edge (Chess: above and below it, `BoardParts.seatOrder`): the
+ * seat's mark, its name as the mode tells it ("Trắng", "Bạn · Đen", "Minh · Trắng") with the words
+ * of the players' panel under it, and its chips at the end of the bar, where a clock may go one day.
+ * The same seat as in `PlayerPanel`, told the same way; not a live region either.
+ */
+export function SeatBar<State>({ player, className, ...props }: SeatBarProps<State>) {
+  const t = useTranslations("Play");
+  const nameId = useId();
+  const row = useSeatRows(props)[player];
+  if (row === undefined) return null;
+  const turn = row.badge === "turn";
+  return (
+    <div
+      role="group"
+      aria-labelledby={nameId}
+      data-player={player}
+      className={cn(
+        "flex h-11 min-w-0 items-center gap-2.5 rounded-control border bg-surface py-0 pr-2.5 pl-1.5",
+        turn ? "border-fg shadow-[inset_0_0_0_1px_var(--fg)]" : "border-border",
+        className,
+      )}
+    >
+      <span className="size-8 shrink-0">
+        <SeatMarkOf ui={props.ui} row={row} state={props.state} />
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span id={nameId} className="truncate text-small leading-5 font-semibold">
+          {row.name}
+        </span>
+        {(row.wide !== "" || row.narrow !== "" || row.thinkingHere) && (
+          <span className="flex min-w-0 items-center gap-1.5 text-caption leading-4 text-fg-muted">
+            {row.thinkingHere && (
+              <span className="inline-flex shrink-0 items-center gap-1.5">
+                <ThinkingDots />
+                {t("thinking")}
+              </span>
+            )}
+            <SeatWords row={row} />
+          </span>
+        )}
+      </span>
+      <span className="flex shrink-0 items-center gap-1.5">
+        <SeatChips row={row} />
+      </span>
+    </div>
   );
 }

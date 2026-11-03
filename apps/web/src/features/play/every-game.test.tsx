@@ -32,5 +32,18 @@ describe.each(GAME_IDS)("the play screen of %s", (gameId) => {
     expect(screen.getByRole("main")).toHaveAttribute("data-game", gameId);
     expect(screen.getByRole("status")).toHaveTextContent(/^Đến lượt /);
     expect(screen.getByRole("button", { name: "Hoàn tác" })).toBeInTheDocument();
+    // The seats: around the board for a game that places them (Chess), else the players' panel;
+    // the board is busy for assistive technology while the AI thinks, either way.
+    expect(screen.getByRole("main").querySelector("[aria-busy]")).toHaveAttribute(
+      "aria-busy",
+      "false",
+    );
+    if (gameId === "chess") {
+      expect(screen.queryByRole("list", { name: "Người chơi" })).not.toBeInTheDocument();
+      expect(screen.getByRole("group", { name: "Trắng" })).toBeInTheDocument();
+      expect(screen.getByRole("group", { name: "Đen" })).toBeInTheDocument();
+    } else {
+      expect(screen.getByRole("list", { name: "Người chơi" })).toBeInTheDocument();
+    }
   });
 });

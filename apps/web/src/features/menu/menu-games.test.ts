@@ -43,7 +43,7 @@ describe("buildMenu", () => {
       ["playable", "tictactoe"],
       ["playable", "caro"],
       ["playable", "ludo"],
-      ["planned", "chess"],
+      ["playable", "chess"],
     ]);
   });
 });
@@ -63,6 +63,7 @@ describe("buildOptionChoices", () => {
       },
       // Cờ cá ngựa plays only its default rules in M6: nothing to choose.
       ludo: { choices: [], defaults: {} },
+      chess: { choices: [], defaults: {} },
     });
     expect(JSON.parse(JSON.stringify(choices))).toEqual(choices);
   });

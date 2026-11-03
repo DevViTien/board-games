@@ -18,7 +18,8 @@
     "heroTitle": "Play board games with friends, right in your browser",
     "heroLead": "On one device, against the computer or with an invite link — no account needed.",
     "online": "Online",
-    "joinPlaceholder": "e.g. ABC234"
+    "joinPlaceholder": "e.g. ABC234",
+    "thirdPartyLicenses": "Third-party licenses"
   },
   "Games": {
     "tictactoe": {
@@ -142,7 +143,110 @@
       }
     },
     "chess": {
-      "name": "Chess"
+      "name": "Chess",
+      "tagline": "The classic 8×8 game: castling, promotion, en passant",
+      "players": {
+        "white": "White",
+        "black": "Black"
+      },
+      "pieces": {
+        "k": "king",
+        "q": "queen",
+        "r": "rook",
+        "b": "bishop",
+        "n": "knight",
+        "p": "pawn"
+      },
+      "piecesPlural": {
+        "k": "kings",
+        "q": "queens",
+        "r": "rooks",
+        "b": "bishops",
+        "n": "knights",
+        "p": "pawns"
+      },
+      "colour": {
+        "w": "White",
+        "b": "Black"
+      },
+      "square": {
+        "piece": "{colour} {piece} on {square}",
+        "empty": "Empty square {square}",
+        "target": "Can move here",
+        "capture": "Can capture here",
+        "inCheck": "In check"
+      },
+      "selection": {
+        "chosen": "Selected the {piece} on {square}: {moves}",
+        "quiet": "can go to {squares}",
+        "capture": "can take on {squares}",
+        "noMoves": "The {piece} on {square} has no moves"
+      },
+      "check": {
+        "badge": "Check!",
+        "line": "{player} is in check"
+      },
+      "claim": {
+        "button": "Claim a draw",
+        "threefold": "This position has occurred three times",
+        "fifty": "50 moves without a pawn move or a capture"
+      },
+      "flip": "Flip board",
+      "promotion": {
+        "title": "Pawn {from} → {to}",
+        "description": "Choose a piece for the pawn.",
+        "cancel": "Cancel",
+        "choice": {
+          "q": "Queen",
+          "r": "Rook",
+          "b": "Bishop",
+          "n": "Knight"
+        }
+      },
+      "sheet": {
+        "title": "Moves",
+        "empty": "No moves yet",
+        "score": {
+          "white": "White wins",
+          "black": "Black wins",
+          "draw": "Draw"
+        }
+      },
+      "san": {
+        "quiet": "{piece} {to}",
+        "quietFrom": "{piece} {from} {to}",
+        "capture": "{piece} takes {to}",
+        "captureFrom": "{piece} {from} takes {to}",
+        "castleKing": "Castles kingside",
+        "castleQueen": "Castles queenside",
+        "promotion": "{move} promotes to {piece}",
+        "check": "{move}, check",
+        "mate": "{move}, checkmate"
+      },
+      "move": {
+        "quiet": "moved the {piece} from {from} to {to}",
+        "capture": "took on {to} with the {piece} from {from}",
+        "castleKing": "castled kingside",
+        "castleQueen": "castled queenside",
+        "promotion": "{move}, promoting to a {piece}",
+        "check": "{move}, check",
+        "mate": "{move}, checkmate",
+        "claim": "claimed a draw"
+      },
+      "summary": {
+        "full": "Up {points, plural, one {# point} other {# points}}: {pieces}",
+        "short": "+{points}",
+        "piece": "{count, plural, =1 {{piece}} other {# {plural}}}"
+      },
+      "result": {
+        "checkmate": "Checkmate",
+        "stalemate": "{player} has no legal move and is not in check",
+        "insufficient-material": "Neither side has enough pieces to checkmate",
+        "threefold-claim": "{player} claimed a draw: the position occurred three times",
+        "fifty-move-claim": "{player} claimed a draw by the fifty-move rule",
+        "fivefold-repetition": "The position occurred five times",
+        "seventy-five-move": "75 moves without a pawn move or a capture"
+      }
     }
   },
   "Modes": {

@@ -18,7 +18,8 @@
     "heroTitle": "Chơi cờ cùng bạn bè, ngay trên trình duyệt",
     "heroLead": "Cùng máy, đấu với máy hoặc gửi link mời — không cần tài khoản.",
     "online": "Online",
-    "joinPlaceholder": "VD: ABC234"
+    "joinPlaceholder": "VD: ABC234",
+    "thirdPartyLicenses": "Giấy phép bên thứ ba"
   },
   "Games": {
     "tictactoe": {
@@ -142,7 +143,110 @@
       }
     },
     "chess": {
-      "name": "Cờ vua"
+      "name": "Cờ vua",
+      "tagline": "Cờ cổ điển 8×8: nhập thành, phong cấp, bắt tốt qua đường",
+      "players": {
+        "white": "Trắng",
+        "black": "Đen"
+      },
+      "pieces": {
+        "k": "Vua",
+        "q": "Hậu",
+        "r": "Xe",
+        "b": "Tượng",
+        "n": "Mã",
+        "p": "Tốt"
+      },
+      "piecesPlural": {
+        "k": "Vua",
+        "q": "Hậu",
+        "r": "Xe",
+        "b": "Tượng",
+        "n": "Mã",
+        "p": "Tốt"
+      },
+      "colour": {
+        "w": "trắng",
+        "b": "đen"
+      },
+      "square": {
+        "piece": "{piece} {colour} ở {square}",
+        "empty": "Ô {square} trống",
+        "target": "Đi tới được",
+        "capture": "Ăn được quân",
+        "inCheck": "Đang bị chiếu"
+      },
+      "selection": {
+        "chosen": "Đã chọn {piece} {square}: {moves}",
+        "quiet": "đi được {squares}",
+        "capture": "ăn {squares}",
+        "noMoves": "{piece} {square} không có nước đi"
+      },
+      "check": {
+        "badge": "Chiếu!",
+        "line": "{player} đang bị chiếu"
+      },
+      "claim": {
+        "button": "Đòi hoà",
+        "threefold": "Thế cờ này đã lặp lại ba lần",
+        "fifty": "50 nước liền không đi Tốt, không ăn quân"
+      },
+      "flip": "Lật bàn",
+      "promotion": {
+        "title": "Tốt {from} → {to}",
+        "description": "Chọn quân thay cho Tốt.",
+        "cancel": "Huỷ",
+        "choice": {
+          "q": "Hậu",
+          "r": "Xe",
+          "b": "Tượng",
+          "n": "Mã"
+        }
+      },
+      "sheet": {
+        "title": "Sổ ghi",
+        "empty": "Chưa có nước nào",
+        "score": {
+          "white": "Trắng thắng",
+          "black": "Đen thắng",
+          "draw": "Hoà"
+        }
+      },
+      "san": {
+        "quiet": "{piece} {to}",
+        "quietFrom": "{piece} {from} {to}",
+        "capture": "{piece} ăn {to}",
+        "captureFrom": "{piece} {from} ăn {to}",
+        "castleKing": "Nhập thành cánh vua",
+        "castleQueen": "Nhập thành cánh hậu",
+        "promotion": "{move} phong {piece}",
+        "check": "{move}, chiếu",
+        "mate": "{move}, chiếu hết"
+      },
+      "move": {
+        "quiet": "đi {piece} {from} tới {to}",
+        "capture": "đi {piece} {from} ăn quân ở {to}",
+        "castleKing": "nhập thành cánh vua",
+        "castleQueen": "nhập thành cánh hậu",
+        "promotion": "{move}, phong {piece}",
+        "check": "{move}, chiếu",
+        "mate": "{move}, chiếu hết",
+        "claim": "đòi hoà"
+      },
+      "summary": {
+        "full": "Hơn {points} điểm: {pieces}",
+        "short": "+{points}",
+        "piece": "{count, plural, =1 {{piece}} other {# {plural}}}"
+      },
+      "result": {
+        "checkmate": "Chiếu hết",
+        "stalemate": "{player} hết nước đi mà không bị chiếu",
+        "insufficient-material": "Không bên nào đủ quân để chiếu hết",
+        "threefold-claim": "{player} đòi hoà: thế cờ lặp lại ba lần",
+        "fifty-move-claim": "{player} đòi hoà theo luật 50 nước",
+        "fivefold-repetition": "Thế cờ lặp lại năm lần",
+        "seventy-five-move": "75 nước liền không đi Tốt, không ăn quân"
+      }
     }
   },
   "Modes": {

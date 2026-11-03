@@ -132,7 +132,7 @@ describe("createIndexedDbStore", () => {
     const initial = {
       "tictactoe:ai": envelope(AI_SETTINGS, "2026-10-30T10:00:00.000Z", false),
       "tictactoe:local": { version: 3, future: "format" },
-      "chess:local": envelope({ kind: "local" }, "2026-10-30T10:00:00.000Z"),
+      "go:local": envelope({ kind: "local" }, "2026-10-30T10:00:00.000Z"),
       "tictactoe:online": envelope({ kind: "local" }, "2026-10-30T10:00:00.000Z"),
       "tictactoe:local:extra": envelope({ kind: "local" }, "2026-10-30T10:00:00.000Z"),
     };

@@ -4,6 +4,7 @@ import type { ComponentProps } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { SetupScreen } from "@/features/setup/SetupScreen";
+import { ChessArtwork } from "@/games/chess/Artwork";
 import { TicTacToeArtwork } from "@/games/tictactoe/Artwork";
 import { renderWithIntl } from "@/test/render-with-intl";
 import { createMemoryStore } from "@/transport/memory-store";
@@ -53,6 +54,27 @@ describe("/play/[gameId]", () => {
       initialMode: undefined,
     });
     expect(props.artwork).toMatchObject({ type: TicTacToeArtwork });
+  });
+
+  it("Màn hình bắt đầu ván Cờ vua: same device and online only, no level nor first player", async () => {
+    const props = await setupProps({ params: Promise.resolve({ gameId: "chess" }) });
+    expect(props).toMatchObject({
+      gameId: "chess",
+      supportsAI: false,
+      players: { min: 2, max: 2 },
+    });
+    expect(props.artwork).toMatchObject({ type: ChessArtwork });
+
+    renderWithIntl(<SetupScreen {...props} store={createMemoryStore()} />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("radio", { name: "Cùng máy" })).toBeChecked();
+    });
+    expect(
+      screen.getAllByRole("radio").map((option) => option.closest("label")?.textContent),
+    ).toEqual(["Cùng máy", "Online"]);
+    expect(screen.queryByRole("group", { name: "Mức độ" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: "Ai đi trước" })).not.toBeInTheDocument();
   });
 
   it("Chọn sẵn Online: passes the mode asked for by the address", async () => {
