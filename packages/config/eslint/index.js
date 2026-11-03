@@ -60,6 +60,12 @@ const SERVER_IMPORTS = [
 const WEB_REGISTRY_FREE_FILES = ["src/features/**", "src/transport/**", "src/lib/**"];
 const WEB_REGISTRY_FREE_EXCEPTIONS = ["**/*.test.{ts,tsx}", "src/features/menu/menu-games.ts"];
 
+/**
+ * Each game's UI, loaded only with its play screen: it imports its own rules from the game's
+ * subpath (`@board-games/games/caro`), never from the root, which brings every game's rules along.
+ */
+const WEB_GAME_UI_FILES = ["src/games/**"];
+
 /** Files that frameworks require to use a default export. */
 const NEXT_DEFAULT_EXPORT_FILES = [
   "**/app/**/{page,layout,template,loading,error,global-error,not-found,default,forbidden,unauthorized}.tsx",
@@ -67,6 +73,15 @@ const NEXT_DEFAULT_EXPORT_FILES = [
   "**/i18n/request.ts",
   "**/*.config.{ts,mts}",
 ];
+
+/** Tests and their helpers: the only files allowed to import the engine's test-only entry point. */
+const TEST_FILES = ["**/*.test.{ts,tsx}", "src/test/**"];
+
+/** `@board-games/engine/testing` imports Vitest and sample games: never in code that ships. */
+const TESTING_ONLY = {
+  group: ["@board-games/engine/testing"],
+  message: "Test-only entry point (it imports Vitest): import it from tests and src/test/ only.",
+};
 
 /** @param {Layer} layer */
 function boundaries(layer) {
@@ -106,12 +121,23 @@ function boundaries(layer) {
     });
   }
 
-  const rules = { "no-restricted-imports": ["error", { patterns }] };
-  if (layer !== "web") return [{ rules }];
+  /** @param {object[]} extra */
+  const restrict = (...extra) => ({
+    "no-restricted-imports": ["error", { patterns: [...patterns, ...extra] }],
+  });
+  // Each block below replaces the rule of the ones before it for its files, so every block repeats
+  // the patterns it keeps; tests get the same rule without the ban on the test-only entry point.
+  const base = [{ rules: restrict(TESTING_ONLY) }, { files: TEST_FILES, rules: restrict() }];
+  if (layer !== "web") return base;
+  const serverOnly = {
+    group: SERVER_IMPORTS,
+    message:
+      "Server-only code (Redis, WebSocket) must not be imported outside src/server and src/app/api.",
+  };
   // Same rule again for everything outside the server side of the app, plus the server folder:
   // `redis` and `ws` must never reach a client bundle.
   return [
-    { rules },
+    ...base,
     {
       files: WEB_REGISTRY_FREE_FILES,
       ignores: WEB_REGISTRY_FREE_EXCEPTIONS,
@@ -134,23 +160,29 @@ function boundaries(layer) {
       },
     },
     {
-      files: ["src/**"],
-      ignores: WEB_SERVER_FILES,
+      files: WEB_GAME_UI_FILES,
+      ignores: ["**/*.test.{ts,tsx}"],
       rules: {
-        "no-restricted-imports": [
+        "@typescript-eslint/no-restricted-imports": [
           "error",
           {
-            patterns: [
-              ...patterns,
+            paths: [
               {
-                group: SERVER_IMPORTS,
+                name: "@board-games/games",
+                allowTypeImports: true,
                 message:
-                  "Server-only code (Redis, WebSocket) must not be imported outside src/server and src/app/api.",
+                  "This would put every game's rules in this game's chunk: import from the game's own subpath (@board-games/games/<id>).",
               },
             ],
           },
         ],
       },
+    },
+    { files: ["src/**"], ignores: WEB_SERVER_FILES, rules: restrict(serverOnly, TESTING_ONLY) },
+    {
+      files: TEST_FILES.map((glob) => (glob.startsWith("src/") ? glob : `src/${glob}`)),
+      ignores: WEB_SERVER_FILES,
+      rules: restrict(serverOnly),
     },
   ];
 }

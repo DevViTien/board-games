@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import { createRng } from "../rng";
 import { choiceGame, type ChoiceState } from "../test-fixtures/choice-game";
+import { diceRaceAiGame, type DiceRaceState } from "../test-fixtures/dice-race-game";
 import { lineGame, type LineMove, linePosition, type LineState } from "../test-fixtures/line-game";
+import { rollChooseGame, type RollChooseState } from "../test-fixtures/roll-choose-game";
 import { randomTree, treeGame, type TreeMove, type TreeNode } from "../test-fixtures/tree-game";
 import { deepFreeze } from "../testing/deep-freeze";
 import type { PlayerIndex } from "../types";
@@ -243,14 +245,32 @@ describe("searchRoot on generated trees", () => {
     expect(() => treeSearch(turn(0, [sure(leaf(0)), sure(stuck)]), 2)).toThrow("no legal move");
   });
 
-  /** Paranoid expectiminimax without pruning, scored like the search, as the reference. */
-  function reference(node: TreeNode, depth: number, seat: PlayerIndex, ply: number): number {
+  /** Whether the only move at `node` is random: a forced roll, which costs no depth after a choice. */
+  function forcedRoll(node: TreeNode): boolean {
+    const moves = treeGame.legalMoves(node);
+    return moves.length === 1 && treeGame.outcomes(node, moves[0] ?? 0).length > 0;
+  }
+
+  /**
+   * Paranoid expectiminimax without pruning, scored like the search, as the reference. A forced roll
+   * reached by a move chosen among several searches its outcomes at its own depth; any other costs
+   * one, like any move.
+   */
+  function reference(
+    node: TreeNode,
+    depth: number,
+    seat: PlayerIndex,
+    ply: number,
+    afterChoice: boolean,
+  ): number {
     const result = treeGame.result(node);
     if (result !== null) return resultScore(result, seat, ply);
     if (depth <= 0) return clampEvaluation(treeGame.evaluate(node, seat));
-    const scores = treeGame
-      .legalMoves(node)
-      .map((move) => referenceMove(node, move, depth, seat, ply + 1));
+    const moves = treeGame.legalMoves(node);
+    const movesDepth = afterChoice && forcedRoll(node) ? depth + 1 : depth;
+    const scores = moves.map((move) =>
+      referenceMove(node, move, movesDepth, seat, ply + 1, moves.length > 1),
+    );
     return treeGame.currentPlayer(node) === seat ? Math.max(...scores) : Math.min(...scores);
   }
 
@@ -260,15 +280,17 @@ describe("searchRoot on generated trees", () => {
     depth: number,
     seat: PlayerIndex,
     ply: number,
+    choice: boolean,
   ) {
     const choices = treeGame.outcomes(node, move);
     if (choices.length === 0)
-      return reference(treeGame.applyMove(node, move), depth - 1, seat, ply);
+      return reference(treeGame.applyMove(node, move), depth - 1, seat, ply, choice);
     let total = 0;
     let weighted = 0;
     for (const { outcome, weight } of choices) {
       total += weight;
-      weighted += weight * reference(treeGame.applyMove(node, move, outcome), depth - 1, seat, ply);
+      weighted +=
+        weight * reference(treeGame.applyMove(node, move, outcome), depth - 1, seat, ply, choice);
     }
     return weighted / total;
   }
@@ -278,9 +300,10 @@ describe("searchRoot on generated trees", () => {
       const root = randomTree(seed, 2 + (seed % 3), 1 + (seed % 5));
       const seat = treeGame.currentPlayer(root);
       for (const depth of [1, 2, 3, 6]) {
-        const scored = treeGame
-          .legalMoves(root)
-          .map((move) => ({ move, score: referenceMove(root, move, depth, seat, 1) }));
+        const scored = treeGame.legalMoves(root).map((move) => ({
+          move,
+          score: referenceMove(root, move, depth, seat, 1, treeGame.legalMoves(root).length > 1),
+        }));
         const best = Math.max(...scored.map((entry) => entry.score));
         const expected = scored.filter((entry) => entry.score > best - TIE_EPSILON);
 
@@ -290,5 +313,77 @@ describe("searchRoot on generated trees", () => {
         expect([...search.candidates].sort(), label).toEqual(expected.map((entry) => entry.move));
       }
     }
+  });
+});
+
+describe("searchRoot with forced rolls", () => {
+  // Seat 0 has rolled 2: "greedy" scores 4 now, "safe" 2, but seat 1 punishes a greedy move
+  // whatever it rolls next.
+  const rolled: RollChooseState = {
+    scores: [5, 5],
+    toMove: 0,
+    rolled: 2,
+    exposed: null,
+    turnsLeft: 4,
+  };
+
+  function rollChooseSearch(depth: number) {
+    return searchRoot(
+      { game: rollChooseGame, evaluate: rollChooseGame.evaluate, seat: 0 },
+      rolled,
+      depth,
+      rollChooseGame.legalMoves(rolled),
+    );
+  }
+
+  it("sees the next player's answer to every roll at depth 2: the roll costs no depth", () => {
+    expect(rollChooseSearch(2).candidates).toEqual([{ type: "safe" }]);
+  });
+
+  it("still scores the position right after its own move at depth 1", () => {
+    expect(rollChooseSearch(1).candidates).toEqual([{ type: "greedy" }]);
+  });
+
+  it("charges every roll after the first of a chain, so a race of rolls stays small", () => {
+    const state: DiceRaceState = { positions: [0, 0, 0], toMove: 0, target: 100 };
+    let evaluations = 0;
+    const counting = (position: DiceRaceState, player: PlayerIndex) => {
+      evaluations += 1;
+      return diceRaceAiGame.evaluate(position, player);
+    };
+
+    const search = searchRoot(
+      { game: diceRaceAiGame, evaluate: counting, seat: 0 },
+      state,
+      3,
+      diceRaceAiGame.legalMoves(state),
+    );
+
+    expect(search.candidates).toEqual([{ type: "roll" }]);
+    expect(evaluations).toBeLessThanOrEqual(6 ** 3);
+  });
+
+  it("charges the second of two forced rolls in a row", () => {
+    // After seat 0's decision, seat 1 rolls twice in a row, then would choose between a 0 and a 9
+    // for seat 0. At depth 2 the first roll is free and the second costs the last step: the
+    // position after both rolls is scored as it stands (5), not searched.
+    const choose = turn(1, [sure(leaf(0)), sure(leaf(9))], [5, -5]);
+    const twoRolls = turn(1, [roll([1, turn(1, [roll([1, choose])])])]);
+    const root = turn(0, [sure(twoRolls), sure(leaf(1))]);
+
+    expect(treeSearch(root, 2).best).toBe(5);
+    expect(treeSearch(root, 3).best).toBe(0);
+  });
+
+  it("charges a forced roll that follows a move which was the only one", () => {
+    // After seat 0's choice, seat 1 has a single move that is not random, then rolls, then would
+    // choose between a 0 and a 9 for seat 0. That roll follows no choice, so it costs: at depth 3
+    // the position after it is scored as it stands (5); at depth 4 it is searched.
+    const choose = turn(1, [sure(leaf(0)), sure(leaf(9))], [5, -5]);
+    const onlyMove = turn(1, [sure(turn(1, [roll([1, choose])]))]);
+    const root = turn(0, [sure(onlyMove), sure(leaf(1))]);
+
+    expect(treeSearch(root, 3).best).toBe(5);
+    expect(treeSearch(root, 4).best).toBe(0);
   });
 });

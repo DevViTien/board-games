@@ -72,7 +72,7 @@ Menu SHALL hiện mọi game đã có luật trong app dưới dạng chơi đư
 
 - **WHEN** người chơi mở trang chủ
 - **THEN** thẻ Tic-tac-toe và thẻ Cờ caro chơi được đứng trước mọi thẻ "Sắp có"
-- **AND** Cờ cá ngựa, Cờ vua hiện nhãn "Sắp có"
+- **AND** thẻ Cờ cá ngựa cũng chơi được, chỉ Cờ vua hiện nhãn "Sắp có"
 
 #### Scenario: Game dự kiến đã có luật không bị lặp
 
@@ -83,6 +83,11 @@ Menu SHALL hiện mọi game đã có luật trong app dưới dạng chơi đư
 
 - **WHEN** menu hiện bằng tiếng Việt thẻ Cờ caro
 - **THEN** thẻ ghi "2 người" và "~10 phút", lối vào ghi "Chơi" và không có nhãn "Sắp có"
+
+#### Scenario: Thẻ Cờ cá ngựa
+
+- **WHEN** menu hiện bằng tiếng Việt thẻ Cờ cá ngựa
+- **THEN** thẻ ghi "2–4 người" và "~20 phút", lối vào ghi "Chơi" và không có nhãn "Sắp có"
 
 ### Requirement: Tuỳ chọn luật trong mục tiếp tục ván dở
 

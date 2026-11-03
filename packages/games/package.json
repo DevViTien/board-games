@@ -5,7 +5,10 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./ids": "./src/ids.ts"
+    "./ids": "./src/ids.ts",
+    "./tictactoe": "./src/tictactoe/index.ts",
+    "./caro": "./src/caro/index.ts",
+    "./ludo": "./src/ludo/index.ts"
   },
   "scripts": {
     "lint": "eslint .",

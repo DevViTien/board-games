@@ -5,7 +5,7 @@ import { z } from "zod";
  * Raised on every change that an older client cannot handle. Sent in the greeting (`create`,
  * `join`), so a tab left open across a deploy is told to reload instead of misreading messages.
  */
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2;
 
 /** Upper-case letters and digits that cannot be mistaken for one another: no 0/O, no 1/I/L. */
 export const ROOM_CODE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
@@ -54,9 +54,8 @@ export const playerNameSchema = z
     return length >= 1 && length <= PLAYER_NAME_MAX_LENGTH && !INVISIBLE_CHARACTERS.test(name);
   });
 
-export interface SeatView {
-  readonly name: string;
-}
+/** Who holds a taken seat: a person, by the name they chose, or the AI the server plays. */
+export type SeatView = { readonly kind: "human"; readonly name: string } | { readonly kind: "ai" };
 
 /**
  * A room as every client sees it. Holds names only: a `playerId` is the secret that claims a
@@ -71,11 +70,20 @@ export interface RoomView {
   readonly gameNumber: number;
   /** By `PlayerIndex` of the current game; `null` is an empty seat. */
   readonly seats: readonly (SeatView | null)[];
+  /** The seat of the room's host (its creator) in the current game; `null` for a room without one. */
+  readonly host: PlayerIndex | null;
   /** The current game. Still untrusted: the client rebuilds it with the engine's `fromRecord`. */
   readonly record: GameRecord;
 }
 
 const countSchema = z.number().int().nonnegative();
+
+export const playerIndexSchema = countSchema satisfies z.ZodType<PlayerIndex>;
+
+const seatViewSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("human"), name: z.string() }),
+  z.object({ kind: z.literal("ai") }),
+]) satisfies z.ZodType<SeatView>;
 
 export const gameRecordSchema = z.object({
   version: z.literal(RECORD_VERSION),
@@ -91,8 +99,8 @@ export const roomViewSchema = z.object({
   gameId: z.string(),
   revision: countSchema,
   gameNumber: z.number().int().positive(),
-  seats: z.array(z.object({ name: z.string() }).nullable()),
+  seats: z.array(seatViewSchema.nullable()),
+  // Loose like every server message: missing (a server that predates hosts) reads as no host.
+  host: playerIndexSchema.nullable().catch(null),
   record: gameRecordSchema,
 }) satisfies z.ZodType<RoomView>;
-
-export const playerIndexSchema = countSchema satisfies z.ZodType<PlayerIndex>;

@@ -21,6 +21,15 @@
   /* Dims the page behind a modal dialog. */
   --overlay: oklch(0.22 0.015 250 / 0.4);
   --radius: 0.75rem;
+  /*
+   * Piece colours of multiplayer games, named by colour (not by seat: in a two-player Ludo game the
+   * second seat is yellow). Each is at least 3:1 against --surface and --surface-muted; pieces also
+   * carry a symbol, never colour alone.
+   */
+  --piece-red: oklch(0.55 0.2 27);
+  --piece-blue: oklch(0.5 0.17 258);
+  --piece-yellow: oklch(0.62 0.13 80);
+  --piece-green: oklch(0.55 0.15 150);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -38,6 +47,10 @@
     --focus-ring: oklch(0.7 0.14 255);
     --danger: oklch(0.72 0.17 25);
     --overlay: oklch(0.05 0 0 / 0.6);
+    --piece-red: oklch(0.68 0.19 25);
+    --piece-blue: oklch(0.7 0.14 255);
+    --piece-yellow: oklch(0.84 0.15 90);
+    --piece-green: oklch(0.72 0.16 150);
   }
 }
 
@@ -55,6 +68,10 @@
   --focus-ring: oklch(0.7 0.14 255);
   --danger: oklch(0.72 0.17 25);
   --overlay: oklch(0.05 0 0 / 0.6);
+  --piece-red: oklch(0.68 0.19 25);
+  --piece-blue: oklch(0.7 0.14 255);
+  --piece-yellow: oklch(0.84 0.15 90);
+  --piece-green: oklch(0.72 0.16 150);
 }
 
 @theme inline {
@@ -70,6 +87,10 @@
   --color-focus-ring: var(--focus-ring);
   --color-danger: var(--danger);
   --color-overlay: var(--overlay);
+  --color-piece-red: var(--piece-red);
+  --color-piece-blue: var(--piece-blue);
+  --color-piece-yellow: var(--piece-yellow);
+  --color-piece-green: var(--piece-green);
   --radius-card: var(--radius);
   /*
    * --font-app (Latin + Vietnamese) and --font-cjk (Japanese) are provided by the app via
@@ -78,4 +99,38 @@
   --font-sans:
     var(--font-app, system-ui), var(--font-cjk, sans-serif), -apple-system, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
+}
+
+/*
+ * Game animations, used as `animate-dice-roll motion-reduce:animate-none`. Each stays within the AI's
+ * pacing delays (apps/web transport/ai-timing.ts), so the AI never moves before one ends.
+ */
+@theme {
+  /* A die tumbling onto its new face. */
+  --animate-dice-roll: dice-roll 450ms ease-out;
+  /* A piece sent back to its starting area, fading in there. */
+  --animate-piece-kicked: piece-kicked 300ms ease-out;
+
+  @keyframes dice-roll {
+    0% {
+      transform: rotate(-200deg) scale(0.6);
+    }
+    60% {
+      transform: rotate(20deg) scale(1.1);
+    }
+    100% {
+      transform: rotate(0deg) scale(1);
+    }
+  }
+
+  @keyframes piece-kicked {
+    0% {
+      opacity: 0;
+      transform: scale(1.6);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
 }

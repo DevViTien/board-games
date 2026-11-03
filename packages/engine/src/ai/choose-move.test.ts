@@ -5,6 +5,7 @@ import { choiceGame } from "../test-fixtures/choice-game";
 import { counterGame } from "../test-fixtures/counter-game";
 import { diceRaceAiGame } from "../test-fixtures/dice-race-game";
 import { lineGame, linePosition, type LineState } from "../test-fixtures/line-game";
+import { rollChooseGame, type RollChooseState } from "../test-fixtures/roll-choose-game";
 import { treeGame, type TreeNode } from "../test-fixtures/tree-game";
 import { expiresImmediately, neverExpires, ticking } from "../testing/clocks";
 import { deepFreeze } from "../testing/deep-freeze";
@@ -232,6 +233,43 @@ describe("chooseMove", () => {
       const picks = new Set(Array.from({ length: 30 }, (_unused, seed) => choice(1, 1, seed)));
 
       expect(picks).toEqual(new Set(["safe", "gamble"]));
+    });
+
+    describe("looking past the next player's roll", () => {
+      // Seat 0 has rolled 2 halfway through the game: "greedy" scores 4 now, "safe" 2, but seat 1
+      // punishes a greedy move whatever it rolls next.
+      const rolled: RollChooseState = {
+        scores: [5, 5],
+        toMove: 0,
+        rolled: 2,
+        exposed: null,
+        turnsLeft: 4,
+      };
+      /** Never below Easy's chance of a random move: the search always decides. */
+      const searching = { nextInt: (min: number) => min, nextFloat: () => 0.99 };
+
+      function chosenAt(level: AiLevel) {
+        const chosen = chooseMove(rollChooseGame, rolled, {
+          level,
+          rng: searching,
+          now: neverExpires(),
+          timeLimitMs: 1000,
+        });
+        if (!chosen.ok) throw new Error(chosen.error);
+        return chosen.value.type;
+      }
+
+      it("plays it safe at Medium, seeing the punishment after the next roll", () => {
+        expect(chosenAt(AI_LEVEL.Medium)).toBe("safe");
+      });
+
+      it("plays it safe at Hard", () => {
+        expect(chosenAt(AI_LEVEL.Hard)).toBe("safe");
+      });
+
+      it("takes the points at Easy, which only looks at its own move", () => {
+        expect(chosenAt(AI_LEVEL.Easy)).toBe("greedy");
+      });
     });
 
     it.each([2, 3, 4])("plays legal moves in a %i-player dice race at every level", (players) => {

@@ -4,6 +4,7 @@ import { describeGameContract } from "../testing/describe-game-contract";
 import { choiceGame } from "./choice-game";
 import { COUNTER_TARGET, counterAiGame, counterGame } from "./counter-game";
 import { diceRaceAiGame } from "./dice-race-game";
+import { GREEDY_BONUS, PUNISHMENT, rollChooseGame, type RollChooseState } from "./roll-choose-game";
 import { treeGame } from "./tree-game";
 
 describe("counter evaluate", () => {
@@ -60,6 +61,78 @@ describe("choice game", () => {
   });
 });
 
+describe("roll-choose game", () => {
+  const start = rollChooseGame.setup({ playerCount: 3, options: {} });
+  const afterRoll = (state: RollChooseState, face: number) =>
+    rollChooseGame.applyMove(state, { type: "roll" }, face);
+
+  it("starts every turn with a roll of a three-sided die, then offers a choice", () => {
+    expect(start).toEqual({
+      scores: [0, 0, 0],
+      toMove: 0,
+      rolled: null,
+      exposed: null,
+      turnsLeft: 9,
+    });
+    expect(rollChooseGame.legalMoves(start)).toEqual([{ type: "roll" }]);
+    expect(rollChooseGame.outcomes(start, { type: "roll" }).map(({ outcome }) => outcome)).toEqual([
+      1, 2, 3,
+    ]);
+    const rolled = afterRoll(start, 3);
+    expect(rolled).toMatchObject({ toMove: 0, rolled: 3 });
+    expect(rollChooseGame.legalMoves(rolled)).toEqual([{ type: "safe" }, { type: "greedy" }]);
+    expect(rollChooseGame.outcomes(rolled, { type: "safe" })).toEqual([]);
+  });
+
+  it("scores the roll when safe, two more when greedy, and passes the turn", () => {
+    const safe = rollChooseGame.applyMove(afterRoll(start, 3), { type: "safe" });
+    expect(safe).toEqual({
+      scores: [3, 0, 0],
+      toMove: 1,
+      rolled: null,
+      exposed: null,
+      turnsLeft: 8,
+    });
+
+    const greedy = rollChooseGame.applyMove(afterRoll(start, 3), { type: "greedy" });
+    expect(greedy).toMatchObject({ scores: [3 + GREEDY_BONUS, 0, 0], toMove: 1, exposed: 0 });
+  });
+
+  it("lets the next player punish a greedy move, whatever they roll", () => {
+    const greedy = rollChooseGame.applyMove(afterRoll(start, 1), { type: "greedy" });
+    const next = afterRoll(greedy, 1);
+
+    expect(rollChooseGame.legalMoves(next)).toContainEqual({ type: "punish" });
+    expect(rollChooseGame.applyMove(next, { type: "punish" })).toMatchObject({
+      scores: [1 + GREEDY_BONUS - PUNISHMENT, 0, 0],
+      toMove: 2,
+      exposed: null,
+    });
+    // Let go: the player after cannot punish it any more.
+    const letGo = rollChooseGame.applyMove(next, { type: "safe" });
+    expect(rollChooseGame.legalMoves(afterRoll(letGo, 2))).not.toContainEqual({ type: "punish" });
+  });
+
+  it("ends after the last turn, the highest score winning", () => {
+    const last: RollChooseState = {
+      scores: [4, 6],
+      toMove: 1,
+      rolled: 1,
+      exposed: null,
+      turnsLeft: 1,
+    };
+    const end = rollChooseGame.applyMove(last, { type: "safe" });
+
+    expect(rollChooseGame.result(end)).toEqual({ kind: "win", winners: [1] });
+    expect(rollChooseGame.legalMoves(end)).toEqual([]);
+    expect(rollChooseGame.result({ ...end, scores: [7, 7] })).toEqual({ kind: "draw" });
+  });
+
+  it("evaluates a player's lead over the best other player", () => {
+    expect(rollChooseGame.evaluate({ ...start, scores: [3, 7, 5] }, 1)).toBe(2);
+  });
+});
+
 describeGameContract(counterAiGame, { seeds: [1, 2, 3], maxPlies: 10 });
 describeGameContract(diceRaceAiGame, { seeds: [1, 2, 3], maxPlies: 200, options: { target: 12 } });
 describeGameContract(choiceGame, {
@@ -68,3 +141,4 @@ describeGameContract(choiceGame, {
   options: { winWeight: 3, loseWeight: 1 },
 });
 describeGameContract(treeGame, { seeds: [1, 2, 3], maxPlies: 4 });
+describeGameContract(rollChooseGame, { seeds: [1, 2, 3], maxPlies: 30 });

@@ -20,6 +20,16 @@ export const ROOM_ERROR = {
   /** The move or rematch targets a game or a position the room has moved past. */
   StaleMove: "stale-move",
   GameNotOver: "game-not-over",
+  /** Only the room's host may mark or unmark an AI seat. */
+  NotHost: "not-host",
+  /** An AI seat asked for on a seat someone (or the AI) already holds. */
+  SeatTaken: "seat-taken",
+  /** An AI seat to unmark that is not one. */
+  NotAiSeat: "not-ai-seat",
+  /** AI seats change only before the current game's first move. */
+  GameStarted: "game-started",
+  /** A seat number the room does not have. Not `invalid-message`, which makes clients reconnect. */
+  InvalidSeat: "invalid-seat",
   TooManyMessages: "too-many-messages",
   /** The room store failed or did not answer in time; worth retrying. */
   Unavailable: "unavailable",

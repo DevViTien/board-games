@@ -65,13 +65,23 @@ const clientMessageSchema = z.discriminatedUnion("type", [
     move: z.unknown(),
   }),
   z.strictObject({ type: z.literal("rematch"), gameNumber: gameNumberSchema }),
+  /**
+   * The host marks an empty seat as played by the server's AI (`on`), or empties an AI seat again.
+   * Any whole number, negative too: a seat the room does not have is refused with `invalid-seat`, not as a broken
+   * message, which would make the client reconnect.
+   */
+  z.strictObject({
+    type: z.literal("ai-seat"),
+    seat: z.number().int(),
+    on: z.boolean(),
+  }),
   z.strictObject({ type: z.literal("ping") }),
 ]);
 
 export type ClientMessage = z.output<typeof clientMessageSchema>;
 
 /** The requests a `rejected` answers; `null` for a message that could not be read at all. */
-const REJECTABLE_REQUESTS = ["sit", "move", "rematch"] as const;
+const REJECTABLE_REQUESTS = ["sit", "move", "rematch", "ai-seat"] as const;
 export type RejectableRequest = (typeof REJECTABLE_REQUESTS)[number];
 
 const rejectionCodeSchema = z.union([z.enum(ROOM_ERROR), z.enum(ENGINE_ERROR)]);

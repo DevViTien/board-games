@@ -3,7 +3,7 @@
  * or names a game imports (`@board-games/games/ids`), so the rules and AI of every game stay out
  * of its bundle. `index.test.ts` checks it lists exactly the games of `GAMES`, in the same order.
  */
-export const GAME_IDS = ["tictactoe", "caro"] as const;
+export const GAME_IDS = ["tictactoe", "caro", "ludo"] as const;
 
 export type RegisteredGameId = (typeof GAME_IDS)[number];
 

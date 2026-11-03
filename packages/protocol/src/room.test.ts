@@ -72,7 +72,8 @@ describe("roomViewSchema", () => {
     gameId: "tictactoe",
     revision: 3,
     gameNumber: 1,
-    seats: [{ name: "Lan" }, null],
+    seats: [{ kind: "human", name: "Lan" }, null],
+    host: 0,
     record: { version: 1, gameId: "tictactoe", playerCount: 2, options: {}, entries: [] },
   };
 
@@ -80,15 +81,21 @@ describe("roomViewSchema", () => {
     expect(roomViewSchema.parse(view)).toEqual(view);
   });
 
+  it("accepts AI seats and a room without a host", () => {
+    const withAi = { ...view, seats: [{ kind: "human", name: "Lan" }, { kind: "ai" }], host: null };
+
+    expect(roomViewSchema.parse(withAi)).toEqual(withAi);
+  });
+
   it("drops any playerId, in the room and in its seats", () => {
     const parsed = roomViewSchema.parse({
       ...view,
       playerId: "secret-secret-secret",
-      seats: [{ name: "Lan", playerId: "secret-secret-secret" }, null],
+      seats: [{ kind: "human", name: "Lan", playerId: "secret-secret-secret" }, null],
     });
 
     expect(JSON.stringify(parsed)).not.toContain("playerId");
-    expect(parsed.seats[0]).toEqual({ name: "Lan" });
+    expect(parsed.seats[0]).toEqual({ kind: "human", name: "Lan" });
   });
 
   it("rejects a code that is not canonical", () => {

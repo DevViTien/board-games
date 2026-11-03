@@ -146,11 +146,11 @@ board-games/
 | Hợp đồng luật (`GameDefinition`) | `engine` | `meta`, `defaultOptions`, `setup`, `currentPlayer`, `legalMoves`, `applyMove`, `result`, (`parseOptions`, `evaluate`, `candidateMoves`, `moveKey`) |
 | Lịch sử, undo/redo, biên bản, replay | `engine` (`session`, `record`) | Không gì cả |
 | Autosave | `apps/web` | Không gì cả |
-| AI: `chooseMove(game, state, { level, rng, now, timeLimitMs })`, minimax góc nhìn ghế máy + alpha-beta + expectimax, đào sâu dần; mức `AI_LEVEL` Dễ/Vừa/Khó; chạy trong Web Worker (`AiPlayer`, không chạy được thì dự phòng trên luồng chính), transport cho máy đi khi tới ghế máy | `engine/ai` + `ai-worker` + `transport` | Hàm `evaluate` (càng cao càng tốt cho `player`; số hữu hạn, nên là số nguyên, trị tuyệt đối dưới 10^8; mọi chênh lệch đều được coi là thật) và `meta.supportsAI: true`; game bàn lớn thêm `candidateMoves` (tập nước máy xét ở mỗi thế, tốt trước; tập con khác rỗng của `legalMoves`, giữ mọi nước thắng ngay và chặn ngay; bộ kiểm tra hợp đồng `candidate-moves`) |
+| AI: `chooseMove(game, state, { level, rng, now, timeLimitMs })`, minimax góc nhìn ghế máy + alpha-beta + expectimax, đào sâu dần (lần gieo bắt buộc ngay sau một nước quyết định không tốn độ sâu); mức `AI_LEVEL` Dễ/Vừa/Khó; chạy trong Web Worker (`AiPlayer`, không chạy được thì dự phòng trên luồng chính), transport cho máy đi khi tới ghế máy | `engine/ai` + `ai-worker` + `transport` | Hàm `evaluate` (càng cao càng tốt cho `player`; số hữu hạn, nên là số nguyên, trị tuyệt đối dưới 10^8; mọi chênh lệch đều được coi là thật) và `meta.supportsAI: true`; game bàn lớn thêm `candidateMoves` (tập nước máy xét ở mỗi thế, tốt trước; tập con khác rỗng của `legalMoves`, giữ mọi nước thắng ngay và chặn ngay; bộ kiểm tra hợp đồng `candidate-moves`) |
 | Ngẫu nhiên (xúc xắc) | `engine` chọn kết quả bằng rng được truyền vào | Khai báo `outcomes(state, move)`: các kết quả có thể kèm trọng số |
 | Chơi online, kết nối lại, server trọng tài | `transport` + `server` + `protocol` | Không gì cả |
 | Menu, bộ lọc | `features/menu` | `meta` (tên, số người, thời lượng) |
-| Màn hình bắt đầu ván (chế độ, mức độ, ai đi trước, tuỳ chọn luật, ván dở của game) | `features/setup` | `meta.supportsAI`; game có tuỳ chọn luật khai báo `optionChoices` (giá trị được chọn, theo thứ tự hiện) và khoá dịch `Games.<id>.options.*` |
+| Màn hình bắt đầu ván (chế độ, số người chơi, mức độ, ai đi trước, tuỳ chọn luật, ván dở của game) | `features/setup` | `meta.supportsAI`, `meta.players` (nhóm "Số người chơi" khi `min < max`); game có tuỳ chọn luật khai báo `optionChoices` (giá trị được chọn, theo thứ tự hiện) và khoá dịch `Games.<id>.options.*` |
 | Khung màn hình ván (lượt, đồng hồ, nút) | `features/play` | Component `Board` |
 | Giao diện nền, token, theme | `packages/ui` | Không gì cả |
 
@@ -182,8 +182,9 @@ interface GameDefinition<State, Move, Outcome = never, Options extends object = 
 // apps/web/src/games — phần giao diện của một game, ghép với luật bằng defineGameEntry
 interface GameUI<State, Move, Outcome = never> {
   readonly Board: ComponentType<BoardProps<State, Move, Outcome>>; // { state, legalMoves, onMove, disabled, result, lastEntry, viewer }
-  readonly usePlayerLabel: () => (player: PlayerIndex) => string;  // "X", "O", tên màu…
-  readonly useMoveLabel: () => (move: Move, state: State) => string; // "hàng 8, cột 9"; state là thế sau nước đó
+  readonly usePlayerLabel: () => (player: PlayerIndex, state: State) => string; // "X", "O", tên màu… (state: thế đang hiện)
+  readonly useMoveLabel: () => (move: Move, state: State) => string; // cụm hành động: "đánh hàng 8, cột 9", "gieo được 5";
+                                                                     // state là thế sau nước đó
 }
 
 // Phiên chơi: dữ liệu thuần + hàm thuần, lỗi trả về dạng Result<T> với mã ENGINE_ERROR
@@ -217,11 +218,15 @@ interface Transport<State, Move, Outcome = never> {
 // Ghế: SeatController = { kind: "human" } | { kind: "ai", level } là dữ liệu lưu của chế độ cục bộ;
 // SeatView = SeatController | { kind: "remote", name: string | null } là ghế trong ảnh chụp (remote = người chơi ở xa, null = ghế trống).
 // Transport cục bộ theo ghế: mỗi ghế là người hoặc máy.
-// Tới ghế máy thì hỏi AiPlayer, chờ tối thiểu 300 ms, kiểm lại ván chưa đổi rồi mới đi; máy lỗi thì đi nước hợp lệ ngẫu nhiên.
+// Tới ghế máy thì hỏi AiPlayer, chờ tối thiểu 300 ms (game có outcomes: AI_SETTLE_DELAY_MS 500 ms, ngay sau một nước có
+// kết quả ngẫu nhiên AI_RESULT_DELAY_MS 800 ms; ai-timing.ts), kiểm lại ván chưa đổi rồi mới đi; máy lỗi thì đi nước hợp lệ
+// ngẫu nhiên. Đấu với máy N người: một người + máy ở mọi ghế còn lại, cùng mức; "Tôi" = ghế đi đầu, "Máy" = người đi thứ
+// hai, "Ngẫu nhiên" = rút đều trong N ghế. Hoàn tác không bao giờ lùi qua một nước có outcome (dừng ngay sau lần gieo).
 createLocalTransport({ definition, store, rng, mode?: "local" | "ai", start?: PlaySetup, fallback?: PlaySetup, ai?: AiPlayer })
-// PlaySetup = { mode: "local", options? } | { mode: "ai", level, first: "human" | "ai" | "random", options? }
-// options chưa tin cậy (từ đường dẫn ?options=<JSON> hay localStorage); thứ tự: start mà luật nhận → ván đã lưu → fallback
-// (lựa chọn nhớ gần nhất, cả hai chế độ) → mặc định. "Ván mới" giữ tuỳ chọn của ván đang chơi.
+// PlaySetup = { mode: "local", options?, playerCount? } | { mode: "ai", level, first: "human" | "ai" | "random", options?, playerCount? }
+// options, playerCount chưa tin cậy (từ đường dẫn ?options=<JSON>&players=<n> hay localStorage); thứ tự: start mà luật nhận
+// (cả tuỳ chọn lẫn số người) → ván đã lưu → fallback (lựa chọn nhớ gần nhất, cả hai chế độ) → mặc định. "Ván mới" giữ tuỳ
+// chọn và số người của ván đang chơi. players=<n> chỉ có khi game có số người thay đổi.
 
 // Kết nối một phòng (không biết game): join với danh tính đọc lại ở mỗi lần chào (getIdentity), giữ room mới nhất (room
 // đầu tiên sau mỗi join luôn thắng), tự nối lại (0/1/2/4/8 rồi 10 giây, nhân hệ số ngẫu nhiên [0,8; 1]; về 0 chỉ sau 30
@@ -231,11 +236,15 @@ createLocalTransport({ definition, store, rng, mode?: "local" | "ai", start?: Pl
 createRoomConnection({ url, code, getIdentity, openSocket?, environment?, random? }): RoomConnection
 // RoomConnection: getSnapshot() → { status: ConnectionStatus (CONNECTION_STATUS ở transport/types.ts: "connecting" |
 //   "online" | "reconnecting" | "paused" | "idle" | "failed"), room, you, failure, slow }; subscribe;
-//   send(sit | move | rematch): boolean; onRejected; onSynced; resume; reconnect; dispose
+//   send(sit | move | rematch | ai-seat): boolean; onRejected; onSynced; resume; reconnect; dispose. Lời từ chối ai-seat
+//   (not-host, seat-taken, not-ai-seat, game-started, invalid-seat) không làm nối lại; outdated-client dừng hẳn, không tự tải lại.
 
 // Transport online theo ghế: dựng ván bằng fromRecord(room.record) mỗi lần room đổi; nước đi chỉ hiện khi server đã ghi
 // (không hiển thị trước); chờ trả lời thì khoá bàn (cờ chờ theo gameNumber + moveIndex), quá 8 giây thì nối lại; chỉ phát
 // "rejected" với mã của luật; isBroken() khi biên bản không dựng được (từ đó thôi theo dõi; trang phòng dừng kết nối).
+// Ghế máy của phòng là { kind: "ai", level: "medium" } trong ảnh chụp. Một room mang nhiều nước mới (máy đi liền nhau) được
+// hiện lần lượt: nước đầu ngay, mỗi nước sau cách AI_RESULT_DELAY_MS (sau lần gieo) / AI_SETTLE_DELAY_MS, hay AI_MIN_DELAY_MS
+// với game không có xúc xắc; canMove sai tới khi hiện xong; ván mới hiện bàn trống trước; vào phòng/tải lại/nối lại hiện ngay.
 createOnlineTransport({ definition, connection }): OnlineTransport
 
 // Ván dở theo slot game × chế độ (khoá "<gameId>:<mode>", vỏ { version: 2, savedAt, inProgress, mode, record });
@@ -257,16 +266,23 @@ interface AiPlayer {
 
 // packages/protocol — thông điệp online, kiểm bằng zod ở cả hai phía
 // client → server: create { protocol, gameId, playerCount?, options?, playerId, name } | join { protocol, code, playerId, name }
-//                  | sit { name } | move { gameNumber, moveIndex, move } | rematch { gameNumber } | ping
+//                  | sit { name } | move { gameNumber, moveIndex, move } | rematch { gameNumber }
+//                  | ai-seat { seat, on } (chỉ chủ phòng, phòng từ ba ghế, trước nước đầu của ván) | ping
 // server → client: created { code } | room { room: RoomView, you } | rejected { request, code } | error { code } | pong
+// PROTOCOL_VERSION = 2 (M6, ghế máy): tab của bản 1 nhận outdated-client ở lời chào.
 interface RoomView {                                 // không bao giờ chứa playerId
   readonly code: RoomCode;                           // 6 ký tự, không 0/O/1/I/L
   readonly gameId: string;
   readonly revision: number;                         // tăng 1 mỗi lần phòng đổi
   readonly gameNumber: number;                       // ván thứ mấy trong phòng
-  readonly seats: readonly ({ name: string } | null)[];
+  readonly seats: readonly ({ kind: "human"; name: string } | { kind: "ai" } | null)[];
+  readonly host: PlayerIndex | null;                 // ghế hiện tại của chủ phòng (người tạo); null với phòng bản trước
   readonly record: GameRecord;                       // ván hiện tại; client dựng lại bằng fromRecord
 }
+// room-service: StoredRoom định dạng 2 (hostId, ghế { kind: "human", playerId, name } | { kind: "ai" }); đọc được định
+// dạng 1 (mọi ghế là người, không có chủ phòng). Máy chơi thay ghế máy ngay trong lần ghi đã trao lượt cho nó (move, sit,
+// ai-seat, rematch; join khi phòng dừng ở lượt máy): chooseMove mức Vừa, rng của server, qua playMove của luật, tối đa
+// MAX_AI_MOVES_PER_WRITE = 200 nước mỗi lần ghi; không hẹn giờ, không tiến trình nền.
 
 // apps/web/src/server/store — mọi state của phòng nằm ở đây (Redis trên Vercel, bộ nhớ khi dev/test)
 interface RoomStore {
@@ -507,5 +523,11 @@ Còn lại:
 Còn lại:
 - Chưa thử trên thiết bị thật: bàn 19×19 và chạm hai lần trên điện thoại, thời gian máy mức Khó trên CPU điện thoại (E2E "mobile" chỉ mô phỏng khung hình và cảm ứng trên máy tính); chơi thử Cờ caro online giữa hai thiết bị trên Production. Ghi kết quả vào đây.
 
-### Tiếp theo
-**M6. Cờ cá ngựa** (§6.2): luật "phổ biến" của idea.md §3.4 với các biến thể bật/tắt được, khai báo bằng `optionChoices` của M5; tuỳ chọn không liệt kê được và chọn số người chơi làm khi M6 cần.
+### M6. Cờ cá ngựa (03/11/2026)
+
+Qua 3 change OpenSpec theo thứ tự `add-multiplayer-setup` → `add-ludo-game` → `add-room-ai-seats`:
+- `add-multiplayer-setup` (đã archive): phần dùng chung cho game 2–4 người có xúc xắc, chưa biết gì về Cờ cá ngựa. Nhóm "Số người chơi" ở màn hình bắt đầu ván cho game có `meta.players.min < max` (mọi chế độ, nhớ cùng lựa chọn gần nhất, đường dẫn `players=<n>`, `createRoom` gửi `playerCount`); transport cục bộ tạo ván N người; đấu với máy = một người + máy ở mọi ghế còn lại ("Ngẫu nhiên" rút đều vị trí lượt); lời báo nêu tên ghế khi có từ hai máy và nói mọi nước của máy; nhịp máy trong game có xúc xắc (`AI_SETTLE_DELAY_MS`, `AI_RESULT_DELAY_MS`); hoàn tác không vượt qua lần gieo; engine: lần gieo bắt buộc ngay sau một nước quyết định không tốn độ sâu; game mẫu `dice-race`, `roll-choose` export qua `@board-games/engine/testing`; `GameUI.usePlayerLabel(player, state)`, `useMoveLabel` trả cụm hành động. Tic-tac-toe, Cờ caro không đổi (E2E cũ xanh không sửa).
+- `add-ludo-game` (đã archive): luật Cờ cá ngựa trong `packages/games/src/ludo/` theo bộ luật người dùng chốt (một xúc xắc, ra quân bằng 6, gieo 6 được gieo thêm kể cả khi không đi được, không vượt, đá, gieo 1 nhảy tới chân chuồng kế tiếp, lên chuồng theo bậc, thắng khi chiếm bậc 3–6); `LudoOptions` có bốn biến thể nhưng ván chỉ nhận bộ mặc định (biến thể chạy qua định nghĩa chỉ cho test); máy dùng `chooseMove` chung với `evaluate` theo trọng số; bàn SVG chữ thập tự vẽ (màu + ký hiệu, nút "Gieo xúc xắc", nhóm "Chọn ngựa", danh sách vị trí cho trình đọc màn hình, hiệu ứng xúc xắc lăn và ngựa đi từng ô, tắt khi giảm chuyển động); token `piece-*` và keyframes trong `packages/ui`; thẻ menu chơi được; online giữa người với người chạy ngay (server gieo). Số đo: 1000 ván tự chơi đều kết thúc (file test ~6,6 s; ván ngẫu nhiên 4 người trung bình 1 149 nước, dài nhất 2 104, biên bản ~76 KB, `fromRecord` ~15 ms); máy Vừa ~0,5 ms/nước, Khó đạt độ sâu ≥ 5 trong 1,5 s ở 2 và 4 người; một vòng ba máy mức Dễ 2,9–5,9 s trong E2E (dài hơn khi máy gieo 6 rồi gieo thêm) (chi tiết ở design §5–§8 của change).
+- `add-room-ai-seats` (code xong, archive trong cùng PR sau review): phòng online 2–4 ghế có chủ phòng (người tạo, `hostId` chỉ ở server, `RoomView.host` theo ghế hiện tại); chủ phòng đánh dấu ghế trống là "Máy" ở sảnh chờ (`ai-seat { seat, on }`, trước nước đầu của ván, chỉ phòng từ ba ghế của game có máy — phòng hai ghế không có ghế máy), ghế trống cuối cùng thành máy là bắt đầu ván; server chơi thay ghế máy bằng `chooseMove` mức Vừa với rng của server ngay trong lần ghi đã trao lượt (không hẹn giờ, không thêm lệnh Redis), chốt an toàn 200 nước mỗi lần ghi, `join` đi tiếp phòng dừng ở lượt máy; mã lỗi mới `not-host`, `seat-taken`, `not-ai-seat`, `game-started`, `invalid-seat` (không làm nối lại); `PROTOCOL_VERSION` 2, `STORED_ROOM_FORMAT` 2 vẫn đọc được phòng định dạng 1 (ván dở không mất khi deploy); transport online hiện lần lượt các nước nhận cùng lúc theo nhịp máy cục bộ (nút khoá tới khi hiện xong; vào phòng/tải lại/nối lại hiện ngay); lời báo nêu mọi nước không đi từ thiết bị này kèm lượt kế tiếp ("Minh vừa gieo được 6. Đang chờ Minh…"), ván mới máy đi trước; "Online"/"Chơi lại" dựa vào việc ván là online (một người + ba máy). E2E: phòng 3 ghế hai trình duyệt + một máy, một người + ba máy, tab cũ nhận `outdated-client` không tự tải lại (cả hai cấu hình Playwright). Chi phí ước tính ở design §6 theo số đo biên bản ~76 KB (1 người + 3 máy ~11 MB/ván tới client, ~1/4 số lần ghi của ván 4 người).
+- M6 xong về code qua ba change; tiếp theo: **M7. Cờ vua**.
+- Còn lại: đo trên Vercel Preview (Upstash thật) thời gian từ nước của người tới khi có nước máy, số lệnh Redis và dung lượng một ván 1 người + 3 máy (việc đo trên Preview của `add-room-ai-seats`, chưa làm); chơi thử Cờ cá ngựa trên điện thoại thật và online giữa hai thiết bị trên Production (cỡ ô ~22 px, nhịp máy, theo dõi tab Usage của Upstash/Vercel với ván dài). Ghi kết quả vào đây.
