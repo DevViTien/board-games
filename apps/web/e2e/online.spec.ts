@@ -1,16 +1,21 @@
-import { type Browser, type BrowserContext, expect, type Page, test } from "@playwright/test";
+import { type Browser, expect, type Page, test } from "@playwright/test";
 
-import { board, cell, choose, play, status } from "./helpers";
+import {
+  board,
+  cell,
+  choose,
+  nameField,
+  openAsNewPlayer,
+  play,
+  players,
+  ROOM_URL,
+  status,
+} from "./helpers";
 
 // Two players means two browsers: the test's own page is the one who creates the room, and each
 // friend gets a context of their own (their own localStorage, so their own player id). The
 // realtime server runs next to the app, rooms in memory (playwright.config.ts).
 
-const ROOM_URL = /\/room\/[2-9A-HJKMNP-Z]{6}$/;
-
-const players = (page: Page) =>
-  page.getByRole("region", { name: "Người chơi" }).getByRole("listitem");
-const nameField = (page: Page) => page.getByRole("textbox", { name: "Tên của bạn" });
 const button = (page: Page, name: string) => page.getByRole("button", { name });
 const heading = (page: Page, name: string) => page.getByRole("heading", { name });
 
@@ -21,24 +26,9 @@ async function createRoom(page: Page, name: string): Promise<string> {
   await nameField(page).fill(name);
   await button(page, "Tạo phòng").click();
   await expect(page).toHaveURL(ROOM_URL);
-  await expect(players(page)).toHaveText([`${name} (bạn)`, "Đang chờ…"]);
+  // The creator is the host; a room for two has no seat for the computer.
+  await expect(players(page)).toHaveText([`${name} (bạn)Chủ phòng`, "Đang chờ…"]);
   return page.url();
-}
-
-interface Friend {
-  readonly context: BrowserContext;
-  readonly page: Page;
-}
-
-/** Someone who has never played online opens `url` in their own browser and gives their name. */
-async function openAsNewPlayer(browser: Browser, url: string, name: string): Promise<Friend> {
-  const context = await browser.newContext();
-  const page = await context.newPage();
-  await page.goto(url);
-  await expect(heading(page, "Chọn tên để vào phòng")).toBeVisible();
-  await nameField(page).fill(name);
-  await button(page, "Tiếp tục").click();
-  return { context, page };
 }
 
 /** Minh creates a room, Lan opens the invite link and joins: both see the board. */
@@ -60,9 +50,9 @@ test("plays a whole game with a friend through the invite link, then plays again
 
   // Opening the link takes no seat: the friend sees the lobby, the creator still waits.
   const lan = await openAsNewPlayer(browser, url, "Lan");
-  await expect(players(lan.page)).toHaveText(["Minh", "Đang chờ…"]);
+  await expect(players(lan.page)).toHaveText(["MinhChủ phòng", "Đang chờ…"]);
   await expect(nameField(lan.page)).toHaveValue("Lan");
-  await expect(players(page)).toHaveText(["Minh (bạn)", "Đang chờ…"]);
+  await expect(players(page)).toHaveText(["Minh (bạn)Chủ phòng", "Đang chờ…"]);
 
   await button(lan.page, "Vào chơi").click();
 

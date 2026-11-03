@@ -1,5 +1,6 @@
 // Test-only: the behaviour every RoomStore must have, run against each implementation.
-import { RECORD_VERSION } from "@board-games/engine";
+import { createRng, RECORD_VERSION } from "@board-games/engine";
+import { tictactoe } from "@board-games/games";
 import {
   normalizeRoomCode,
   ROOM_CODE_ALPHABET,
@@ -8,7 +9,8 @@ import {
 } from "@board-games/protocol";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { STORED_ROOM_FORMAT, type StoredRoom } from "../room";
+import { seatOf, STORED_ROOM_FORMAT, type StoredRoom } from "../room";
+import { createRoomService } from "../room-service";
 import type { RoomStore } from "./room-store";
 
 export interface RoomStoreHarness {
@@ -37,7 +39,8 @@ export function testRoom(overrides: Partial<StoredRoom> = {}): StoredRoom {
     gameId: "tictactoe",
     revision: 1,
     gameNumber: 1,
-    players: [{ playerId: "player-one-0123456789", name: "Lan" }, null],
+    hostId: "player-one-0123456789",
+    players: [{ kind: "human", playerId: "player-one-0123456789", name: "Lan" }, null],
     record: {
       version: RECORD_VERSION,
       gameId: "tictactoe",
@@ -224,13 +227,61 @@ export function describeRoomStore(
 
     it.each([
       ["broken JSON", "{"],
-      ["another format", JSON.stringify({ ...testRoom(), format: 2 })],
+      ["another format", JSON.stringify({ ...testRoom(), format: 3 })],
       ["a record that is not one", JSON.stringify({ ...testRoom(), record: "moves" })],
     ])("reads %s as no room", async (_label, json) => {
       const code = randomRoomCode();
       await harness.writeRaw(code, 1, json);
 
       expect(await store.get(code)).toBeNull();
+    });
+
+    it("Ván dở từ bản trước: lets a seated player back into a room stored before AI seats, and play on", async () => {
+      const code = randomRoomCode();
+      const lan = { playerId: "player-one-0123456789", name: "Lan" };
+      const an = { playerId: "player-two-0123456789", name: "An" };
+      // Format 1, as the version before AI seats and hosts wrote it.
+      await harness.writeRaw(
+        code,
+        3,
+        JSON.stringify({
+          format: 1,
+          code,
+          gameId: "tictactoe",
+          revision: 3,
+          gameNumber: 1,
+          players: [lan, an],
+          record: { ...testRoom().record, entries: [{ move: { cell: 4 } }] },
+          updatedAt: 1_000,
+        }),
+      );
+      const service = createRoomService({
+        store,
+        rng: createRng(1),
+        now: () => 2_000,
+        games: [tictactoe],
+      });
+
+      const joined = await service.join(code, an);
+      expect(joined.ok && seatOf(joined.value, an.playerId)).toBe(1);
+      expect(joined.ok && joined.value.record.entries).toEqual([{ move: { cell: 4 } }]);
+
+      const moved = await service.move(
+        code,
+        an.playerId,
+        { gameNumber: 1, moveIndex: 1 },
+        { cell: 0 },
+      );
+      expect(moved.ok).toBe(true);
+      expect(await store.get(code)).toMatchObject({
+        format: STORED_ROOM_FORMAT,
+        hostId: null,
+        players: [
+          { kind: "human", ...lan },
+          { kind: "human", ...an },
+        ],
+        record: { entries: [{ move: { cell: 4 } }, { move: { cell: 0 } }] },
+      });
     });
   });
 }

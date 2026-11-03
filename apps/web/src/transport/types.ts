@@ -23,8 +23,8 @@ export interface SaveSlot {
 }
 
 /**
- * Who plays a seat of a game on this device, as saved with it. M6 seats several AIs, each with its
- * own level.
+ * Who plays a seat of a game on this device, as saved with it. A game against the AI has one person
+ * and the AI in every other seat, each AI seat with its own level (all the same for now).
  */
 export type SeatController =
   { readonly kind: "human" } | { readonly kind: "ai"; readonly level: AiLevel };
@@ -64,16 +64,18 @@ export type FirstPlayer = (typeof FIRST_PLAYER)[keyof typeof FIRST_PLAYER];
 
 /**
  * How to set up a new game, from the setup screen to the play screen. `options` are the rule
- * options, untrusted (they come from the address or browser storage): the transport checks them
- * with the game's rules. Absent: the game's defaults.
+ * options and `playerCount` the number of players, both untrusted (they come from the address or
+ * browser storage): the transport checks them with the game's rules. Absent: the game's defaults
+ * and its smallest number of players.
  */
 export type PlaySetup =
-  | { readonly mode: "local"; readonly options?: unknown }
+  | { readonly mode: "local"; readonly options?: unknown; readonly playerCount?: unknown }
   | {
       readonly mode: "ai";
       readonly level: AiLevel;
       readonly first: FirstPlayer;
       readonly options?: unknown;
+      readonly playerCount?: unknown;
     };
 
 export type LocalSetup = Extract<PlaySetup, { mode: "local" }>;

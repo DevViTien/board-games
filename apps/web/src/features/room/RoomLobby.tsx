@@ -23,6 +23,8 @@ interface RoomLobbyProps {
   readonly room: RoomView;
   /** The rule options the game offers, to name the room's rules; none by default. */
   readonly optionChoices?: readonly OptionChoiceList[];
+  /** Whether the game has an AI, so the host may give it empty seats; not by default. */
+  readonly supportsAI?: boolean;
   /** This player's seat, or `null` while they have none. */
   readonly you: PlayerIndex | null;
   readonly status: ConnectionStatus;
@@ -33,8 +35,30 @@ interface RoomLobbyProps {
    * sent.
    */
   readonly onSit: (name: string) => boolean;
+  /** The host marks a seat for the AI or empties it again; `false` when it could not be sent. */
+  readonly onAiSeat?: (seat: PlayerIndex, on: boolean) => boolean;
+  /**
+   * Goes up with every AI seat request the server refused: the host's buttons wait no more for an
+   * answer then, even one that brought no newer room.
+   */
+  readonly aiSeatRefusals?: number;
   readonly onResume: () => void;
 }
+
+/**
+ * An AI seat request on its way: answered once the seat is as asked, or by a refusal. Any other
+ * change of the room (a rename, someone sitting elsewhere) answers nothing.
+ */
+interface AiSeatRequest {
+  readonly seat: PlayerIndex;
+  readonly on: boolean;
+  readonly refusals: number;
+}
+
+/** AI seats are for rooms of three or four (Cờ cá ngựa); the server refuses them in a room for two. */
+const MIN_SEATS_FOR_AI = 3;
+
+const cannotSend = () => false;
 
 /**
  * The room while it waits for players, or while this player has no seat yet: the room's rules (for
@@ -47,10 +71,13 @@ export function RoomLobby({
   gameId,
   room,
   optionChoices = NO_OPTION_CHOICES,
+  supportsAI = false,
   you,
   status,
   name,
   onSit,
+  onAiSeat = cannotSend,
+  aiSeatRefusals = 0,
   onResume,
 }: RoomLobbyProps) {
   const t = useTranslations("Room");
@@ -65,14 +92,34 @@ export function RoomLobby({
   const [draft, setDraft] = useState(name);
   const [tried, setTried] = useState(false);
   const [sitting, setSitting] = useState(false);
+  const [aiSeatRequest, setAiSeatRequest] = useState<AiSeatRequest | null>(null);
   // Only rendered in the browser (after the identity is read), so `window` is there.
   const inviteUrl = `${window.location.origin}/room/${room.code}`;
   const canShare = typeof navigator.share === "function";
-  const hasEmptySeat = room.seats.some((seat) => seat === null);
+  const emptySeats = room.seats.filter((seat) => seat === null).length;
+  const hasEmptySeat = emptySeats > 0;
+  // Only the host, in a room for three or four, before the game's first move, for a game with an AI.
+  const managesAiSeats =
+    you !== null &&
+    you === room.host &&
+    supportsAI &&
+    room.seats.length >= MIN_SEATS_FOR_AI &&
+    room.record.entries.length === 0;
+  const askedSeat = aiSeatRequest === null ? undefined : room.seats[aiSeatRequest.seat];
+  const awaitingAiSeat =
+    aiSeatRequest !== null &&
+    status === CONNECTION_STATUS.Online &&
+    aiSeatRequest.refusals === aiSeatRefusals &&
+    (aiSeatRequest.on ? askedSeat?.kind !== "ai" : askedSeat !== null);
   const rules = optionLabels.summary(gameId, optionChoices, room.record.options);
 
   // A "Join game" lost with the connection may be pressed again once back.
   if (sitting && status !== CONNECTION_STATUS.Online) setSitting(false);
+
+  function toggleAiSeat(seat: PlayerIndex, on: boolean): void {
+    if (awaitingAiSeat) return;
+    if (onAiSeat(seat, on)) setAiSeatRequest({ seat, on, refusals: aiSeatRefusals });
+  }
 
   async function copyLink(): Promise<void> {
     try {
@@ -163,13 +210,39 @@ export function RoomLobby({
           {room.seats.map((seat, index) => (
             // Seats are fixed places: the index is their identity.
             <li key={index}>
-              <Card className="py-3">
-                {seat === null ? (
-                  <span className="text-fg-muted">{t("emptySeat")}</span>
-                ) : index === you ? (
-                  <span className="font-medium">{t("you", { name: seat.name })}</span>
-                ) : (
-                  <span>{seat.name}</span>
+              <Card className="flex flex-wrap items-center justify-between gap-2 py-3">
+                <span className="flex flex-wrap items-center gap-2">
+                  {seat === null ? (
+                    <span className="text-fg-muted">{t("emptySeat")}</span>
+                  ) : seat.kind === "ai" ? (
+                    <span>{t("aiSeat")}</span>
+                  ) : index === you ? (
+                    <span className="font-medium">{t("you", { name: seat.name })}</span>
+                  ) : (
+                    <span>{seat.name}</span>
+                  )}
+                  {index === room.host && <Badge>{t("host")}</Badge>}
+                </span>
+                {/* One button in the same place either way, so the focus stays on it once the
+                    seat changes. */}
+                {managesAiSeats && (seat === null || seat.kind === "ai") && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    aria-disabled={awaitingAiSeat}
+                    aria-label={
+                      seat !== null
+                        ? t("removeAiLabel", { seat: index + 1 })
+                        : emptySeats === 1
+                          ? t("addAiAndStartLabel", { seat: index + 1 })
+                          : t("addAiLabel", { seat: index + 1 })
+                    }
+                    onClick={() => {
+                      toggleAiSeat(index, seat === null);
+                    }}
+                  >
+                    {seat === null ? t("addAi") : t("removeAi")}
+                  </Button>
                 )}
               </Card>
             </li>

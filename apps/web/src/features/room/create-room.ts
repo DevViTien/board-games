@@ -29,6 +29,8 @@ export interface CreateRoomOptions {
   readonly identity: Identity;
   /** The rule options chosen; sent only when the game has some, so the server's defaults apply otherwise. */
   readonly options?: Readonly<Record<string, unknown>> | undefined;
+  /** The number of seats; sent only when given, so the server's (the game's smallest) applies otherwise. */
+  readonly playerCount?: number | undefined;
   readonly openSocket?: OpenSocket | undefined;
 }
 
@@ -42,6 +44,7 @@ export function createRoom({
   gameId,
   identity,
   options,
+  playerCount,
   openSocket = openWebSocket,
 }: CreateRoomOptions): Promise<CreateRoomResult> {
   return new Promise((resolve) => {
@@ -68,6 +71,7 @@ export function createRoom({
           playerId: identity.playerId,
           name: identity.name,
           ...(options !== undefined && Object.keys(options).length > 0 ? { options } : {}),
+          ...(playerCount === undefined ? {} : { playerCount }),
         };
         socket?.send(JSON.stringify(create));
       },

@@ -11,7 +11,7 @@ import { caro, tictactoe } from "@board-games/games";
 import { ROOM_CODE_ALPHABET, type RoomCode } from "@board-games/protocol";
 import { describe, expect, it, vi } from "vitest";
 
-import { type RoomPlayer, seatOf, type StoredRoom, toRoomView } from "./room";
+import { type RoomPlayer, seatOf, type StoredRoom, type StoredSeat, toRoomView } from "./room";
 import { createRoomService, type ServiceResult } from "./room-service";
 import { createMemoryRoomStore, type MemoryRoomStore } from "./store/memory";
 
@@ -64,6 +64,9 @@ const GAMES: readonly AnyGameDefinition[] = [tictactoe, diceGame, caro];
 const LAN: RoomPlayer = { playerId: "lan-0123456789abcdef", name: "Lan" };
 const AN: RoomPlayer = { playerId: "an-0123456789abcdefgh", name: "An" };
 const BINH: RoomPlayer = { playerId: "binh-0123456789abcdef", name: "Bình" };
+
+/** A person in a seat, as the room stores them. */
+const human = (player: RoomPlayer): StoredSeat => ({ kind: "human", ...player });
 
 /** An rng that answers `nextInt` from `draws`, then with `min`. */
 function scriptedRng(draws: number[] = []): Rng & { readonly draws: number[] } {
@@ -118,7 +121,8 @@ async function stored(store: MemoryRoomStore, code: RoomCode): Promise<StoredRoo
 async function play(context: Awaited<ReturnType<typeof tictactoeRoom>>, cells: number[]) {
   for (const cell of cells) {
     const room = await stored(context.store, context.code);
-    const player = room.record.entries.length % 2 === 0 ? room.players[0] : room.players[1];
+    const seat = room.record.entries.length % 2 === 0 ? room.players[0] : room.players[1];
+    const player = seat?.kind === "human" ? seat : undefined;
     expectOk(
       await context.service.move(
         context.code,
@@ -141,7 +145,7 @@ describe("create", () => {
     expect(room.code).toMatch(new RegExp(`^[${ROOM_CODE_ALPHABET}]{6}$`, "u"));
     const joined = expectOk(await service.join(room.code, AN));
     expect(seatOf(joined, AN.playerId)).toBeNull();
-    expect(joined.players).toEqual([LAN, null]);
+    expect(joined.players).toEqual([human(LAN), null]);
     expect(joined.record.entries).toEqual([]);
     expect(joined).toMatchObject({ revision: 1, gameNumber: 1, gameId: "tictactoe" });
   });
@@ -186,7 +190,7 @@ describe("create", () => {
     const room = expectOk(await service.create({ gameId: "dice", player: LAN }));
 
     expect(room.record).toMatchObject({ playerCount: 2, options: { target: 3 } });
-    expect(room.players).toEqual([LAN, null]);
+    expect(room.players).toEqual([human(LAN), null]);
   });
 
   it("uses the options and player count sent", async () => {
@@ -197,7 +201,7 @@ describe("create", () => {
     );
 
     expect(room.record).toMatchObject({ playerCount: 3, options: { target: 6 } });
-    expect(room.players).toEqual([LAN, null, null]);
+    expect(room.players).toEqual([human(LAN), null, null]);
   });
 
   it("creates a Cờ caro room on a 19×19 board with the free rule", async () => {
@@ -254,7 +258,7 @@ describe("join", () => {
     const room = expectOk(await service.join(code, AN));
 
     expect(seatOf(room, AN.playerId)).toBeNull();
-    expect(room.players).toEqual([LAN, null]);
+    expect(room.players).toEqual([human(LAN), null]);
   });
 
   it("recognises a seated player coming back and moves nobody", async () => {
@@ -275,7 +279,7 @@ describe("join", () => {
     const room = expectOk(await service.join(code, { ...AN, name: "An Nguyễn" }));
 
     expect(seatOf(room, AN.playerId)).toBe(1);
-    expect(room.players[1]).toEqual({ ...AN, name: "An Nguyễn" });
+    expect(room.players[1]).toEqual(human({ ...AN, name: "An Nguyễn" }));
     expect(room.revision).toBe(3);
     await vi.waitFor(() => {
       expect(listener).toHaveBeenCalledWith(room);
@@ -308,7 +312,7 @@ describe("sit", () => {
     const room = expectOk(await service.sit(code, AN));
 
     expect(seatOf(room, AN.playerId)).toBe(1);
-    expect(room.players).toEqual([LAN, AN]);
+    expect(room.players).toEqual([human(LAN), human(AN)]);
   });
 
   it("refuses a third player and moves nobody", async () => {
@@ -332,7 +336,7 @@ describe("sit", () => {
 
     const room = expectOk(await service.sit(code, { ...LAN, name: "Lan Anh" }));
 
-    expect(room.players).toEqual([{ ...LAN, name: "Lan Anh" }, AN]);
+    expect(room.players).toEqual([human({ ...LAN, name: "Lan Anh" }), human(AN)]);
     expect(room.revision).toBe(3);
   });
 
@@ -342,7 +346,7 @@ describe("sit", () => {
 
     const room = expectOk(await service.sit(code, { ...AN, name: "An Nguyễn" }));
 
-    expect(room.players[1]).toEqual({ ...AN, name: "An Nguyễn" });
+    expect(room.players[1]).toEqual(human({ ...AN, name: "An Nguyễn" }));
   });
 
   it("gives the last seat to only one of two players asking at once", async () => {
@@ -356,7 +360,7 @@ describe("sit", () => {
     });
 
     expect(await service.sit(code, AN)).toMatchObject({ ok: false, error: "room-full" });
-    expect((await stored(store, code)).players).toEqual([LAN, BINH]);
+    expect((await stored(store, code)).players).toEqual([human(LAN), human(BINH)]);
   });
 
   it("gives up after 3 conflicts in a row", async () => {
@@ -373,7 +377,7 @@ describe("sit", () => {
     store.intercept("update", conflicts);
 
     expect(await service.sit(code, AN)).toMatchObject({ ok: false, error: "unavailable" });
-    expect((await stored(store, code)).players).toEqual([LAN, null]);
+    expect((await stored(store, code)).players).toEqual([human(LAN), null]);
   });
 
   it("answers room-not-found for a room that does not exist", async () => {
@@ -466,7 +470,7 @@ describe("move", () => {
     );
 
     expect(room.record.entries).toEqual([{ move: { cell: 4 } }]);
-    expect(room.players[1]?.name).toBe("An Nguyễn");
+    expect(room.players[1]).toEqual({ kind: "human", ...AN, name: "An Nguyễn" });
   });
 
   it("refuses a move from a player without a seat", async () => {
@@ -545,7 +549,7 @@ describe("rematch", () => {
 
     expect(room.gameNumber).toBe(2);
     expect(room.record.entries).toEqual([]);
-    expect(room.players).toEqual([AN, LAN]);
+    expect(room.players).toEqual([human(AN), human(LAN)]);
   });
 
   it("keeps the room's rule options for the new game", async () => {
@@ -608,7 +612,7 @@ describe("rematch", () => {
 
     const room = expectOk(await service.rematch(code, BINH.playerId, 1));
 
-    expect(room.players).toEqual([BINH, LAN, AN]);
+    expect(room.players).toEqual([human(BINH), human(LAN), human(AN)]);
   });
 
   it("refuses a new game from a player without a seat", async () => {
@@ -648,7 +652,10 @@ describe("toRoomView", () => {
 
     const view = toRoomView(await stored(store, code));
 
-    expect(view.seats).toEqual([{ name: "Lan" }, { name: "An" }]);
+    expect(view.seats).toEqual([
+      { kind: "human", name: "Lan" },
+      { kind: "human", name: "An" },
+    ]);
     const json = JSON.stringify(view);
     expect(json).not.toContain(LAN.playerId);
     expect(json).not.toContain(AN.playerId);

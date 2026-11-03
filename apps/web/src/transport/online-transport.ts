@@ -1,4 +1,5 @@
 import {
+  AI_LEVEL,
   currentState,
   ENGINE_ERROR,
   fromRecord,
@@ -10,6 +11,7 @@ import {
 } from "@board-games/engine";
 import type { RejectionCode, RoomView } from "@board-games/protocol";
 
+import { AI_MIN_DELAY_MS, AI_RESULT_DELAY_MS, AI_SETTLE_DELAY_MS } from "./ai-timing";
 import type { RoomConnection } from "./room-connection";
 import {
   CONNECTION_STATUS,
@@ -25,6 +27,8 @@ const ANSWER_LIMIT_MS = 8000;
 
 const LOADING = { status: "loading" } as const;
 const HUMAN: SeatView = { kind: "human" };
+/** An AI seat of the room, played by the server at this level (design §3). */
+const AI_SEAT: SeatView = { kind: "ai", level: AI_LEVEL.Medium };
 
 /**
  * Refusals worth telling the player: the rules turned the move down. The others (`stale-move`,
@@ -62,6 +66,12 @@ export interface OnlineTransport<State, Move, Outcome> extends Transport<State, 
  * its record into a session (a game is its list of moves), and a move is shown only once the server
  * has recorded it, never before (design of `add-online-play`, §4). Until the server answers a move,
  * the board is locked, so a second click cannot send a second move.
+ *
+ * A room may bring several new moves at once: the AI seats the server plays answer in the same
+ * write as the move before them. Those are shown one at a time, each no sooner than the board's
+ * animation of the one before it, at the pace of the AI on this device, with the board locked until
+ * the last one shows (design of `add-room-ai-seats`, §4). Entering the room, reloading or
+ * reconnecting shows the latest state at once.
  */
 // `Outcome` defaults to `never`, as in the engine and the local transport.
 export function createOnlineTransport<
@@ -78,6 +88,22 @@ export function createOnlineTransport<
   let snapshot: PlaySnapshot<State, Move, Outcome> = LOADING;
   let room: RoomView | null = null;
   let session: GameSession | null = null;
+  /** This player's seat in `room`: kept with it, as a new game moves everyone one seat on. */
+  let seat: PlayerIndex | null = null;
+  /**
+   * A new game that arrived while the moves of the one before were still being shown: it waits
+   * until they all are, its result included, so nothing of the old game is skipped.
+   */
+  let queued: {
+    readonly room: RoomView;
+    readonly session: GameSession;
+    readonly seat: PlayerIndex | null;
+  } | null = null;
+  /** Moves of `session` on screen; behind its end while moves received together are shown. */
+  let shown = 0;
+  let revealTimer: ReturnType<typeof setTimeout> | undefined;
+  /** The connection's status when the room was last read: a new greeting shows the latest state. */
+  let lastStatus: ConnectionStatus | null = null;
   let broken = false;
   // The place in the game a request was sent at, until the server answers it one way or another.
   // Not the room's revision: a rename or someone sitting down changes it without answering.
@@ -97,6 +123,11 @@ export function createOnlineTransport<
     pendingTimer = undefined;
   }
 
+  function stopRevealing(): void {
+    if (revealTimer !== undefined) clearTimeout(revealTimer);
+    revealTimer = undefined;
+  }
+
   function waitForAnswer(sentAt: Pending): void {
     settle();
     pending = sentAt;
@@ -114,25 +145,73 @@ export function createOnlineTransport<
     return rebuilt.ok ? rebuilt.value : null;
   }
 
-  /** The seat that played the last move: the player to move before it. */
+  /**
+   * How long the move just shown (the `shown`-th) stays alone on screen before the next: never
+   * shorter than the board's animation of it, longer after a roll, as the AI's pace on this device.
+   * A game without random outcomes animates nothing long, and keeps the AI's shortest delay.
+   */
+  function revealDelay(current: GameSession): number {
+    if (definition.outcomes === undefined) return AI_MIN_DELAY_MS;
+    const entry = current.entries[shown - 1];
+    return entry !== undefined && "outcome" in entry ? AI_RESULT_DELAY_MS : AI_SETTLE_DELAY_MS;
+  }
+
+  /** The game waiting behind the one on screen now replaces it, from its empty board. */
+  function adoptQueued(): void {
+    if (queued === null) return;
+    ({ room, session, seat } = queued);
+    queued = null;
+    shown = 0;
+  }
+
+  /**
+   * Shows the next move received after a pause, and so on until the last; then the new game
+   * waiting behind it, if any.
+   */
+  function scheduleReveal(): void {
+    if (revealTimer !== undefined || session === null) return;
+    if (shown >= session.cursor && queued === null) return;
+    revealTimer = setTimeout(() => {
+      revealTimer = undefined;
+      if (session !== null && shown < session.cursor) shown += 1;
+      else adoptQueued();
+      render();
+      scheduleReveal();
+    }, revealDelay(session));
+  }
+
+  /** The seat that played the last move shown: the player to move before it. */
   function lastMover(current: GameSession): PlayerIndex | null {
     const before = current.cursor > 0 ? current.states[current.cursor - 1] : undefined;
     return before === undefined ? null : definition.currentPlayer(before);
   }
 
+  function seatView(
+    seat: RoomView["seats"][number],
+    index: number,
+    you: PlayerIndex | null,
+  ): SeatView {
+    if (index === you) return HUMAN;
+    if (seat?.kind === "ai") return AI_SEAT;
+    return { kind: "remote" as const, name: seat?.kind === "human" ? seat.name : null };
+  }
+
   function show(
-    current: GameSession,
+    whole: GameSession,
     view: RoomView,
     you: PlayerIndex | null,
     status: ConnectionStatus,
   ): void {
+    // The game as far as it is shown: the session cut at `shown`, so the board, the result and
+    // what the play screen says all follow the move on screen.
+    const current: GameSession = { ...whole, cursor: shown };
+    const revealing = shown < whole.cursor || queued !== null;
     const state = currentState(current);
     const result = sessionResult(definition, current);
     const currentPlayer = definition.currentPlayer(state);
-    const seats: SeatView[] = view.seats.map((seat, index) =>
-      index === you ? HUMAN : { kind: "remote", name: seat?.name ?? null },
-    );
-    const full = view.seats.every((seat) => seat !== null);
+    const seats: SeatView[] = view.seats.map((seat, index) => seatView(seat, index, you));
+    const everyoneSeated = view.seats.every((seat) => seat !== null);
+    const toMove = seats[currentPlayer]?.kind;
     snapshot = {
       status: "ready",
       state,
@@ -146,20 +225,29 @@ export function createOnlineTransport<
       canRedo: false,
       canMove:
         status === CONNECTION_STATUS.Online &&
-        full &&
+        everyoneSeated &&
+        !revealing &&
         result === null &&
         currentPlayer === you &&
         pending === null,
       viewer: you,
       seats,
-      waitingFor: result === null && seats[currentPlayer]?.kind === "remote" ? "opponent" : null,
+      waitingFor:
+        result !== null ? null : toMove === "remote" ? "opponent" : toMove === "ai" ? "ai" : null,
       inProgress: false,
       supportsUndo: false,
-      canStartNewGame: result !== null,
+      // Not while the next game is already waiting to be shown.
+      canStartNewGame: result !== null && queued === null,
       connection: status,
       // As the server's record has them, checked again by `fromRecord`.
       options: current.options,
     };
+  }
+
+  function render(): void {
+    if (disposed || broken || session === null || room === null) return;
+    show(session, room, seat, connection.getSnapshot().status);
+    emit({ type: "changed" });
   }
 
   /** The game has moved on from where the request was sent: the request is answered. */
@@ -167,36 +255,87 @@ export function createOnlineTransport<
     return next.gameNumber !== sentAt.gameNumber || next.record.entries.length > sentAt.moveIndex;
   }
 
+  /** Where to show `next` from, given what was on screen of `previous`. */
+  function follow(
+    previous: RoomView | null,
+    next: GameSession,
+    latest: RoomView,
+    greeted: boolean,
+  ) {
+    // Entering the room, reloading or reconnecting: the latest state at once, no replay.
+    if (previous === null || greeted || latest.gameNumber < previous.gameNumber) {
+      stopRevealing();
+      shown = next.cursor;
+      return;
+    }
+    if (latest.gameNumber !== previous.gameNumber) {
+      // A new game ("Play again"): its empty board first, then any AI moves it came with.
+      stopRevealing();
+      shown = 0;
+      scheduleReveal();
+      return;
+    }
+    if (shown > next.cursor) shown = next.cursor;
+    // While moves are being shown, the newer ones queue behind them; otherwise the first new move
+    // shows at once, and any after it one at a time.
+    if (revealTimer === undefined && shown < next.cursor) {
+      shown += 1;
+      scheduleReveal();
+    }
+  }
+
   function refresh(): void {
     // A broken room is not replayed again on every change of the connection.
     if (disposed || broken) return;
     const { room: latest, you, status } = connection.getSnapshot();
+    const greeted = lastStatus !== CONNECTION_STATUS.Online && status === CONNECTION_STATUS.Online;
+    lastStatus = status;
     if (latest === null) return;
-    if (latest !== room) {
+    if (latest !== room && latest !== queued?.room) {
       const rebuilt = rebuild(latest);
       if (rebuilt === null) {
         broken = true;
         settle();
+        stopRevealing();
         emit({ type: "changed" });
         return;
       }
-      room = latest;
-      session = rebuilt;
+      if (
+        !greeted &&
+        room !== null &&
+        latest.gameNumber > room.gameNumber &&
+        revealTimer !== undefined
+      ) {
+        // The old game still has moves to show: the new one waits behind them.
+        queued = { room: latest, session: rebuilt, seat: you };
+      } else {
+        const previous = room;
+        room = latest;
+        session = rebuilt;
+        seat = you;
+        queued = null;
+        follow(previous, rebuilt, latest, greeted);
+      }
       if (pending !== null && answers(latest, pending)) settle();
     }
-    if (session === null) return;
-    show(session, latest, you, status);
-    emit({ type: "changed" });
+    render();
+  }
+
+  /** After a greeting: whatever was in flight is settled, and the latest state shows at once. */
+  function sync(): void {
+    settle();
+    stopRevealing();
+    adoptQueued();
+    if (session !== null) shown = session.cursor;
+    refresh();
   }
 
   const unsubscribe = [
     connection.subscribe(refresh),
-    connection.onSynced(() => {
-      settle();
-      refresh();
-    }),
+    connection.onSynced(sync),
     connection.onRejected(({ request, code }) => {
-      if (request === "sit") return;
+      // The lobby's business: a refused seat or AI seat says nothing of a move in flight.
+      if (request === "sit" || request === "ai-seat") return;
       settle();
       refresh();
       if (isRuleRefusal(code)) emit({ type: "rejected", code });
@@ -240,6 +379,7 @@ export function createOnlineTransport<
     dispose: () => {
       disposed = true;
       settle();
+      stopRevealing();
       for (const stop of unsubscribe) stop();
       listeners.clear();
     },

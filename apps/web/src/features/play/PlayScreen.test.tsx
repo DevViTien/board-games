@@ -1,4 +1,10 @@
-import { createRng, listOptionChoices } from "@board-games/engine";
+import {
+  createRng,
+  GAME_CATEGORY,
+  type GameDefinition,
+  listOptionChoices,
+  type PlayerIndex,
+} from "@board-games/engine";
 import {
   caro,
   type CaroMove,
@@ -17,11 +23,23 @@ import { useCaroPlayerLabel } from "@/games/caro/player-label";
 import { TicTacToeBoard } from "@/games/tictactoe/Board";
 import { useTicTacToeMoveLabel } from "@/games/tictactoe/move-label";
 import { useTicTacToePlayerLabel } from "@/games/tictactoe/player-label";
+import type { GameUI } from "@/games/types";
 import type { Locale } from "@/i18n/config";
+import {
+  AI,
+  createFakeEnvironment,
+  createFakeSockets,
+  ROOM_CODE,
+  roomMessage,
+  roomView,
+} from "@/test/fake-realtime";
 import { observeWidthAs } from "@/test/fake-resize-observer";
 import { renderWithIntl } from "@/test/render-with-intl";
+import { AI_RESULT_DELAY_MS } from "@/transport/ai-timing";
 import { createLocalTransport } from "@/transport/local-transport";
 import { createMemoryStore } from "@/transport/memory-store";
+import { createOnlineTransport } from "@/transport/online-transport";
+import { createRoomConnection } from "@/transport/room-connection";
 import type {
   AiPlayer,
   AiSetup,
@@ -695,6 +713,16 @@ describe("PlayScreen online: what is said", () => {
     expect(status()).toHaveTextContent(/^Ván mới: bạn cầm X và đi trước$/);
   });
 
+  it("says which side the player has in a new game where the room's AI moves first", () => {
+    renderOnline(
+      fakeTransport(
+        onlineSnapshot(1, [], { seats: [{ kind: "ai", level: "medium" }, YOU], waitingFor: "ai" }),
+      ),
+    );
+
+    expect(status()).toHaveTextContent(/^Ván mới: bạn cầm O, máy đi trước$/);
+  });
+
   it("speaks of the opponent by name in English", () => {
     renderOnline(fakeTransport(onlineSnapshot(1, [4, 0, 5])), { locale: "en" });
 
@@ -750,12 +778,19 @@ describe("PlayScreen online: controls", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("Nước đi không hợp lệ.");
   });
 
-  it("names the new game by the remote seat, whatever the connection says", () => {
-    // A finished online game, its connection status not known: still "Play again".
-    renderOnline(fakeTransport(onlineSnapshot(1, [0, 3, 1, 4, 2], { connection: null })));
+  it("is online, and plays again, with the AI as the only other seat", () => {
+    // A room of one person and the server's AI: no remote seat, still online.
+    renderOnline(
+      fakeTransport(
+        onlineSnapshot(1, [0, 3, 1, 4, 2], { seats: [{ kind: "ai", level: "medium" }, YOU] }),
+      ),
+    );
 
+    expect(screen.getByText("Online")).toBeInTheDocument();
+    expect(screen.queryByText(/Với máy/)).not.toBeInTheDocument();
     expect(button("Chơi lại")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Ván mới" })).not.toBeInTheDocument();
+    expect(status()).toHaveTextContent(/^Máy thắng!$/);
   });
 
   it("moves the focus to the game's title when asked, as when the game replaces the lobby", () => {
@@ -975,5 +1010,208 @@ describe("PlayScreen rules", () => {
 
     expect(within(header()).getByRole("heading")).toHaveTextContent("Tic-tac-toe");
     expect(header().children).toHaveLength(1);
+  });
+});
+
+describe("PlayScreen with several AIs", () => {
+  const COLOURS = ["Đỏ", "Xanh dương", "Vàng", "Xanh lá"];
+  const playerLabelState = vi.fn();
+  /** A game whose seats are named by colour and whose moves are rolls, on a Tic-tac-toe board. */
+  const colourUi = {
+    Board: TicTacToeBoard,
+    usePlayerLabel: () => (player: number, state: TicTacToeState) => {
+      playerLabelState(state);
+      return COLOURS[player] ?? "?";
+    },
+    useMoveLabel: () => () => "gieo được 5",
+  };
+  const HUMAN = { kind: "human" } as const;
+  const EASY = { kind: "ai", level: "easy" } as const;
+  const ONE_AND_THREE_AIS = [HUMAN, EASY, EASY, EASY] as const;
+  const ROLLED = { move: { cell: 4 } } as const;
+
+  function renderColours(overrides: Partial<ReadySnapshot<TicTacToeState, TicTacToeMove>>) {
+    const transport = fakeTransport({
+      viewer: 0,
+      seats: ONE_AND_THREE_AIS,
+      canMove: false,
+      waitingFor: "ai",
+      ...overrides,
+    });
+    renderWithIntl(<PlayScreen gameId="tictactoe" transport={transport} ui={colourUi} />);
+    return transport;
+  }
+
+  it("names the AI that is thinking", () => {
+    renderColours({ currentPlayer: 1 });
+
+    expect(status()).toHaveTextContent(/^Máy \(Xanh dương\) đang nghĩ…$/);
+  });
+
+  it("tells each move of an AI, also when another AI is to move next", () => {
+    renderColours({ currentPlayer: 2, lastMover: 1, lastEntry: ROLLED, moveCount: 2 });
+
+    expect(status()).toHaveTextContent(
+      /^Máy \(Xanh dương\) gieo được 5\. Máy \(Vàng\) đang nghĩ…$/,
+    );
+  });
+
+  it("names the AI that just moved when it is the player's turn", () => {
+    renderColours({
+      currentPlayer: 0,
+      lastMover: 3,
+      lastEntry: ROLLED,
+      moveCount: 4,
+      canMove: true,
+      waitingFor: null,
+    });
+
+    expect(status()).toHaveTextContent(/^Máy \(Xanh lá\) gieo được 5\. Đến lượt bạn \(Đỏ\)$/);
+  });
+
+  it("names the AI that won", () => {
+    renderColours({ result: { kind: "win", winners: [2] }, waitingFor: null });
+
+    expect(status()).toHaveTextContent(/^Máy \(Vàng\) thắng!$/);
+  });
+
+  it("names the seats from the game on screen", () => {
+    playerLabelState.mockClear();
+    const transport = renderColours({ currentPlayer: 1 });
+
+    const shown = transport.getSnapshot();
+    if (shown.status !== "ready") throw new Error("the fake transport is always ready");
+    expect(playerLabelState).toHaveBeenCalledWith(shown.state);
+  });
+
+  it("tells the AI's move when the same AI moves again, with a single AI", () => {
+    renderColours({
+      seats: [HUMAN, EASY],
+      currentPlayer: 1,
+      lastMover: 1,
+      lastEntry: ROLLED,
+      moveCount: 2,
+    });
+
+    expect(status()).toHaveTextContent(/^Máy gieo được 5\. Máy đang nghĩ…$/);
+  });
+
+  it("keeps the words of a game against a single AI", () => {
+    renderColours({ seats: [HUMAN, EASY], currentPlayer: 1, lastMover: 0, lastEntry: ROLLED });
+
+    expect(status()).toHaveTextContent(/^Máy đang nghĩ…$/);
+  });
+
+  it("names the AIs in English too", () => {
+    const transport = fakeTransport({
+      viewer: 0,
+      seats: ONE_AND_THREE_AIS,
+      canMove: false,
+      waitingFor: "ai",
+      currentPlayer: 3,
+      lastMover: 2,
+      lastEntry: ROLLED,
+    });
+    renderWithIntl(<PlayScreen gameId="tictactoe" transport={transport} ui={colourUi} />, {
+      locale: "en",
+    });
+
+    expect(status()).toHaveTextContent(
+      /^The computer \(Vàng\) gieo được 5\. The computer \(Xanh lá\) is thinking…$/,
+    );
+  });
+});
+
+describe("PlayScreen online: moves received together, told one by one", () => {
+  interface DuelState {
+    readonly toMove: PlayerIndex;
+    readonly face: number | null;
+  }
+
+  /** Two players roll in turn; a 6 rolls again. Nothing else, so every roll reads alike. */
+  const diceDuel = {
+    id: "dice-duel",
+    meta: {
+      players: { min: 2, max: 2 },
+      category: GAME_CATEGORY.Original,
+      durationMinutes: 1,
+      supportsAI: true,
+    },
+    defaultOptions: {},
+    setup: () => ({ toMove: 0, face: null }),
+    currentPlayer: (state) => state.toMove,
+    legalMoves: () => [{ roll: true }],
+    outcomes: () => [1, 2, 3, 4, 5, 6].map((face) => ({ outcome: face, weight: 1 })),
+    applyMove: (state, _move, face = 1) => ({
+      toMove: face === 6 ? state.toMove : 1 - state.toMove,
+      face,
+    }),
+    result: () => null,
+    evaluate: () => 0,
+  } as const satisfies GameDefinition<DuelState, { roll: true }, number>;
+
+  const duelUi: GameUI<DuelState, { roll: true }, number> = {
+    Board: () => null,
+    usePlayerLabel: () => (player) => (player === 0 ? "X" : "O"),
+    useMoveLabel: () => (_move, state) => `gieo được ${String(state.face)}`,
+  };
+
+  const duelRoom = (faces: readonly number[], revision: number) =>
+    roomView({
+      seats: ["Minh", AI],
+      revision,
+      record: {
+        version: 1,
+        gameId: "dice-duel",
+        playerCount: 2,
+        options: {},
+        entries: faces.map((face) => ({ move: { roll: true }, outcome: face })),
+      },
+    });
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("reads each move of the AI in turn, saying the same words twice when it rolls 6 twice", async () => {
+    const sockets = createFakeSockets();
+    const connection = createRoomConnection({
+      url: "ws://test",
+      code: ROOM_CODE,
+      getIdentity: () => ({ playerId: "player-0123456789abcdef", name: "Minh" }),
+      openSocket: sockets.openSocket,
+      environment: createFakeEnvironment(),
+    });
+    const socket = sockets.last();
+    socket.open();
+    socket.receive(roomMessage(duelRoom([], 1), 0));
+    const transport = createOnlineTransport({ definition: diceDuel, connection });
+    renderWithIntl(<PlayScreen gameId="ludo" transport={transport} ui={duelUi} />);
+    const said = [status().textContent];
+
+    // Minh rolled a 2; the AI then rolls 6, 6 and 3, all in the server's answer.
+    act(() => {
+      socket.receive(roomMessage(duelRoom([2, 6, 6, 3], 2), 0));
+    });
+    said.push(status().textContent);
+    for (let step = 0; step < 3; step += 1) {
+      await act(() => vi.advanceTimersByTimeAsync(AI_RESULT_DELAY_MS));
+      said.push(status().textContent);
+    }
+
+    expect(said).toEqual([
+      "Ván mới: bạn cầm X và đi trước",
+      "Máy đang nghĩ…",
+      "Máy gieo được 6. Máy đang nghĩ…",
+      // The same words for the next roll, marked so they are read again.
+      "Máy gieo được 6. Máy đang nghĩ…\u200B",
+      "Máy gieo được 3. Đến lượt bạn (X)",
+    ]);
+    transport.dispose();
+    connection.dispose();
   });
 });

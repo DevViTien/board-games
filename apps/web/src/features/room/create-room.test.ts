@@ -22,13 +22,15 @@ afterEach(() => {
 function start({
   gameId = "tictactoe",
   options,
-}: { gameId?: string; options?: Readonly<Record<string, unknown>> } = {}) {
+  playerCount,
+}: { gameId?: string; options?: Readonly<Record<string, unknown>>; playerCount?: number } = {}) {
   let settled: CreateRoomResult | undefined;
   void createRoom({
     url: "ws://test",
     gameId,
     identity: IDENTITY,
     options,
+    playerCount,
     openSocket: sockets.openSocket,
   }).then((result) => {
     settled = result;
@@ -89,6 +91,24 @@ describe("createRoom", () => {
     socket.open();
 
     expect(socket.sent[0]).not.toHaveProperty("options");
+  });
+
+  it("asks for the number of seats chosen", () => {
+    const { socket } = start({ gameId: "ludo", playerCount: 3 });
+
+    socket.open();
+
+    expect(socket.sent).toEqual([
+      { type: "create", protocol: PROTOCOL_VERSION, gameId: "ludo", ...IDENTITY, playerCount: 3 },
+    ]);
+  });
+
+  it("sends no number of seats when none is given", () => {
+    const { socket } = start();
+
+    socket.open();
+
+    expect(socket.sent[0]).not.toHaveProperty("playerCount");
   });
 
   it("fails with invalid-options when the server refuses the rule options", async () => {

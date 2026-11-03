@@ -105,7 +105,7 @@ describe("online transport: the game", () => {
   });
 
   it("locks the board once the game has a result, and allows a new game then only", () => {
-    start(roomView({ seats: ["Minh", "Lan"], cells: [4, 0] }), 0);
+    start(roomView({ seats: ["Minh", "Lan"], cells: [4, 0, 2, 1] }), 0);
     expect(ready().canStartNewGame).toBe(false);
 
     // X wins on the diagonal 2-4-6.
@@ -285,7 +285,10 @@ describe("online transport: requests", () => {
   });
 
   it("asks for a new game with the game's number, only once the game is over", () => {
-    const socket = start(roomView({ seats: ["Minh", "Lan"], cells: [4, 0], gameNumber: 2 }), 0);
+    const socket = start(
+      roomView({ seats: ["Minh", "Lan"], cells: [4, 0, 2, 1], gameNumber: 2 }),
+      0,
+    );
 
     transport.requestNewGame();
     expect(socket.sent.some((message) => (message as { type: string }).type === "rematch")).toBe(

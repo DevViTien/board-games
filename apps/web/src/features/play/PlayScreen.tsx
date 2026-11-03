@@ -40,12 +40,24 @@ function noop(): void {
 
 const NO_OPTION_CHOICES: readonly OptionChoiceList[] = [];
 
+interface Said {
+  readonly moveCount: number;
+  readonly text: string;
+  readonly repeated: boolean;
+}
+
+/** A zero-width space: nothing on screen, but a change of the status line's text. */
+const REPEAT_MARK = "\u200B";
+
 /**
  * The screen shared by every game and mode: whose turn it is, the board, the result, undo/redo and
  * a new game. It only reads the transport's snapshot and sends requests, so it never decides who
  * may move or when the AI does. How turns and results are told follows the snapshot: "you", "the
  * computer" and the online opponent's name when exactly one seat is a person here (`viewer`), the
- * players' symbols otherwise. Online, it also shows the state of the connection.
+ * players' symbols otherwise. With several AI seats, each is told by its seat's name ("the computer
+ * (Blue)"), and every move of the AI is told, also when the AI moves again right after. Online, every
+ * move made elsewhere (a player's or an AI seat's) is told too, with whose turn follows, and the
+ * state of the connection shows; a game in a room is online even when every other seat is the AI.
  */
 export function PlayScreen<State, Move, Outcome>({
   gameId,
@@ -67,6 +79,9 @@ export function PlayScreen<State, Move, Outcome>({
   // The number of moves when a move was refused: the refusal is told until the game changes,
   // not when the connection does.
   const [refusedAt, setRefusedAt] = useState<number | null>(null);
+  // The words last said, for which move, and whether they carry the invisible mark that makes a
+  // screen reader say the same words again for a new move.
+  const [said, setSaid] = useState<Said | null>(null);
   const { Board } = ui;
   const titleRef = useCallback(
     (title: HTMLHeadingElement | null) => {
@@ -96,8 +111,12 @@ export function PlayScreen<State, Move, Outcome>({
   // longer applies. Adjusted during render, so the dialog never shows it for a finished game.
   if (confirmingNewGame && !snapshot.inProgress) setConfirmingNewGame(false);
 
-  const hasAiSeat = snapshot.seats.some((seat) => seat.kind === "ai");
-  const hasRemoteSeat = snapshot.seats.some((seat) => seat.kind === "remote");
+  const aiSeatCount = snapshot.seats.filter((seat) => seat.kind === "ai").length;
+  const hasAiSeat = aiSeatCount > 0;
+  // Several AIs are told apart by their seats' names; a single one is simply "the computer".
+  const severalAis = aiSeatCount > 1;
+  // Online whoever else plays: a room of one person and three AIs has no remote seat.
+  const online = snapshot.connection !== null;
   const rules = optionLabels.summary(gameId, optionChoices, snapshot.options);
 
   function describeStatus({
@@ -110,6 +129,9 @@ export function PlayScreen<State, Move, Outcome>({
     lastMover,
     moveCount,
   }: ReadySnapshot<State, Move, Outcome>): string {
+    const label = (player: PlayerIndex) => playerLabel(player, state);
+    const labels = (players: readonly PlayerIndex[]) =>
+      format.list(players.map(label), { type: "conjunction" });
     // An online player by the name they chose. Names are user input: they only ever enter a
     // message as ICU arguments, which React escapes like any text.
     const nameOf = (player: PlayerIndex) => {
@@ -119,31 +141,81 @@ export function PlayScreen<State, Move, Outcome>({
     // One person here: told as "you", "the computer" and the online opponent's name.
     if (viewer !== null) {
       // A new online game swaps sides for the one who did not ask for it: say which side is theirs.
-      if (result === null && moveCount === 0 && hasRemoteSeat) {
-        return currentPlayer === viewer
-          ? t("newGameYouFirst", { player: playerLabel(viewer) })
-          : t("newGameOpponentFirst", { player: playerLabel(viewer), name: nameOf(currentPlayer) });
+      if (result === null && moveCount === 0 && online) {
+        if (currentPlayer === viewer) return t("newGameYouFirst", { player: label(viewer) });
+        if (seats[currentPlayer]?.kind === "ai") {
+          return severalAis
+            ? t("newGameAiSeatFirst", { player: label(viewer), first: label(currentPlayer) })
+            : t("newGameAiFirst", { player: label(viewer) });
+        }
+        return t("newGameOpponentFirst", { player: label(viewer), name: nameOf(currentPlayer) });
       }
+      // What the other side just did, so a player who cannot see the board knows it too: every
+      // move of the AI is told, also when the AI (another one, or the same after a roll) is to move
+      // again.
+      const moved =
+        lastEntry === null || lastMover === null
+          ? null
+          : { by: lastMover, seat: seats[lastMover], move: moveLabel(lastEntry.move, state) };
       if (result === null && currentPlayer === viewer) {
-        // Where the other side just played, so a player who cannot see the board knows it too.
-        const mover = lastMover === null ? undefined : seats[lastMover];
-        if (lastEntry !== null && lastMover !== null && mover?.kind === "ai") {
-          return t("aiMovedYourTurn", {
-            move: moveLabel(lastEntry.move, state),
-            player: playerLabel(viewer),
-          });
+        if (moved?.seat?.kind === "ai") {
+          return severalAis
+            ? t("aiSeatMovedYourTurn", {
+                mover: label(moved.by),
+                move: moved.move,
+                player: label(viewer),
+              })
+            : t("aiMovedYourTurn", { move: moved.move, player: label(viewer) });
         }
-        if (lastEntry !== null && lastMover !== null && mover?.kind === "remote") {
+        if (moved?.seat?.kind === "remote") {
           return t("opponentMovedYourTurn", {
-            name: nameOf(lastMover),
-            move: moveLabel(lastEntry.move, state),
-            player: playerLabel(viewer),
+            name: nameOf(moved.by),
+            move: moved.move,
+            player: label(viewer),
           });
         }
-        return t("yourTurn", { player: playerLabel(viewer) });
+        return t("yourTurn", { player: label(viewer) });
       }
-      if (result === null && seats[currentPlayer]?.kind === "ai") return t("aiThinking");
+      if (result === null && seats[currentPlayer]?.kind === "ai") {
+        if (moved?.seat?.kind === "ai") {
+          return severalAis
+            ? t("aiSeatMovedAiThinking", {
+                mover: label(moved.by),
+                move: moved.move,
+                player: label(currentPlayer),
+              })
+            : t("aiMovedAiThinking", { move: moved.move });
+        }
+        if (moved?.seat?.kind === "remote") {
+          return severalAis
+            ? t("opponentMovedAiSeatThinking", {
+                name: nameOf(moved.by),
+                move: moved.move,
+                player: label(currentPlayer),
+              })
+            : t("opponentMovedAiThinking", { name: nameOf(moved.by), move: moved.move });
+        }
+        return severalAis ? t("aiSeatThinking", { player: label(currentPlayer) }) : t("aiThinking");
+      }
       if (result === null && seats[currentPlayer]?.kind === "remote") {
+        // Online with three or four seats, and every move of a turn with dice: what was just done
+        // elsewhere, so nobody misses a horse of theirs sent home while waiting.
+        if (moved?.seat?.kind === "ai") {
+          return severalAis
+            ? t("aiSeatMovedWaitingFor", {
+                mover: label(moved.by),
+                move: moved.move,
+                name: nameOf(currentPlayer),
+              })
+            : t("aiMovedWaitingFor", { move: moved.move, name: nameOf(currentPlayer) });
+        }
+        if (moved?.seat?.kind === "remote") {
+          return t("opponentMovedWaitingFor", {
+            name: nameOf(moved.by),
+            move: moved.move,
+            next: nameOf(currentPlayer),
+          });
+        }
         return t("waitingFor", { name: nameOf(currentPlayer) });
       }
       if (result?.kind === "win" && result.winners.includes(viewer)) return t("youWin");
@@ -151,7 +223,7 @@ export function PlayScreen<State, Move, Outcome>({
         result?.kind === "win" &&
         result.winners.every((winner) => seats[winner]?.kind === "ai")
       ) {
-        return t("aiWins");
+        return severalAis ? t("aiSeatWins", { player: labels(result.winners) }) : t("aiWins");
       }
       if (
         result?.kind === "win" &&
@@ -162,16 +234,25 @@ export function PlayScreen<State, Move, Outcome>({
         });
       }
     }
-    if (result === null) return t("turn", { player: playerLabel(currentPlayer) });
+    if (result === null) return t("turn", { player: label(currentPlayer) });
     if (result.kind === "draw") return t("draw");
     // Several winners are joined the way the language joins a list ("X và O", "X、O"), and the
     // count picks the verb form where the language has one ("X wins", "X and O win").
-    return t("winner", {
-      player: format.list(result.winners.map(playerLabel), { type: "conjunction" }),
-      count: result.winners.length,
-    });
+    return t("winner", { player: labels(result.winners), count: result.winners.length });
   }
 
+  // Two moves in a row may be told in the same words (the AI rolls a 6 that cannot move, twice):
+  // the second gets an invisible mark, so the live region changes and is read again.
+  const announcement = describeStatus(snapshot);
+  if (said?.moveCount !== snapshot.moveCount || said.text !== announcement) {
+    setSaid({
+      moveCount: snapshot.moveCount,
+      text: announcement,
+      repeated:
+        said?.text === announcement && said.moveCount !== snapshot.moveCount && !said.repeated,
+    });
+  }
+  const repeated = said?.repeated === true && said.text === announcement;
   return (
     <main className="mx-auto flex max-w-3xl flex-col items-center gap-6 px-4 py-8">
       <header className="flex w-full flex-wrap items-center justify-between gap-4">
@@ -183,9 +264,10 @@ export function PlayScreen<State, Move, Outcome>({
           >
             {tGames(`${gameId}.name`)}
           </h1>
-          {/* Against the AI, its level stays visible, also after a reload. */}
-          {hasAiSeat && <Badge className="text-sm">{modeLabel(snapshot.seats)}</Badge>}
-          {hasRemoteSeat && <Badge className="text-sm">{t("online")}</Badge>}
+          {/* Against the AI, its level stays visible, also after a reload; online, the AI seats are
+              the server's, at a level nobody chose. */}
+          {hasAiSeat && !online && <Badge className="text-sm">{modeLabel(snapshot.seats)}</Badge>}
+          {online && <Badge className="text-sm">{t("online")}</Badge>}
           {/* Every rule option, defaults included, so both players online read the same words. */}
           {rules !== null && <Badge className="text-sm">{rules}</Badge>}
         </div>
@@ -207,7 +289,8 @@ export function PlayScreen<State, Move, Outcome>({
       )}
 
       <p role="status" aria-live="polite" className="text-lg font-medium">
-        {describeStatus(snapshot)}
+        {announcement}
+        {repeated && REPEAT_MARK}
       </p>
 
       <Board
@@ -251,7 +334,7 @@ export function PlayScreen<State, Move, Outcome>({
               else transport.requestNewGame();
             }}
           >
-            {hasRemoteSeat ? t("rematch") : t("newGame")}
+            {online ? t("rematch") : t("newGame")}
           </Button>
         )}
       </div>

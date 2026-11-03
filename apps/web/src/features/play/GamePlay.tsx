@@ -56,14 +56,18 @@ export function GamePlay<State, Move, Outcome, Options extends object>({
     let ai: AiPlayer | undefined;
     let created: Transport<State, Move, Outcome>;
     // Without a saved game, a game is set up like the last one started from the setup screen, its
-    // rule options included (the transport checks them again).
+    // number of players and rule options included (the transport checks them again).
     const remembered = readSetupChoice(
       gameId,
       definition.meta.supportsAI,
       optionChoices,
       matchOptionChoices(optionChoices, definition.defaultOptions) ?? {},
+      definition.meta.players,
     );
-    const rememberedOptions = remembered === undefined ? {} : { options: remembered.options };
+    const rememberedOptions =
+      remembered === undefined
+        ? {}
+        : { options: remembered.options, playerCount: remembered.playerCount };
     if (mode === "ai") {
       ai = createAiPlayer();
       created = createLocalTransport({

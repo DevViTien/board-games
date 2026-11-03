@@ -1,4 +1,5 @@
 import type { PlayerIndex } from "@board-games/engine";
+import { LUDO_DEFAULT_OPTIONS } from "@board-games/games/ludo";
 import { PROTOCOL_VERSION, type RoomView } from "@board-games/protocol";
 import { act, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -6,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { readIdentity, saveName } from "@/features/identity/identity";
 import {
+  AI,
   createFakeEnvironment,
   createFakeSockets,
   type FakeEnvironment,
@@ -196,7 +198,17 @@ describe("RoomRoute", () => {
     await userEvent.click(screen.getByRole("button", { name: "Vào chơi" }));
     await act(async () => {
       socket.receive(
-        roomMessage({ ...room, seats: [{ name: "Minh" }, { name: "Lan" }], revision: 2 }, 1),
+        roomMessage(
+          {
+            ...room,
+            seats: [
+              { kind: "human", name: "Minh" },
+              { kind: "human", name: "Lan" },
+            ],
+            revision: 2,
+          },
+          1,
+        ),
       );
       await Promise.resolve();
     });
@@ -333,5 +345,86 @@ describe("RoomRoute", () => {
     await settle();
 
     expect(screen.getByRole("heading", { name: "Chọn tên để vào phòng" })).toBeInTheDocument();
+  });
+});
+
+describe("RoomRoute AI seats", () => {
+  /** A Cờ cá ngựa room for three as the server sends it, Minh its host in the first seat. */
+  const ludoRoom = (seats: readonly (string | typeof AI | null)[], revision = 1) =>
+    roomView({
+      seats,
+      revision,
+      record: {
+        version: 1,
+        gameId: "ludo",
+        playerCount: 3,
+        options: LUDO_DEFAULT_OPTIONS,
+        entries: [],
+      },
+    });
+
+  it("lets the host give an empty seat to the computer, and starts the game with the last one", async () => {
+    saveName("Minh");
+    renderRoom();
+    await settle();
+    const socket = await enter(ludoRoom(["Minh", "Lan", null]), 0);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Cho máy chơi ghế 3 và bắt đầu ván" }),
+    );
+    expect(socket.sent.at(-1)).toEqual({ type: "ai-seat", seat: 2, on: true });
+    await act(async () => {
+      socket.receive(roomMessage(ludoRoom(["Minh", "Lan", AI], 2), 0));
+      await Promise.resolve();
+    });
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Cờ cá ngựa" })).toHaveFocus();
+    expect(screen.getByText("Online")).toBeInTheDocument();
+  });
+
+  it.each(["not-host", "seat-taken", "not-ai-seat", "game-started", "invalid-seat"] as const)(
+    "shows the latest room after a refused AI seat (%s), without an error nor a reconnection",
+    async (code) => {
+      saveName("Minh");
+      renderRoom();
+      await settle();
+      const socket = await enter(ludoRoom(["Minh", null, null]), 0);
+      await userEvent.click(await screen.findByRole("button", { name: "Cho máy chơi ghế 2" }));
+
+      // Someone took the seat meanwhile: the room first, then the refusal.
+      await act(async () => {
+        socket.receive(roomMessage(ludoRoom(["Minh", "Lan", null], 2), 0));
+        socket.receive({ type: "rejected", request: "ai-seat", code });
+        await Promise.resolve();
+      });
+      await tick();
+
+      expect(screen.getByText("Lan")).toBeInTheDocument();
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      expect(screen.getByRole("heading", { level: 1, name: "Cờ cá ngựa" })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Cho máy chơi ghế 3 và bắt đầu ván" }),
+      ).not.toHaveAttribute("aria-disabled", "true");
+      expect(socket.closedByClient).toBe(false);
+      expect(sockets.all).toHaveLength(1);
+    },
+  );
+
+  it("tells a tab from before a deploy that the app was updated, and neither reloads nor reconnects", async () => {
+    vi.useFakeTimers();
+    saveName("Minh");
+    renderRoom();
+    await act(() => vi.advanceTimersByTimeAsync(0));
+    const socket = sockets.last();
+
+    act(() => {
+      socket.open();
+      socket.receive({ type: "error", code: "outdated-client" });
+    });
+    await act(() => vi.advanceTimersByTimeAsync(60_000));
+
+    expect(screen.getByRole("heading", { name: "App vừa được cập nhật" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Tải lại trang" })).toBeInTheDocument();
+    expect(sockets.all).toHaveLength(1);
   });
 });

@@ -296,8 +296,12 @@ describe("playing", () => {
 
     const seated = expectType(await an.client.next(), "room");
     expect(seated.you).toBe(1);
-    expect(seated.room.seats).toEqual([{ name: "Lan" }, { name: "An Nguyễn" }]);
+    expect(seated.room.seats).toEqual([
+      { kind: "human", name: "Lan" },
+      { kind: "human", name: "An Nguyễn" },
+    ]);
     expect(expectType(await lan.client.next(), "room").room.seats[1]).toEqual({
+      kind: "human",
       name: "An Nguyễn",
     });
   });
@@ -366,7 +370,10 @@ describe("playing", () => {
     expect(forAn.room.record.entries).toEqual([]);
     expect(forAn.you).toBe(0);
     expect(forLan.you).toBe(1);
-    expect(forLan.room.seats).toEqual([{ name: "An" }, { name: "Lan" }]);
+    expect(forLan.room.seats).toEqual([
+      { kind: "human", name: "An" },
+      { kind: "human", name: "Lan" },
+    ]);
   });
 
   it("never sends a playerId", async () => {
@@ -524,5 +531,74 @@ describe("several instances", () => {
 
     const received = expectType(await an.client.next(), "room");
     expect(received.room.record.entries).toEqual([{ move: { cell: 4 } }]);
+  });
+});
+
+describe("AI seats", () => {
+  /** A Cờ cá ngựa room for three, with Lan, its host, in the first seat and connected. */
+  async function ludoRoom(context: Context) {
+    const creator = context.connect();
+    creator.send({ ...createMessage("ludo", LAN), playerCount: 3 });
+    const code = expectType(await creator.next(), "created").code;
+    const lan = await join(context, code, LAN);
+    return { code, lan: lan.client, first: lan.first };
+  }
+
+  it("marks an empty seat for the host, and tells the host's seat", async () => {
+    const context = await start();
+    const { lan, first } = await ludoRoom(context);
+    expect(first.room.host).toBe(0);
+
+    lan.send({ type: "ai-seat", seat: 2, on: true });
+
+    const marked = expectType(await lan.next(), "room");
+    expect(marked.room.seats).toEqual([{ kind: "human", name: "Lan" }, null, { kind: "ai" }]);
+    expect(marked.room.host).toBe(0);
+  });
+
+  it("refuses a seat the room does not have with invalid-seat, and keeps the connection", async () => {
+    const context = await start();
+    const { lan } = await ludoRoom(context);
+
+    lan.send({ type: "ai-seat", seat: 4, on: true });
+
+    expect(await lan.next()).toEqual({
+      type: "rejected",
+      request: "ai-seat",
+      code: "invalid-seat",
+    });
+    lan.send({ type: "ping" });
+    expect(await lan.next()).toEqual({ type: "pong" });
+  });
+
+  it("refuses anyone but the host, after sending the room they missed", async () => {
+    const context = await start();
+    const { code, lan } = await ludoRoom(context);
+    const an = await join(context, code, AN);
+    an.client.send(sitMessage(AN));
+    expectType(await an.client.next(), "room");
+    expectType(await lan.next(), "room");
+
+    an.client.send({ type: "ai-seat", seat: 2, on: true });
+
+    expect(await an.client.next()).toEqual({
+      type: "rejected",
+      request: "ai-seat",
+      code: "not-host",
+    });
+  });
+
+  it("Đổi ghế máy được gửi cho mọi người: brings the AI seat to a player in the lobby on another instance", async () => {
+    const store: MemoryRoomStore = createMemoryRoomStore();
+    const first = await start({}, store);
+    const second = await start({}, store);
+    const { code, lan } = await ludoRoom(first);
+    const an = await join(second, code, AN);
+
+    lan.send({ type: "ai-seat", seat: 1, on: true });
+
+    const received = expectType(await an.client.next(), "room");
+    expect(received.you).toBeNull();
+    expect(received.room.seats[1]).toEqual({ kind: "ai" });
   });
 });

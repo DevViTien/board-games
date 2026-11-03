@@ -6,6 +6,7 @@ import {
   currentState,
   fromRecord,
   type GameDefinition,
+  type HistoryEntry,
   lastEntry,
   parseGameOptions,
   type PlayerIndex,
@@ -18,7 +19,12 @@ import {
   undo,
 } from "@board-games/engine";
 
-import { AI_MIN_DELAY_MS, AI_TIME_LIMIT_MS } from "./ai-timing";
+import {
+  AI_MIN_DELAY_MS,
+  AI_RESULT_DELAY_MS,
+  AI_SETTLE_DELAY_MS,
+  AI_TIME_LIMIT_MS,
+} from "./ai-timing";
 import { withStoreTimeout } from "./store-timeout";
 import type {
   AiPlayer,
@@ -38,8 +44,9 @@ import type {
 
 /**
  * Which saved game the transport plays, and how to set up a new one. `start` begins a new game in
- * place of the saved one (the setup screen's "Start"), unless the game refuses its rule options;
- * otherwise the saved game is resumed, and without one a game is set up like `fallback`.
+ * place of the saved one (the setup screen's "Start"), unless the game refuses its rule options or
+ * its number of players; otherwise the saved game is resumed, and without one a game is set up like
+ * `fallback`.
  */
 type ModeOptions =
   | {
@@ -47,8 +54,8 @@ type ModeOptions =
       readonly mode?: "local" | undefined;
       readonly start?: LocalSetup | undefined;
       /**
-       * How to set up a game when none is saved: the last choices made for this game (its rule
-       * options). Absent: the game's defaults.
+       * How to set up a game when none is saved: the last choices made for this game (its number
+       * of players and rule options). Absent: the game's defaults.
        */
       readonly fallback?: LocalSetup | undefined;
     }
@@ -71,6 +78,11 @@ export type LocalTransportOptions<State, Move, Outcome, Options extends object> 
 } & ModeOptions;
 
 const LOADING = { status: "loading" } as const;
+
+/** Whether a move was played with a random outcome, by the entry's shape as the engine reads it. */
+function isRandom(entry: HistoryEntry<unknown, unknown>): boolean {
+  return "outcome" in entry;
+}
 const HUMAN: SeatController = { kind: "human" };
 const MAX_SEED = 2 ** 32 - 1;
 
@@ -78,7 +90,8 @@ const MAX_SEED = 2 ** 32 - 1;
  * Play on this device, seat by seat: each seat is a person here or the AI. Moves go straight to the
  * engine, and the transport alone decides whose turn it is to act, so the play screen only reads
  * snapshots. It restores the saved game on creation and saves after every change, which keeps
- * autosave out of the play screen (and out of online games, which use another transport).
+ * autosave out of the play screen (and out of online games, which use another transport). Undo
+ * never takes back a move with a random outcome (a roll): a die is never thrown again.
  */
 // `Outcome` defaults to `never` as in the engine: a game without randomness gives nothing to infer
 // it from, and the fallback `unknown` would not match its UI's `GameUI<State, Move>`.
@@ -93,6 +106,8 @@ export function createLocalTransport<
   const mode: SlotMode = options.mode ?? "local";
   const slot: SaveSlot = { gameId: definition.id, mode };
   const ai = options.mode === "ai" ? options.ai : undefined;
+  // Only games with random outcomes (dice) wait for the board to show the last move and its result.
+  const hasRandomOutcomes = definition.outcomes !== undefined;
 
   let session: GameSession | null = null;
   let settings: ModeSettings = { kind: "local" };
@@ -140,17 +155,30 @@ export function createLocalTransport<
     return parsed.ok ? parsed.value : undefined;
   }
 
-  function newSession(gameOptions: Options): GameSession {
-    // Choosing the number of players comes with the first game that needs it (M6).
-    const created = createSession(definition, {
-      playerCount: definition.meta.players.min,
-      options: gameOptions,
-    });
+  /**
+   * A new game with the rule options and number of players `setup` asks for (the game's smallest
+   * when it asks for none), or `undefined` when the game refuses either.
+   */
+  function sessionOf(setup: PlaySetup): GameSession | undefined {
+    const gameOptions = optionsOf(setup);
+    const playerCount =
+      setup.playerCount === undefined ? definition.meta.players.min : setup.playerCount;
+    if (gameOptions === undefined || typeof playerCount !== "number") return undefined;
+    const created = createSession(definition, { playerCount, options: gameOptions });
+    return created.ok ? created.value : undefined;
+  }
+
+  function newSession(gameOptions: Options, playerCount: number): GameSession {
+    const created = createSession(definition, { playerCount, options: gameOptions });
     if (!created.ok) throw new Error(`Cannot start ${definition.id}: ${created.error}`);
     return created.value;
   }
 
-  /** Seats a new game set up like `setup`, drawing who moves first when it is random. */
+  /**
+   * Seats a new game set up like `setup`. Against the AI, the player takes one seat and the AI every
+   * other one, at the level chosen: the seat moving first ("Me"), the one moving second (the AI
+   * first), or any of them with the same chance (random, drawn now).
+   */
   function seat(setup: PlaySetup, next: GameSession): void {
     const { playerCount } = next;
     if (setup.mode === "local") {
@@ -159,13 +187,35 @@ export function createLocalTransport<
       return;
     }
     const firstSeat = definition.currentPlayer(currentState(next));
-    const humanFirst =
-      setup.first === "human" || (setup.first === "random" && rng.nextInt(0, 1) === 0);
-    const humanSeat = humanFirst ? firstSeat : (firstSeat + 1) % playerCount;
+    const position =
+      setup.first === "human" ? 0 : setup.first === "ai" ? 1 : rng.nextInt(0, playerCount - 1);
+    const humanSeat = (firstSeat + position) % playerCount;
     seats = Array.from({ length: playerCount }, (_, index) =>
       index === humanSeat ? HUMAN : { kind: "ai", level: setup.level },
     );
     settings = { kind: "ai", first: setup.first, seats };
+  }
+
+  /**
+   * The game after undo: back to the last turn of a person here, the AI's replies taken back with
+   * the person's move before them (on a shared device, one move). `undefined` when there is nothing
+   * to undo, or when going back would take back a move with a random outcome: undo stops right
+   * after the last roll, so a move may be chosen again for the same roll, never rolled again.
+   */
+  function undoneSession(from: GameSession): GameSession | undefined {
+    let undone = from;
+    let tookHumanMove = false;
+    while (canUndo(undone)) {
+      const entry = undone.entries[undone.cursor - 1];
+      if (entry !== undefined && isRandom(entry)) return undefined;
+      const before = undone.states[undone.cursor - 1];
+      const stepped = undo(undone);
+      if (!stepped.ok) return undefined;
+      undone = stepped.value;
+      tookHumanMove ||= before !== undefined && isHuman(definition.currentPlayer(before));
+      if (tookHumanMove && isHuman(definition.currentPlayer(currentState(undone)))) return undone;
+    }
+    return undefined;
   }
 
   function cancelAiTurn(): void {
@@ -197,7 +247,7 @@ export function createLocalTransport<
       lastEntry: lastEntry(next),
       lastMover: lastMover(next),
       moveCount: next.cursor,
-      canUndo: humanMoved,
+      canUndo: undoneSession(next) !== undefined,
       canRedo: canRedo(next),
       canMove: result === null && isHuman(currentPlayer) && waitingFor === null,
       viewer: humanSeats.length === 1 ? (humanSeats[0] ?? null) : null,
@@ -217,9 +267,20 @@ export function createLocalTransport<
   }
 
   /**
-   * Asks the AI for a move and plays it once it has arrived and the minimum delay has passed,
-   * unless the game on screen changed meanwhile. A failure never leaves the game stuck on the AI's
-   * turn: a random legal move is played instead.
+   * How long the AI's move waits at least, from the start of its turn. In a game with random
+   * outcomes, the board's animation of the last move must end first, and right after a roll the
+   * player needs a moment to read it; other games keep the short delay.
+   */
+  function aiDelayMs(position: GameSession): number {
+    if (!hasRandomOutcomes) return AI_MIN_DELAY_MS;
+    const last = lastEntry(position);
+    return last !== null && isRandom(last) ? AI_RESULT_DELAY_MS : AI_SETTLE_DELAY_MS;
+  }
+
+  /**
+   * Asks the AI for a move and plays it once it has arrived and the delay has passed, unless the
+   * game on screen changed meanwhile. A failure never leaves the game stuck on the AI's turn: a
+   * random legal move is played instead.
    */
   function startAiTurn(position: GameSession, level: AiLevel): void {
     if (ai === undefined) return;
@@ -238,7 +299,7 @@ export function createLocalTransport<
       aiTimer = undefined;
       delayed = true;
       finish();
-    }, AI_MIN_DELAY_MS);
+    }, aiDelayMs(position));
     // Wrapped so that an AI player throwing instead of rejecting fails the same way.
     new Promise<unknown>((resolve) => {
       resolve(
@@ -271,13 +332,13 @@ export function createLocalTransport<
     // The AI failed or chose a move the rules refuse.
     const legalMoves = definition.legalMoves(currentState(position));
     if (legalMoves.length === 0) return;
-    const random = playMove(
+    const fallbackMove = playMove(
       definition,
       position,
       legalMoves[rng.nextInt(0, legalMoves.length - 1)],
       rng,
     );
-    if (random.ok) commit(random.value);
+    if (fallbackMove.ok) commit(fallbackMove.value);
   }
 
   function persist(next: GameSession): void {
@@ -308,8 +369,7 @@ export function createLocalTransport<
     persist(next);
   }
 
-  function start(setup: PlaySetup, gameOptions: Options, save: boolean): void {
-    const next = newSession(gameOptions);
+  function start(setup: PlaySetup, next: GameSession, save: boolean): void {
     seat(setup, next);
     if (save) commit(next);
     else show(next);
@@ -372,11 +432,12 @@ export function createLocalTransport<
 
   // The saved game is read even when a new one was asked for, so that one that cannot be read is
   // never overwritten (`mayWrite`). In order: the new game asked for, if the game accepts its rule
-  // options (an address with options it refuses is ignored like any wrong address); the saved
-  // game; a game set up like the last one chosen, or with the defaults if those are refused too.
+  // options and number of players (an address with values it refuses is ignored like any wrong
+  // address); the saved game; a game set up like the last one chosen, or with the defaults if
+  // those are refused too.
   void restore().then((restored) => {
     if (disposed) return;
-    const requested = options.start === undefined ? undefined : optionsOf(options.start);
+    const requested = options.start === undefined ? undefined : sessionOf(options.start);
     if (options.start !== undefined && requested !== undefined) {
       start(options.start, requested, true);
     } else if (restored !== undefined) {
@@ -385,9 +446,16 @@ export function createLocalTransport<
       show(restored.session);
     } else {
       const fallback: PlaySetup = options.fallback ?? { mode: "local" };
-      // Against the AI, saved at once, so a reload before the first move keeps the level and who
-      // moves first; an empty same-device board is not worth saving.
-      start(fallback, optionsOf(fallback) ?? definition.defaultOptions, mode === "ai");
+      // Against the AI, saved at once, so a reload before the first move keeps the level, who moves
+      // first and the number of players; an empty same-device board is not worth saving.
+      start(
+        fallback,
+        sessionOf(fallback) ??
+          // One refused value costs only itself: the rule options first, then the number too.
+          sessionOf({ ...fallback, options: undefined }) ??
+          newSession(definition.defaultOptions, definition.meta.players.min),
+        mode === "ai",
+      );
     }
   });
 
@@ -410,23 +478,13 @@ export function createLocalTransport<
       if (played.ok) commit(played.value);
       else emit({ type: "rejected", code: played.error });
     },
-    // Takes back the AI's replies with the person's move before them, back to a turn of a person
-    // here: undoing on a shared device takes one move, as before.
+    // See `undoneSession`: back to a turn of a person here, never past a roll.
     requestUndo: () => {
       if (disposed || session === null) return;
-      if (!humanHasMoved(session)) {
+      const undone = undoneSession(session);
+      if (undone === undefined) {
         emit({ type: "rejected", code: "nothing-to-undo" });
         return;
-      }
-      let undone = session;
-      let tookHumanMove = false;
-      while (canUndo(undone)) {
-        const before = undone.states[undone.cursor - 1];
-        const stepped = undo(undone);
-        if (!stepped.ok) break;
-        undone = stepped.value;
-        tookHumanMove ||= before !== undefined && isHuman(definition.currentPlayer(before));
-        if (tookHumanMove && isHuman(definition.currentPlayer(currentState(undone)))) break;
       }
       commit(undone);
     },
@@ -445,10 +503,11 @@ export function createLocalTransport<
       } while (canRedo(redone) && !isHuman(definition.currentPlayer(currentState(redone))));
       commit(redone);
     },
-    // Same seats and rule options, except that a random first player is drawn again.
+    // Same number of players, seats and rule options, except that a random first player is drawn
+    // again.
     requestNewGame: () => {
       if (disposed || session === null) return;
-      const next = newSession(session.options);
+      const next = newSession(session.options, session.playerCount);
       const aiSeat = seats.find((controller) => controller.kind === "ai");
       if (settings.kind === "ai" && settings.first === "random" && aiSeat?.kind === "ai") {
         seat({ mode: "ai", level: aiSeat.level, first: "random" }, next);

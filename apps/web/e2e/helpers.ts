@@ -1,4 +1,6 @@
-import { expect, type Page } from "@playwright/test";
+import { applyEntry, createSession, toRecord } from "@board-games/engine";
+import { ludo, LUDO_DEFAULT_OPTIONS } from "@board-games/games";
+import { type Browser, type BrowserContext, expect, type Page } from "@playwright/test";
 
 // Shared by the E2E specs. The browser language is pinned to Vietnamese in playwright.config.ts.
 
@@ -213,3 +215,103 @@ export async function startAiGame(
 /** The "Continue a game" section of the menu. */
 export const continueSection = (page: Page) =>
   page.getByRole("region", { name: "Tiếp tục ván dở" });
+
+// --- Cờ cá ngựa -------------------------------------------------------------------------------
+
+/** One step of a Cờ cá ngựa game: a roll locked to a face, or a horse (numbered from 0) moved. */
+export type LudoStep = { readonly roll: 1 | 2 | 3 | 4 | 5 | 6 } | { readonly horse: number };
+
+/**
+ * The record of a Cờ cá ngựa game played with the steps given, the dice decided in advance: built
+ * with the engine's `applyEntry`, so a step the rules refuse fails here, not in the app.
+ */
+function ludoRecord(playerCount: 2 | 3 | 4, steps: readonly LudoStep[]): unknown {
+  const created = createSession(ludo, { playerCount, options: LUDO_DEFAULT_OPTIONS });
+  if (!created.ok) throw new Error(created.error);
+  let session = created.value;
+  for (const [index, step] of steps.entries()) {
+    const entry =
+      "roll" in step
+        ? { move: { type: "roll" }, outcome: step.roll }
+        : { move: { type: "move", horse: step.horse } };
+    const played = applyEntry(ludo, session, entry);
+    if (!played.ok) throw new Error(`step ${index + 1}: ${played.error}`);
+    session = played.value;
+  }
+  return JSON.parse(JSON.stringify(toRecord(session)));
+}
+
+/** A saved same-device Cờ cá ngựa game (slot "ludo:local") with the steps given. */
+export function savedLudoGame(playerCount: 2 | 3 | 4, steps: readonly LudoStep[]): unknown {
+  return {
+    version: 2,
+    savedAt: "2026-11-03T08:00:00.000Z",
+    inProgress: true,
+    mode: { kind: "local" },
+    record: ludoRecord(playerCount, steps),
+  };
+}
+
+export const rollButton = (page: Page) => page.getByRole("button", { name: "Gieo xúc xắc" });
+export const horseChoices = (page: Page) =>
+  page.getByRole("group", { name: "Chọn ngựa" }).getByRole("button");
+export const die = (page: Page) => page.getByRole("img", { name: /^Xúc xắc/ });
+export const horsePositions = (page: Page) =>
+  page.getByRole("list", { name: "Vị trí các ngựa" }).getByRole("listitem");
+
+/** Moves played in the game on the board, rolls included (the board's `data-ply`). */
+export async function ludoPly(page: Page): Promise<number> {
+  return Number(await page.locator("[data-ply]").getAttribute("data-ply"));
+}
+
+/**
+ * Plays one turn with the keyboard: Enter on "Roll the die", then Enter on the first choice if the
+ * roll left any (the focus goes there by itself). Waits until each move is in, counted by the
+ * number of moves played, so two alike moves in a row are told apart. Returns the face rolled.
+ */
+export async function playLudoTurnWithKeyboard(page: Page): Promise<number> {
+  await expect(rollButton(page)).toHaveAttribute("aria-disabled", "false");
+  const before = await ludoPly(page);
+  await rollButton(page).focus();
+  await page.keyboard.press("Enter");
+  await expect.poll(() => ludoPly(page)).toBe(before + 1);
+  await expect(die(page)).toHaveAccessibleName(/^Xúc xắc: [1-6] \(/);
+  const face = Number(/: ([1-6])/.exec((await die(page).getAttribute("aria-label")) ?? "")?.[1]);
+  if ((await horseChoices(page).count()) > 0) {
+    await expect(horseChoices(page).first()).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect.poll(() => ludoPly(page)).toBe(before + 2);
+    await expect(rollButton(page)).toBeFocused();
+  }
+  return face;
+}
+
+// Online rooms.
+
+/** The address of a room page. */
+export const ROOM_URL = /\/room\/[2-9A-HJKMNP-Z]{6}$/;
+
+/** The seats in a room's lobby. */
+export const players = (page: Page) =>
+  page.getByRole("region", { name: "Người chơi" }).getByRole("listitem");
+export const nameField = (page: Page) => page.getByRole("textbox", { name: "Tên của bạn" });
+
+interface Friend {
+  readonly context: BrowserContext;
+  readonly page: Page;
+}
+
+/** Someone who has never played online opens `url` in their own browser and gives their name. */
+export async function openAsNewPlayer(
+  browser: Browser,
+  url: string,
+  name: string,
+): Promise<Friend> {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  await page.goto(url);
+  await expect(page.getByRole("heading", { name: "Chọn tên để vào phòng" })).toBeVisible();
+  await nameField(page).fill(name);
+  await page.getByRole("button", { name: "Tiếp tục" }).click();
+  return { context, page };
+}

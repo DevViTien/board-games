@@ -234,12 +234,23 @@ function RoomContent({ connection, name, onSit, onBroken, onRetry }: RoomContent
   );
   const { status, room, you } = snapshot;
   const unknownGame = room !== null && !isRegisteredGameId(room.gameId);
-  // The lobby names the room's rules from the game's code, loaded meanwhile for the game itself.
-  const optionChoices = useGameOptionChoices(
+  // The lobby names the room's rules, and offers AI seats, from the game's code, loaded meanwhile
+  // for the game itself.
+  const { choices: optionChoices, supportsAI } = useGameOptionChoices(
     room !== null && isRegisteredGameId(room.gameId) ? room.gameId : null,
   );
   // Once the lobby was shown, the game that replaces it takes the focus its button had.
   const [wasInLobby, setWasInLobby] = useState(false);
+  // The lobby's buttons stop waiting once the server refuses an AI seat: the room shows why.
+  const [aiSeatRefusals, setAiSeatRefusals] = useState(0);
+
+  useEffect(
+    () =>
+      connection.onRejected(({ request }) => {
+        if (request === "ai-seat") setAiSeatRefusals((count) => count + 1);
+      }),
+    [connection],
+  );
 
   useEffect(() => {
     if (unknownGame) onBroken();
@@ -260,10 +271,13 @@ function RoomContent({ connection, name, onSit, onBroken, onRetry }: RoomContent
         gameId={room.gameId}
         room={room}
         optionChoices={optionChoices}
+        supportsAI={supportsAI}
         you={you}
         status={status}
         name={name}
         onSit={onSit}
+        onAiSeat={(seat, on) => connection.send({ type: "ai-seat", seat, on })}
+        aiSeatRefusals={aiSeatRefusals}
         onResume={connection.resume}
       />
     );

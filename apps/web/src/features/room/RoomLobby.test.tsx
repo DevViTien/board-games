@@ -3,7 +3,8 @@ import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { roomView } from "@/test/fake-realtime";
+import type { Locale } from "@/i18n/config";
+import { AI, roomView } from "@/test/fake-realtime";
 import { renderWithIntl } from "@/test/render-with-intl";
 
 import { RoomLobby } from "./RoomLobby";
@@ -54,7 +55,13 @@ describe("RoomLobby", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Tic-tac-toe" })).toBeInTheDocument();
     expect(screen.getByText("ABC234")).toBeInTheDocument();
     expect(inviteLink()).toHaveValue(`${window.location.origin}/room/ABC234`);
-    expect(players()).toEqual(["Minh", "Đang chờ…"]);
+    expect(players()).toEqual(["MinhChủ phòng", "Đang chờ…"]);
+  });
+
+  it("shows every seat of a room for three, the creator first and two seats waiting", () => {
+    renderLobby({ seats: ["Minh", null, null] });
+
+    expect(players()).toEqual(["MinhChủ phòng", "Đang chờ…", "Đang chờ…"]);
   });
 
   it("offers a player without a seat to join, under the remembered name, without taking a seat", () => {
@@ -99,7 +106,7 @@ describe("RoomLobby", () => {
   it("marks the player's own seat, and waits for friends without a join button", () => {
     renderLobby({ you: 0 });
 
-    expect(players()).toEqual(["Minh (bạn)", "Đang chờ…"]);
+    expect(players()).toEqual(["Minh (bạn)Chủ phòng", "Đang chờ…"]);
     expect(sitButton()).not.toBeInTheDocument();
     expect(screen.getByText(/Gửi link mời cho bạn bè/)).toBeInTheDocument();
   });
@@ -185,5 +192,204 @@ describe("RoomLobby rules", () => {
     renderLobby();
 
     expect(screen.queryByText(/^Luật/)).not.toBeInTheDocument();
+  });
+});
+
+describe("RoomLobby AI seats", () => {
+  /** The lobby of a Cờ cá ngựa room as `you` sees it, Lan its host in the first seat. */
+  interface AiLobbyOptions {
+    readonly seats?: readonly (string | typeof AI | null)[];
+    readonly you?: PlayerIndex | null;
+    readonly supportsAI?: boolean;
+    readonly moves?: number;
+    readonly onAiSeat?: (seat: PlayerIndex, on: boolean) => boolean;
+    readonly aiSeatRefusals?: number;
+    readonly locale?: Locale;
+  }
+
+  function renderAiLobby({
+    seats = ["Lan", null, null],
+    you = 0,
+    supportsAI = true,
+    moves = 0,
+    onAiSeat = vi.fn(() => true),
+    aiSeatRefusals = 0,
+    locale = "vi",
+  }: AiLobbyOptions = {}) {
+    const room = roomView({ seats, revision: 3 });
+    const props = {
+      gameId: "ludo" as const,
+      supportsAI,
+      you,
+      status: "online" as const,
+      name: "Lan",
+      onSit: vi.fn(() => true),
+      onAiSeat,
+      onResume: vi.fn(),
+    };
+    const withMoves = {
+      ...room,
+      record: { ...room.record, entries: Array.from({ length: moves }, () => ({ move: {} })) },
+    };
+    const view = renderWithIntl(
+      <RoomLobby {...props} room={withMoves} aiSeatRefusals={aiSeatRefusals} />,
+      { locale },
+    );
+    return {
+      onAiSeat,
+      rerender: (next: { seats?: typeof seats; revision?: number; aiSeatRefusals?: number }) => {
+        view.rerender(
+          <RoomLobby
+            {...props}
+            room={{
+              ...withMoves,
+              ...roomView({ seats: next.seats ?? seats, revision: next.revision ?? 3 }),
+            }}
+            aiSeatRefusals={next.aiSeatRefusals ?? aiSeatRefusals}
+          />,
+        );
+      },
+    };
+  }
+
+  const addButtons = () => screen.queryAllByRole("button", { name: /^Cho máy chơi ghế/ });
+  const removeButtons = () => screen.queryAllByRole("button", { name: /^Bỏ máy ở ghế/ });
+
+  it("shows an AI seat as the computer's and marks the host", () => {
+    renderAiLobby({ seats: ["Lan", AI, null], you: null });
+
+    expect(players()).toEqual(["LanChủ phòng", "Máy", "Đang chờ…"]);
+  });
+
+  it("offers the host to let the computer play each empty seat, named by its number", async () => {
+    const { onAiSeat } = renderAiLobby({ seats: ["Lan", null, null, null] });
+
+    expect(addButtons().map((button) => button.textContent)).toEqual([
+      "Cho máy chơi",
+      "Cho máy chơi",
+      "Cho máy chơi",
+    ]);
+    await userEvent.click(screen.getByRole("button", { name: "Cho máy chơi ghế 3" }));
+
+    expect(onAiSeat).toHaveBeenCalledWith(2, true);
+  });
+
+  it("Ghế trống cuối cùng báo bắt đầu ván: says the game starts with the last empty seat", () => {
+    renderAiLobby({ seats: ["Lan", "An", null] });
+
+    expect(
+      screen.getByRole("button", { name: "Cho máy chơi ghế 3 và bắt đầu ván" }),
+    ).toBeInTheDocument();
+  });
+
+  it("Bỏ máy ở sảnh chờ: turns the seat back into a waiting one, the focus kept on its button", async () => {
+    const { onAiSeat, rerender } = renderAiLobby({ seats: ["Lan", null, AI] });
+    const remove = screen.getByRole("button", { name: "Bỏ máy ở ghế 3" });
+
+    await userEvent.click(remove);
+    expect(onAiSeat).toHaveBeenCalledWith(2, false);
+    expect(remove).toHaveAttribute("aria-disabled", "true");
+    rerender({ seats: ["Lan", null, null], revision: 4 });
+
+    expect(players()[2]).toBe("Đang chờ…Cho máy chơi");
+    const add = screen.getByRole("button", { name: "Cho máy chơi ghế 3" });
+    expect(add).toHaveFocus();
+    expect(add).not.toHaveAttribute("aria-disabled", "true");
+  });
+
+  it("waits no more once the server refused the request", async () => {
+    const { onAiSeat, rerender } = renderAiLobby({ seats: ["Lan", null, null] });
+    await userEvent.click(screen.getByRole("button", { name: "Cho máy chơi ghế 2" }));
+    expect(screen.getByRole("button", { name: "Cho máy chơi ghế 2" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Cho máy chơi ghế 3" }));
+    expect(onAiSeat).toHaveBeenCalledOnce();
+
+    rerender({ aiSeatRefusals: 1 });
+
+    expect(screen.getByRole("button", { name: "Cho máy chơi ghế 2" })).not.toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+  });
+
+  it("keeps waiting while the room changes for something else, until the seat is as asked", async () => {
+    const { rerender } = renderAiLobby({ seats: ["Lan", null, null, null] });
+    await userEvent.click(screen.getByRole("button", { name: "Cho máy chơi ghế 3" }));
+
+    // Someone sits in the second seat: the request is not answered by that.
+    rerender({ seats: ["Lan", "An", null, null], revision: 4 });
+    expect(screen.getByRole("button", { name: "Cho máy chơi ghế 3" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+
+    rerender({ seats: ["Lan", "An", AI, null], revision: 5 });
+    expect(screen.getByRole("button", { name: "Bỏ máy ở ghế 3" })).not.toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+  });
+
+  it.each(["vi", "en", "ja"] as const)(
+    "names each AI button by its visible words first, in %s",
+    (locale) => {
+      renderAiLobby({ seats: ["Lan", null, AI, null], locale });
+
+      const buttons = screen
+        .getAllByRole("button")
+        .filter((button) => button.hasAttribute("aria-label"));
+      expect(buttons).toHaveLength(3);
+      for (const button of buttons) {
+        const label = button.getAttribute("aria-label") ?? "";
+        expect(label.startsWith(button.textContent)).toBe(true);
+      }
+    },
+  );
+
+  it("Phòng hai ghế: offers no AI seat in a room for two", () => {
+    renderAiLobby({ seats: ["Lan", null] });
+
+    expect(addButtons()).toEqual([]);
+  });
+
+  it("Người khác không thấy nút: shows no AI buttons to anyone but the host", () => {
+    renderAiLobby({ seats: ["Lan", "An", null, AI], you: 1 });
+
+    expect(addButtons()).toEqual([]);
+    expect(removeButtons()).toEqual([]);
+  });
+
+  it("shows no AI buttons to someone without a seat", () => {
+    renderAiLobby({ seats: ["Lan", null, AI], you: null });
+
+    expect(addButtons()).toEqual([]);
+    expect(removeButtons()).toEqual([]);
+  });
+
+  it("Game không hỗ trợ máy: offers no AI seat for a game without an AI", () => {
+    renderAiLobby({ supportsAI: false });
+
+    expect(addButtons()).toEqual([]);
+  });
+
+  it("offers no AI buttons once the game has a move", () => {
+    renderAiLobby({ seats: ["Lan", null, AI], moves: 1 });
+
+    expect(addButtons()).toEqual([]);
+    expect(removeButtons()).toEqual([]);
+  });
+
+  it("offers the host buttons at empty and AI seats only", () => {
+    renderAiLobby({ seats: ["Lan", "An", AI, null] });
+
+    expect(removeButtons().map((button) => button.getAttribute("aria-label"))).toEqual([
+      "Bỏ máy ở ghế 3",
+    ]);
+    expect(addButtons().map((button) => button.getAttribute("aria-label"))).toEqual([
+      "Cho máy chơi ghế 4 và bắt đầu ván",
+    ]);
   });
 });

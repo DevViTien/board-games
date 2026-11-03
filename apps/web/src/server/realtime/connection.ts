@@ -342,6 +342,7 @@ export function attachConnection(socket: WebSocket, deps: ConnectionDeps): void 
       case "sit":
       case "move":
       case "rematch":
+      case "ai-seat":
         await request(room, message);
         return;
       default:
@@ -394,6 +395,8 @@ export function attachConnection(socket: WebSocket, deps: ConnectionDeps): void 
         );
       case "rematch":
         return service.rematch(code, player.playerId, message.gameNumber);
+      case "ai-seat":
+        return service.setAiSeat(code, player.playerId, message.seat, message.on);
     }
   }
 }

@@ -82,7 +82,13 @@ describe("GamePlay", () => {
   });
 
   it("opened straight with no saved game, sets it up like the last game started", async () => {
-    writeSetupChoice("tictactoe", { mode: "ai", level: "hard", first: "human", options: {} });
+    writeSetupChoice("tictactoe", {
+      mode: "ai",
+      level: "hard",
+      first: "human",
+      playerCount: 2,
+      options: {},
+    });
     renderWithIntl(
       <GamePlay
         gameId="tictactoe"
@@ -161,6 +167,7 @@ describe("GamePlay rule options", () => {
       mode: "ai",
       level: "medium",
       first: "human",
+      playerCount: 2,
       options: { size: 19, rule: "blocked-ends" },
     });
     renderWithIntl(
@@ -182,6 +189,7 @@ describe("GamePlay rule options", () => {
       mode: "ai",
       level: "hard",
       first: "human",
+      playerCount: 2,
       options: { size: 15, rule: "free" },
     });
     const store = createMemoryStore();

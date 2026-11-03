@@ -9,6 +9,7 @@ import {
   PAGE_WITHOUT_STORAGE,
   play,
   pressStart,
+  savedMoveCount,
   status,
   writeSaved,
 } from "./helpers";
@@ -254,6 +255,8 @@ test("plays on a 19×19 board with the free rule, kept across a reload and a new
   await expect(rulesLabel(page, "19×19 · Tự do")).toBeVisible();
 
   await play(page, [1, 1], [2, 2], [19, 19], [3, 3], [18, 18]);
+  // The game is saved after each move: reload only once the last one is in.
+  await expect.poll(() => savedMoveCount(page, "caro:local")).toBe(5);
   await page.reload();
   await expect(board(page).getByRole("button")).toHaveCount(361);
   await expect(cell(page, 19, 19)).toHaveAccessibleName("Hàng 19, cột 19, X");
@@ -275,6 +278,7 @@ test("plays on a 19×19 board with the free rule, kept across a reload and a new
   await expect(board(page).getByRole("button")).toHaveCount(361);
   await expect(rulesLabel(page, "19×19 · Tự do")).toBeVisible();
   // The empty board keeps its rules across a reload, and is not listed as in progress.
+  await expect.poll(() => savedMoveCount(page, "caro:local")).toBe(0);
   await page.reload();
   await expect(board(page).getByRole("button")).toHaveCount(361);
   await expect(rulesLabel(page, "19×19 · Tự do")).toBeVisible();

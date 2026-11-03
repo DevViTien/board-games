@@ -163,6 +163,33 @@ describe("room connection: joining", () => {
     expect(status()).toBe("online");
   });
 
+  it("sends the host's request for an AI seat", () => {
+    connect();
+    const socket = enter();
+
+    expect(connection.send({ type: "ai-seat", seat: 2, on: true })).toBe(true);
+
+    expect(socket.sent.at(-1)).toEqual({ type: "ai-seat", seat: 2, on: true });
+  });
+
+  it.each(["invalid-seat", "not-ai-seat", "seat-taken", "not-host", "game-started"] as const)(
+    "stays connected when an AI seat is refused with %s",
+    async (code) => {
+      connect();
+      const socket = enter();
+      const rejected = vi.fn();
+      connection.onRejected(rejected);
+
+      socket.receive({ type: "rejected", request: "ai-seat", code });
+      await wait(60_000);
+
+      expect(rejected).toHaveBeenCalledWith({ request: "ai-seat", code });
+      expect(status()).toBe("online");
+      expect(socket.closedByClient).toBe(false);
+      expect(sockets.all).toHaveLength(1);
+    },
+  );
+
   it("tells listeners nothing after it is disposed, and closes the socket", () => {
     connect();
     const socket = enter();

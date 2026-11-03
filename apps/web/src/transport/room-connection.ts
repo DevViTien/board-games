@@ -25,7 +25,7 @@ interface RoomConnectionSnapshot {
 }
 
 /** What a player in a room asks the server for. */
-type RoomRequest = Extract<ClientMessage, { type: "sit" | "move" | "rematch" }>;
+type RoomRequest = Extract<ClientMessage, { type: "sit" | "move" | "rematch" | "ai-seat" }>;
 
 interface RoomRejection {
   readonly request: RejectableRequest | null;
