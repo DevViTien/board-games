@@ -14,19 +14,33 @@
     "joinTitle": "Join a room by code",
     "joinCode": "Room code",
     "join": "Join",
-    "joinInvalid": "A room code has 6 letters and digits, like ABC234."
+    "joinInvalid": "A room code has 6 letters and digits, like ABC234.",
+    "heroTitle": "Play board games with friends, right in your browser",
+    "heroLead": "On one device, against the computer or with an invite link — no account needed.",
+    "online": "Online",
+    "joinPlaceholder": "e.g. ABC234"
   },
   "Games": {
     "tictactoe": {
       "name": "Tic-tac-toe",
+      "tagline": "Easy to pick up, a few minutes a game",
       "players": {
         "x": "X",
         "o": "O"
       },
-      "move": "played row {row}, column {col}"
+      "move": "played row {row}, column {col}",
+      "winningCell": "Part of the winning line",
+      "result": {
+        "line": "Three {mark} marks {where}",
+        "row": "in row {n}",
+        "col": "in column {n}",
+        "diagonal": "on the main diagonal",
+        "antiDiagonal": "on the other diagonal"
+      }
     },
     "caro": {
       "name": "Gomoku",
+      "tagline": "Five in a row wins · 15×15 or 19×19 board",
       "players": {
         "x": "X",
         "o": "O"
@@ -50,10 +64,20 @@
           }
         },
         "summary": "{size} · {rule}"
+      },
+      "result": {
+        "line": "{count} {mark} stones in a line, {direction}",
+        "direction": {
+          "row": "across",
+          "column": "down",
+          "diagonal": "diagonally down",
+          "antiDiagonal": "diagonally up"
+        }
       }
     },
     "ludo": {
       "name": "Ludo",
+      "tagline": "Roll the die, race your horses home",
       "colours": {
         "red": "Red",
         "blue": "Blue",
@@ -62,7 +86,8 @@
       },
       "roll": "Roll the die",
       "die": "Die: {face} ({player})",
-      "dieEmpty": "Die: not rolled yet",
+      "dieReady": "Die: {player} to roll",
+      "lastRoll": "Last turn: {player} rolled {face}",
       "hint": {
         "choose": "{player} rolled {face}. Choose a horse to move.",
         "rolled": "{player} rolled {face}.",
@@ -98,7 +123,23 @@
         "cell": "square {cell}"
       },
       "justMoved": "{position} (just moved)",
-      "justKicked": "{position} (just sent home)"
+      "justKicked": "{position} (just sent home)",
+      "result": "{colour} brought all four horses home",
+      "summary": {
+        "none": "No horse out yet",
+        "track": "{count, plural, one {# horse} other {# horses}} on the track",
+        "home": "{count, plural, one {# horse} other {# horses}} home",
+        "both": "{track, plural, one {# horse} other {# horses}} on the track · {home, plural, one {# horse} other {# horses}} home",
+        "short": {
+          "none": "None out",
+          "track": "{count} on track",
+          "home": "{count} home",
+          "both": "{track} out · {home} home"
+        }
+      },
+      "unavailable": {
+        "choose": "Choose a horse first"
+      }
     },
     "chess": {
       "name": "Chess"
@@ -157,7 +198,7 @@
     "lastMove": "Last move",
     "turn": "{player} to move",
     "winner": "{count, plural, one {{player} wins!} other {{player} win!}}",
-    "draw": "It is a draw!",
+    "draw": "It's a draw!",
     "undo": "Undo",
     "redo": "Redo",
     "newGame": "New game",
@@ -205,13 +246,42 @@
     "newGameOpponentFirst": "New game: you play {player}, {name} moves first",
     "newGameAiFirst": "New game: you play {player}, the computer moves first",
     "newGameAiSeatFirst": "New game: you play {player}, the computer ({first}) moves first",
-    "opponentWins": "{name} wins",
+    "opponentWins": "{name} wins!",
     "rematch": "Play again",
     "invalidMove": "That move is not allowed.",
     "connection": {
       "reconnecting": "Reconnecting…",
       "idle": "Paused after a while without activity.",
       "resume": "Continue"
+    },
+    "players": "Players",
+    "turnBadge": "To move",
+    "winnerBadge": "Winner",
+    "thinking": "Thinking…",
+    "finished": "Game over",
+    "you": "You · {player}",
+    "ai": "Computer · {player}",
+    "named": "{name} · {player}",
+    "aiLevel": "Level: {level}",
+    "here": "On this device",
+    "remote": "Playing remotely",
+    "aiName": "the computer",
+    "aiSeatName": "the computer ({player})",
+    "connectionBadge": {
+      "connected": "Connected",
+      "lost": "Disconnected"
+    },
+    "unavailable": {
+      "noMoves": "No move to undo yet",
+      "noOwnMoves": "You have no move to undo yet",
+      "roll": "A roll of the die cannot be undone",
+      "thinking": "The computer is thinking; wait for its move",
+      "noRedo": "No move to redo"
+    },
+    "locked": {
+      "waiting": "Waiting for {player}",
+      "reconnecting": "Waiting for the connection to the server",
+      "sending": "Sending…"
     }
   },
   "NotFound": {
@@ -220,7 +290,13 @@
     "backToMenu": "Back to menu"
   },
   "Settings": {
-    "language": "Language"
+    "language": "Language",
+    "theme": "Theme",
+    "themes": {
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    }
   },
   "Identity": {
     "name": "Your name",
@@ -230,9 +306,7 @@
     "title": "Room {code}",
     "joining": "Joining the room…",
     "slow": "Can't reach the server yet. Still trying…",
-    "nameTitle": "Choose a name to join",
     "nameHint": "Everyone in the room will see this name.",
-    "continue": "Continue",
     "code": "Room code",
     "inviteLink": "Invite link",
     "copy": "Copy link",

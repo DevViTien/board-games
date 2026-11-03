@@ -21,7 +21,12 @@ function identity(): Identity {
 export const freshIdentity: Identity = {
   parsePlayerName: (raw) => identity().parsePlayerName(raw),
   readIdentity: () => identity().readIdentity(),
-  saveName: (name) => identity().saveName(name),
+  readRoomIdentity: (code) => identity().readRoomIdentity(code),
+  pinRoomIdentity: (code, pinned) => {
+    identity().pinRoomIdentity(code, pinned);
+  },
+  guestPlayerId: () => identity().guestPlayerId(),
+  saveName: (name, sessionPlayerId) => identity().saveName(name, sessionPlayerId),
 };
 
 /** Loads a copy of the real identity module with nothing in memory. */

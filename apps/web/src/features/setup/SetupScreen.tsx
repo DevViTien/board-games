@@ -3,11 +3,19 @@
 import { AI_LEVEL, type AiLevel, type OptionChoiceList } from "@board-games/engine";
 import type { RegisteredGameId } from "@board-games/games";
 import { ROOM_ERROR } from "@board-games/protocol";
-import { Button, buttonVariants, Card, ConfirmDialog, RadioGroup } from "@board-games/ui";
+import {
+  ArrowLeftIcon,
+  Button,
+  buttonVariants,
+  Card,
+  cn,
+  ConfirmDialog,
+  RadioGroup,
+} from "@board-games/ui";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useEffect, useId, useRef, useState } from "react";
+import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 
 import { parsePlayerName, readIdentity, saveName } from "@/features/identity/identity";
 import { NameField } from "@/features/identity/NameField";
@@ -78,6 +86,13 @@ interface SetupScreenProps {
   readonly store?: SavedGameStore;
   /** Creates an online room on the server; a fake in tests. */
   readonly createRoom?: typeof createRoomOnServer;
+  /**
+   * The mode asked for by the address (`?mode=online`, `readInitialMode`): chosen instead of the
+   * default or the remembered one, and remembered only once a game is started or a room created.
+   */
+  readonly initialMode?: SetupMode | undefined;
+  /** The game's picture (`games/<id>/Artwork`), rendered on the server; none in tests. */
+  readonly artwork?: ReactNode;
 }
 
 /**
@@ -97,6 +112,8 @@ export function SetupScreen({
   realtimeUrl,
   store = savedGameStore,
   createRoom = createRoomOnServer,
+  initialMode,
+  artwork,
 }: SetupScreenProps) {
   const t = useTranslations("Setup");
   const tPlay = useTranslations("Play");
@@ -108,7 +125,7 @@ export function SetupScreen({
   const savedHeadingId = useId();
   const [choice, setChoice] = useState<SetupChoice>({
     ...DEFAULT_PLAY_SETUP,
-    mode: supportsAI ? DEFAULT_PLAY_SETUP.mode : SETUP_MODE.Local,
+    mode: initialMode ?? (supportsAI ? DEFAULT_PLAY_SETUP.mode : SETUP_MODE.Local),
     playerCount: players.min,
     options: defaultOptions,
   });
@@ -136,16 +153,18 @@ export function SetupScreen({
 
   // The remembered choice and name live in browser storage, which the server cannot read: the
   // server renders the defaults, and the remembered ones are applied after mount, without a
-  // hydration mismatch.
+  // hydration mismatch. A mode asked for by the address still wins over the remembered one.
   useEffect(() => {
     const remembered = readSetupChoice(gameId, supportsAI, optionChoices, defaultOptions, {
       min: minPlayers,
       max: maxPlayers,
     });
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is only readable after mount; reading it during render would not match the server's HTML
-    if (remembered !== undefined) setChoice(remembered);
+    if (remembered !== undefined) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is only readable after mount; reading it during render would not match the server's HTML
+      setChoice({ ...remembered, mode: initialMode ?? remembered.mode });
+    }
     setName(readIdentity()?.name ?? "");
-  }, [gameId, supportsAI, optionChoices, defaultOptions, minPlayers, maxPlayers]);
+  }, [gameId, supportsAI, optionChoices, defaultOptions, minPlayers, maxPlayers, initialMode]);
 
   function begin(): void {
     const { mode } = choice;
@@ -205,16 +224,23 @@ export function SetupScreen({
   };
 
   return (
-    <main className="mx-auto flex max-w-xl flex-col gap-6 px-4 py-8">
-      <header className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold tracking-tight">{tGames(`${gameId}.name`)}</h1>
-        <Link href="/" className={buttonVariants({ variant: "ghost" })}>
-          {tPlay("backToMenu")}
-        </Link>
-      </header>
+    <main className="mx-auto flex max-w-xl flex-col gap-6 px-4 pt-4 pb-14 sm:pt-6">
+      <Link
+        href="/"
+        className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "-ml-2 self-start px-2")}
+      >
+        <ArrowLeftIcon aria-hidden className="size-4" />
+        {tPlay("backToMenu")}
+      </Link>
 
-      <Card className="flex flex-col gap-6 p-6">
+      <Card className="flex flex-col gap-6 overflow-hidden pt-0">
+        {/* The game's own colours apply inside `data-game` (games/<id>/theme.css). */}
+        <header data-game={gameId} className="-mx-5 flex items-center gap-4 bg-game-tint px-5 py-4">
+          {artwork !== undefined && <div className="shrink-0">{artwork}</div>}
+          <h1 className="text-title">{tGames(`${gameId}.name`)}</h1>
+        </header>
         <RadioGroup
+          fill
           legend={t("mode")}
           options={(supportsAI ? MODES : MODES_WITHOUT_AI).map((mode) => ({
             value: mode,
@@ -229,6 +255,7 @@ export function SetupScreen({
             applies to every mode, and is kept when the mode changes. */}
         {playerChoice && (
           <RadioGroup
+            fill
             legend={t("players")}
             options={Array.from({ length: maxPlayers - minPlayers + 1 }, (_, index) => {
               const count = minPlayers + index;
@@ -243,6 +270,7 @@ export function SetupScreen({
         {choice.mode === "ai" && (
           <>
             <RadioGroup
+              fill
               legend={t("level")}
               options={LEVELS.map((level) => ({ value: level, label: tLevels(level) }))}
               value={choice.level}
@@ -251,6 +279,7 @@ export function SetupScreen({
               }}
             />
             <RadioGroup
+              fill
               legend={t("first")}
               options={FIRST_PLAYERS.map((first) => ({
                 value: first,
@@ -266,6 +295,7 @@ export function SetupScreen({
         {/* The rules apply to every mode, and are kept when the mode changes. */}
         {optionChoices.map(({ name: option, values }) => (
           <RadioGroup
+            fill
             key={option}
             legend={optionLabels.field(gameId, option)}
             options={values.map((value) => ({
@@ -297,19 +327,22 @@ export function SetupScreen({
         )}
         {online ? (
           <div className="flex flex-wrap items-center gap-3">
-            <Button size="lg" aria-disabled={creating} onClick={() => void createOnlineRoom()}>
+            <Button
+              className="max-sm:w-full"
+              aria-disabled={creating}
+              onClick={() => void createOnlineRoom()}
+            >
               {t("createRoom")}
             </Button>
             {/* Always there while online, so the progress is announced when it appears. */}
-            <p role="status" className="text-sm text-fg-muted">
+            <p role="status" className="text-small text-fg-muted">
               {creating ? t("creating") : null}
             </p>
           </div>
         ) : (
           // Not pressable until the games in progress are known, so none is dropped unasked.
           <Button
-            size="lg"
-            className="self-start"
+            className="max-sm:w-full sm:self-start"
             aria-disabled={saved.status === "loading"}
             onClick={requestStart}
           >
@@ -317,13 +350,13 @@ export function SetupScreen({
           </Button>
         )}
         {online && createProblem === "failed" && (
-          <p role="alert" className="text-sm text-danger">
+          <p role="alert" className="text-small text-danger">
             {t("createFailed")}
           </p>
         )}
         {online && createProblem === "outdated" && (
           <div role="alert" className="flex flex-col items-start gap-3">
-            <p className="text-sm text-danger">{t("createOutdated")}</p>
+            <p className="text-small text-danger">{t("createOutdated")}</p>
             <Button variant="secondary" onClick={reloadPage}>
               {t("reload")}
             </Button>
@@ -335,7 +368,7 @@ export function SetupScreen({
           choices or "Start" away from under the player's finger. */}
       {ownGames.length > 0 && (
         <section aria-labelledby={savedHeadingId} className="flex flex-col gap-3">
-          <h2 id={savedHeadingId} className="text-lg font-medium">
+          <h2 id={savedHeadingId} className="text-heading">
             {t("inProgress.title")}
           </h2>
           <ul className="flex flex-col gap-2">

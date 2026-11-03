@@ -1,4 +1,5 @@
-import { ROOM_PROBLEM, RoomError } from "@/features/room/RoomError";
+import { ROOM_PROBLEM } from "@/features/room/room-problem";
+import { RoomError } from "@/features/room/RoomError";
 
 /** `/room/<code>` with something that cannot be a room code: no such room, as for an expired one. */
 export default function RoomNotFound() {

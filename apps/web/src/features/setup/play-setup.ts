@@ -149,3 +149,17 @@ export function readStartRequest(params: SearchParamsLike, mode: SlotMode): Play
     ? { mode, level: parsed.data.level, first: parsed.data.first, ...extra }
     : undefined;
 }
+
+/**
+ * The mode asked for by the setup screen's address (`/play/<gameId>?mode=online`, the menu's
+ * "Online"), or `undefined` when none is, or one the game does not offer, or not a mode at all:
+ * the screen then shows the remembered or default mode, without telling the player.
+ */
+export function readInitialMode(
+  raw: string | readonly string[] | undefined,
+  supportsAI: boolean,
+): SetupMode | undefined {
+  const parsed = z.enum(SETUP_MODE).safeParse(raw);
+  if (!parsed.success) return undefined;
+  return parsed.data === SETUP_MODE.Ai && !supportsAI ? undefined : parsed.data;
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { buttonVariants, cn } from "@board-games/ui";
+import { ChevronRightIcon } from "@board-games/ui";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useId } from "react";
@@ -29,8 +29,8 @@ const NO_OPTION_CHOICES: OptionChoicesByGame = {};
 /**
  * "Continue a game": every game in progress on this browser, by game, mode and rules (for a game
  * with rule options), the most recently saved first, each opening that very game. The menu is
- * rendered on the server, which cannot read IndexedDB, so the list appears after loading; it sits
- * below the cards, so nothing jumps. Nothing is shown while loading, when nothing is in progress,
+ * rendered on the server, which cannot read IndexedDB, so the list appears after loading, below
+ * "Join a room" so that never moves. Nothing is shown while loading, when nothing is in progress,
  * or when the saved games cannot be read.
  */
 export function ContinueList({
@@ -48,11 +48,14 @@ export function ContinueList({
   const { games } = saved;
 
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h2 id={headingId} className="text-xl font-semibold tracking-tight">
+    <section
+      aria-labelledby={headingId}
+      className="flex flex-col gap-2 border-t border-border pt-4"
+    >
+      <h2 id={headingId} className="text-caption text-fg-muted">
         {t("continueTitle")}
       </h2>
-      <ul className="flex flex-wrap gap-2">
+      <ul className="flex flex-col gap-2">
         {games.map((game) => {
           const item = {
             game: tGames(`${game.gameId}.name`),
@@ -69,15 +72,13 @@ export function ContinueList({
             <li key={`${game.gameId}:${game.mode}`}>
               <Link
                 href={`/play/${game.gameId}/${game.mode}`}
-                // Long with the rules on a phone: it wraps inside the button.
-                className={cn(
-                  buttonVariants({ variant: "secondary" }),
-                  "h-auto min-h-10 py-2 text-left",
-                )}
+                // Long with the rules on a phone: it wraps inside the row.
+                className="focus-ring flex min-h-11 items-center justify-between gap-3 rounded-control bg-surface-muted px-3 py-2 text-small font-semibold text-fg transition-colors hover:bg-border"
               >
                 {rules === null
                   ? t("continueItem", item)
                   : t("continueItemWithRules", { ...item, rules })}
+                <ChevronRightIcon aria-hidden className="size-4 shrink-0 text-fg-muted" />
               </Link>
             </li>
           );

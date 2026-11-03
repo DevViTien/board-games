@@ -472,7 +472,7 @@ describe("SetupScreen online", () => {
 
     await userEvent.click(createButton());
 
-    expect(screen.getByRole("alert")).toHaveTextContent(/^App vừa được cập nhật\./);
+    expect(screen.getByRole("alert")).toHaveTextContent(/^Ứng dụng vừa được cập nhật\./);
     expect(screen.getByRole("button", { name: "Tải lại trang" })).toBeInTheDocument();
     expect(screen.queryByText(/Không tạo được phòng/)).not.toBeInTheDocument();
   });
@@ -906,5 +906,78 @@ describe("SetupScreen number of players", () => {
     await userEvent.click(createButton());
 
     expect(vi.mocked(createRoom).mock.calls[0]?.[0]).not.toHaveProperty("playerCount");
+  });
+});
+
+describe("SetupScreen with a mode chosen by the address", () => {
+  function rememberChoice(choice: object): void {
+    window.localStorage.setItem(`${SETUP_CHOICE_KEY_PREFIX}tictactoe`, JSON.stringify(choice));
+  }
+
+  function renderWithMode(initialMode?: "online" | "local") {
+    return renderWithIntl(
+      <SetupScreen
+        gameId="tictactoe"
+        supportsAI
+        players={{ min: 2, max: 4 }}
+        realtimeUrl={null}
+        store={createMemoryStore()}
+        initialMode={initialMode}
+      />,
+    );
+  }
+
+  it("Chọn sẵn Online thay cho lựa chọn đã nhớ: keeps the remembered number of players", async () => {
+    rememberChoice({ mode: "ai", level: "hard", first: "human", playerCount: 4 });
+
+    renderWithMode("online");
+
+    await waitFor(() => {
+      expect(checkedIn("Số người chơi")).toHaveAccessibleName("4 người");
+    });
+    expect(radio("Online")).toBeChecked();
+    expect(screen.getByRole("button", { name: "Tạo phòng" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Bắt đầu" })).not.toBeInTheDocument();
+  });
+
+  it("chooses the mode before anything is remembered, from the first render", () => {
+    renderWithMode("online");
+
+    expect(radio("Online")).toBeChecked();
+  });
+
+  it("Chọn sẵn chưa được nhớ: leaving without a room keeps the remembered mode", async () => {
+    rememberChoice({ mode: "local", level: "medium", first: "human", playerCount: 2 });
+    const remembered = window.localStorage.getItem(`${SETUP_CHOICE_KEY_PREFIX}tictactoe`);
+    const online = renderWithMode("online");
+    await waitFor(() => {
+      expect(radio("Online")).toBeChecked();
+    });
+    online.unmount();
+
+    renderWithMode();
+
+    await waitFor(() => {
+      expect(radio("Cùng máy")).toBeChecked();
+    });
+    expect(window.localStorage.getItem(`${SETUP_CHOICE_KEY_PREFIX}tictactoe`)).toBe(remembered);
+  });
+
+  it("shows the game's artwork in the header, around the game's name", () => {
+    renderWithIntl(
+      <SetupScreen
+        gameId="caro"
+        supportsAI
+        players={TWO_PLAYERS}
+        realtimeUrl={null}
+        store={createMemoryStore()}
+        artwork={<svg data-testid="artwork" aria-hidden />}
+      />,
+    );
+
+    const heading = screen.getByRole("heading", { level: 1, name: "Cờ caro" });
+    const header = heading.closest("[data-game]");
+    expect(header).toHaveAttribute("data-game", "caro");
+    expect(header).toContainElement(screen.getByTestId("artwork"));
   });
 });

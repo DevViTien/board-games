@@ -28,6 +28,17 @@ describe("JoinRoomForm", () => {
     expect(within(section).getByRole("button", { name: "Vào phòng" })).toBeInTheDocument();
   });
 
+  it("asks for a code the way a code is typed: capitals, no autofill or spell check, Enter goes", () => {
+    renderWithIntl(<JoinRoomForm />);
+
+    const field = codeField();
+    expect(field).toHaveAttribute("name", "code");
+    expect(field).toHaveAttribute("autocomplete", "off");
+    expect(field).toHaveAttribute("autocapitalize", "characters");
+    expect(field).toHaveAttribute("enterkeyhint", "go");
+    expect(field).toHaveAttribute("spellcheck", "false");
+  });
+
   it("opens the room of a code typed in lower case with spaces around it", async () => {
     renderWithIntl(<JoinRoomForm />);
 

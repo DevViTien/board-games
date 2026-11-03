@@ -1,8 +1,10 @@
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ComponentProps } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { SetupScreen } from "@/features/setup/SetupScreen";
+import { TicTacToeArtwork } from "@/games/tictactoe/Artwork";
 import { renderWithIntl } from "@/test/render-with-intl";
 import { createMemoryStore } from "@/transport/memory-store";
 
@@ -21,6 +23,18 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("next/server", () => ({ connection: () => Promise.resolve() }));
 
+type SetupProps = ComponentProps<typeof SetupScreen>;
+
+/** The props the page gives the setup screen. */
+async function setupProps(...args: Parameters<typeof SetupPage>): Promise<SetupProps> {
+  return ((await SetupPage(...args)) as { props: SetupProps }).props;
+}
+
+/** Everything but the artwork, an element drawn on the server: plain data. */
+function plainProps(props: SetupProps): Partial<SetupProps> {
+  return Object.fromEntries(Object.entries(props).filter(([name]) => name !== "artwork"));
+}
+
 describe("/play/[gameId]", () => {
   it("renders the setup screen of a registered game, passing only plain values", async () => {
     vi.stubEnv("REALTIME_URL", "ws://localhost:3101/api/realtime");
@@ -28,15 +42,39 @@ describe("/play/[gameId]", () => {
     vi.unstubAllEnvs();
 
     expect(page.type).toBe(SetupScreen);
-    expect(page.props).toEqual({
+    const props = page.props as SetupProps;
+    expect(plainProps(props)).toEqual({
       gameId: "tictactoe",
       supportsAI: true,
       players: { min: 2, max: 2 },
       optionChoices: [],
       defaultOptions: {},
       realtimeUrl: "ws://localhost:3101/api/realtime",
+      initialMode: undefined,
     });
+    expect(props.artwork).toMatchObject({ type: TicTacToeArtwork });
   });
+
+  it("Chọn sẵn Online: passes the mode asked for by the address", async () => {
+    const props = await setupProps({
+      params: Promise.resolve({ gameId: "ludo" }),
+      searchParams: Promise.resolve({ mode: "online" }),
+    });
+
+    expect(props.initialMode).toBe("online");
+  });
+
+  it.each([["khong-co"], [["online", "local"]], [""]])(
+    "Chế độ không hợp lệ: ignores the mode %j, without an error",
+    async (mode) => {
+      const props = await setupProps({
+        params: Promise.resolve({ gameId: "tictactoe" }),
+        searchParams: Promise.resolve({ mode }),
+      });
+
+      expect(props.initialMode).toBeUndefined();
+    },
+  );
 
   it("passes the rule options a game offers, and its defaults, as plain data", async () => {
     const page = await SetupPage({ params: Promise.resolve({ gameId: "caro" }) });
@@ -48,7 +86,8 @@ describe("/play/[gameId]", () => {
       ],
       defaultOptions: { size: 15, rule: "blocked-ends" },
     });
-    expect(JSON.parse(JSON.stringify(page.props))).toEqual(page.props);
+    const props = plainProps(page.props as SetupProps);
+    expect(JSON.parse(JSON.stringify(props))).toEqual({ ...props, initialMode: undefined });
   });
 
   it("Không có nhóm tuỳ chọn luật: Cờ cá ngựa offers its number of players and no rule", async () => {

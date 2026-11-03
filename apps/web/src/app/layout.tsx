@@ -7,10 +7,14 @@ import { getLocale, getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 
 import { SITE } from "@/config/site";
+import { readTheme } from "@/features/settings/read-theme";
+import { themeAttribute } from "@/features/settings/theme";
 
+// The weights the type scale uses (packages/ui styles.css): body 400, captions and chips 600,
+// headings and buttons 700, the display and status lines 800. Each is a preloaded file per subset.
 const appFont = Be_Vietnam_Pro({
   subsets: ["latin", "vietnamese"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "600", "700", "800"],
   variable: "--font-app",
   display: "swap",
 });
@@ -34,11 +38,17 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
-  const locale = await getLocale();
+  const [locale, theme] = await Promise.all([getLocale(), readTheme()]);
 
   return (
-    <html lang={locale} className={`${appFont.variable} ${cjkFont.variable}`}>
-      <body className="min-h-dvh bg-bg font-sans text-fg antialiased">
+    // The picked theme is in the server's HTML, so the page never shows the other one first.
+    // `auto-phrase`: Japanese lines break between phrases, not inside a word (others unaffected).
+    <html
+      lang={locale}
+      data-theme={themeAttribute(theme)}
+      className={`${appFont.variable} ${cjkFont.variable}`}
+    >
+      <body className="min-h-dvh bg-bg font-sans text-body [word-break:auto-phrase] text-fg antialiased">
         <NextIntlClientProvider>{children}</NextIntlClientProvider>
       </body>
     </html>

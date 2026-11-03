@@ -14,23 +14,59 @@ describe("LocaleSwitcher", () => {
     vi.mocked(setLocale).mockClear();
   });
 
-  it("shows the current language and offers every supported one", () => {
+  it("offers every language, each named in itself, the current one pressed", () => {
     renderWithIntl(<LocaleSwitcher />, { locale: "en" });
 
-    const select = screen.getByRole("combobox", { name: "Language" });
-    expect(select).toHaveValue("en");
-    expect(screen.getAllByRole("option").map((option) => option.textContent)).toEqual([
+    const group = screen.getByRole("group", { name: "Language" });
+    expect(group).toBeInTheDocument();
+    expect(screen.getAllByRole("button").map((button) => button.textContent)).toEqual([
       "Tiếng Việt",
       "English",
       "日本語",
     ]);
+    expect(screen.getByRole("button", { name: "English", pressed: true })).toHaveAttribute(
+      "lang",
+      "en",
+    );
+    expect(screen.getByRole("button", { name: "Tiếng Việt", pressed: false })).toBeInTheDocument();
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+    expect(screen.queryByRole("radio")).not.toBeInTheDocument();
   });
 
-  it("saves the language the player picks", async () => {
+  it("Đổi ngôn ngữ: saves the language the player presses", async () => {
     renderWithIntl(<LocaleSwitcher />);
 
-    await userEvent.selectOptions(screen.getByRole("combobox", { name: "Ngôn ngữ" }), "ja");
+    await userEvent.click(screen.getByRole("button", { name: "English" }));
 
-    expect(setLocale).toHaveBeenCalledWith("ja");
+    expect(setLocale).toHaveBeenCalledExactlyOnceWith("en");
+  });
+
+  it("does not reload the page in another language for each arrow key", async () => {
+    renderWithIntl(<LocaleSwitcher />);
+
+    await userEvent.tab();
+    await userEvent.keyboard("{ArrowRight}{ArrowRight}");
+
+    expect(setLocale).not.toHaveBeenCalled();
+  });
+
+  it("is busy while the language is saved, ignoring presses, the focus kept", async () => {
+    let finish: () => void = () => undefined;
+    vi.mocked(setLocale).mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    renderWithIntl(<LocaleSwitcher />);
+    const english = screen.getByRole("button", { name: "English" });
+
+    await userEvent.click(english);
+    expect(screen.getByRole("group", { name: "Ngôn ngữ" })).toHaveAttribute("aria-busy", "true");
+    await userEvent.click(screen.getByRole("button", { name: "日本語" }));
+
+    expect(setLocale).toHaveBeenCalledExactlyOnceWith("en");
+    expect(screen.getByRole("button", { name: "日本語" })).toHaveFocus();
+    finish();
   });
 });

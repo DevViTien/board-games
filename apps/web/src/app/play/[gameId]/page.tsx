@@ -5,12 +5,16 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { getTranslations } from "next-intl/server";
 
+import { readInitialMode } from "@/features/setup/play-setup";
 import { SetupScreen } from "@/features/setup/SetupScreen";
+import { GAME_ARTWORK } from "@/games/artwork";
 import { matchOptionChoices } from "@/lib/option-choices";
 import { configuredRealtimeUrl } from "@/lib/realtime-url";
 
 interface SetupPageProps {
   readonly params: Promise<{ gameId: string }>;
+  /** `mode`: the mode to choose at once (the menu's "Online"). */
+  readonly searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }
 
 export async function generateMetadata({ params }: SetupPageProps): Promise<Metadata> {
@@ -21,7 +25,7 @@ export async function generateMetadata({ params }: SetupPageProps): Promise<Meta
 }
 
 /** `/play/<gameId>`: the setup screen, where a game is started or one in progress continued. */
-export default async function SetupPage({ params }: SetupPageProps) {
+export default async function SetupPage({ params, searchParams }: SetupPageProps) {
   const { gameId } = await params;
   const game = findGame(gameId);
   if (!isRegisteredGameId(gameId) || game === undefined) notFound();
@@ -30,6 +34,7 @@ export default async function SetupPage({ params }: SetupPageProps) {
   // Plain values only: functions cannot cross to the client, and the setup screen's bundle must not
   // carry any game's rules (it imports game ids only, from `@board-games/games/ids`).
   const optionChoices = listOptionChoices(game);
+  const Artwork = GAME_ARTWORK[gameId];
   return (
     <SetupScreen
       gameId={gameId}
@@ -40,6 +45,9 @@ export default async function SetupPage({ params }: SetupPageProps) {
       // never falls back to `{}` for a game that offers some.
       defaultOptions={matchOptionChoices(optionChoices, game.defaultOptions) ?? {}}
       realtimeUrl={configuredRealtimeUrl(process.env)}
+      initialMode={readInitialMode((await searchParams)?.mode, game.meta.supportsAI)}
+      // Drawn here, on the server: the setup screen's bundle carries no game's picture.
+      artwork={<Artwork className="size-16 sm:size-20" />}
     />
   );
 }

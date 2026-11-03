@@ -14,19 +14,33 @@
     "joinTitle": "コードでルームに入る",
     "joinCode": "ルームコード",
     "join": "入る",
-    "joinInvalid": "ルームコードは英数字6文字です（例：ABC234）。"
+    "joinInvalid": "ルームコードは英数字6文字です（例：ABC234）。",
+    "heroTitle": "友だちとボードゲーム、ブラウザですぐに",
+    "heroLead": "同じ端末で、コンピューターと、または招待リンクで。アカウントは不要です。",
+    "online": "オンライン",
+    "joinPlaceholder": "例：ABC234"
   },
   "Games": {
     "tictactoe": {
       "name": "三目並べ",
+      "tagline": "すぐに覚えられて、1局数分",
       "players": {
         "x": "X",
         "o": "O"
       },
-      "move": "{row}行{col}列に打ちました"
+      "move": "{row}行{col}列に打ちました",
+      "winningCell": "勝ちの列",
+      "result": {
+        "line": "{mark}が{where}に3つ並びました",
+        "row": "{n}行目",
+        "col": "{n}列目",
+        "diagonal": "左上から右下への斜め",
+        "antiDiagonal": "右上から左下への斜め"
+      }
     },
     "caro": {
       "name": "五目並べ",
+      "tagline": "5つ並べたら勝ち・15×15または19×19",
       "players": {
         "x": "X",
         "o": "O"
@@ -50,10 +64,20 @@
           }
         },
         "summary": "{size}・{rule}"
+      },
+      "result": {
+        "line": "{mark}が{direction}に{count}つ並びました",
+        "direction": {
+          "row": "横",
+          "column": "縦",
+          "diagonal": "右下がりの斜め",
+          "antiDiagonal": "右上がりの斜め"
+        }
       }
     },
     "ludo": {
       "name": "ルドー",
+      "tagline": "サイコロを振って、馬をゴールへ",
       "colours": {
         "red": "赤",
         "blue": "青",
@@ -62,7 +86,8 @@
       },
       "roll": "サイコロを振る",
       "die": "サイコロ：{face}（{player}）",
-      "dieEmpty": "サイコロ：まだ振っていません",
+      "dieReady": "サイコロ：{player}が振る番",
+      "lastRoll": "前の番：{player}が{face}を出しました",
       "hint": {
         "choose": "{player}は{face}を出しました。動かす駒を選んでください。",
         "rolled": "{player}は{face}を出しました。",
@@ -98,7 +123,23 @@
         "cell": "{cell}マス目"
       },
       "justMoved": "{position}（今動いた駒）",
-      "justKicked": "{position}（今戻された駒）"
+      "justKicked": "{position}（今戻された駒）",
+      "result": "{colour}の馬が4頭ともゴールしました",
+      "summary": {
+        "none": "まだ出ていません",
+        "track": "{count}頭がコース上",
+        "home": "{count}頭がゴール列",
+        "both": "{track}頭がコース上・{home}頭がゴール列",
+        "short": {
+          "none": "未出走",
+          "track": "コース{count}",
+          "home": "ゴール{count}",
+          "both": "コース{track}・ゴール{home}"
+        }
+      },
+      "unavailable": {
+        "choose": "先に馬を選んでください"
+      }
     },
     "chess": {
       "name": "チェス"
@@ -205,13 +246,42 @@
     "newGameOpponentFirst": "新しい対局：あなたは{player}、{name}が先手です",
     "newGameAiFirst": "新しい対局：あなたは{player}、コンピューターが先手です",
     "newGameAiSeatFirst": "新しい対局：あなたは{player}、コンピューター（{first}）が先手です",
-    "opponentWins": "{name}の勝ち",
+    "opponentWins": "{name}の勝ち！",
     "rematch": "もう一度",
     "invalidMove": "その手は打てません。",
     "connection": {
       "reconnecting": "再接続しています…",
       "idle": "しばらく操作がなかったため一時停止しました。",
       "resume": "再開"
+    },
+    "players": "プレイヤー",
+    "turnBadge": "手番",
+    "winnerBadge": "勝ち",
+    "thinking": "考え中…",
+    "finished": "終局",
+    "you": "あなた・{player}",
+    "ai": "コンピューター・{player}",
+    "named": "{name}・{player}",
+    "aiLevel": "強さ: {level}",
+    "here": "この端末",
+    "remote": "リモート参加",
+    "aiName": "コンピューター",
+    "aiSeatName": "コンピューター（{player}）",
+    "connectionBadge": {
+      "connected": "接続中",
+      "lost": "接続切れ"
+    },
+    "unavailable": {
+      "noMoves": "取り消せる手はまだありません",
+      "noOwnMoves": "取り消せるあなたの手はまだありません",
+      "roll": "サイコロの結果は取り消せません",
+      "thinking": "コンピューターが考えています。打つまでお待ちください",
+      "noRedo": "やり直せる手はありません"
+    },
+    "locked": {
+      "waiting": "{player}を待っています",
+      "reconnecting": "サーバーへの再接続を待っています",
+      "sending": "送信中…"
     }
   },
   "NotFound": {
@@ -220,7 +290,13 @@
     "backToMenu": "メニューに戻る"
   },
   "Settings": {
-    "language": "言語"
+    "language": "言語",
+    "theme": "テーマ",
+    "themes": {
+      "light": "ライト",
+      "dark": "ダーク",
+      "system": "システム設定"
+    }
   },
   "Identity": {
     "name": "あなたの名前",
@@ -230,9 +306,7 @@
     "title": "ルーム {code}",
     "joining": "ルームに入っています…",
     "slow": "まだサーバーに接続できません。再試行しています…",
-    "nameTitle": "ルームに入る名前を決めてください",
     "nameHint": "ルームの全員にこの名前が表示されます。",
-    "continue": "続ける",
     "code": "ルームコード",
     "inviteLink": "招待リンク",
     "copy": "リンクをコピー",
@@ -256,7 +330,7 @@
     "errors": {
       "notFound": {
         "title": "ルームが見つかりません",
-        "description": "コードが間違っているか、7日間遊ばれずに期限切れになりました。"
+        "description": "コードが間違っているか、ルームが7日間使われず期限切れになった可能性があります。"
       },
       "full": {
         "title": "ルームは満員です",

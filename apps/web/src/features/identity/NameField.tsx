@@ -14,6 +14,8 @@ interface NameFieldProps {
   readonly onCommit?: ((name: string) => void) | undefined;
   /** Says why the name is refused; set once the player has tried to go on with it. */
   readonly showError: boolean;
+  /** A line under the field, read with it (`aria-describedby`); none by default. */
+  readonly hint?: string | undefined;
   /**
    * The input, for the form to focus it when the name is refused on submit: the error is then read
    * with the field.
@@ -27,15 +29,19 @@ interface NameFieldProps {
  * reader reads it with the field. No `maxLength`: a pasted name that is too long is shown and
  * explained rather than silently cut.
  */
-export function NameField({ value, onChange, onCommit, showError, ref }: NameFieldProps) {
+export function NameField({ value, onChange, onCommit, showError, hint, ref }: NameFieldProps) {
   const t = useTranslations("Identity");
   const inputId = useId();
   const errorId = useId();
+  const hintId = useId();
   const invalid = showError && parsePlayerName(value) === null;
+  const describedBy = [hint === undefined ? null : hintId, invalid ? errorId : null]
+    .filter((id) => id !== null)
+    .join(" ");
 
   return (
     <div className="flex flex-col gap-2">
-      <label htmlFor={inputId} className="text-sm font-medium text-fg-muted">
+      <label htmlFor={inputId} className="text-caption text-fg-muted">
         {t("name")}
       </label>
       <Input
@@ -44,7 +50,7 @@ export function NameField({ value, onChange, onCommit, showError, ref }: NameFie
         value={value}
         autoComplete="nickname"
         aria-invalid={invalid}
-        aria-describedby={invalid ? errorId : undefined}
+        aria-describedby={describedBy === "" ? undefined : describedBy}
         onChange={(event) => {
           onChange(event.target.value);
         }}
@@ -53,8 +59,13 @@ export function NameField({ value, onChange, onCommit, showError, ref }: NameFie
           if (name !== null) onCommit?.(name);
         }}
       />
+      {hint !== undefined && (
+        <p id={hintId} className="text-small text-fg-muted">
+          {hint}
+        </p>
+      )}
       {invalid && (
-        <p id={errorId} className="text-sm text-danger">
+        <p id={errorId} className="text-small text-danger">
           {t("invalidName", { max: PLAYER_NAME_MAX_LENGTH })}
         </p>
       )}

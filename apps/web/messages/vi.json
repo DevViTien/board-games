@@ -14,19 +14,33 @@
     "joinTitle": "Vào phòng bằng mã",
     "joinCode": "Mã phòng",
     "join": "Vào phòng",
-    "joinInvalid": "Mã phòng gồm 6 chữ cái và chữ số, ví dụ ABC234."
+    "joinInvalid": "Mã phòng gồm 6 chữ cái và chữ số, ví dụ ABC234.",
+    "heroTitle": "Chơi cờ cùng bạn bè, ngay trên trình duyệt",
+    "heroLead": "Cùng máy, đấu với máy hoặc gửi link mời — không cần tài khoản.",
+    "online": "Online",
+    "joinPlaceholder": "VD: ABC234"
   },
   "Games": {
     "tictactoe": {
       "name": "Tic-tac-toe",
+      "tagline": "Dễ làm quen, vài phút một ván",
       "players": {
         "x": "X",
         "o": "O"
       },
-      "move": "đánh hàng {row}, cột {col}"
+      "move": "đánh hàng {row}, cột {col}",
+      "winningCell": "Thuộc hàng thắng",
+      "result": {
+        "line": "Ba {mark} thẳng hàng {where}",
+        "row": "ở hàng {n}",
+        "col": "ở cột {n}",
+        "diagonal": "ở đường chéo chính",
+        "antiDiagonal": "ở đường chéo phụ"
+      }
     },
     "caro": {
       "name": "Cờ caro",
+      "tagline": "Năm quân liền là thắng · bàn 15×15 hoặc 19×19",
       "players": {
         "x": "X",
         "o": "O"
@@ -50,10 +64,20 @@
           }
         },
         "summary": "{size} · {rule}"
+      },
+      "result": {
+        "line": "{count} quân {mark} liền nhau theo {direction}",
+        "direction": {
+          "row": "hàng ngang",
+          "column": "hàng dọc",
+          "diagonal": "đường chéo xuống",
+          "antiDiagonal": "đường chéo lên"
+        }
       }
     },
     "ludo": {
       "name": "Cờ cá ngựa",
+      "tagline": "Gieo xúc xắc, đua ngựa về chuồng",
       "colours": {
         "red": "Đỏ",
         "blue": "Xanh dương",
@@ -62,12 +86,13 @@
       },
       "roll": "Gieo xúc xắc",
       "die": "Xúc xắc: {face} ({player})",
-      "dieEmpty": "Xúc xắc: chưa gieo",
+      "dieReady": "Xúc xắc: {player} sắp gieo",
+      "lastRoll": "Lượt trước: {player} gieo được {face}",
       "hint": {
         "choose": "{player} gieo được {face}. Chọn ngựa để đi.",
         "rolled": "{player} gieo được {face}.",
         "lost": "{player} gieo được {face}. Không ngựa nào đi được, mất lượt.",
-        "noMoveAgain": "{player} gieo được 6, không đi được, được gieo thêm.",
+        "noMoveAgain": "{player} gieo được 6 nhưng không ngựa nào đi được, gieo thêm.",
         "again": "{player} được gieo thêm."
       },
       "chooseHorse": "Chọn ngựa",
@@ -98,7 +123,23 @@
         "cell": "ô {cell}"
       },
       "justMoved": "{position} (vừa đi)",
-      "justKicked": "{position} (vừa bị đá)"
+      "justKicked": "{position} (vừa bị đá)",
+      "result": "{colour} đã đưa cả bốn ngựa lên chuồng",
+      "summary": {
+        "none": "Chưa ra quân",
+        "track": "{count} ngựa trên đường",
+        "home": "{count} ngựa đã lên chuồng",
+        "both": "{track} ngựa trên đường · {home} đã lên chuồng",
+        "short": {
+          "none": "Chưa ra quân",
+          "track": "{count} trên đường",
+          "home": "{count} lên chuồng",
+          "both": "{track} đường · {home} chuồng"
+        }
+      },
+      "unavailable": {
+        "choose": "Chọn ngựa trước"
+      }
     },
     "chess": {
       "name": "Cờ vua"
@@ -147,7 +188,7 @@
     "createRoom": "Tạo phòng",
     "creating": "Đang tạo phòng…",
     "createFailed": "Không tạo được phòng. Hãy kiểm tra kết nối mạng rồi thử lại.",
-    "createOutdated": "App vừa được cập nhật. Hãy tải lại trang để tạo phòng bằng phiên bản mới.",
+    "createOutdated": "Ứng dụng vừa được cập nhật. Hãy tải lại trang để tạo phòng bằng phiên bản mới.",
     "reload": "Tải lại trang"
   },
   "Play": {
@@ -205,13 +246,42 @@
     "newGameOpponentFirst": "Ván mới: bạn cầm {player}, {name} đi trước",
     "newGameAiFirst": "Ván mới: bạn cầm {player}, máy đi trước",
     "newGameAiSeatFirst": "Ván mới: bạn cầm {player}, máy ({first}) đi trước",
-    "opponentWins": "{name} thắng",
+    "opponentWins": "{name} thắng!",
     "rematch": "Chơi lại",
     "invalidMove": "Nước đi không hợp lệ.",
     "connection": {
       "reconnecting": "Đang kết nối lại…",
       "idle": "Đã tạm ngắt vì lâu không có hoạt động.",
       "resume": "Tiếp tục"
+    },
+    "players": "Người chơi",
+    "turnBadge": "Đến lượt",
+    "winnerBadge": "Thắng",
+    "thinking": "Đang nghĩ…",
+    "finished": "Kết thúc",
+    "you": "Bạn · {player}",
+    "ai": "Máy · {player}",
+    "named": "{name} · {player}",
+    "aiLevel": "Mức {level}",
+    "here": "Ở máy này",
+    "remote": "Chơi từ xa",
+    "aiName": "máy",
+    "aiSeatName": "máy ({player})",
+    "connectionBadge": {
+      "connected": "Đã kết nối",
+      "lost": "Mất kết nối"
+    },
+    "unavailable": {
+      "noMoves": "Chưa có nước nào để hoàn tác",
+      "noOwnMoves": "Chưa có nước nào của bạn để hoàn tác",
+      "roll": "Không hoàn tác được lần gieo xúc xắc",
+      "thinking": "Máy đang nghĩ, chờ máy đi xong",
+      "noRedo": "Không có nước nào để làm lại"
+    },
+    "locked": {
+      "waiting": "Đang chờ {player}",
+      "reconnecting": "Chờ kết nối lại với máy chủ",
+      "sending": "Đang gửi…"
     }
   },
   "NotFound": {
@@ -220,7 +290,13 @@
     "backToMenu": "Về menu"
   },
   "Settings": {
-    "language": "Ngôn ngữ"
+    "language": "Ngôn ngữ",
+    "theme": "Giao diện",
+    "themes": {
+      "light": "Sáng",
+      "dark": "Tối",
+      "system": "Theo hệ thống"
+    }
   },
   "Identity": {
     "name": "Tên của bạn",
@@ -230,9 +306,7 @@
     "title": "Phòng {code}",
     "joining": "Đang vào phòng…",
     "slow": "Chưa kết nối được máy chủ. Vẫn đang thử lại…",
-    "nameTitle": "Chọn tên để vào phòng",
     "nameHint": "Mọi người trong phòng sẽ thấy tên này.",
-    "continue": "Tiếp tục",
     "code": "Mã phòng",
     "inviteLink": "Link mời",
     "copy": "Sao chép link",
@@ -263,7 +337,7 @@
         "description": "Mọi ghế trong phòng này đã có người ngồi."
       },
       "outdated": {
-        "title": "App vừa được cập nhật",
+        "title": "Ứng dụng vừa được cập nhật",
         "description": "Hãy tải lại trang để vào phòng bằng phiên bản mới.",
         "reload": "Tải lại trang"
       },

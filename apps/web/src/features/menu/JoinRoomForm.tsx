@@ -24,7 +24,7 @@ export function JoinRoomForm() {
 
   return (
     <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h2 id={headingId} className="text-xl font-semibold tracking-tight">
+      <h2 id={headingId} className="text-body font-bold">
         {t("joinTitle")}
       </h2>
       <form
@@ -38,31 +38,36 @@ export function JoinRoomForm() {
           else router.push(`/room/${room}`);
         }}
       >
-        <label htmlFor={inputId} className="text-sm font-medium text-fg-muted">
+        {/* The heading says what the field is for; its name is still read out with it. */}
+        <label htmlFor={inputId} className="sr-only">
           {t("joinCode")}
         </label>
-        <div className="flex max-w-sm gap-2">
+        <div className="flex gap-2">
           <Input
             ref={input}
             id={inputId}
+            name="code"
             value={code}
             autoComplete="off"
             autoCapitalize="characters"
+            enterKeyHint="go"
             spellCheck={false}
             aria-invalid={invalid}
             aria-describedby={invalid ? errorId : undefined}
-            className="font-mono uppercase"
+            variant="code"
+            placeholder={t("joinPlaceholder")}
+            className="min-w-0"
             onChange={(event) => {
               setCode(event.target.value);
               setInvalid(false);
             }}
           />
-          <Button type="submit" variant="secondary">
+          <Button type="submit" className="shrink-0">
             {t("join")}
           </Button>
         </div>
         {invalid && (
-          <p id={errorId} className="text-sm text-danger">
+          <p id={errorId} className="text-small text-danger">
             {t("joinInvalid")}
           </p>
         )}

@@ -5,6 +5,7 @@ import type { PlaySetup } from "@/transport/types";
 import {
   DEFAULT_PLAY_SETUP,
   hasPlayerChoice,
+  readInitialMode,
   readStartRequest,
   toPlaySetup,
   toStartUrl,
@@ -205,5 +206,20 @@ describe("play setup", () => {
         mode: "local",
       });
     });
+  });
+});
+
+describe("readInitialMode", () => {
+  it("reads a mode the game offers", () => {
+    expect(readInitialMode("online", true)).toBe("online");
+    expect(readInitialMode("local", false)).toBe("local");
+    expect(readInitialMode("ai", true)).toBe("ai");
+  });
+
+  it("ignores the AI for a game without one, and anything that is not a mode", () => {
+    expect(readInitialMode("ai", false)).toBeUndefined();
+    expect(readInitialMode("khong-co", true)).toBeUndefined();
+    expect(readInitialMode(["online"], true)).toBeUndefined();
+    expect(readInitialMode(undefined, true)).toBeUndefined();
   });
 });

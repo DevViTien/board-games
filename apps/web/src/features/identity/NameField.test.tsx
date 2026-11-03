@@ -39,6 +39,19 @@ const field = () => screen.getByRole("textbox", { name: "Tên của bạn" });
 const confirm = () => userEvent.click(screen.getByRole("button", { name: "Tiếp tục" }));
 
 describe("NameField", () => {
+  it("reads a hint with the field, and the error after it once refused", () => {
+    const { rerender } = renderWithIntl(
+      <NameField value="" onChange={vi.fn()} showError={false} hint="Ai cũng thấy tên này." />,
+    );
+    expect(field()).toHaveAccessibleDescription("Ai cũng thấy tên này.");
+
+    rerender(<NameField value="" onChange={vi.fn()} showError hint="Ai cũng thấy tên này." />);
+
+    expect(field()).toHaveAccessibleDescription(
+      "Ai cũng thấy tên này. Tên cần có từ 1 đến 24 ký tự.",
+    );
+  });
+
   it("refuses a name of spaces only, saying why at the field", async () => {
     const onConfirm = vi.fn();
     renderWithIntl(<NameStep onConfirm={onConfirm} />);
