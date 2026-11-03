@@ -59,6 +59,10 @@ describe("createLocalTransport", () => {
     expect(snapshot.canRedo).toBe(false);
     expect(snapshot.viewer).toBeNull();
     expect(snapshot.canMove).toBe(true);
+    // Not an online game: undo exists, a new game is always possible, there is no connection.
+    expect(snapshot.supportsUndo).toBe(true);
+    expect(snapshot.canStartNewGame).toBe(true);
+    expect(snapshot.connection).toBeNull();
   });
 
   it("applies a legal move, updates the snapshot and emits changed", async () => {

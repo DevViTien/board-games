@@ -1,4 +1,4 @@
-import type { UserConfig } from "vitest/config";
+import type { ViteUserConfig } from "vitest/config";
 
 export interface VitestOptions {
   /** "node" for pure packages, "jsdom" for packages that render React. */
@@ -9,4 +9,12 @@ export interface VitestOptions {
   alias?: Record<string, string>;
 }
 
-export declare function createVitestConfig(options?: VitestOptions): UserConfig;
+export type SharedTestOptions = Pick<
+  NonNullable<ViteUserConfig["test"]>,
+  "passWithNoTests" | "coverage"
+>;
+
+/** `passWithNoTests` and the coverage settings, shared by every package. */
+export declare const sharedTestOptions: SharedTestOptions;
+
+export declare function createVitestConfig(options?: VitestOptions): ViteUserConfig;

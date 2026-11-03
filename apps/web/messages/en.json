@@ -9,7 +9,11 @@
     "duration": "~{minutes} min",
     "play": "Play",
     "continueTitle": "Continue a game",
-    "continueItem": "{game} · {mode}"
+    "continueItem": "{game} · {mode}",
+    "joinTitle": "Join a room by code",
+    "joinCode": "Room code",
+    "join": "Join",
+    "joinInvalid": "A room code has 6 letters and digits, like ABC234."
   },
   "Games": {
     "tictactoe": {
@@ -44,7 +48,8 @@
     "mode": "Mode",
     "modes": {
       "ai": "Against the computer",
-      "local": "Same device"
+      "local": "Same device",
+      "online": "Online"
     },
     "level": "Level",
     "first": "Who moves first",
@@ -65,7 +70,12 @@
       "descriptionUnknown": "Saved games could not be read. If a game is in progress in this mode, it will be discarded.",
       "confirm": "Start a new game",
       "cancel": "Keep it"
-    }
+    },
+    "createRoom": "Create room",
+    "creating": "Creating the room…",
+    "createFailed": "Couldn't create the room. Check your connection and try again.",
+    "createOutdated": "The app has just been updated. Reload the page to create a room with the new version.",
+    "reload": "Reload page"
   },
   "Play": {
     "board": "Board",
@@ -103,6 +113,20 @@
     "modeNotFound": {
       "title": "Play page not found",
       "description": "This address does not lead to a way to play on Board Games Hub."
+    },
+    "online": "Online",
+    "opponent": "Opponent",
+    "opponentMovedYourTurn": "{name} played {move}. Your move ({player})",
+    "waitingFor": "Waiting for {name}…",
+    "newGameYouFirst": "New game: you play {player} and move first",
+    "newGameOpponentFirst": "New game: you play {player}, {name} moves first",
+    "opponentWins": "{name} wins",
+    "rematch": "Play again",
+    "invalidMove": "That move is not allowed.",
+    "connection": {
+      "reconnecting": "Reconnecting…",
+      "idle": "Paused after a while without activity.",
+      "resume": "Continue"
     }
   },
   "NotFound": {
@@ -112,5 +136,49 @@
   },
   "Settings": {
     "language": "Language"
+  },
+  "Identity": {
+    "name": "Your name",
+    "invalidName": "Your name needs 1 to {max} characters."
+  },
+  "Room": {
+    "title": "Room {code}",
+    "joining": "Joining the room…",
+    "slow": "Can't reach the server yet. Still trying…",
+    "nameTitle": "Choose a name to join",
+    "nameHint": "Everyone in the room will see this name.",
+    "continue": "Continue",
+    "code": "Room code",
+    "inviteLink": "Invite link",
+    "copy": "Copy link",
+    "copied": "Invite link copied.",
+    "copyFailed": "Couldn't copy it. The link is selected for you to copy.",
+    "share": "Share",
+    "shareTitle": "Play {game} with me",
+    "players": "Players",
+    "you": "{name} (you)",
+    "emptySeat": "Waiting…",
+    "sit": "Join game",
+    "waitingForFriends": "Send the invite link to your friends. The game starts once everyone is in.",
+    "errors": {
+      "notFound": {
+        "title": "Room not found",
+        "description": "The code may be wrong, or the room expired after 7 days without play."
+      },
+      "full": {
+        "title": "This room is full",
+        "description": "Every seat in this room is taken."
+      },
+      "outdated": {
+        "title": "The app has just been updated",
+        "description": "Reload the page to join with the new version.",
+        "reload": "Reload page"
+      },
+      "broken": {
+        "title": "Couldn't open the room",
+        "description": "The room's data can't be read. Try again.",
+        "retry": "Try again"
+      }
+    }
   }
 }

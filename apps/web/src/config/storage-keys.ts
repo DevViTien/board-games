@@ -5,3 +5,6 @@ export const SAVED_GAMES_STORE = "saved-games";
 
 // localStorage: the setup screen's last choices, one entry per game ("<prefix><gameId>").
 export const SETUP_CHOICE_KEY_PREFIX = "board-games:setup:";
+
+// localStorage: the player's temporary name and random id for online play (`features/identity`).
+export const IDENTITY_KEY = "board-games:identity";

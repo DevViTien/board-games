@@ -246,7 +246,7 @@ Bộ phận dùng chung:
  Trình duyệt A          Vercel Function #1     Upstash Redis      Vercel Function #2          Trình duyệt B
 ┌─────────────┐  WS   ┌──────────────────┐   ┌─────────────┐   ┌──────────────────┐  WS   ┌─────────────┐
 │ UI + engine │ ────▶ │ kiểm tra Move    │──▶│ room:{id}   │──▶│ nhận qua pub/sub │ ────▶ │ UI + engine │
-│  (dự đoán)  │ ◀──── │ bằng core/       │◀──│  moves[]    │◀──│ đẩy xuống client │ ◀──── │  (dự đoán)  │
+│ (phát lại)  │ ◀──── │ bằng core/       │◀──│  moves[]    │◀──│ đẩy xuống client │ ◀──── │ (phát lại)  │
 └─────────────┘       └──────────────────┘   │  seats, ... │   └──────────────────┘       └─────────────┘
                                              │ pub/sub     │
                                              └─────────────┘
@@ -254,7 +254,7 @@ Bộ phận dùng chung:
 
 Nguyên tắc chung:
 - **Server là trọng tài**: client gửi `Move`, function đọc ván từ Redis, chạy `legalMoves`/`applyMove` (cùng code với client, trong package `core`), ghi nước đi mới vào Redis rồi phát cho mọi người trong phòng. Client không thể gửi nước đi sai luật.
-- **Client hiển thị trước** nước đi của mình cho mượt, nếu server từ chối thì quay lại trạng thái cũ.
+- **Client không hiển thị trước** nước đi của mình (đã chốt ở M4, change `add-online-play`): nước đi chỉ hiện khi server đã ghi và gửi trạng thái mới; trong lúc chờ, bàn khoá để không gửi thêm nước nào. Lý do: độ trễ đo được với function ở `sin1` chỉ ~70 ms, không cảm nhận được; hiện trước thì phải xử lý quay lui khi bị từ chối; và với game có xúc xắc, client không biết trước kết quả. Nếu dùng thật thấy chậm thì thêm sau, chỉ trong transport online. Server vẫn là nơi duy nhất quyết định một nước có được ghi hay không.
 - **Ván = danh sách nước đi**: kết nối lại chỉ cần tải danh sách nước đi rồi phát lại; dùng luôn cho replay.
 - **Game có xúc xắc** (cờ cá ngựa): server tung xúc xắc và ghi kết quả vào lịch sử, client không tự tung.
 - **Thông điệp** gọn: `join`, `move`, `state`, `roll`, `offer-draw`, `resign`, `clock`, `chat-preset`, `presence`.

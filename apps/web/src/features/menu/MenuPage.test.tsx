@@ -9,6 +9,8 @@ import { MenuPage } from "./MenuPage";
 
 vi.mock("@/i18n/actions", () => ({ setLocale: vi.fn() }));
 
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+
 // The menu's own store, swapped per test for a memory store (jsdom has no IndexedDB).
 const saved = vi.hoisted(() => ({ store: undefined as SavedGameStore | undefined }));
 
@@ -36,7 +38,11 @@ function gameCard(name: string) {
   return within(card);
 }
 
-const cardNames = () => screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
+// The game cards are the first list of the menu; the sections below it have headings of their own.
+const cardNames = () =>
+  within(screen.getAllByRole("list")[0] ?? document.body)
+    .getAllByRole("heading", { level: 2 })
+    .map((h) => h.textContent);
 
 describe("MenuPage", () => {
   it("shows the site heading", () => {
@@ -93,6 +99,17 @@ describe("MenuPage", () => {
       "/play/tictactoe/local",
     );
     expect(gameCard("Tic-tac-toe").getByRole("link", { name: "Chơi" })).toBeInTheDocument();
+  });
+
+  it("offers to join a room by its code, below the games", () => {
+    renderWithIntl(<MenuPage />);
+
+    const section = screen.getByRole("region", { name: "Vào phòng bằng mã" });
+    expect(within(section).getByRole("textbox", { name: "Mã phòng" })).toBeInTheDocument();
+    const lastCard = screen.getByRole("heading", { name: "Cờ vua" });
+    expect(
+      lastCard.compareDocumentPosition(section) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it("shows players and duration on each card", () => {

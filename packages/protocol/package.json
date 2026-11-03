@@ -12,6 +12,10 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage"
   },
+  "dependencies": {
+    "@board-games/engine": "workspace:*",
+    "zod": "catalog:"
+  },
   "devDependencies": {
     "@board-games/config": "workspace:*",
     "eslint": "catalog:",

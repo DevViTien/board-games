@@ -2,12 +2,12 @@ import { AI_LEVEL } from "@board-games/engine";
 import { z } from "zod";
 
 import { SETUP_CHOICE_KEY_PREFIX } from "@/config/storage-keys";
-import { FIRST_PLAYER, SLOT_MODE } from "@/transport/types";
+import { FIRST_PLAYER } from "@/transport/types";
 
-import type { SetupChoice } from "./play-setup";
+import { SETUP_MODE, type SetupChoice } from "./play-setup";
 
 const setupChoiceSchema = z.object({
-  mode: z.enum(SLOT_MODE),
+  mode: z.enum(SETUP_MODE),
   level: z.enum(AI_LEVEL),
   first: z.enum(FIRST_PLAYER),
 });
@@ -15,8 +15,9 @@ const setupChoiceSchema = z.object({
 /**
  * The choice made the last time a game of `gameId` was started on this browser, or `undefined`
  * when there is none or it cannot be read (corrupt, storage blocked): the caller then uses the
- * default, without telling the player. A game that cannot be played against the AI only gets the
- * same-device mode. Read only after mount, since the server cannot see it.
+ * default, without telling the player. A game that cannot be played against the AI gets the
+ * same-device mode instead; online play is open to every game. Read only after mount, since the
+ * server cannot see it.
  */
 export function readSetupChoice(gameId: string, supportsAI: boolean): SetupChoice | undefined {
   let raw: string | null;
@@ -34,7 +35,7 @@ export function readSetupChoice(gameId: string, supportsAI: boolean): SetupChoic
   }
   const parsed = setupChoiceSchema.safeParse(json);
   if (!parsed.success) return undefined;
-  return supportsAI ? parsed.data : { ...parsed.data, mode: "local" };
+  return supportsAI || parsed.data.mode !== "ai" ? parsed.data : { ...parsed.data, mode: "local" };
 }
 
 /** Remembers the choice a game was just started with; not remembering it is no reason to fail. */

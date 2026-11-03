@@ -1,6 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const PORT = 3100;
+/** The realtime server of the tests, next to the app's port and away from `pnpm dev`'s 3001. */
+const REALTIME_PORT = 3101;
 const isCI = Boolean(process.env.CI);
 
 export default defineConfig({
@@ -19,10 +21,24 @@ export default defineConfig({
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
     { name: "mobile", use: { ...devices["Pixel 7"] } },
   ],
-  // Runs against the production build; turbo builds first (test:e2e depends on build).
-  webServer: {
-    command: `pnpm start --port ${PORT}`,
-    url: `http://localhost:${PORT}`,
-    reuseExistingServer: !isCI,
-  },
+  webServer: [
+    // Online rooms: `next start` cannot serve WebSockets, so the realtime server runs on its own,
+    // with rooms in memory (an empty REDIS_URL counts as unset). Never reused, even locally: a
+    // server left running from an older checkout would test old server code, and its rooms would
+    // outlive the run. A port already taken fails the run instead.
+    {
+      command: "pnpm realtime",
+      url: `http://localhost:${REALTIME_PORT}/healthz`,
+      env: { REALTIME_PORT: String(REALTIME_PORT), REDIS_URL: "" },
+      reuseExistingServer: false,
+    },
+    // Runs against the production build; turbo builds first (test:e2e depends on build). The
+    // realtime server's address is read at request time, so the build does not depend on it.
+    {
+      command: `pnpm start --port ${PORT}`,
+      url: `http://localhost:${PORT}`,
+      env: { REALTIME_URL: `ws://localhost:${REALTIME_PORT}/api/realtime` },
+      reuseExistingServer: !isCI,
+    },
+  ],
 });

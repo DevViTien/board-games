@@ -16,6 +16,8 @@
   --accent-hover: oklch(0.5 0.16 255);
   --accent-fg: oklch(0.99 0 0);
   --focus-ring: oklch(0.65 0.15 255);
+  /* Errors: a field to fix, a request that failed. */
+  --danger: oklch(0.55 0.2 27);
   /* Dims the page behind a modal dialog. */
   --overlay: oklch(0.22 0.015 250 / 0.4);
   --radius: 0.75rem;
@@ -34,6 +36,7 @@
     --accent-hover: oklch(0.76 0.13 255);
     --accent-fg: oklch(0.17 0.01 250);
     --focus-ring: oklch(0.7 0.14 255);
+    --danger: oklch(0.72 0.17 25);
     --overlay: oklch(0.05 0 0 / 0.6);
   }
 }
@@ -50,6 +53,7 @@
   --accent-hover: oklch(0.76 0.13 255);
   --accent-fg: oklch(0.17 0.01 250);
   --focus-ring: oklch(0.7 0.14 255);
+  --danger: oklch(0.72 0.17 25);
   --overlay: oklch(0.05 0 0 / 0.6);
 }
 
@@ -64,6 +68,7 @@
   --color-accent-hover: var(--accent-hover);
   --color-accent-fg: var(--accent-fg);
   --color-focus-ring: var(--focus-ring);
+  --color-danger: var(--danger);
   --color-overlay: var(--overlay);
   --radius-card: var(--radius);
   /*

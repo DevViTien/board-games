@@ -9,7 +9,11 @@
     "duration": "約{minutes}分",
     "play": "遊ぶ",
     "continueTitle": "途中のゲームを続ける",
-    "continueItem": "{game}・{mode}"
+    "continueItem": "{game}・{mode}",
+    "joinTitle": "コードでルームに入る",
+    "joinCode": "ルームコード",
+    "join": "入る",
+    "joinInvalid": "ルームコードは英数字6文字です（例：ABC234）。"
   },
   "Games": {
     "tictactoe": {
@@ -44,7 +48,8 @@
     "mode": "モード",
     "modes": {
       "ai": "コンピューターと対戦",
-      "local": "同じ端末で"
+      "local": "同じ端末で",
+      "online": "オンライン"
     },
     "level": "レベル",
     "first": "先手",
@@ -65,7 +70,12 @@
       "descriptionUnknown": "保存したゲームを読み込めませんでした。このモードに途中のゲームがある場合、そのゲームは破棄されます。",
       "confirm": "新しいゲームを始める",
       "cancel": "残す"
-    }
+    },
+    "createRoom": "ルームを作る",
+    "creating": "ルームを作っています…",
+    "createFailed": "ルームを作れませんでした。接続を確認して、もう一度お試しください。",
+    "createOutdated": "アプリが更新されました。新しいバージョンでルームを作るには、ページを再読み込みしてください。",
+    "reload": "再読み込み"
   },
   "Play": {
     "board": "盤面",
@@ -103,6 +113,20 @@
     "modeNotFound": {
       "title": "このプレイページは見つかりません",
       "description": "このアドレスに対応する遊び方は Board Games Hub にありません。"
+    },
+    "online": "オンライン",
+    "opponent": "相手",
+    "opponentMovedYourTurn": "{name}が{move}に打ちました。あなたの番です（{player}）",
+    "waitingFor": "{name}を待っています…",
+    "newGameYouFirst": "新しい対局：あなたは{player}で先手です",
+    "newGameOpponentFirst": "新しい対局：あなたは{player}、{name}が先手です",
+    "opponentWins": "{name}の勝ち",
+    "rematch": "もう一度",
+    "invalidMove": "その手は打てません。",
+    "connection": {
+      "reconnecting": "再接続しています…",
+      "idle": "しばらく操作がなかったため一時停止しました。",
+      "resume": "再開"
     }
   },
   "NotFound": {
@@ -112,5 +136,49 @@
   },
   "Settings": {
     "language": "言語"
+  },
+  "Identity": {
+    "name": "あなたの名前",
+    "invalidName": "名前は1〜{max}文字で入力してください。"
+  },
+  "Room": {
+    "title": "ルーム {code}",
+    "joining": "ルームに入っています…",
+    "slow": "まだサーバーに接続できません。再試行しています…",
+    "nameTitle": "ルームに入る名前を決めてください",
+    "nameHint": "ルームの全員にこの名前が表示されます。",
+    "continue": "続ける",
+    "code": "ルームコード",
+    "inviteLink": "招待リンク",
+    "copy": "リンクをコピー",
+    "copied": "招待リンクをコピーしました。",
+    "copyFailed": "コピーできませんでした。リンクを選択したので、手動でコピーしてください。",
+    "share": "共有",
+    "shareTitle": "一緒に{game}をしよう",
+    "players": "プレイヤー",
+    "you": "{name}（あなた）",
+    "emptySeat": "待っています…",
+    "sit": "参加する",
+    "waitingForFriends": "招待リンクを友だちに送ってください。全員そろうと対局が始まります。",
+    "errors": {
+      "notFound": {
+        "title": "ルームが見つかりません",
+        "description": "コードが間違っているか、7日間遊ばれずに期限切れになりました。"
+      },
+      "full": {
+        "title": "ルームは満員です",
+        "description": "このルームの席はすべて埋まっています。"
+      },
+      "outdated": {
+        "title": "アプリが更新されました",
+        "description": "新しいバージョンで入るには、ページを再読み込みしてください。",
+        "reload": "再読み込み"
+      },
+      "broken": {
+        "title": "ルームを開けませんでした",
+        "description": "ルームのデータを読み込めません。もう一度お試しください。",
+        "retry": "再試行"
+      }
+    }
   }
 }

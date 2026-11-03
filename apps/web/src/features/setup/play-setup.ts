@@ -7,15 +7,24 @@ import {
   type FirstPlayer,
   type LocalSetup,
   type PlaySetup,
+  SLOT_MODE,
   type SlotMode,
 } from "@/transport/types";
 
 /**
+ * The modes the setup screen offers: those with a saved game on this device, and online play,
+ * whose game lives on the server (so it has no slot).
+ */
+export const SETUP_MODE = { ...SLOT_MODE, Online: "online" } as const;
+
+export type SetupMode = (typeof SETUP_MODE)[keyof typeof SETUP_MODE];
+
+/**
  * What the setup screen shows and remembers. The level and who moves first are kept even when the
- * player picks the same-device mode, so switching back to the AI shows them again.
+ * player picks another mode, so switching back to the AI shows them again.
  */
 export interface SetupChoice {
-  readonly mode: SlotMode;
+  readonly mode: SetupMode;
   readonly level: AiLevel;
   readonly first: FirstPlayer;
 }
@@ -28,7 +37,11 @@ export const DEFAULT_PLAY_SETUP = {
 } as const satisfies AiSetup & SetupChoice;
 
 /** The game a choice sets up; the level and who moves first only matter against the AI. */
-export function toPlaySetup({ mode, level, first }: SetupChoice): PlaySetup {
+export function toPlaySetup({
+  mode,
+  level,
+  first,
+}: SetupChoice & { readonly mode: SlotMode }): PlaySetup {
   return mode === "ai" ? { mode, level, first } : { mode };
 }
 

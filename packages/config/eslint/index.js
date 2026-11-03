@@ -33,6 +33,23 @@ const FORBIDDEN_FRAMEWORKS = {
 /** Third-party packages wrapped by `@board-games/ui`, so they can be swapped in one place. */
 const WRAPPED_BY_UI = ["lucide-react", "lucide-react/**"];
 
+/**
+ * The only parts of the web app allowed to import the server folder: the server itself and the
+ * route handlers, which run on the server. Everything else may end up in a browser bundle, so a
+ * new folder is barred by default (plan.md §3.2).
+ */
+const WEB_SERVER_FILES = ["src/server/**", "src/app/api/**"];
+
+/** The server folder, by alias and by every relative path a file under `src/` could use. */
+const SERVER_IMPORTS = [
+  "@/server",
+  "@/server/**",
+  ...["./", "../", "../../", "../../../", "../../../../", "../../../../../"].flatMap((up) => [
+    `${up}server`,
+    `${up}server/**`,
+  ]),
+];
+
 /** Files that frameworks require to use a default export. */
 const NEXT_DEFAULT_EXPORT_FILES = [
   "**/app/**/{page,layout,template,loading,error,global-error,not-found,default,forbidden,unauthorized}.tsx",
@@ -79,7 +96,32 @@ function boundaries(layer) {
     });
   }
 
-  return { rules: { "no-restricted-imports": ["error", { patterns }] } };
+  const rules = { "no-restricted-imports": ["error", { patterns }] };
+  if (layer !== "web") return [{ rules }];
+  // Same rule again for everything outside the server side of the app, plus the server folder:
+  // `redis` and `ws` must never reach a client bundle.
+  return [
+    { rules },
+    {
+      files: ["src/**"],
+      ignores: WEB_SERVER_FILES,
+      rules: {
+        "no-restricted-imports": [
+          "error",
+          {
+            patterns: [
+              ...patterns,
+              {
+                group: SERVER_IMPORTS,
+                message:
+                  "Server-only code (Redis, WebSocket) must not be imported outside src/server and src/app/api.",
+              },
+            ],
+          },
+        ],
+      },
+    },
+  ];
 }
 
 /** @param {string} tsconfigRootDir */

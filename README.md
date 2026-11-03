@@ -15,18 +15,28 @@ App chơi cờ trên trình duyệt: cùng máy, với máy và online với b�
 
 ## Lệnh thường dùng
 
-| Lệnh                                                        | Việc làm                                            |
-| ----------------------------------------------------------- | --------------------------------------------------- |
-| `pnpm install`                                              | Cài thư viện cho toàn bộ monorepo, cài git hooks    |
-| `pnpm dev`                                                  | Chạy app ở http://localhost:3000                    |
-| `pnpm check`                                                | Chạy lint, typecheck, test, build (giống CI)        |
-| `pnpm lint` / `pnpm typecheck` / `pnpm test` / `pnpm build` | Chạy từng bước riêng                                |
-| `pnpm test:coverage`                                        | Test kèm báo cáo coverage (`<package>/coverage/`)   |
-| `pnpm test:e2e`                                             | Build rồi chạy Playwright (desktop + điện thoại)    |
-| `pnpm knip`                                                 | Tìm file, export, thư viện không dùng               |
-| `pnpm spec:check`                                           | Kiểm tra OpenSpec, chặn change xong mà chưa archive |
-| `pnpm format`                                               | Định dạng code bằng Prettier                        |
-| `pnpm --filter @board-games/ui test`                        | Chạy lệnh cho một package                           |
+| Lệnh                                                            | Việc làm                                             |
+| --------------------------------------------------------------- | ---------------------------------------------------- |
+| `pnpm install`                                                  | Cài thư viện cho toàn bộ monorepo, cài git hooks     |
+| `pnpm dev`                                                      | Chạy app ở http://localhost:3000 kèm server realtime |
+| `pnpm --filter @board-games/web realtime`                       | Chỉ chạy server realtime (ws://localhost:3001)       |
+| `pnpm check`                                                    | Chạy lint, typecheck, test, build (giống CI)         |
+| `pnpm lint` / `pnpm typecheck` / `pnpm test` / `pnpm build`     | Chạy từng bước riêng                                 |
+| `pnpm test:coverage`                                            | Test kèm báo cáo coverage (`<package>/coverage/`)    |
+| `pnpm test:e2e`                                                 | Build rồi chạy Playwright (desktop + điện thoại)     |
+| `pnpm knip`                                                     | Tìm file, export, thư viện không dùng                |
+| `pnpm spec:check`                                               | Kiểm tra OpenSpec, chặn change xong mà chưa archive  |
+| `pnpm format`                                                   | Định dạng code bằng Prettier                         |
+| `pnpm --filter @board-games/ui test`                            | Chạy lệnh cho một package                            |
+| `REDIS_URL_TEST=rediss://… pnpm --filter @board-games/web test` | Chạy cả test kho phòng trên Redis thật (Upstash)     |
+
+## Chơi online ở máy
+
+1. `pnpm dev` (chạy cả app ở cổng 3000 lẫn server realtime ở cổng 3001; không có `REDIS_URL` thì phòng nằm trong bộ nhớ, mất khi tắt server).
+2. Mở http://localhost:3000/play/tictactoe, chọn **Online**, nhập tên, bấm **Tạo phòng**.
+3. Sao chép link mời và mở trong cửa sổ ẩn danh hoặc trình duyệt khác (mỗi trình duyệt là một người chơi; hai tab cùng trình duyệt là cùng một người), nhập tên rồi bấm **Vào chơi**.
+
+Điện thoại trong cùng mạng LAN mở được `http://<IP máy>:3000`, nhưng app tìm server realtime ở `ws://localhost:3001` khi chạy `next dev`; khi đó đặt `REALTIME_URL=ws://<IP máy>:3001/api/realtime` cho `next dev`. Ngoài `next dev`, không đặt `REALTIME_URL` thì app dùng cùng origin (`/api/realtime`, như trên Vercel).
 
 ## Cấu trúc
 

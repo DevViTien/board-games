@@ -1,0 +1,80 @@
+import { playerIdSchema, playerNameSchema } from "@board-games/protocol";
+import { z } from "zod";
+
+import { IDENTITY_KEY } from "@/config/storage-keys";
+
+/** Who the player is online, without an account: a name of their choice and a random id. */
+export interface Identity {
+  /** The secret that gets the player's seat back in a room; never shown. */
+  readonly playerId: string;
+  readonly name: string;
+}
+
+const identitySchema = z.object({ playerId: playerIdSchema, name: playerNameSchema });
+
+// Used only when the browser refuses localStorage (blocked storage, a full quota): the identity
+// then lasts as long as the tab, and a reload makes the player someone new.
+let inMemory: Identity | null = null;
+let storageRefused = false;
+
+/**
+ * The name as the protocol accepts it (trimmed, NFC, 1–24 characters, nothing invisible), or
+ * `null` when the server would refuse it: client and server check names with the same schema.
+ */
+export function parsePlayerName(raw: string): string | null {
+  const parsed = playerNameSchema.safeParse(raw);
+  return parsed.success ? parsed.data : null;
+}
+
+/**
+ * The identity remembered on this browser, or `null` when there is none or it cannot be read
+ * (corrupt): the player is then asked for a name as the first time, without an error. Read only
+ * after mount, since the server cannot see it.
+ */
+export function readIdentity(): Identity | null {
+  // Once the browser refused to store a name, what it still holds is older than this tab's.
+  if (storageRefused && inMemory !== null) return inMemory;
+  let raw: string | null;
+  try {
+    raw = window.localStorage.getItem(IDENTITY_KEY);
+  } catch {
+    return inMemory;
+  }
+  if (raw === null) return null;
+  let json: unknown;
+  try {
+    json = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  const parsed = identitySchema.safeParse(json);
+  return parsed.success ? parsed.data : null;
+}
+
+/** 16 random bytes in hex, where `crypto.randomUUID` is missing (a page over plain `http://`). */
+function randomHexId(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function newPlayerId(): string {
+  // Only in a secure context: a phone opening the dev server by its LAN address has no `randomUUID`.
+  return typeof crypto.randomUUID === "function" ? crypto.randomUUID() : randomHexId();
+}
+
+/**
+ * Remembers `name` (already checked with `parsePlayerName`), keeping the player's id, or creating
+ * one the first time: a new name never costs the player their seat. Not remembering it is no
+ * reason to fail; the identity is then kept for this tab only.
+ */
+export function saveName(name: string): Identity {
+  const identity: Identity = { playerId: readIdentity()?.playerId ?? newPlayerId(), name };
+  inMemory = identity;
+  try {
+    window.localStorage.setItem(IDENTITY_KEY, JSON.stringify(identity));
+  } catch {
+    // Private mode or blocked storage: the identity lives in memory until the tab closes.
+    storageRefused = true;
+  }
+  return identity;
+}

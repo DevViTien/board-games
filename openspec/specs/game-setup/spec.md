@@ -2,13 +2,13 @@
 
 ## Purpose
 
-Màn hình bắt đầu ván của mỗi game: chọn chơi cùng máy hay đấu với máy, mức độ và ai đi trước, hoặc tiếp tục một ván đang dở của game đó, trước khi vào bàn cờ.
+Màn hình bắt đầu ván của mỗi game: chọn chơi cùng máy, đấu với máy (mức độ, ai đi trước) hay tạo phòng online, hoặc tiếp tục một ván đang dở của game đó, trước khi vào bàn cờ.
 
 ## Requirements
 
 ### Requirement: Chọn cách chơi trước khi vào ván
 
-Đường dẫn `/play/<mã game>` SHALL mở màn hình bắt đầu ván của game đó. Với game hỗ trợ đấu với máy, người chơi SHALL chọn được chế độ "Đấu với máy" hoặc "Cùng máy"; với "Đấu với máy", SHALL chọn được mức độ (Dễ, Vừa, Khó; mặc định Vừa) và ai đi trước (Tôi, Máy, Ngẫu nhiên; mặc định Tôi). Game không hỗ trợ đấu với máy MUST chỉ có chế độ "Cùng máy". Bấm "Bắt đầu" SHALL mở màn hình chơi của chế độ đó với một ván mới theo lựa chọn.
+Đường dẫn `/play/<mã game>` SHALL mở màn hình bắt đầu ván của game đó. Với game hỗ trợ đấu với máy, người chơi SHALL chọn được chế độ "Đấu với máy", "Cùng máy" hoặc "Online"; với "Đấu với máy", SHALL chọn được mức độ (Dễ, Vừa, Khó; mặc định Vừa) và ai đi trước (Tôi, Máy, Ngẫu nhiên; mặc định Tôi). Game không hỗ trợ đấu với máy MUST chỉ có chế độ "Cùng máy" và "Online". Bấm "Bắt đầu" SHALL mở màn hình chơi của chế độ đó với một ván mới theo lựa chọn.
 
 #### Scenario: Lựa chọn mặc định
 
@@ -28,11 +28,20 @@ Màn hình bắt đầu ván của mỗi game: chọn chơi cùng máy hay đấ
 #### Scenario: Game không hỗ trợ đấu với máy
 
 - **WHEN** người chơi mở màn hình bắt đầu ván của một game không hỗ trợ đấu với máy
-- **THEN** chỉ có chế độ "Cùng máy" và không có lựa chọn mức độ hay người đi trước
+- **THEN** chỉ có chế độ "Cùng máy" và "Online", không có lựa chọn mức độ hay người đi trước
+
+### Requirement: Chế độ Online
+
+Với chế độ "Online", màn hình bắt đầu ván SHALL cho nhập hoặc sửa tên tạm (điền sẵn tên đã nhớ, capability `player-identity`) thay cho mức độ và người đi trước, và nút chính SHALL là "Tạo phòng", tạo phòng online theo capability `online-play`.
+
+#### Scenario: Chọn chơi online
+
+- **WHEN** người chơi đã nhớ tên tạm "Minh" chọn chế độ "Online" ở màn hình bắt đầu ván Tic-tac-toe
+- **THEN** màn hình có ô tên tạm điền sẵn "Minh", không có lựa chọn mức độ hay người đi trước, và nút chính là "Tạo phòng"
 
 ### Requirement: Nhớ lựa chọn gần nhất
 
-Màn hình bắt đầu ván SHALL nhớ trên trình duyệt lựa chọn (chế độ, mức độ, người đi trước) của lần bấm "Bắt đầu" gần nhất cho từng game và hiện lại lựa chọn đó ở lần mở sau. Khi chưa có hoặc không đọc được lựa chọn đã nhớ, màn hình SHALL dùng lựa chọn mặc định mà không báo lỗi.
+Màn hình bắt đầu ván SHALL nhớ trên trình duyệt lựa chọn (chế độ, mức độ, người đi trước) của lần bấm "Bắt đầu" hoặc tạo phòng thành công gần nhất cho từng game và hiện lại lựa chọn đó ở lần mở sau. Khi chưa có hoặc không đọc được lựa chọn đã nhớ, màn hình SHALL dùng lựa chọn mặc định mà không báo lỗi.
 
 #### Scenario: Lần sau hiện lại lựa chọn cũ
 
@@ -43,6 +52,11 @@ Màn hình bắt đầu ván SHALL nhớ trên trình duyệt lựa chọn (ch�
 
 - **WHEN** dữ liệu lựa chọn đã nhớ trên trình duyệt bị hỏng và người chơi mở màn hình bắt đầu ván
 - **THEN** màn hình hiện lựa chọn mặc định và không có thông báo lỗi
+
+#### Scenario: Nhớ chế độ online
+
+- **WHEN** người chơi tạo phòng Tic-tac-toe online, rồi sau đó mở lại màn hình bắt đầu ván Tic-tac-toe
+- **THEN** chế độ "Online" được chọn sẵn
 
 ### Requirement: Người đi trước ngẫu nhiên
 
@@ -105,3 +119,12 @@ Mỗi nhóm lựa chọn (chế độ, mức độ, ai đi trước) SHALL là m
 
 - **WHEN** người chơi dùng Tab tới nhóm "Mức độ" và nhấn phím mũi tên
 - **THEN** mức độ được chọn đổi theo và trình đọc màn hình đọc được mức đang chọn
+
+### Requirement: Tạo phòng không hỏi xác nhận
+
+Tạo phòng ở chế độ "Online" MUST NOT hỏi xác nhận và MUST NOT chờ đọc các ván đã lưu, vì không bỏ ván dở nào.
+
+#### Scenario: Tạo phòng không hỏi xác nhận
+
+- **WHEN** trình duyệt báo lỗi mỗi khi đọc các ván đã lưu, người chơi chọn "Online" và bấm "Tạo phòng"
+- **THEN** không có câu hỏi xác nhận và phòng được tạo

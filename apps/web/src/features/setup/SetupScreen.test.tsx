@@ -1,8 +1,12 @@
-import { act, screen, waitFor, within } from "@testing-library/react";
+import type { RoomCode } from "@board-games/protocol";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SETUP_CHOICE_KEY_PREFIX } from "@/config/storage-keys";
+import { readIdentity, saveName } from "@/features/identity/identity";
+import type { CreateRoomResult } from "@/features/room/create-room";
+import { loadFreshIdentity } from "@/test/fresh-identity";
 import { renderWithIntl } from "@/test/render-with-intl";
 import { createMemoryStore } from "@/transport/memory-store";
 import type { ModeSettings, SavedGameStore } from "@/transport/types";
@@ -13,9 +17,15 @@ import { SetupScreen } from "./SetupScreen";
 const router = vi.hoisted(() => ({ push: vi.fn() }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
+vi.mock("@/features/identity/identity", () =>
+  import("@/test/fresh-identity").then((module) => module.freshIdentity),
+);
+
+beforeEach(loadFreshIdentity);
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.restoreAllMocks();
   router.push.mockReset();
   window.localStorage.clear();
 });
@@ -44,7 +54,7 @@ async function renderSetup({
   supportsAI?: boolean;
 } = {}) {
   const view = renderWithIntl(
-    <SetupScreen gameId="tictactoe" supportsAI={supportsAI} store={store} />,
+    <SetupScreen gameId="tictactoe" supportsAI={supportsAI} realtimeUrl={null} store={store} />,
   );
   await waitFor(() => {
     expect(startButton()).toHaveAttribute("aria-disabled", "false");
@@ -96,11 +106,15 @@ describe("SetupScreen", () => {
     expect(router.push).toHaveBeenCalledWith("/play/tictactoe/local?new=1");
   });
 
-  it("offers only the same-device mode for a game without an AI", async () => {
+  it("offers the same-device and online modes only for a game without an AI", async () => {
     await renderSetup({ supportsAI: false });
 
-    expect(screen.queryByRole("group")).not.toBeInTheDocument();
-    expect(screen.queryByRole("radio")).not.toBeInTheDocument();
+    expect(
+      screen.getAllByRole("radio").map((option) => option.closest("label")?.textContent),
+    ).toEqual(["Cùng máy", "Online"]);
+    expect(radio("Cùng máy")).toBeChecked();
+    expect(screen.queryByRole("group", { name: "Mức độ" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: "Ai đi trước" })).not.toBeInTheDocument();
     await userEvent.click(startButton());
     expect(opened()).toEqual({ path: "/play/tictactoe/local", setup: { mode: "local" } });
   });
@@ -243,6 +257,7 @@ describe("SetupScreen", () => {
       <SetupScreen
         gameId="tictactoe"
         supportsAI
+        realtimeUrl={null}
         store={{ ...createMemoryStore(), listInProgress: () => new Promise(() => undefined) }}
       />,
     );
@@ -259,6 +274,7 @@ describe("SetupScreen", () => {
       <SetupScreen
         gameId="tictactoe"
         supportsAI
+        realtimeUrl={null}
         store={{ ...createMemoryStore(), listInProgress: () => new Promise(() => undefined) }}
       />,
     );
@@ -287,12 +303,235 @@ describe("SetupScreen", () => {
   });
 
   it("renders in English", async () => {
-    renderWithIntl(<SetupScreen gameId="tictactoe" supportsAI store={createMemoryStore()} />, {
-      locale: "en",
-    });
+    renderWithIntl(
+      <SetupScreen gameId="tictactoe" supportsAI realtimeUrl={null} store={createMemoryStore()} />,
+      {
+        locale: "en",
+      },
+    );
 
     expect(screen.getByRole("group", { name: "Level" })).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "Against the computer" })).toBeChecked();
     expect(await screen.findByRole("button", { name: "Start" })).toBeInTheDocument();
+  });
+});
+
+const CODE = "ABC234" as RoomCode;
+const createButton = () => screen.getByRole("button", { name: "Tạo phòng" });
+const nameField = () => screen.getByRole("textbox", { name: "Tên của bạn" });
+
+/** Renders the setup screen with a fake server for rooms, and picks the online mode. */
+async function renderOnline({
+  createRoom = vi.fn(() => Promise.resolve<CreateRoomResult>({ ok: true, code: CODE })),
+  store = createMemoryStore(),
+  supportsAI = true,
+}: {
+  createRoom?: (options: unknown) => Promise<CreateRoomResult>;
+  store?: SavedGameStore;
+  supportsAI?: boolean;
+} = {}) {
+  const view = renderWithIntl(
+    <SetupScreen
+      gameId="tictactoe"
+      supportsAI={supportsAI}
+      realtimeUrl="ws://localhost:3101/api/realtime"
+      store={store}
+      createRoom={createRoom}
+    />,
+  );
+  await userEvent.click(await screen.findByRole("radio", { name: "Online" }));
+  return { createRoom, view };
+}
+
+describe("SetupScreen online", () => {
+  it("asks for the remembered name instead of the level and who moves first", async () => {
+    saveName("Minh");
+    await renderOnline();
+
+    expect(nameField()).toHaveValue("Minh");
+    expect(screen.queryByRole("group", { name: "Mức độ" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: "Ai đi trước" })).not.toBeInTheDocument();
+    expect(createButton()).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Bắt đầu" })).not.toBeInTheDocument();
+  });
+
+  it("is offered for a game without an AI", async () => {
+    await renderOnline({ supportsAI: false });
+
+    expect(radio("Online")).toBeChecked();
+    expect(createButton()).toBeInTheDocument();
+  });
+
+  it("creates a room as the remembered player and opens its page", async () => {
+    const { playerId } = saveName("Minh");
+    const { createRoom } = await renderOnline();
+
+    await userEvent.click(createButton());
+
+    expect(createRoom).toHaveBeenCalledExactlyOnceWith({
+      url: "ws://localhost:3101/api/realtime",
+      gameId: "tictactoe",
+      identity: { playerId, name: "Minh" },
+    });
+    expect(router.push).toHaveBeenCalledExactlyOnceWith("/room/ABC234");
+  });
+
+  it("offers online again next time once a room was created", async () => {
+    saveName("Minh");
+    const { view } = await renderOnline();
+    await userEvent.click(createButton());
+    view.unmount();
+
+    renderWithIntl(
+      <SetupScreen gameId="tictactoe" supportsAI realtimeUrl={null} store={createMemoryStore()} />,
+    );
+
+    await waitFor(() => {
+      expect(radio("Online")).toBeChecked();
+    });
+    expect(createButton()).toBeInTheDocument();
+  });
+
+  it("creates one room when pressed twice before the screen updates", async () => {
+    saveName("Minh");
+    const createRoom = vi.fn(() => new Promise<CreateRoomResult>(() => undefined));
+    await renderOnline({ createRoom });
+
+    // Both presses land before React renders the locked button.
+    act(() => {
+      fireEvent.click(createButton());
+      fireEvent.click(createButton());
+    });
+
+    expect(createRoom).toHaveBeenCalledOnce();
+    expect(createButton()).toHaveAttribute("aria-disabled", "true");
+  });
+
+  it("says it is creating the room while it waits", async () => {
+    saveName("Minh");
+    await renderOnline({ createRoom: vi.fn(() => new Promise<CreateRoomResult>(() => undefined)) });
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
+
+    await userEvent.click(createButton());
+
+    expect(screen.getByRole("status")).toHaveTextContent("Đang tạo phòng…");
+  });
+
+  it("does not open the room once the player has left the screen", async () => {
+    saveName("Minh");
+    let answer: (result: CreateRoomResult) => void = () => undefined;
+    const createRoom = vi.fn(
+      () =>
+        new Promise<CreateRoomResult>((resolve) => {
+          answer = resolve;
+        }),
+    );
+    const { view } = await renderOnline({ createRoom });
+    await userEvent.click(createButton());
+
+    view.unmount();
+    await act(async () => {
+      answer({ ok: true, code: CODE });
+      await Promise.resolve();
+    });
+
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it("says the app was updated, with a reload button, when the server is newer", async () => {
+    saveName("Minh");
+    await renderOnline({
+      createRoom: vi.fn(() =>
+        Promise.resolve<CreateRoomResult>({ ok: false, error: "outdated-client" }),
+      ),
+    });
+
+    await userEvent.click(createButton());
+
+    expect(screen.getByRole("alert")).toHaveTextContent(/^App vừa được cập nhật\./);
+    expect(screen.getByRole("button", { name: "Tải lại trang" })).toBeInTheDocument();
+    expect(screen.queryByText(/Không tạo được phòng/)).not.toBeInTheDocument();
+  });
+
+  it("says the room could not be created, and lets the player try again", async () => {
+    saveName("Minh");
+    const createRoom = vi.fn(() =>
+      Promise.resolve<CreateRoomResult>({ ok: false, error: "unreachable" }),
+    );
+    await renderOnline({ createRoom });
+
+    await userEvent.click(createButton());
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Không tạo được phòng.");
+    expect(createButton()).toHaveAttribute("aria-disabled", "false");
+    expect(router.push).not.toHaveBeenCalled();
+    await userEvent.click(createButton());
+    expect(createRoom).toHaveBeenCalledTimes(2);
+  });
+
+  it("creates a room without asking, even when the saved games cannot be read", async () => {
+    saveName("Minh");
+    const store = { ...createMemoryStore(), listInProgress: () => Promise.reject(new Error("no")) };
+    const { createRoom } = await renderOnline({ store });
+
+    await userEvent.click(createButton());
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(createRoom).toHaveBeenCalledOnce();
+  });
+
+  it("creates a room without waiting for saved games that never answer", async () => {
+    saveName("Minh");
+    const store = {
+      ...createMemoryStore(),
+      listInProgress: () => new Promise<never>(() => undefined),
+    };
+    const { createRoom } = await renderOnline({ store });
+
+    await userEvent.click(createButton());
+
+    expect(createRoom).toHaveBeenCalledOnce();
+  });
+
+  it("does not create a room without a valid name, saying why at the field", async () => {
+    const { createRoom } = await renderOnline();
+
+    await userEvent.type(nameField(), "   ");
+    await userEvent.click(createButton());
+
+    expect(createRoom).not.toHaveBeenCalled();
+    expect(nameField()).toHaveAccessibleDescription("Tên cần có từ 1 đến 24 ký tự.");
+    // Back to the field, so the error is read with it.
+    expect(nameField()).toHaveFocus();
+  });
+
+  it("remembers a new name once the player leaves the field, keeping their id", async () => {
+    const { playerId } = saveName("Minh");
+    await renderOnline();
+
+    await userEvent.type(nameField(), " Anh");
+    await userEvent.tab();
+
+    expect(readIdentity()).toEqual({ playerId, name: "Minh Anh" });
+  });
+
+  it("still creates the room, under the name typed, when the browser refuses to store it", async () => {
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new DOMException("blocked", "SecurityError");
+    });
+    const { createRoom } = await renderOnline();
+
+    await userEvent.type(nameField(), "Lan");
+    await userEvent.click(createButton());
+
+    expect(vi.mocked(createRoom).mock.calls[0]?.[0]).toMatchObject({ identity: { name: "Lan" } });
+    expect(router.push).toHaveBeenCalledWith("/room/ABC234");
+  });
+
+  // Right after a test where the browser refused storage: nothing of that tab may remain.
+  it("knows no name on a browser that remembers none", async () => {
+    await renderOnline();
+
+    expect(nameField()).toHaveValue("");
   });
 });

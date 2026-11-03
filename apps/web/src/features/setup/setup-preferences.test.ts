@@ -57,6 +57,18 @@ describe("setup preferences", () => {
     expect(readSetupChoice("tictactoe", true)).toBeUndefined();
   });
 
+  it("reads back the online mode, for a game with or without an AI", () => {
+    writeSetupChoice("tictactoe", { mode: "online", level: "easy", first: "human" });
+    writeSetupChoice("chess", { mode: "online", level: "hard", first: "ai" });
+
+    expect(readSetupChoice("tictactoe", true)).toEqual({
+      mode: "online",
+      level: "easy",
+      first: "human",
+    });
+    expect(readSetupChoice("chess", false)?.mode).toBe("online");
+  });
+
   it("falls back to the same-device mode for a game that cannot be played against the AI", () => {
     writeSetupChoice("chess", { mode: "ai", level: "hard", first: "ai" });
 

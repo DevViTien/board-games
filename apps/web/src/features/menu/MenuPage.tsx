@@ -5,6 +5,7 @@ import { SITE } from "@/config/site";
 import { LocaleSwitcher } from "@/features/settings/LocaleSwitcher";
 
 import { ContinueList } from "./ContinueList";
+import { JoinRoomForm } from "./JoinRoomForm";
 import { buildMenu } from "./menu-games";
 import { PlayLink } from "./PlayLink";
 
@@ -57,6 +58,9 @@ export function MenuPage() {
           );
         })}
       </ul>
+
+      {/* Above the games in progress: they appear once loaded, and must not push it down. */}
+      <JoinRoomForm />
 
       <ContinueList />
     </main>

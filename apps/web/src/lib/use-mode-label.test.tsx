@@ -3,16 +3,16 @@ import { describe, expect, it } from "vitest";
 
 import type { Locale } from "@/i18n/config";
 import { renderWithIntl } from "@/test/render-with-intl";
-import type { SeatController } from "@/transport/types";
+import type { SeatView } from "@/transport/types";
 
 import { seatsOf, useModeLabel } from "./use-mode-label";
 
-function ModeLabel({ seats }: { readonly seats: readonly SeatController[] }) {
+function ModeLabel({ seats }: { readonly seats: readonly SeatView[] }) {
   const modeLabel = useModeLabel();
   return <p>{modeLabel(seats)}</p>;
 }
 
-function label(seats: readonly SeatController[], locale: Locale = "vi") {
+function label(seats: readonly SeatView[], locale: Locale = "vi") {
   const view = renderWithIntl(<ModeLabel seats={seats} />, { locale });
   const text = screen.getByRole("paragraph").textContent;
   view.unmount();
@@ -25,6 +25,16 @@ describe("useModeLabel", () => {
   it("names a game without an AI seat as played on the same device", () => {
     expect(label([HUMAN, HUMAN])).toBe("Cùng máy");
     expect(label(seatsOf({ kind: "local" }))).toBe("Cùng máy");
+  });
+
+  it("does not count the seats of players elsewhere (online)", () => {
+    expect(label([HUMAN, { kind: "remote", name: "Minh" }])).toBe("Cùng máy");
+    expect(
+      label([
+        { kind: "remote", name: null },
+        { kind: "ai", level: "hard" },
+      ]),
+    ).toBe("Với máy · Khó");
   });
 
   it("names the level when the AI seats play one", () => {

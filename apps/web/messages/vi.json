@@ -9,7 +9,11 @@
     "duration": "~{minutes} phút",
     "play": "Chơi",
     "continueTitle": "Tiếp tục ván dở",
-    "continueItem": "{game} · {mode}"
+    "continueItem": "{game} · {mode}",
+    "joinTitle": "Vào phòng bằng mã",
+    "joinCode": "Mã phòng",
+    "join": "Vào phòng",
+    "joinInvalid": "Mã phòng gồm 6 chữ cái và chữ số, ví dụ ABC234."
   },
   "Games": {
     "tictactoe": {
@@ -44,7 +48,8 @@
     "mode": "Chế độ",
     "modes": {
       "ai": "Đấu với máy",
-      "local": "Cùng máy"
+      "local": "Cùng máy",
+      "online": "Online"
     },
     "level": "Mức độ",
     "first": "Ai đi trước",
@@ -65,7 +70,12 @@
       "descriptionUnknown": "Không đọc được các ván đã lưu. Nếu đang có ván dở ở chế độ này, ván đó sẽ bị bỏ.",
       "confirm": "Bắt đầu ván mới",
       "cancel": "Giữ ván dở"
-    }
+    },
+    "createRoom": "Tạo phòng",
+    "creating": "Đang tạo phòng…",
+    "createFailed": "Không tạo được phòng. Hãy kiểm tra kết nối mạng rồi thử lại.",
+    "createOutdated": "App vừa được cập nhật. Hãy tải lại trang để tạo phòng bằng phiên bản mới.",
+    "reload": "Tải lại trang"
   },
   "Play": {
     "board": "Bàn cờ",
@@ -103,6 +113,20 @@
     "modeNotFound": {
       "title": "Không tìm thấy trang chơi này",
       "description": "Đường dẫn này không dẫn tới cách chơi nào của Board Games Hub."
+    },
+    "online": "Online",
+    "opponent": "Đối thủ",
+    "opponentMovedYourTurn": "{name} vừa đánh {move}. Đến lượt bạn ({player})",
+    "waitingFor": "Đang chờ {name}…",
+    "newGameYouFirst": "Ván mới: bạn cầm {player} và đi trước",
+    "newGameOpponentFirst": "Ván mới: bạn cầm {player}, {name} đi trước",
+    "opponentWins": "{name} thắng",
+    "rematch": "Chơi lại",
+    "invalidMove": "Nước đi không hợp lệ.",
+    "connection": {
+      "reconnecting": "Đang kết nối lại…",
+      "idle": "Đã tạm ngắt vì lâu không có hoạt động.",
+      "resume": "Tiếp tục"
     }
   },
   "NotFound": {
@@ -112,5 +136,49 @@
   },
   "Settings": {
     "language": "Ngôn ngữ"
+  },
+  "Identity": {
+    "name": "Tên của bạn",
+    "invalidName": "Tên cần có từ 1 đến {max} ký tự."
+  },
+  "Room": {
+    "title": "Phòng {code}",
+    "joining": "Đang vào phòng…",
+    "slow": "Chưa kết nối được máy chủ. Vẫn đang thử lại…",
+    "nameTitle": "Chọn tên để vào phòng",
+    "nameHint": "Mọi người trong phòng sẽ thấy tên này.",
+    "continue": "Tiếp tục",
+    "code": "Mã phòng",
+    "inviteLink": "Link mời",
+    "copy": "Sao chép link",
+    "copied": "Đã sao chép link mời.",
+    "copyFailed": "Chưa sao chép được. Link đã được chọn sẵn, hãy tự sao chép.",
+    "share": "Chia sẻ",
+    "shareTitle": "Chơi {game} với mình",
+    "players": "Người chơi",
+    "you": "{name} (bạn)",
+    "emptySeat": "Đang chờ…",
+    "sit": "Vào chơi",
+    "waitingForFriends": "Gửi link mời cho bạn bè. Ván bắt đầu khi đủ người.",
+    "errors": {
+      "notFound": {
+        "title": "Không tìm thấy phòng",
+        "description": "Mã phòng có thể sai, hoặc phòng đã hết hạn sau 7 ngày không ai chơi."
+      },
+      "full": {
+        "title": "Phòng đã đủ người",
+        "description": "Mọi ghế trong phòng này đã có người ngồi."
+      },
+      "outdated": {
+        "title": "App vừa được cập nhật",
+        "description": "Hãy tải lại trang để vào phòng bằng phiên bản mới.",
+        "reload": "Tải lại trang"
+      },
+      "broken": {
+        "title": "Không mở được phòng",
+        "description": "Dữ liệu của phòng không đọc được. Hãy thử lại.",
+        "retry": "Thử lại"
+      }
+    }
   }
 }

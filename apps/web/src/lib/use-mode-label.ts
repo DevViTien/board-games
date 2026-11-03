@@ -1,7 +1,7 @@
 import type { AiLevel } from "@board-games/engine";
 import { useTranslations } from "next-intl";
 
-import type { ModeSettings, SeatController } from "@/transport/types";
+import type { ModeSettings, SeatController, SeatView } from "@/transport/types";
 
 /** The seats a saved game was set up with; every seat of a same-device game is a person here. */
 export function seatsOf(settings: ModeSettings): readonly SeatController[] {
@@ -11,9 +11,10 @@ export function seatsOf(settings: ModeSettings): readonly SeatController[] {
 /**
  * Hook returning how a game's mode is named, the same on the menu, the setup screen and the play
  * screen: "Same device" without an AI seat, "Vs computer · Hard" when every AI seat plays one
- * level, and just "Vs computer" when they play several (M6).
+ * level, and just "Vs computer" when they play several (M6). Remote seats are not counted: an
+ * online game is labelled "Online" by the play screen itself.
  */
-export function useModeLabel(): (seats: readonly SeatController[]) => string {
+export function useModeLabel(): (seats: readonly SeatView[]) => string {
   const t = useTranslations("Modes");
   const tLevels = useTranslations("Levels");
   return (seats) => {

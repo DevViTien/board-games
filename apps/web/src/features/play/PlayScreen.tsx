@@ -1,15 +1,17 @@
 "use client";
 
+import type { PlayerIndex } from "@board-games/engine";
 import type { RegisteredGameId } from "@board-games/games";
 import { Badge, Button, buttonVariants, ConfirmDialog } from "@board-games/ui";
 import Link from "next/link";
 import { useFormatter, useTranslations } from "next-intl";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import type { GameUI } from "@/games/types";
 import { useModeLabel } from "@/lib/use-mode-label";
 import type { ReadySnapshot, Transport } from "@/transport/types";
 
+import { ConnectionNotice } from "./ConnectionNotice";
 import { PlayLoading } from "./PlayLoading";
 import { useTransportSnapshot } from "./use-transport";
 
@@ -17,18 +19,32 @@ export interface PlayScreenProps<State, Move, Outcome> {
   readonly gameId: RegisteredGameId;
   readonly transport: Transport<State, Move, Outcome>;
   readonly ui: GameUI<State, Move, Outcome>;
+  /** Reconnects an online game paused for inactivity. */
+  readonly onResume?: (() => void) | undefined;
+  /**
+   * Moves focus to the game's title once it shows: the room page sets it when the game replaces
+   * the lobby, whose focused "Join game" button is gone.
+   */
+  readonly focusTitle?: boolean | undefined;
+}
+
+function noop(): void {
+  // A game on this device has no connection to resume.
 }
 
 /**
- * The screen shared by every game: whose turn it is, the board, the result, undo/redo and a new
- * game. It only reads the transport's snapshot and sends requests, so it never decides who may
- * move or when the AI does. How turns and results are told follows the snapshot: "you" and "the
- * computer" when exactly one seat is a person here (`viewer`), the players' symbols otherwise.
+ * The screen shared by every game and mode: whose turn it is, the board, the result, undo/redo and
+ * a new game. It only reads the transport's snapshot and sends requests, so it never decides who
+ * may move or when the AI does. How turns and results are told follows the snapshot: "you", "the
+ * computer" and the online opponent's name when exactly one seat is a person here (`viewer`), the
+ * players' symbols otherwise. Online, it also shows the state of the connection.
  */
 export function PlayScreen<State, Move, Outcome>({
   gameId,
   transport,
   ui,
+  onResume = noop,
+  focusTitle = false,
 }: PlayScreenProps<State, Move, Outcome>) {
   const t = useTranslations("Play");
   const tGames = useTranslations("Games");
@@ -38,15 +54,40 @@ export function PlayScreen<State, Move, Outcome>({
   const moveLabel = ui.useMoveLabel();
   const modeLabel = useModeLabel();
   const [confirmingNewGame, setConfirmingNewGame] = useState(false);
+  // The number of moves when a move was refused: the refusal is told until the game changes,
+  // not when the connection does.
+  const [refusedAt, setRefusedAt] = useState<number | null>(null);
   const { Board } = ui;
+  const titleRef = useCallback(
+    (title: HTMLHeadingElement | null) => {
+      if (focusTitle) title?.focus();
+    },
+    [focusTitle],
+  );
+
+  // The transport tells only refusals worth a word (online: the rules refused the move).
+  useEffect(
+    () =>
+      transport.subscribe((event) => {
+        if (event.type !== "rejected") return;
+        const current = transport.getSnapshot();
+        setRefusedAt(current.status === "ready" ? current.moveCount : null);
+      }),
+    [transport],
+  );
 
   if (snapshot.status === "loading") return <PlayLoading />;
+
+  // Adjusted during render: once a move is played (or a new game begins), the refusal is old news.
+  if (refusedAt !== null && refusedAt !== snapshot.moveCount) setRefusedAt(null);
+  const refused = refusedAt !== null;
 
   // The question is about dropping a game in progress: once there is none (the AI ended it), it no
   // longer applies. Adjusted during render, so the dialog never shows it for a finished game.
   if (confirmingNewGame && !snapshot.inProgress) setConfirmingNewGame(false);
 
   const hasAiSeat = snapshot.seats.some((seat) => seat.kind === "ai");
+  const hasRemoteSeat = snapshot.seats.some((seat) => seat.kind === "remote");
 
   function describeStatus({
     result,
@@ -55,13 +96,34 @@ export function PlayScreen<State, Move, Outcome>({
     seats,
     lastEntry,
     lastMover,
+    moveCount,
   }: ReadySnapshot<State, Move, Outcome>): string {
-    // One person here: told as "you" and "the computer". M4 adds the online opponent's seat.
+    // An online player by the name they chose. Names are user input: they only ever enter a
+    // message as ICU arguments, which React escapes like any text.
+    const nameOf = (player: PlayerIndex) => {
+      const seat = seats[player];
+      return seat?.kind === "remote" && seat.name !== null ? seat.name : t("opponent");
+    };
+    // One person here: told as "you", "the computer" and the online opponent's name.
     if (viewer !== null) {
+      // A new online game swaps sides for the one who did not ask for it: say which side is theirs.
+      if (result === null && moveCount === 0 && hasRemoteSeat) {
+        return currentPlayer === viewer
+          ? t("newGameYouFirst", { player: playerLabel(viewer) })
+          : t("newGameOpponentFirst", { player: playerLabel(viewer), name: nameOf(currentPlayer) });
+      }
       if (result === null && currentPlayer === viewer) {
-        // Where the AI just played, so a player who cannot see the board knows it too.
-        if (lastEntry !== null && lastMover !== null && seats[lastMover]?.kind === "ai") {
+        // Where the other side just played, so a player who cannot see the board knows it too.
+        const mover = lastMover === null ? undefined : seats[lastMover];
+        if (lastEntry !== null && lastMover !== null && mover?.kind === "ai") {
           return t("aiMovedYourTurn", {
+            move: moveLabel(lastEntry.move),
+            player: playerLabel(viewer),
+          });
+        }
+        if (lastEntry !== null && lastMover !== null && mover?.kind === "remote") {
+          return t("opponentMovedYourTurn", {
+            name: nameOf(lastMover),
             move: moveLabel(lastEntry.move),
             player: playerLabel(viewer),
           });
@@ -69,12 +131,23 @@ export function PlayScreen<State, Move, Outcome>({
         return t("yourTurn", { player: playerLabel(viewer) });
       }
       if (result === null && seats[currentPlayer]?.kind === "ai") return t("aiThinking");
+      if (result === null && seats[currentPlayer]?.kind === "remote") {
+        return t("waitingFor", { name: nameOf(currentPlayer) });
+      }
       if (result?.kind === "win" && result.winners.includes(viewer)) return t("youWin");
       if (
         result?.kind === "win" &&
         result.winners.every((winner) => seats[winner]?.kind === "ai")
       ) {
         return t("aiWins");
+      }
+      if (
+        result?.kind === "win" &&
+        result.winners.every((winner) => seats[winner]?.kind === "remote")
+      ) {
+        return t("opponentWins", {
+          name: format.list(result.winners.map(nameOf), { type: "conjunction" }),
+        });
       }
     }
     if (result === null) return t("turn", { player: playerLabel(currentPlayer) });
@@ -91,14 +164,33 @@ export function PlayScreen<State, Move, Outcome>({
     <main className="mx-auto flex max-w-3xl flex-col items-center gap-6 px-4 py-8">
       <header className="flex w-full flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight">{tGames(`${gameId}.name`)}</h1>
+          <h1
+            ref={titleRef}
+            tabIndex={focusTitle ? -1 : undefined}
+            className="text-2xl font-semibold tracking-tight focus:outline-none"
+          >
+            {tGames(`${gameId}.name`)}
+          </h1>
           {/* Against the AI, its level stays visible, also after a reload. */}
           {hasAiSeat && <Badge className="text-sm">{modeLabel(snapshot.seats)}</Badge>}
+          {hasRemoteSeat && <Badge className="text-sm">{t("online")}</Badge>}
         </div>
         <Link href="/" className={buttonVariants({ variant: "ghost" })}>
           {t("backToMenu")}
         </Link>
       </header>
+
+      {/* Online only. Its space is kept even when empty, so a lost connection never moves the
+          board. */}
+      {snapshot.connection !== null && (
+        <ConnectionNotice status={snapshot.connection} onResume={onResume}>
+          {refused && (
+            <p role="alert" className="text-sm text-danger">
+              {t("invalidMove")}
+            </p>
+          )}
+        </ConnectionNotice>
+      )}
 
       <p role="status" aria-live="polite" className="text-lg font-medium">
         {describeStatus(snapshot)}
@@ -117,30 +209,37 @@ export function PlayScreen<State, Move, Outcome>({
       {/* `aria-disabled`, not `disabled`: undoing the last move with the keyboard would otherwise
           disable the focused button and drop focus to the page body. */}
       <div className="flex flex-wrap justify-center gap-2">
-        <Button
-          variant="secondary"
-          aria-disabled={!snapshot.canUndo}
-          onClick={transport.requestUndo}
-        >
-          {t("undo")}
-        </Button>
-        <Button
-          variant="secondary"
-          aria-disabled={!snapshot.canRedo}
-          onClick={transport.requestRedo}
-        >
-          {t("redo")}
-        </Button>
-        <Button
-          onClick={() => {
-            // Only a game where a person here has a move in effect is worth asking about: not one
-            // where only the AI has moved.
-            if (snapshot.inProgress) setConfirmingNewGame(true);
-            else transport.requestNewGame();
-          }}
-        >
-          {t("newGame")}
-        </Button>
+        {snapshot.supportsUndo && (
+          <>
+            <Button
+              variant="secondary"
+              aria-disabled={!snapshot.canUndo}
+              onClick={transport.requestUndo}
+            >
+              {t("undo")}
+            </Button>
+            <Button
+              variant="secondary"
+              aria-disabled={!snapshot.canRedo}
+              onClick={transport.requestRedo}
+            >
+              {t("redo")}
+            </Button>
+          </>
+        )}
+        {/* Online, a new game is for everyone in the room: offered only once this one is over. */}
+        {snapshot.canStartNewGame && (
+          <Button
+            onClick={() => {
+              // Only a game where a person here has a move in effect is worth asking about: not
+              // one where only the AI has moved.
+              if (snapshot.inProgress) setConfirmingNewGame(true);
+              else transport.requestNewGame();
+            }}
+          >
+            {hasRemoteSeat ? t("rematch") : t("newGame")}
+          </Button>
+        )}
       </div>
 
       <ConfirmDialog

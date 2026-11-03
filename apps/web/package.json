@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
+    "realtime": "tsx src/server/realtime/dev-main.ts",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
@@ -16,12 +17,16 @@
   "dependencies": {
     "@board-games/engine": "workspace:*",
     "@board-games/games": "workspace:*",
+    "@board-games/protocol": "workspace:*",
     "@board-games/ui": "workspace:*",
+    "@vercel/functions": "catalog:",
     "idb-keyval": "catalog:",
     "next": "catalog:",
     "next-intl": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "redis": "catalog:",
+    "ws": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
@@ -35,9 +40,11 @@
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "@types/ws": "catalog:",
     "eslint": "catalog:",
     "jsdom": "catalog:",
     "tailwindcss": "catalog:",
+    "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

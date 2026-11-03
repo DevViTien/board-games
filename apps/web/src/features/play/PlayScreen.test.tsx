@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TicTacToeBoard } from "@/games/tictactoe/Board";
 import { useTicTacToeMoveLabel } from "@/games/tictactoe/move-label";
 import { useTicTacToePlayerLabel } from "@/games/tictactoe/player-label";
+import type { Locale } from "@/i18n/config";
 import { renderWithIntl } from "@/test/render-with-intl";
 import { createLocalTransport } from "@/transport/local-transport";
 import { createMemoryStore } from "@/transport/memory-store";
@@ -16,6 +17,7 @@ import type {
   ReadySnapshot,
   SavedGameStore,
   Transport,
+  TransportEvent,
 } from "@/transport/types";
 
 import { PlayScreen } from "./PlayScreen";
@@ -57,6 +59,9 @@ function fakeTransport(
     seats: [{ kind: "human" }, { kind: "human" }],
     waitingFor: null,
     inProgress: false,
+    supportsUndo: true,
+    canStartNewGame: true,
+    connection: null,
     ...overrides,
   };
   return {
@@ -553,5 +558,259 @@ describe("PlayScreen against the AI", () => {
 
     expect(screen.getByRole("status")).toHaveTextContent("The computer is thinking…");
     expect(screen.getByText("Vs computer · Hard")).toBeInTheDocument();
+  });
+});
+
+const MINH = { kind: "remote", name: "Minh" } as const;
+const YOU = { kind: "human" } as const;
+
+type TicTacToeSnapshot = ReadySnapshot<TicTacToeState, TicTacToeMove>;
+
+/** Tic-tac-toe after `cells`, X first, as a snapshot of an online game seen from `viewer`. */
+function onlineSnapshot(
+  viewer: 0 | 1,
+  cells: readonly number[],
+  overrides: Partial<TicTacToeSnapshot> = {},
+): Partial<TicTacToeSnapshot> {
+  const state = cells.reduce(
+    (current, played) => tictactoe.applyMove(current, { cell: played }),
+    tictactoe.setup(),
+  );
+  const result = tictactoe.result(state);
+  const currentPlayer = tictactoe.currentPlayer(state);
+  const lastCell = cells.at(-1);
+  return {
+    state,
+    legalMoves: result === null ? tictactoe.legalMoves(state) : [],
+    currentPlayer,
+    result,
+    lastEntry: lastCell === undefined ? null : { move: { cell: lastCell } },
+    lastMover: cells.length === 0 ? null : (cells.length - 1) % 2,
+    moveCount: cells.length,
+    canMove: result === null && currentPlayer === viewer,
+    viewer,
+    seats: viewer === 0 ? [YOU, MINH] : [MINH, YOU],
+    waitingFor: result === null && currentPlayer !== viewer ? "opponent" : null,
+    supportsUndo: false,
+    canStartNewGame: result !== null,
+    connection: "online",
+    ...overrides,
+  };
+}
+
+/** A transport whose snapshot the test changes, telling the screen as a real one does. */
+function changingTransport(initial: Partial<TicTacToeSnapshot>) {
+  const base = fakeTransport(initial);
+  let snapshot = base.getSnapshot();
+  const listeners = new Set<(event: TransportEvent) => void>();
+  const transport: TicTacToeTransport = {
+    ...base,
+    getSnapshot: () => snapshot,
+    subscribe: (listener) => {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+  };
+  const emit = (event: TransportEvent) => {
+    act(() => {
+      for (const listener of listeners) listener(event);
+    });
+  };
+  return {
+    transport,
+    change: (overrides: Partial<TicTacToeSnapshot>) => {
+      if (snapshot.status !== "ready") throw new Error("still loading");
+      snapshot = { ...snapshot, ...overrides };
+      emit({ type: "changed" });
+    },
+    emit,
+  };
+}
+
+function renderOnline(
+  transport: TicTacToeTransport,
+  { locale = "vi", onResume = vi.fn() }: { locale?: Locale; onResume?: () => void } = {},
+) {
+  return renderWithIntl(
+    <PlayScreen gameId="tictactoe" transport={transport} ui={ui} onResume={onResume} />,
+    { locale },
+  );
+}
+
+describe("PlayScreen online: what is said", () => {
+  it("tells where the opponent just played, by name, and that it is the player's turn", () => {
+    // Minh (X) played row 2, column 3.
+    renderOnline(fakeTransport(onlineSnapshot(1, [4, 0, 5])));
+
+    expect(status()).toHaveTextContent(/^Minh vừa đánh hàng 2, cột 3\. Đến lượt bạn \(O\)$/);
+  });
+
+  it("says it is waiting for the opponent, by name, with the board locked", () => {
+    renderOnline(fakeTransport(onlineSnapshot(1, [4, 0])));
+
+    expect(status()).toHaveTextContent(/^Đang chờ Minh…$/);
+    for (const boardCell of within(screen.getByRole("group", { name: "Bàn cờ" })).getAllByRole(
+      "button",
+    )) {
+      expect(boardCell).toHaveAttribute("aria-disabled", "true");
+    }
+  });
+
+  it("names the opponent who won", () => {
+    // Minh (X) takes the top row.
+    renderOnline(fakeTransport(onlineSnapshot(1, [0, 3, 1, 4, 2])));
+
+    expect(status()).toHaveTextContent(/^Minh thắng$/);
+  });
+
+  it("tells the player they won", () => {
+    renderOnline(fakeTransport(onlineSnapshot(0, [0, 3, 1, 4, 2])));
+
+    expect(status()).toHaveTextContent("Bạn thắng!");
+  });
+
+  it("says which side the player has in a new game where the opponent moves first", () => {
+    renderOnline(fakeTransport(onlineSnapshot(1, [])));
+
+    expect(status()).toHaveTextContent(/^Ván mới: bạn cầm O, Minh đi trước$/);
+  });
+
+  it("says which side the player has in a new game where they move first", () => {
+    renderOnline(fakeTransport(onlineSnapshot(0, [])));
+
+    expect(status()).toHaveTextContent(/^Ván mới: bạn cầm X và đi trước$/);
+  });
+
+  it("speaks of the opponent by name in English", () => {
+    renderOnline(fakeTransport(onlineSnapshot(1, [4, 0, 5])), { locale: "en" });
+
+    expect(status()).toHaveTextContent("Minh played row 2, column 3. Your move (O)");
+  });
+});
+
+describe("PlayScreen online: controls", () => {
+  it("is labelled as an online game", () => {
+    renderOnline(fakeTransport(onlineSnapshot(0, [])));
+
+    expect(screen.getByText("Online")).toBeInTheDocument();
+    expect(screen.queryByText(/Cùng máy|Với máy/)).not.toBeInTheDocument();
+  });
+
+  it("has no undo nor redo, and no new game while the game is on", () => {
+    renderOnline(fakeTransport(onlineSnapshot(0, [4, 0])));
+
+    expect(screen.queryByRole("button", { name: "Hoàn tác" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Làm lại" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Ván mới|Chơi lại/ })).not.toBeInTheDocument();
+  });
+
+  it("offers to play again once the game has a result, without asking", async () => {
+    const transport = fakeTransport(onlineSnapshot(1, [0, 3, 1, 4, 2]));
+    renderOnline(transport);
+
+    await userEvent.click(button("Chơi lại"));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(transport.requestNewGame).toHaveBeenCalledOnce();
+  });
+
+  it("says briefly that the rules refused a move, until the game changes", () => {
+    const { transport, emit, change } = changingTransport(onlineSnapshot(0, [4]));
+    renderOnline(transport);
+
+    emit({ type: "rejected", code: "illegal-move" });
+    expect(screen.getByRole("alert")).toHaveTextContent("Nước đi không hợp lệ.");
+
+    change(onlineSnapshot(0, [4, 0]));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("keeps saying the move was refused while only the connection changes", () => {
+    const { transport, emit, change } = changingTransport(onlineSnapshot(0, [4, 0]));
+    renderOnline(transport);
+    emit({ type: "rejected", code: "illegal-move" });
+
+    change({ connection: "reconnecting", canMove: false });
+    change({ connection: "online", canMove: true });
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Nước đi không hợp lệ.");
+  });
+
+  it("names the new game by the remote seat, whatever the connection says", () => {
+    // A finished online game, its connection status not known: still "Play again".
+    renderOnline(fakeTransport(onlineSnapshot(1, [0, 3, 1, 4, 2], { connection: null })));
+
+    expect(button("Chơi lại")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Ván mới" })).not.toBeInTheDocument();
+  });
+
+  it("moves the focus to the game's title when asked, as when the game replaces the lobby", () => {
+    renderWithIntl(
+      <PlayScreen
+        gameId="tictactoe"
+        transport={fakeTransport(onlineSnapshot(1, []))}
+        ui={ui}
+        focusTitle
+      />,
+    );
+
+    expect(screen.getByRole("heading", { level: 1, name: "Tic-tac-toe" })).toHaveFocus();
+  });
+});
+
+describe("PlayScreen online: the connection", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const reconnecting = () => screen.queryByText("Đang kết nối lại…");
+
+  it("says nothing of a reconnection done within a second", async () => {
+    const { transport, change } = changingTransport(onlineSnapshot(0, [4, 0]));
+    renderOnline(transport);
+
+    change({ connection: "reconnecting", canMove: false });
+    await wait(1000);
+    change({ connection: "online", canMove: true });
+    await wait(5000);
+
+    expect(reconnecting()).not.toBeInTheDocument();
+  });
+
+  it("says it is reconnecting once the connection has been lost for 1.5 s", async () => {
+    const { transport, change } = changingTransport(onlineSnapshot(0, [4, 0]));
+    renderOnline(transport);
+
+    change({ connection: "reconnecting", canMove: false });
+    await wait(1499);
+    expect(reconnecting()).not.toBeInTheDocument();
+    await wait(1);
+    expect(reconnecting()).toBeInTheDocument();
+    expect(cell(1, 1)).toHaveAttribute("aria-disabled", "true");
+
+    change({ connection: "online", canMove: true });
+    expect(reconnecting()).not.toBeInTheDocument();
+    // The next loss waits its own 1.5 s.
+    change({ connection: "reconnecting", canMove: false });
+    expect(reconnecting()).not.toBeInTheDocument();
+  });
+
+  it("says at once that it paused for inactivity, and continues on request", async () => {
+    const onResume = vi.fn();
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderOnline(fakeTransport(onlineSnapshot(0, [4, 0], { connection: "idle", canMove: false })), {
+      onResume,
+    });
+
+    expect(screen.getByText("Đã tạm ngắt vì lâu không có hoạt động.")).toBeInTheDocument();
+    await user.click(button("Tiếp tục"));
+
+    expect(onResume).toHaveBeenCalledOnce();
   });
 });

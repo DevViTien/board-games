@@ -184,6 +184,9 @@ export function createLocalTransport<
       seats,
       waitingFor,
       inProgress: result === null && humanMoved,
+      supportsUndo: true,
+      canStartNewGame: true,
+      connection: null,
     };
     emit({ type: "changed" });
     // A listener may already have changed the game, and started the AI's turn for that one.

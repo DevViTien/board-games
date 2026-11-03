@@ -96,16 +96,15 @@ board-games/
 │     │  │  ├─ page.tsx             # menu
 │     │  │  ├─ play/[gameId]/       # màn hình bắt đầu ván
 │     │  │  │  └─ [mode]/           # chơi theo chế độ: local (cùng máy), ai (với máy)
-│     │  │  ├─ room/[roomId]/       # phòng online
+│     │  │  ├─ room/[code]/         # phòng online: link mời /room/<mã>, mã sai → không tìm thấy
 │     │  │  └─ api/
-│     │  │     ├─ rooms/route.ts    # tạo phòng, lấy thông tin phòng
-│     │  │     └─ ws/route.ts       # điểm nối WebSocket
+│     │  │     └─ realtime/route.ts # điểm nối WebSocket trên Vercel; mọi thao tác phòng đi qua đây, không REST
 │     │  ├─ features/               # mỗi tính năng một thư mục, tự chứa
 │     │  │  ├─ menu/                # thẻ game, mục "Tiếp tục ván dở"
 │     │  │  ├─ setup/               # màn hình bắt đầu ván: chế độ, mức độ, ai đi trước, lựa chọn gần nhất
 │     │  │  ├─ play/                # màn hình ván, thanh điều khiển, hộp thoại kết thúc
-│     │  │  ├─ room/                # sảnh chờ, ghế, trạng thái kết nối
-│     │  │  ├─ identity/            # tên tạm + playerId trong localStorage
+│     │  │  ├─ room/                # trang phòng (RoomRoute), sảnh chờ + link mời, trang lỗi phòng, tạo phòng
+│     │  │  ├─ identity/            # tên tạm + playerId trong localStorage, ô nhập tên (NameField)
 │     │  │  └─ settings/            # ngôn ngữ, sáng/tối, âm thanh
 │     │  ├─ games/                  # phần giao diện của từng game
 │     │  │  ├─ registry.ts          # ghép luật (packages/games) với giao diện
@@ -116,19 +115,21 @@ board-games/
 │     │  ├─ config/                 # constant toàn app: site.ts, routes.ts, storage-keys.ts
 │     │  ├─ i18n/                   # cấu hình ngôn ngữ, chọn ngôn ngữ, bộ nạp bản dịch
 │     │  ├─ test/                   # tiện ích test dùng chung (renderWithIntl)
-│     │  ├─ transport/              # transport theo ghế (người/máy, sau thêm online), kho ván dở theo slot
+│     │  ├─ transport/              # transport theo ghế (người/máy) và online, kết nối phòng (RoomConnection), kho ván dở theo slot
 │     │  ├─ ai-worker/              # AiPlayer: Web Worker chạy AI của engine, dự phòng trên luồng chính
-│     │  ├─ server/                 # chỉ chạy phía server
-│     │  │  ├─ room-service.ts      # xử lý join/move/resign, không biết Redis hay WebSocket
-│     │  │  ├─ store/               # RoomStore: redis.ts, memory.ts (dev + test)
-│     │  │  └─ realtime/            # WebSocket + pub/sub
-│     │  └─ lib/                    # tiện ích nhỏ chỉ dùng trong web
+│     │  ├─ server/                 # chỉ chạy phía server; ESLint cấm phần client import
+│     │  │  ├─ env.ts               # biến môi trường (zod, đọc lười), chọn kho, tiền tố khoá
+│     │  │  ├─ room.ts              # StoredRoom, toRoomView (bỏ playerId), seatOf
+│     │  │  ├─ room-service.ts      # trọng tài: tạo/vào/ngồi/đi/ván mới, không biết Redis hay WebSocket
+│     │  │  ├─ store/               # RoomStore: redis.ts (Upstash), memory.ts (dev + test), bộ hợp đồng chung
+│     │  │  └─ realtime/            # connection.ts (một WebSocket), dev-server.ts + dev-main.ts (server Node cho dev, E2E)
+│     │  └─ lib/                    # tiện ích nhỏ chỉ dùng trong web (realtime-url.ts: địa chỉ server realtime)
 │     ├─ messages/                  # vi.json (gốc), en.json, ja.json
 │     └─ e2e/                       # Playwright
 ├─ packages/
 │  ├─ engine/src/   { types.ts, session.ts, rng.ts, ai/, index.ts }
 │  ├─ games/src/    { tictactoe/, caro/, ludo/, chess/, index.ts }
-│  ├─ protocol/src/ { messages.ts, room.ts, index.ts }
+│  ├─ protocol/src/ { messages.ts, room.ts, errors.ts, index.ts }
 │  ├─ ui/src/       { styles.css, components/, icons.ts, lib/cn.ts, index.ts }
 │  └─ config/       { tsconfig/, eslint/, vitest/ }
 ├─ .github/workflows/ci.yml
@@ -155,7 +156,7 @@ board-games/
 
 ### 3.4 Các interface cốt lõi
 
-`GameDefinition` và phiên chơi đã cài ở `packages/engine` (chi tiết: `openspec/specs/game-engine/spec.md`, mã nguồn `packages/engine/src/types.ts`). `Transport`, `SavedGameStore` và `AiPlayer` đã cài ở `apps/web/src/transport/` và `apps/web/src/ai-worker/` (M2: một transport cục bộ theo ghế cho cả cùng máy lẫn đấu với máy; chi tiết: `openspec/specs/{local-play,play-vs-ai,game-setup}/spec.md`). `RoomStore` vẫn là phác thảo.
+`GameDefinition` và phiên chơi đã cài ở `packages/engine` (chi tiết: `openspec/specs/game-engine/spec.md`, mã nguồn `packages/engine/src/types.ts`). `Transport`, `SavedGameStore` và `AiPlayer` đã cài ở `apps/web/src/transport/` và `apps/web/src/ai-worker/` (M2: một transport cục bộ theo ghế cho cả cùng máy lẫn đấu với máy; chi tiết: `openspec/specs/{local-play,play-vs-ai,game-setup}/spec.md`). `RoomStore`, `RoomView` và thông điệp online đã cài ở M4 (`apps/web/src/server/`, `packages/protocol/`; chi tiết: `openspec/specs/online-rooms/spec.md` và design của change `add-online-rooms`). Phía client của chơi online (`RoomConnection`, transport online, ghế `remote` trong ảnh chụp) cũng cài ở M4 (`apps/web/src/transport/`, `features/{room,identity}`; chi tiết: `openspec/specs/{online-play,player-identity}/spec.md` và design của change `add-online-play`).
 
 ```ts
 // packages/engine — mọi method khai báo `this: void` để truyền đi mà không cần bind
@@ -189,20 +190,39 @@ interface Transport<State, Move, Outcome = never> {
                                                      //   currentPlayer, result, lastEntry, moveCount, canUndo, canRedo,
                                                      //   canMove (transport quyết ai được đi), viewer (ghế của người ở
                                                      //   thiết bị này khi chỉ có một người, null nếu không),
-                                                     //   seats: SeatController[], waitingFor: "ai" | null (M4 thêm
-                                                     //   "opponent"), inProgress (người đã đi ít nhất một nước còn hiệu lực) }
-  subscribe(listener: (event: TransportEvent) => void): () => void; // "changed" | { "rejected", code }
+                                                     //   seats: SeatView[], waitingFor: "ai" | "opponent" | null,
+                                                     //   inProgress (người đã đi ít nhất một nước còn hiệu lực; online luôn sai),
+                                                     //   supportsUndo (online: sai), canStartNewGame (online: chỉ khi
+                                                     //   ván đã có kết quả), connection (ConnectionStatus, null nếu không online) }
+  subscribe(listener: (event: TransportEvent) => void): () => void; // "changed" | { "rejected", code: RejectionCode }
   submit(move: Move): void;                          // kết quả qua sự kiện, kể cả bị từ chối (online là bất đồng bộ)
-  requestUndo(): void;                               // lùi tới lượt người ở thiết bị này (bỏ cả nước máy); online (M4) chờ đối thủ đồng ý
+  requestUndo(): void;                               // lùi tới lượt người ở thiết bị này (bỏ cả nước máy); online không có hoàn tác
   requestRedo(): void;                               // làm lại tới lượt người kế tiếp (kèm nước máy)
   requestNewGame(): void;
   dispose(): void;
 }
 
-// Transport cục bộ theo ghế: mỗi ghế là người ({ kind: "human" }) hoặc máy ({ kind: "ai", level }); M4 thêm "remote".
+// Ghế: SeatController = { kind: "human" } | { kind: "ai", level } là dữ liệu lưu của chế độ cục bộ;
+// SeatView = SeatController | { kind: "remote", name: string | null } là ghế trong ảnh chụp (remote = người chơi ở xa, null = ghế trống).
+// Transport cục bộ theo ghế: mỗi ghế là người hoặc máy.
 // Tới ghế máy thì hỏi AiPlayer, chờ tối thiểu 300 ms, kiểm lại ván chưa đổi rồi mới đi; máy lỗi thì đi nước hợp lệ ngẫu nhiên.
 createLocalTransport({ definition, store, rng, mode?: "local" | "ai", start?: PlaySetup, fallback?: PlaySetup, ai?: AiPlayer })
 // PlaySetup = { mode: "local" } | { mode: "ai", level, first: "human" | "ai" | "random" }
+
+// Kết nối một phòng (không biết game): join với danh tính đọc lại ở mỗi lần chào (getIdentity), giữ room mới nhất (room
+// đầu tiên sau mỗi join luôn thắng), tự nối lại (0/1/2/4/8 rồi 10 giây, nhân hệ số ngẫu nhiên [0,8; 1]; về 0 chỉ sau 30
+// giây online), ping 20 giây và tự đóng khi im lặng 45 giây, tạm ngắt khi tab ẩn từ 60 giây hoặc 10 phút không hoạt động,
+// thôi hẳn (failed) khi phòng không còn, app cũ, hay hết ghế mà mình chưa có ghế; sit quá 8 giây thì nối lại. Mọi thông
+// điệp nhận được đi qua parseServerMessage.
+createRoomConnection({ url, code, getIdentity, openSocket?, environment?, random? }): RoomConnection
+// RoomConnection: getSnapshot() → { status: ConnectionStatus (CONNECTION_STATUS ở transport/types.ts: "connecting" |
+//   "online" | "reconnecting" | "paused" | "idle" | "failed"), room, you, failure, slow }; subscribe;
+//   send(sit | move | rematch): boolean; onRejected; onSynced; resume; reconnect; dispose
+
+// Transport online theo ghế: dựng ván bằng fromRecord(room.record) mỗi lần room đổi; nước đi chỉ hiện khi server đã ghi
+// (không hiển thị trước); chờ trả lời thì khoá bàn (cờ chờ theo gameNumber + moveIndex), quá 8 giây thì nối lại; chỉ phát
+// "rejected" với mã của luật; isBroken() khi biên bản không dựng được (từ đó thôi theo dõi; trang phòng dừng kết nối).
+createOnlineTransport({ definition, connection }): OnlineTransport
 
 // Ván dở theo slot game × chế độ (khoá "<gameId>:<mode>", vỏ { version: 2, savedAt, inProgress, mode, record });
 // ván cùng máy của M1 (khoá "<gameId>", version 1) được chuyển một lần trước mọi thao tác.
@@ -220,13 +240,26 @@ interface AiPlayer {
 }
 // createWorkerAiPlayer(): Worker tạo ở yêu cầu đầu; Worker lỗi/không trả lời → luồng chính (200 ms) cho mọi lượt sau.
 
-// apps/web/src/server/store
+// packages/protocol — thông điệp online, kiểm bằng zod ở cả hai phía
+// client → server: create { protocol, gameId, playerCount?, options?, playerId, name } | join { protocol, code, playerId, name }
+//                  | sit { name } | move { gameNumber, moveIndex, move } | rematch { gameNumber } | ping
+// server → client: created { code } | room { room: RoomView, you } | rejected { request, code } | error { code } | pong
+interface RoomView {                                 // không bao giờ chứa playerId
+  readonly code: RoomCode;                           // 6 ký tự, không 0/O/1/I/L
+  readonly gameId: string;
+  readonly revision: number;                         // tăng 1 mỗi lần phòng đổi
+  readonly gameNumber: number;                       // ván thứ mấy trong phòng
+  readonly seats: readonly ({ name: string } | null)[];
+  readonly record: GameRecord;                       // ván hiện tại; client dựng lại bằng fromRecord
+}
+
+// apps/web/src/server/store — mọi state của phòng nằm ở đây (Redis trên Vercel, bộ nhớ khi dev/test)
 interface RoomStore {
-  create(room: Room): Promise<void>;
-  get(id: RoomId): Promise<Room | null>;
-  appendMove(id: RoomId, expectedVersion: number, move: StoredMove): Promise<boolean>; // chống ghi đè đồng thời
-  publish(id: RoomId, event: RoomEvent): Promise<void>;
-  subscribe(id: RoomId, listener: (e: RoomEvent) => void): Promise<Unsubscribe>;
+  create(room: StoredRoom): Promise<"created" | "exists">;
+  get(code: RoomCode): Promise<StoredRoom | null>;
+  update(code: RoomCode, expectedRevision: number, next: StoredRoom): Promise<"updated" | "conflict" | "missing">; // ghi + phát tin
+  subscribe(code: RoomCode, listener: (room: StoredRoom) => void): Promise<() => void>; // cả instance khác; đọc lại khi kênh nối lại
+  close(): Promise<void>;
 }
 ```
 
@@ -315,7 +348,8 @@ Nhờ `RoomStore` là interface, toàn bộ logic phòng (`room-service.ts`) tes
 | CI | GitHub Actions: `pnpm install` → `turbo lint typecheck test build` cho mọi PR |
 | Deploy | Vercel nối với GitHub: nhánh `main` lên production, mỗi PR có link preview để gửi bạn thử |
 | Biến môi trường | `REDIS_URL` (tích hợp Upstash trên Vercel tự thêm, kèm `KV_*`), `QSTASH_TOKEN` (từ v1); khai báo và kiểm tra bằng zod trong `apps/web/src/server/env.ts` |
-| Chạy local | `pnpm dev` cho mọi thứ trừ WebSocket; route WebSocket chỉ chạy dưới `vercel dev` (M3). Khi không có biến Redis thì tự dùng `RoomStore` bộ nhớ để chơi online giữa 2 tab ngay trên máy |
+| Chạy local | `pnpm dev` chạy `next dev` (cổng 3000) và server realtime (`ws://localhost:3001/api/realtime`, script `realtime` của `apps/web`, đổi cổng bằng `REALTIME_PORT`): `next dev` không nâng cấp được WebSocket nên server realtime là một tiến trình Node riêng, dùng chung bộ xử lý kết nối với route trên Vercel. Không có `REDIS_URL` thì phòng nằm trong bộ nhớ của tiến trình đó; có `REDIS_URL` thì dùng Redis với tiền tố khoá `dev:`. Chơi online ngay trên máy: mở `/play/<mã game>`, chọn "Online", "Tạo phòng", rồi mở link mời trong một cửa sổ ẩn danh hoặc trình duyệt khác (mỗi trình duyệt một `playerId`; hai tab cùng trình duyệt là cùng một người). App tìm server realtime theo `REALTIME_URL` (đọc lúc chạy); không đặt thì ở `next dev` là `ws://localhost:3001/api/realtime`, còn lại là cùng origin `/api/realtime` (Vercel). E2E chạy bản build ở cổng 3100 với server realtime riêng ở cổng 3101 |
+| Phòng trong Redis | HASH `<tiền tố>room:<MÃ>` (`rev`, `data`), hết hạn 7 ngày sau lần ghi cuối; tiền tố theo `VERCEL_ENV` (`production:`, `preview:`, còn lại `dev:`) để Preview và Production dùng chung một Upstash mà không thấy phòng của nhau |
 | Cập nhật thư viện | Renovate hoặc Dependabot, gom theo tuần |
 
 ## 6. Các mốc phát triển
@@ -439,5 +473,15 @@ Rút ra cho M4:
 - **Lỗi đã gặp khi dựng**: commit có email tác giả không thuộc tài khoản Vercel thì deploy Hobby bị **Blocked** → repo đặt `git config --local user.email` là email noreply của GitHub (`178360649+DevViTien@users.noreply.github.com`): GitHub chặn push lộ email riêng tư, còn Vercel vẫn nhận ra tác giả là `DevViTien`. Bản Preview có Deployment Protection → script đo cần khoá Protection Bypass for Automation (đã thu hồi sau khi đo).
 - **Chi phí**: mọi thứ trên gói miễn phí, không nhập thẻ. Hạn mức cần theo dõi: Vercel Hobby (bộ nhớ đã cấp 360 GB-giờ, CPU 4 giờ, 1 triệu lần gọi mỗi tháng) và Upstash Free (500 nghìn lệnh/tháng). WebSocket giữ instance sống suốt thời gian có người kết nối, nên **bộ nhớ GB-giờ** là hạn mức dễ chạm nhất. Ước tính, cần kiểm lại: với bộ nhớ mặc định 2 GB thì được khoảng 180 giờ instance mỗi tháng, tức ~6 giờ/ngày có người chơi online. Nhóm nhỏ thì đủ; nếu thiếu thì chuyển realtime sang Cloudflare Durable Objects (gói miễn phí, ngủ đông khi không có tin).
 
+### M4. Phòng online (03/11/2026)
+
+Đã xong, qua 2 change OpenSpec:
+- `add-online-rooms` (đã archive): phía server. `packages/protocol` (thông điệp `create`/`join`/`sit`/`move`/`rematch`/`ping` và `created`/`room`/`rejected`/`error`/`pong` kiểm bằng zod ở cả hai phía, mã phòng 6 ký tự không có 0/O/1/I/L, `playerNameSchema`, bảng mã lỗi chung); `room-service` làm trọng tài (kiểm lượt, vị trí ván và luật bằng chính code của `packages/games`, xoay ghế khi chơi lại); `RoomStore` bộ nhớ và Redis (một HASH mỗi phòng, ghi có kiểm phiên bản + `PUBLISH` trong một script Lua, TTL 7 ngày, một subscriber mỗi instance, đọc lại phòng khi kênh nối lại, mọi thao tác có hạn 5 giây); kết nối WebSocket dùng chung cho route `/api/realtime` trên Vercel và server realtime chạy ở máy (`pnpm dev`, E2E). Spec: `openspec/specs/online-rooms/`. Chạy thử trên Vercel Preview (`sin1`, Upstash thật) bằng script khói: 12/12 bước đạt, nước đi tới người kia sau 69–73 ms.
+- `add-online-play`: phía client. Tên tạm + `playerId` trong `localStorage` (`features/identity`); chế độ "Online" ở màn hình bắt đầu ván với nút "Tạo phòng"; trang phòng `/room/<mã>` (hỏi tên lần đầu, sảnh chờ có link mời để sao chép/chia sẻ, chỉ ngồi ghế khi bấm "Vào chơi", trang lỗi khi phòng không tồn tại, đã đủ người, app vừa cập nhật hay dữ liệu hỏng); ô "Vào phòng" bằng mã trên menu; `RoomConnection` tự nối lại có giãn cách (tối đa 10 giây), ping phát hiện kết nối nửa sống, tạm ngắt khi tab ẩn từ 60 giây hoặc 10 phút không hoạt động (nút "Tiếp tục"); transport online dựng ván từ biên bản server gửi, dùng chung `PlayScreen` (lời báo theo "bạn" và tên đối thủ, không hoàn tác, "Chơi lại" sau khi có kết quả, dòng "Đang kết nối lại…" chỉ hiện khi mất kết nối quá 1,5 giây); không hiển thị trước nước đi (idea.md §6.3). `packages/ui` thêm `Input` và token `danger`. E2E hai trình duyệt: tạo phòng, mở link, chơi hết ván, chơi lại đổi phe, mất mạng rồi có lại, tải lại trang, đổi tên giữ ghế, phòng đầy, phòng không tồn tại, mã phòng ở menu. Spec: `openspec/specs/{online-play,player-identity}/`, cập nhật `game-setup`, `game-menu`.
+
+Còn lại:
+- Chơi thử thật giữa hai thiết bị (một điện thoại) qua link mời trên Production sau khi merge vào `main` (Preview có Deployment Protection chặn thiết bị chưa đăng nhập Vercel); ghi kết quả vào đây.
+- Theo dõi tab Usage của Vercel (GB-giờ) và Upstash (số lệnh) sau khi bạn bè bắt đầu chơi.
+
 ### Tiếp theo
-**M4. Phòng online** (§6): `protocol`, `features/identity`, `room-service` + `RoomStore` (memory, redis), `realtime/`, `OnlineTransport` tự nối lại; trang tạo phòng, link mời, mã phòng.
+**M5. Cờ caro** (§6.2): luật 5 quân liên tiếp trên bàn 15×15 / 19×19 (chọn kích thước bàn là tuỳ chọn luật đầu tiên khi tạo ván, kể cả tạo phòng online), `evaluate` theo mẫu chuỗi quân, bàn SVG có đánh dấu nước vừa đi và hàng thắng; chơi được cả 3 chế độ.

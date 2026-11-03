@@ -1,12 +1,12 @@
 import type {
   AiLevel,
-  EngineErrorCode,
   GameRecord,
   GameResult,
   HistoryEntry,
   PlayerIndex,
 } from "@board-games/engine";
 import type { RegisteredGameId } from "@board-games/games";
+import type { RejectionCode } from "@board-games/protocol";
 
 /** The ways to play a game on this device; each has its own saved game (game × mode). */
 export const SLOT_MODE = {
@@ -23,10 +23,35 @@ export interface SaveSlot {
 }
 
 /**
- * Who plays a seat. M4 adds `{ kind: "remote" }`; M6 seats several AIs, each with its own level.
+ * Who plays a seat of a game on this device, as saved with it. M6 seats several AIs, each with its
+ * own level.
  */
 export type SeatController =
   { readonly kind: "human" } | { readonly kind: "ai"; readonly level: AiLevel };
+
+/**
+ * Who plays a seat, as the play screen shows it: a seat on this device, or a player elsewhere
+ * (online), named, or `null` while the seat is empty. Never saved: an online game lives on the
+ * server, so `remote` never enters `ModeSettings`.
+ */
+export type SeatView = SeatController | { readonly kind: "remote"; readonly name: string | null };
+
+/** Where an online room's connection stands, as the play screen and the lobby show it. */
+export const CONNECTION_STATUS = {
+  /** Not yet in the room since the page opened. */
+  Connecting: "connecting",
+  Online: "online",
+  /** Lost the connection after having been in the room; trying again. */
+  Reconnecting: "reconnecting",
+  /** Closed because the page has been hidden for a while; reopens when it shows again. */
+  Paused: "paused",
+  /** Closed after a long time without anything happening; reopens on `resume()`. */
+  Idle: "idle",
+  /** Will not reconnect: the room is gone, full, or this app is older than the server. */
+  Failed: "failed",
+} as const;
+
+export type ConnectionStatus = (typeof CONNECTION_STATUS)[keyof typeof CONNECTION_STATUS];
 
 /** Who moves first against the AI, as the player chose it; `random` is drawn when a game starts. */
 export const FIRST_PLAYER = {
@@ -77,8 +102,8 @@ export interface ReadySnapshot<State, Move, Outcome = never> {
   readonly canRedo: boolean;
   /**
    * Whether a player at this device may choose a move now. The transport decides, because only it
-   * knows who sits where: false once the game is over, while it is the AI's turn, and later also
-   * while it is the online opponent's turn (M4) or while a move is on its way to the server.
+   * knows who sits where: false once the game is over, while it is the AI's or the online
+   * opponent's turn, while a move is on its way to the server, and while not connected.
    */
   readonly canMove: boolean;
   /**
@@ -87,25 +112,34 @@ export interface ReadySnapshot<State, Move, Outcome = never> {
    */
   readonly viewer: PlayerIndex | null;
   /** Who plays each seat, indexed by `PlayerIndex`. */
-  readonly seats: readonly SeatController[];
-  /** Someone other than a player at this device is choosing the next move. M4 adds "opponent". */
-  readonly waitingFor: "ai" | null;
+  readonly seats: readonly SeatView[];
+  /** Someone other than a player at this device is choosing the next move. */
+  readonly waitingFor: "ai" | "opponent" | null;
   /**
    * The game is not over and a player at this device has made at least one move still in effect.
-   * Only such a game is listed as in progress or asked about before it is dropped.
+   * Only such a game is listed as in progress or asked about before it is dropped. Always false
+   * online, where the server keeps the game and nothing can be lost.
    */
   readonly inProgress: boolean;
+  /** Whether undo and redo exist at all in this mode; online they do not. */
+  readonly supportsUndo: boolean;
+  /** Whether a new game may be asked for now; online only once the game has a result. */
+  readonly canStartNewGame: boolean;
+  /** The connection to the server, or `null` for a game on this device only. */
+  readonly connection: ConnectionStatus | null;
 }
 
 export type PlaySnapshot<State, Move, Outcome = never> =
   { readonly status: "loading" } | ReadySnapshot<State, Move, Outcome>;
 
 export type TransportEvent =
-  { readonly type: "changed" } | { readonly type: "rejected"; readonly code: EngineErrorCode };
+  | { readonly type: "changed" }
+  /** The rules (`illegal-move`…) or, online, the server (`not-your-turn`…) refused a request. */
+  | { readonly type: "rejected"; readonly code: RejectionCode };
 
 /**
  * The only owner of a game session. The play screen reads snapshots and sends requests, so it
- * works the same whoever the opponent is: same device, the AI, or online (M4). Requests
+ * works the same whoever the opponent is: same device, the AI, or online. Requests
  * are answered through events, never synchronously, because online play is asynchronous.
  */
 export interface Transport<State, Move, Outcome = never> {
