@@ -15,7 +15,7 @@ import type { RawData, WebSocket } from "ws";
 
 import { withTimeout } from "@/lib/with-timeout";
 
-import { type RoomPlayer, seatOf, type StoredRoom, toRoomView } from "../room";
+import { seatOf, type StoredRoom, toRoomView } from "../room";
 import type { RoomService, ServiceResult } from "../room-service";
 import { rawDataToBuffer } from "./raw-data";
 
@@ -70,8 +70,8 @@ function decode(data: RawData, isBinary: boolean): unknown {
  */
 type ConnectionState =
   | { readonly kind: "greeting" }
-  | { readonly kind: "joining"; readonly code: RoomCode; readonly player: RoomPlayer }
-  | { readonly kind: "joined"; readonly code: RoomCode; readonly player: RoomPlayer }
+  | { readonly kind: "joining"; readonly code: RoomCode; readonly playerId: string }
+  | { readonly kind: "joined"; readonly code: RoomCode; readonly playerId: string }
   | { readonly kind: "closed" };
 
 type InRoom = Extract<ConnectionState, { readonly code: RoomCode }>;
@@ -231,7 +231,7 @@ export function attachConnection(socket: WebSocket, deps: ConnectionDeps): void 
       return;
     }
     if (state.kind === "joined") {
-      deliver(room, state.player.playerId);
+      deliver(room, state.playerId);
     } else if (heldBack === undefined || room.revision > heldBack.revision) {
       heldBack = room;
     }
@@ -299,8 +299,9 @@ export function attachConnection(socket: WebSocket, deps: ConnectionDeps): void 
       refuse(ROOM_ERROR.RoomNotFound);
       return;
     }
-    const player: RoomPlayer = { playerId: message.playerId, name: message.name };
-    state = { kind: "joining", code, player };
+    // The name is kept nowhere: a seated player's is in the room, anyone else's comes with `sit`.
+    const { playerId } = message;
+    state = { kind: "joining", code, playerId };
     let result: ServiceResult<StoredRoom>;
     try {
       // Listen before reading, so no change made in between is missed.
@@ -314,7 +315,7 @@ export function attachConnection(socket: WebSocket, deps: ConnectionDeps): void 
       );
       await limited(subscription);
       if (isClosed()) return;
-      result = await limited(service.join(code, player));
+      result = await limited(service.join(code, playerId, message.name ?? null));
     } catch (error) {
       console.error("[realtime] could not join a room", error);
       refuse(ROOM_ERROR.Unavailable);
@@ -325,10 +326,10 @@ export function attachConnection(socket: WebSocket, deps: ConnectionDeps): void 
       refuse(result.error);
       return;
     }
-    state = { kind: "joined", code, player };
+    state = { kind: "joined", code, playerId };
     resetIdleTimer();
-    deliver(result.value, player.playerId);
-    if (heldBack !== undefined) deliver(heldBack, player.playerId);
+    deliver(result.value, playerId);
+    if (heldBack !== undefined) deliver(heldBack, playerId);
     heldBack = undefined;
   }
 
@@ -351,11 +352,11 @@ export function attachConnection(socket: WebSocket, deps: ConnectionDeps): void 
     }
   }
 
-  async function request({ code, player }: InRoom, message: RoomRequest): Promise<void> {
+  async function request({ code, playerId }: InRoom, message: RoomRequest): Promise<void> {
     const sentBefore = roomsSent;
     let result: ServiceResult<StoredRoom>;
     try {
-      result = await limited(perform(message, code, player));
+      result = await limited(perform(message, code, playerId));
     } catch (error) {
       console.error(`[realtime] ${message.type} failed`, error);
       send({ type: "rejected", request: message.type, code: ROOM_ERROR.Unavailable });
@@ -365,7 +366,7 @@ export function attachConnection(socket: WebSocket, deps: ConnectionDeps): void 
     if (result.ok) {
       // Sent straight away, so the player sees their change even if the channel loses it; and
       // always a room in answer, unless the channel already brought one meanwhile.
-      deliver(result.value, player.playerId, { force: roomsSent === sentBefore });
+      deliver(result.value, playerId, { force: roomsSent === sentBefore });
       return;
     }
     if (result.error === ROOM_ERROR.RoomNotFound) {
@@ -374,29 +375,29 @@ export function attachConnection(socket: WebSocket, deps: ConnectionDeps): void 
       return;
     }
     // The room as it is now first, so the client can catch up before it handles the refusal.
-    if (result.room !== undefined) deliver(result.room, player.playerId);
+    if (result.room !== undefined) deliver(result.room, playerId);
     send({ type: "rejected", request: message.type, code: result.error });
   }
 
   function perform(
     message: RoomRequest,
     code: RoomCode,
-    player: RoomPlayer,
+    playerId: string,
   ): Promise<ServiceResult<StoredRoom>> {
     switch (message.type) {
       case "sit":
-        return service.sit(code, { ...player, name: message.name });
+        return service.sit(code, { playerId, name: message.name });
       case "move":
         return service.move(
           code,
-          player.playerId,
+          playerId,
           { gameNumber: message.gameNumber, moveIndex: message.moveIndex },
           message.move,
         );
       case "rematch":
-        return service.rematch(code, player.playerId, message.gameNumber);
+        return service.rematch(code, playerId, message.gameNumber);
       case "ai-seat":
-        return service.setAiSeat(code, player.playerId, message.seat, message.on);
+        return service.setAiSeat(code, playerId, message.seat, message.on);
     }
   }
 }

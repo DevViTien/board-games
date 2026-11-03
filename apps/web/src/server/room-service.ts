@@ -97,10 +97,16 @@ export interface RoomService {
   /** The creator sits in the first seat and is the room's host for good. */
   create(this: void, request: CreateRoomRequest): Promise<ServiceResult<StoredRoom>>;
   /**
-   * Recognises a seated player by `playerId`, and takes their name if it changed. A room left on an
-   * AI seat's turn moves on here.
+   * Recognises a seated player by `playerId`, and takes their name if one was sent and it changed;
+   * `null` (a visitor who has not chosen a name yet) keeps the seat's name. Someone without a seat
+   * changes nothing. A room left on an AI seat's turn moves on here.
    */
-  join(this: void, code: RoomCode, player: RoomPlayer): Promise<ServiceResult<StoredRoom>>;
+  join(
+    this: void,
+    code: RoomCode,
+    playerId: string,
+    name: string | null,
+  ): Promise<ServiceResult<StoredRoom>>;
   /** The lowest empty seat; a seated player keeps theirs, under the name sent. */
   sit(this: void, code: RoomCode, player: RoomPlayer): Promise<ServiceResult<StoredRoom>>;
   move(
@@ -324,17 +330,23 @@ export function createRoomService({ store, rng, now, games }: RoomServiceDeps): 
       return fail(ROOM_ERROR.Unavailable);
     },
 
-    join: (code, player) =>
+    join: (code, playerId, name) =>
       writeWithRetry(code, JOIN_ATTEMPTS, (room) => {
-        const seat = seatOf(room, player.playerId);
+        const seat = seatOf(room, playerId);
         if (seat === null) return ok(room);
         // A room left on an AI seat's turn (a chain cut by the safety net, a write that never
         // happened) moves on as soon as a seated player is back.
         const played = withAiMoves(room);
-        if (!renamed(room, seat, player) && played === room) return ok(room);
+        // No name sent: the seat keeps the one it has.
+        const player = name === null ? null : { playerId, name };
+        const rename = player !== null && renamed(room, seat, player);
+        if (!rename && played === room) return ok(room);
         // A seated player coming back under a new name: everyone sees the new one.
         return ok(
-          written(room, { players: seatPlayer(room, seat, human(player)), record: played.record }),
+          written(room, {
+            players: rename ? seatPlayer(room, seat, human(player)) : room.players,
+            record: played.record,
+          }),
         );
       }),
 

@@ -4,6 +4,7 @@ import {
   cell,
   choose,
   continueSection,
+  MENU_HEADING,
   openSetupFromMenu,
   PAGE_WITHOUT_STORAGE,
   play,
@@ -91,10 +92,10 @@ test("never brings back a game saved by the previous version once it was replace
   expect(await readSaved(page, SLOT.legacy)).toBeNull();
 
   await page.getByRole("link", { name: "Về menu" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Board Games Hub" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: MENU_HEADING })).toBeVisible();
   await expect(page.getByRole("link", { name: "Tic-tac-toe · Cùng máy" })).toHaveCount(0);
   // Nor on a later visit.
   await page.reload();
-  await expect(page.getByRole("heading", { level: 1, name: "Board Games Hub" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: MENU_HEADING })).toBeVisible();
   await expect(page.getByRole("link", { name: "Tic-tac-toe · Cùng máy" })).toHaveCount(0);
 });

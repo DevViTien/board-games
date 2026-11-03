@@ -84,14 +84,48 @@ describe("RoomLobby", () => {
   });
 
   it("does not sit with a name the server would refuse, and takes the player back to the field", async () => {
+    const { onSit } = renderLobby();
+    const field = screen.getByRole("textbox", { name: "Tên của bạn" });
+    await userEvent.clear(field);
+    await userEvent.type(field, "   ");
+
+    await sit();
+
+    expect(onSit).not.toHaveBeenCalled();
+    expect(field).toHaveAccessibleDescription("Tên cần có từ 1 đến 24 ký tự.");
+    expect(field).toHaveFocus();
+  });
+
+  it("asks a visitor without a name for one: an empty field with the focus and a hint", () => {
+    const { onSit } = renderLobby({ name: "" });
+    const field = screen.getByRole("textbox", { name: "Tên của bạn" });
+
+    expect(field).toHaveValue("");
+    expect(field).toHaveFocus();
+    expect(field).toHaveAccessibleDescription("Mọi người trong phòng sẽ thấy tên này.");
+    expect(sitButton()).toBeInTheDocument();
+    expect(onSit).not.toHaveBeenCalled();
+  });
+
+  it("refuses an empty name from a visitor without one, the error read with the hint", async () => {
     const { onSit } = renderLobby({ name: "" });
 
     await sit();
 
     expect(onSit).not.toHaveBeenCalled();
     const field = screen.getByRole("textbox", { name: "Tên của bạn" });
-    expect(field).toHaveAccessibleDescription("Tên cần có từ 1 đến 24 ký tự.");
+    expect(field).toHaveAccessibleDescription(
+      "Mọi người trong phòng sẽ thấy tên này. Tên cần có từ 1 đến 24 ký tự.",
+    );
     expect(field).toHaveFocus();
+  });
+
+  it("leaves the focus alone for a player who has a name", () => {
+    renderLobby();
+
+    const field = screen.getByRole("textbox", { name: "Tên của bạn" });
+    expect(field).not.toHaveFocus();
+    expect(field).not.toHaveAccessibleDescription();
   });
 
   it("does not ask twice while the seat is on its way", async () => {

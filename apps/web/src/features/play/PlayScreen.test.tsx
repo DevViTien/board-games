@@ -692,7 +692,7 @@ describe("PlayScreen online: what is said", () => {
     // Minh (X) takes the top row.
     renderOnline(fakeTransport(onlineSnapshot(1, [0, 3, 1, 4, 2])));
 
-    expect(status()).toHaveTextContent(/^Minh thắng$/);
+    expect(status()).toHaveTextContent(/^Minh thắng!$/);
   });
 
   it("tells the player they won", () => {
@@ -944,9 +944,62 @@ describe("PlayScreen with Cờ caro", () => {
   });
 });
 
+describe("Bố cục màn hình chơi", () => {
+  /** Whether `a` comes before `b` in the document. */
+  const before = (a: Element, b: Element) =>
+    (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+
+  it("names the game, its turn and its buttons, in the game's own look", () => {
+    renderWithIntl(<PlayScreen gameId="tictactoe" transport={fakeTransport({})} ui={ui} />);
+
+    expect(screen.getByRole("heading", { level: 1, name: "Tic-tac-toe" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Về menu" })).toHaveAttribute("href", "/");
+    expect(status()).toHaveTextContent("Đến lượt X");
+    for (const name of ["Hoàn tác", "Làm lại", "Ván mới"]) expect(button(name)).toBeInTheDocument();
+    expect(screen.getByRole("main")).toHaveAttribute("data-game", "tictactoe");
+  });
+
+  it("keeps one order for every width: turn, board, the game's controls, the game's buttons", () => {
+    renderWithIntl(<PlayScreen gameId="caro" transport={caroAfterAiMove(15, 112)} ui={caroUi} />);
+
+    const turn = status();
+    const board = screen.getByRole("grid", { name: "Bàn cờ" });
+    // Cờ caro's control: the hint of a cell selected by a first tap (empty until then).
+    const hint = board.closest("main")?.querySelector('p[aria-live="polite"]:not([role])');
+    const undo = button("Hoàn tác");
+    if (hint === null || hint === undefined) throw new Error("no hint");
+
+    expect(before(turn, board)).toBe(true);
+    expect(before(board, hint)).toBe(true);
+    expect(before(hint, undo)).toBe(true);
+    expect(screen.getByRole("main")).toHaveAttribute("data-game", "caro");
+  });
+
+  it("puts the connection line first, before the turn, online", () => {
+    renderWithIntl(
+      <PlayScreen
+        gameId="tictactoe"
+        transport={fakeTransport({
+          connection: "idle",
+          seats: [{ kind: "human" }, { kind: "remote", name: "Minh" }],
+          viewer: 0,
+          supportsUndo: false,
+          canStartNewGame: false,
+        })}
+        ui={ui}
+      />,
+    );
+
+    expect(before(button("Tiếp tục"), status())).toBe(true);
+    expect(before(status(), screen.getByRole("group", { name: "Bàn cờ" }))).toBe(true);
+    // No buttons of the game online while it is played: no empty row for them either.
+    expect(screen.queryByRole("button", { name: "Hoàn tác" })).not.toBeInTheDocument();
+  });
+});
+
 describe("PlayScreen rules", () => {
   const CARO_CHOICES = listOptionChoices(caro);
-  /** The game's name and the badges next to it. */
+  /** The game's name with the chips of its mode and rules beside it (below it on a phone). */
   const header = () => {
     const title = screen.getByRole("heading", { level: 1 }).parentElement;
     if (title === null) throw new Error("no title");
@@ -964,7 +1017,7 @@ describe("PlayScreen rules", () => {
     );
   }
 
-  it("shows the rules of a same-device game next to the game's name", () => {
+  it("shows the rules of a same-device game under the game's name", () => {
     renderCaro({
       seats: [{ kind: "human" }, { kind: "human" }],
       options: { size: 19, rule: "free" },
@@ -1151,7 +1204,8 @@ describe("PlayScreen online: moves received together, told one by one", () => {
   } as const satisfies GameDefinition<DuelState, { roll: true }, number>;
 
   const duelUi: GameUI<DuelState, { roll: true }, number> = {
-    Board: () => null,
+    // No board of its own: only the play screen's parts around it.
+    Board: ({ layout }) => layout({ board: null, controls: null }),
     usePlayerLabel: () => (player) => (player === 0 ? "X" : "O"),
     useMoveLabel: () => (_move, state) => `gieo được ${String(state.face)}`,
   };

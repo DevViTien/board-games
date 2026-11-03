@@ -4,7 +4,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import { renderWithIntl } from "@/test/render-with-intl";
 
-import { ROOM_PROBLEM, RoomError, roomProblemOf } from "./RoomError";
+import { ROOM_PROBLEM, roomProblemOf } from "./room-problem";
+import { RoomError } from "./RoomError";
 
 const menuLink = () => screen.getByRole("link", { name: "Về menu" });
 
@@ -30,7 +31,7 @@ describe("RoomError", () => {
     const onReload = vi.fn();
     renderWithIntl(<RoomError problem={ROOM_PROBLEM.Outdated} onReload={onReload} />);
 
-    expect(screen.getByRole("heading", { name: "App vừa được cập nhật" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Ứng dụng vừa được cập nhật" })).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Tải lại trang" }));
 
     expect(onReload).toHaveBeenCalledOnce();
@@ -46,6 +47,17 @@ describe("RoomError", () => {
 
     expect(onRetry).toHaveBeenCalledOnce();
     expect(menuLink()).toBeInTheDocument();
+  });
+
+  it("gives its title the focus when it replaces another screen, and only then", () => {
+    const { unmount } = renderWithIntl(<RoomError problem={ROOM_PROBLEM.NotFound} focusTitle />);
+
+    expect(screen.getByRole("heading", { name: "Không tìm thấy phòng" })).toHaveFocus();
+    unmount();
+
+    // A page of its own (a code that cannot be one): the browser's focus is left alone.
+    renderWithIntl(<RoomError problem={ROOM_PROBLEM.NotFound} />);
+    expect(screen.getByRole("heading", { name: "Không tìm thấy phòng" })).not.toHaveFocus();
   });
 
   it("renders in Japanese", () => {

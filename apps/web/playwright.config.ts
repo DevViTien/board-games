@@ -18,7 +18,12 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   projects: [
-    { name: "desktop", use: { ...devices["Desktop Chrome"] } },
+    // The laptop the design is checked at (redesign-game-boards): board, turn and buttons fit
+    // 1280 × 800 without scrolling. Playwright's own "Desktop Chrome" is 720 px high.
+    {
+      name: "desktop",
+      use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } },
+    },
     { name: "mobile", use: { ...devices["Pixel 7"] } },
   ],
   webServer: [

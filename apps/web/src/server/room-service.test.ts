@@ -143,7 +143,7 @@ describe("create", () => {
     const room = expectOk(await service.create({ gameId: "tictactoe", player: LAN }));
 
     expect(room.code).toMatch(new RegExp(`^[${ROOM_CODE_ALPHABET}]{6}$`, "u"));
-    const joined = expectOk(await service.join(room.code, AN));
+    const joined = expectOk(await service.join(room.code, AN.playerId, AN.name));
     expect(seatOf(joined, AN.playerId)).toBeNull();
     expect(joined.players).toEqual([human(LAN), null]);
     expect(joined.record.entries).toEqual([]);
@@ -255,7 +255,7 @@ describe("join", () => {
   it("lets a new player in without a seat", async () => {
     const { service, code } = await tictactoeRoom({ full: false });
 
-    const room = expectOk(await service.join(code, AN));
+    const room = expectOk(await service.join(code, AN.playerId, AN.name));
 
     expect(seatOf(room, AN.playerId)).toBeNull();
     expect(room.players).toEqual([human(LAN), null]);
@@ -265,7 +265,7 @@ describe("join", () => {
     const { service, code, store } = await tictactoeRoom();
     const before = await stored(store, code);
 
-    const room = expectOk(await service.join(code, AN));
+    const room = expectOk(await service.join(code, AN.playerId, AN.name));
 
     expect(seatOf(room, AN.playerId)).toBe(1);
     expect(room).toEqual(before);
@@ -276,7 +276,7 @@ describe("join", () => {
     const listener = vi.fn();
     await store.subscribe(code, listener);
 
-    const room = expectOk(await service.join(code, { ...AN, name: "An Nguyễn" }));
+    const room = expectOk(await service.join(code, AN.playerId, "An Nguyễn"));
 
     expect(seatOf(room, AN.playerId)).toBe(1);
     expect(room.players[1]).toEqual(human({ ...AN, name: "An Nguyễn" }));
@@ -290,7 +290,7 @@ describe("join", () => {
     const { service, code, store } = await tictactoeRoom();
     const update = vi.spyOn(store, "update");
 
-    expectOk(await service.join(code, AN));
+    expectOk(await service.join(code, AN.playerId, AN.name));
 
     expect(update).not.toHaveBeenCalled();
   });
@@ -298,10 +298,45 @@ describe("join", () => {
   it("answers room-not-found for a room that does not exist", async () => {
     const { service } = await tictactoeRoom();
 
-    expect(await service.join("ZZZ999" as RoomCode, AN)).toEqual({
+    expect(await service.join("ZZZ999" as RoomCode, AN.playerId, AN.name)).toEqual({
       ok: false,
       error: "room-not-found",
     });
+  });
+
+  it("answers room-not-found to a visitor without a name too", async () => {
+    const { service } = await tictactoeRoom();
+
+    expect(await service.join("ZZZ999" as RoomCode, BINH.playerId, null)).toEqual({
+      ok: false,
+      error: "room-not-found",
+    });
+  });
+
+  it("lets a visitor without a name in without a seat, changing nothing", async () => {
+    const { service, code, store } = await tictactoeRoom({ full: false });
+    const before = await stored(store, code);
+    const update = vi.spyOn(store, "update");
+
+    const room = expectOk(await service.join(code, AN.playerId, null));
+
+    expect(seatOf(room, AN.playerId)).toBeNull();
+    expect(room).toEqual(before);
+    expect(room.revision).toBe(before.revision);
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it("keeps the name of a seated player coming back without one", async () => {
+    const { service, code, store } = await tictactoeRoom();
+    const before = await stored(store, code);
+    const update = vi.spyOn(store, "update");
+
+    const room = expectOk(await service.join(code, AN.playerId, null));
+
+    expect(seatOf(room, AN.playerId)).toBe(1);
+    expect(room.players[1]).toEqual(human(AN));
+    expect(room).toEqual(before);
+    expect(update).not.toHaveBeenCalled();
   });
 });
 
@@ -342,7 +377,7 @@ describe("sit", () => {
 
   it("seats a player under the name sent with the sit", async () => {
     const { service, code } = await tictactoeRoom({ full: false });
-    expectOk(await service.join(code, AN));
+    expectOk(await service.join(code, AN.playerId, AN.name));
 
     const room = expectOk(await service.sit(code, { ...AN, name: "An Nguyễn" }));
 
@@ -462,7 +497,7 @@ describe("move", () => {
     store.intercept("update", async () => {
       if (renamed) return;
       renamed = true;
-      expectOk(await service.join(code, { ...AN, name: "An Nguyễn" }));
+      expectOk(await service.join(code, AN.playerId, "An Nguyễn"));
     });
 
     const room = expectOk(
@@ -475,7 +510,7 @@ describe("move", () => {
 
   it("refuses a move from a player without a seat", async () => {
     const { service, code, store } = await tictactoeRoom();
-    expectOk(await service.join(code, BINH));
+    expectOk(await service.join(code, BINH.playerId, BINH.name));
 
     expect(
       await service.move(code, BINH.playerId, { gameNumber: 1, moveIndex: 0 }, { cell: 4 }),

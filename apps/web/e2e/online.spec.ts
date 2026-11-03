@@ -6,6 +6,7 @@ import {
   choose,
   nameField,
   openAsNewPlayer,
+  openAsStranger,
   play,
   players,
   ROOM_URL,
@@ -18,6 +19,9 @@ import {
 
 const button = (page: Page, name: string) => page.getByRole("button", { name });
 const heading = (page: Page, name: string) => page.getByRole("heading", { name });
+/** A seat of the play screen's players' panel, in the order of play. */
+const seat = (page: Page, index: number) =>
+  page.getByRole("list", { name: "Người chơi" }).getByRole("listitem").nth(index);
 
 /** Creates a Tic-tac-toe room from the setup screen as `name`; returns the room's address. */
 async function createRoom(page: Page, name: string): Promise<string> {
@@ -73,7 +77,7 @@ test("plays a whole game with a friend through the invite link, then plays again
   await play(page, [1, 3]);
 
   await expect(status(page)).toHaveText("Bạn thắng!");
-  await expect(status(lan.page)).toHaveText("Minh thắng");
+  await expect(status(lan.page)).toHaveText("Minh thắng!");
 
   // The new game swaps who moves first.
   await button(lan.page, "Chơi lại").click();
@@ -86,11 +90,20 @@ test("plays a whole game with a friend through the invite link, then plays again
 
 test("catches up with the opponent's move once the network is back", async ({ page, browser }) => {
   const { lan } = await startOnlineGame(page, browser);
+  // Bảng người chơi khi chơi online: you, connected, and the friend by name.
+  const you = seat(page, 0);
+  await expect(you).toContainText("Bạn · X");
+  await expect(you).toContainText("Đã kết nối");
+  await expect(seat(page, 1)).toContainText("Lan · O");
+  await expect(seat(lan.page, 0)).toContainText("Minh · X");
+  await expect(seat(lan.page, 1)).toContainText("Bạn · O");
   await play(page, [1, 1]);
   await expect(status(lan.page)).toHaveText(/Đến lượt bạn \(O\)$/);
 
   await page.context().setOffline(true);
   await expect(page.getByText("Đang kết nối lại…")).toBeVisible();
+  // Mất kết nối: the seat says so too, in other words than the connection line.
+  await expect(you).toContainText("Mất kết nối");
   await play(lan.page, [2, 2]);
   // The server has recorded Lan's move before the network comes back.
   await expect(status(lan.page)).toHaveText("Đang chờ Minh…");
@@ -101,6 +114,7 @@ test("catches up with the opponent's move once the network is back", async ({ pa
   await expect(cell(page, 2, 2)).toHaveAccessibleName("Hàng 2, cột 2, O", { timeout: 5000 });
   await expect(status(page)).toHaveText("Lan vừa đánh hàng 2, cột 2. Đến lượt bạn (X)");
   await expect(page.getByText("Đang kết nối lại…")).toHaveCount(0);
+  await expect(you).toContainText("Đã kết nối");
 
   await lan.context.close();
 });
@@ -140,24 +154,50 @@ test("keeps the seat under a name changed on the setup screen", async ({ page, b
   await lan.context.close();
 });
 
-test("tells a third player that the room is full", async ({ page, browser }) => {
+test("tells a stranger at once that the room is full, without asking for a name", async ({
+  page,
+  browser,
+}) => {
   const { url, lan } = await startOnlineGame(page, browser);
 
-  const khoa = await openAsNewPlayer(browser, url, "Khoa");
+  const khoa = await openAsStranger(browser, url);
 
   await expect(heading(khoa.page, "Phòng đã đủ người")).toBeVisible();
   await expect(khoa.page.getByRole("link", { name: "Về menu" })).toBeVisible();
+  await expect(nameField(khoa.page)).toHaveCount(0);
 
   await Promise.all([lan.context.close(), khoa.context.close()]);
 });
 
-test("tells that a room does not exist", async ({ browser }) => {
-  const visitor = await openAsNewPlayer(browser, "/room/ZZZZZZ", "Khoa");
+test("tells a stranger at once that a room does not exist, without asking for a name", async ({
+  browser,
+}) => {
+  const visitor = await openAsStranger(browser, "/room/ZZZZZZ");
 
   await expect(heading(visitor.page, "Không tìm thấy phòng")).toBeVisible();
   await expect(visitor.page.getByRole("link", { name: "Về menu" })).toBeVisible();
+  await expect(nameField(visitor.page)).toHaveCount(0);
 
   await visitor.context.close();
+});
+
+test("refuses an empty name in the lobby, at the field, and takes no seat", async ({
+  page,
+  browser,
+}) => {
+  const url = await createRoom(page, "Minh");
+  const lan = await openAsStranger(browser, url);
+  await expect(nameField(lan.page)).toBeFocused();
+
+  await button(lan.page, "Vào chơi").click();
+
+  await expect(nameField(lan.page)).toBeFocused();
+  await expect(nameField(lan.page)).toHaveAccessibleDescription(
+    "Mọi người trong phòng sẽ thấy tên này. Tên cần có từ 1 đến 24 ký tự.",
+  );
+  await expect(players(page)).toHaveText(["Minh (bạn)Chủ phòng", "Đang chờ…"]);
+
+  await lan.context.close();
 });
 
 test("opens a room by a code typed on the menu, and refuses a code that cannot be one", async ({
@@ -226,7 +266,7 @@ test("plays a Cờ caro room on a 19×19 board with the free rule, named in the 
     await expect(status(page)).toHaveText(/Đến lượt bạn \(X\)$/);
   }
   await expect(status(page)).toHaveText("Bạn thắng!");
-  await expect(status(lan.page)).toHaveText("Minh thắng");
+  await expect(status(lan.page)).toHaveText("Minh thắng!");
 
   await button(lan.page, "Chơi lại").click();
   for (const player of [page, lan.page]) {

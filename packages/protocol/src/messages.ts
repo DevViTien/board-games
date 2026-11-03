@@ -52,7 +52,12 @@ const clientMessageSchema = z.discriminatedUnion("type", [
     protocol: protocolSchema,
     code: typedRoomCodeSchema,
     playerId: playerIdSchema,
-    name: playerNameSchema,
+    /**
+     * Left out by a visitor who has not chosen a name yet: they learn whether they can enter the
+     * room before being asked for one (change `ask-name-in-lobby`). Clients of this version that
+     * predate it always send one, so the version did not change.
+     */
+    name: z.exactOptional(playerNameSchema),
   }),
   /** Takes the lowest empty seat; carries the name, which may have been edited since the greeting. */
   z.strictObject({ type: z.literal("sit"), name: playerNameSchema }),

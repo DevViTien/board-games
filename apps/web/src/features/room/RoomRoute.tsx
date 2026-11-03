@@ -2,7 +2,7 @@
 
 import { type GameDefinition, listOptionChoices, type OptionChoiceList } from "@board-games/engine";
 import { isRegisteredGameId, type RegisteredGameId } from "@board-games/games/ids";
-import { Button, buttonVariants, Card } from "@board-games/ui";
+import { buttonVariants, StateScreen } from "@board-games/ui";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import {
@@ -10,18 +10,19 @@ import {
   use,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
 } from "react";
 
 import {
-  type Identity,
-  parsePlayerName,
+  guestPlayerId,
+  pinRoomIdentity,
   readIdentity,
+  readRoomIdentity,
   saveName,
 } from "@/features/identity/identity";
-import { NameField } from "@/features/identity/NameField";
 import { loadGameEntry } from "@/features/play/game-entry-loads";
 import { PlayLoading } from "@/features/play/PlayLoading";
 import { PlayScreen } from "@/features/play/PlayScreen";
@@ -36,7 +37,8 @@ import {
 import type { OpenSocket } from "@/transport/socket";
 import { CONNECTION_STATUS } from "@/transport/types";
 
-import { ROOM_PROBLEM, RoomError, roomProblemOf } from "./RoomError";
+import { ROOM_PROBLEM, roomProblemOf } from "./room-problem";
+import { RoomError } from "./RoomError";
 import { RoomLobby } from "./RoomLobby";
 import { useGameOptionChoices } from "./use-game-option-choices";
 
@@ -52,23 +54,36 @@ interface RoomRouteProps {
 }
 
 /**
- * The client side of `/room/<code>`: asks for a name the first time, then enters the room and
- * shows, in turn, "joining", the lobby while seats are free or the player has none, and the shared
- * play screen once everyone is seated. "Try again" opens the room from scratch (a new key, so a
- * new connection).
+ * Who this room page is, pinned when it opens: the identity this tab sat under in this room before
+ * a reload, else the remembered identity, else a guest id remembered nowhere with no name yet.
+ * Every greeting, sit and reconnection of the page uses this id, even once another tab remembered
+ * another one (design §4 of `ask-name-in-lobby`).
+ */
+interface RoomPageIdentity {
+  readonly playerId: string;
+  /** Remembered when the page opened, or chosen in the lobby since; `null` until then. */
+  readonly name: string | null;
+}
+
+/**
+ * The client side of `/room/<code>`: enters the room at once, with the remembered identity or,
+ * the first time, without a name, so a room that does not exist or has no seat left is said before
+ * anything is asked. Then shows, in turn, "joining", the lobby (which asks for the name when there
+ * is none) while seats are free or the player has none, and the shared play screen once everyone
+ * is seated. "Try again" opens the room from scratch (a new key, so a new connection) under the
+ * same id.
  */
 export function RoomRoute({ code, realtimeUrl, openSocket, environment }: RoomRouteProps) {
   // `undefined` until read: the identity lives in browser storage, which the server cannot see.
-  const [identity, setIdentity] = useState<Identity | null | undefined>(undefined);
+  const [identity, setIdentity] = useState<RoomPageIdentity | undefined>(undefined);
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is only readable after mount; reading it during render would not match the server's HTML
-    setIdentity(readIdentity());
-  }, []);
+    setIdentity(openingIdentity(code));
+  }, [code]);
 
   if (identity === undefined) return <RoomJoining slow={false} />;
-  if (identity === null) return <NameStep onDone={setIdentity} />;
   return (
     <RoomSession
       key={attempt}
@@ -85,43 +100,13 @@ export function RoomRoute({ code, realtimeUrl, openSocket, environment }: RoomRo
   );
 }
 
-/** The first visit: a name before entering, checked like the server does. */
-function NameStep({ onDone }: { readonly onDone: (identity: Identity) => void }) {
-  const t = useTranslations("Room");
-  const [draft, setDraft] = useState("");
-  const [tried, setTried] = useState(false);
-  const field = useRef<HTMLInputElement>(null);
-
-  // The page is only this question: the field takes the focus, as the first thing to do.
-  useEffect(() => {
-    field.current?.focus();
-  }, []);
-
-  return (
-    <main className="mx-auto flex max-w-xl flex-col gap-6 px-4 py-8">
-      <h1 className="text-2xl font-semibold tracking-tight">{t("nameTitle")}</h1>
-      <Card className="p-6">
-        <form
-          className="flex flex-col gap-4"
-          noValidate
-          onSubmit={(event) => {
-            event.preventDefault();
-            setTried(true);
-            const name = parsePlayerName(draft);
-            // Back to the field, so its error is read with it.
-            if (name === null) field.current?.focus();
-            else onDone(saveName(name));
-          }}
-        >
-          <NameField ref={field} value={draft} onChange={setDraft} showError={tried} />
-          <p className="text-sm text-fg-muted">{t("nameHint")}</p>
-          <Button type="submit" size="lg" className="self-start">
-            {t("continue")}
-          </Button>
-        </form>
-      </Card>
-    </main>
-  );
+/** Who the room page of `code` is when it opens (`RoomPageIdentity`). */
+function openingIdentity(code: string): RoomPageIdentity {
+  const remembered = readIdentity();
+  const pinned = readRoomIdentity(code);
+  if (pinned === null) return remembered ?? { playerId: guestPlayerId(), name: null };
+  // The same id remembered: its name may have changed since, on the setup screen.
+  return remembered?.playerId === pinned.playerId ? remembered : pinned;
 }
 
 /** Until the first room arrives; after 10 s it says the server cannot be reached, still trying. */
@@ -130,23 +115,20 @@ function RoomJoining({ slow }: { readonly slow: boolean }) {
   const tPlay = useTranslations("Play");
 
   return (
-    <main className="mx-auto flex max-w-xl flex-col items-center gap-4 px-4 py-16 text-center">
-      <p role="status" className="text-fg-muted">
-        {slow ? t("slow") : t("joining")}
-      </p>
-      {slow && (
+    <StateScreen title={slow ? t("slow") : t("joining")} busy>
+      {slow ? (
         <Link href="/" className={buttonVariants({ variant: "secondary" })}>
           {tPlay("backToMenu")}
         </Link>
-      )}
-    </main>
+      ) : undefined}
+    </StateScreen>
   );
 }
 
 interface RoomSessionProps extends RoomRouteProps {
-  readonly identity: Identity;
-  /** The player chose another name in the lobby, now remembered. */
-  readonly onIdentityChange: (identity: Identity) => void;
+  readonly identity: RoomPageIdentity;
+  /** The player chose a name in the lobby, remembered when no other tab holds another id. */
+  readonly onIdentityChange: (identity: RoomPageIdentity) => void;
   readonly onRetry: () => void;
 }
 
@@ -168,7 +150,7 @@ function RoomSession({
 }: RoomSessionProps) {
   const [connection, setConnection] = useState<RoomConnection | null>(null);
   const [broken, setBroken] = useState(false);
-  // For a greeting after the browser's storage was cleared meanwhile: the identity of this page.
+  // The page's id and the name it last chose, read at each greeting.
   const latestIdentity = useRef(identity);
 
   useEffect(() => {
@@ -179,8 +161,14 @@ function RoomSession({
     const created = createRoomConnection({
       url: resolveRealtimeUrl(realtimeUrl, window.location),
       code,
-      // The name remembered now, so one changed in the lobby or in another tab is not reverted.
-      getIdentity: () => readIdentity() ?? latestIdentity.current,
+      getIdentity: () => {
+        const { playerId, name } = latestIdentity.current;
+        // The name remembered now, so one changed in another tab (the setup screen) is not
+        // reverted; but only that of this page's id. Without one, the name chosen in this lobby,
+        // or none yet.
+        const remembered = readIdentity();
+        return { playerId, name: remembered?.playerId === playerId ? remembered.name : name };
+      },
       openSocket,
       environment,
     });
@@ -198,15 +186,20 @@ function RoomSession({
     setBroken(true);
   }, []);
 
-  if (broken) return <RoomError problem={ROOM_PROBLEM.Broken} onRetry={onRetry} />;
+  if (broken) return <RoomError problem={ROOM_PROBLEM.Broken} onRetry={onRetry} focusTitle />;
   if (connection === null) return <RoomJoining slow={false} />;
   return (
     <RoomContent
       connection={connection}
-      name={identity.name}
+      name={identity.name ?? ""}
       onSit={(chosen) => {
         // Remembered as well: the name the player just chose is the one they want next time.
-        onIdentityChange(saveName(chosen));
+        const chosenIdentity = saveName(chosen, identity.playerId);
+        // This tab sits under this id: a reload greets with it, whatever is remembered by then.
+        pinRoomIdentity(code, chosenIdentity);
+        // Read by the next greeting at once, before React renders again.
+        latestIdentity.current = chosenIdentity;
+        onIdentityChange(chosenIdentity);
         return connection.send({ type: "sit", name: chosen });
       }}
       onBroken={markBroken}
@@ -217,7 +210,7 @@ function RoomSession({
 
 interface RoomContentProps {
   readonly connection: RoomConnection;
-  /** The name offered in the lobby before "Join game". */
+  /** The name offered in the lobby before "Join game"; empty when the player has none yet. */
   readonly name: string;
   /** Asks for a seat under `name`; `false` when it could not be sent. */
   readonly onSit: (name: string) => boolean;
@@ -258,11 +251,11 @@ function RoomContent({ connection, name, onSit, onBroken, onRetry }: RoomContent
 
   // Gave up: the room is gone, every seat is taken by others, or this app is older than the server.
   if (status === CONNECTION_STATUS.Failed) {
-    return <RoomError problem={roomProblemOf(snapshot.failure)} onRetry={onRetry} />;
+    return <RoomError problem={roomProblemOf(snapshot.failure)} onRetry={onRetry} focusTitle />;
   }
   if (room === null) return <RoomJoining slow={snapshot.slow} />;
   if (!isRegisteredGameId(room.gameId)) {
-    return <RoomError problem={ROOM_PROBLEM.Broken} onRetry={onRetry} />;
+    return <RoomError problem={ROOM_PROBLEM.Broken} onRetry={onRetry} focusTitle />;
   }
   if (you === null || room.seats.some((seat) => seat === null)) {
     if (!wasInLobby) setWasInLobby(true);
@@ -324,6 +317,8 @@ function OnlineGame<State, Move, Outcome, Options extends object>({
   ...rest
 }: OnlineGameProps<State, Move, Outcome, Options>) {
   const [transport, setTransport] = useState<OnlineTransport<State, Move, Outcome> | null>(null);
+  // The same list on every render, so the play screen does not see new choices each time.
+  const optionChoices = useMemo(() => listOptionChoices(definition), [definition]);
 
   useEffect(() => {
     const created = createOnlineTransport({ definition, connection });
@@ -338,7 +333,7 @@ function OnlineGame<State, Move, Outcome, Options extends object>({
   return (
     <OnlineGameScreen
       transport={transport}
-      optionChoices={listOptionChoices(definition)}
+      optionChoices={optionChoices}
       onResume={connection.resume}
       {...rest}
     />
@@ -373,7 +368,7 @@ function OnlineGameScreen<State, Move, Outcome>({
     if (broken) onBroken();
   }, [broken, onBroken]);
 
-  if (broken) return <RoomError problem={ROOM_PROBLEM.Broken} onRetry={onRetry} />;
+  if (broken) return <RoomError problem={ROOM_PROBLEM.Broken} onRetry={onRetry} focusTitle />;
   return (
     <PlayScreen
       gameId={gameId}

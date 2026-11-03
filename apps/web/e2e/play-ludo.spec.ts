@@ -5,6 +5,7 @@ import {
   die,
   horseChoices,
   horsePositions,
+  lastRoll,
   ludoPly,
   PAGE_WITHOUT_STORAGE,
   playLudoTurnWithKeyboard,
@@ -207,7 +208,6 @@ async function startOnlineLudo(page: Page, browser: Browser) {
   const lan = await context.newPage();
   await lan.goto(page.url());
   await nameField(lan).fill("Lan");
-  await button(lan, "Tiếp tục").click();
   await button(lan, "Vào chơi").click();
   await expect(status(page)).toHaveText("Ván mới: bạn cầm Đỏ và đi trước");
   await expect(status(lan)).toHaveText("Ván mới: bạn cầm Vàng, Minh đi trước");
@@ -238,12 +238,15 @@ test("Hai người cùng thấy một lần gieo: both players see every roll an
     const moved = await playLudoTurnWithKeyboard(mover);
     // The mover's moves are in (counted); the other page then shows the same moves, die and horses.
     const ply = await ludoPly(mover);
-    const rolled = (await die(mover).getAttribute("aria-label")) ?? "";
-    expect(rolled).toMatch(new RegExp(`^Xúc xắc: ${moved} \\(`));
+    // The die waits for the next roll; the roll just made is shown beside it.
+    await expect(lastRoll(mover)).toContainText(`gieo được ${moved}`);
+    const rolled = (await lastRoll(mover).textContent()) ?? "";
+    const waiting = (await die(mover).getAttribute("aria-label")) ?? "";
     const positions = await horsePositions(mover).allTextContents();
     for (const other of pages) {
       await expect.poll(() => ludoPly(other)).toBe(ply);
-      await expect(die(other)).toHaveAccessibleName(rolled);
+      await expect(die(other)).toHaveAccessibleName(waiting);
+      await expect(lastRoll(other)).toHaveText(rolled);
       await expect(horsePositions(other)).toHaveText(positions);
     }
   }

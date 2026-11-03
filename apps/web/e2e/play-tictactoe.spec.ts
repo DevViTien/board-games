@@ -5,6 +5,7 @@ import {
   cell,
   choose,
   continueSection,
+  MENU_HEADING,
   openSetupFromMenu,
   PAGE_WITHOUT_STORAGE,
   play,
@@ -64,6 +65,62 @@ test("plays from the menu to a win, then undoes the winning move", async ({ page
   await expect(cell(page, 1, 3)).toHaveAccessibleName("Hàng 1, cột 3, trống");
 });
 
+test("Khoảnh khắc kết thúc ván: the result card, the winning line, a new game from the card", async ({
+  page,
+}) => {
+  await openFromMenu(page);
+  await expect(page.getByRole("list", { name: "Người chơi" }).getByRole("listitem")).toHaveCount(2);
+
+  await play(page, ...X_WINS_TOP_ROW);
+
+  // One live region, its frame now the result card: the chip, the result, the line, the action.
+  await expect(status(page)).toHaveText("X thắng!");
+  await expect(page.getByRole("status")).toHaveCount(1);
+  await expect(page.getByText("Kết thúc", { exact: true })).toBeVisible();
+  await expect(page.getByText("Ba X thẳng hàng ở hàng 1")).toBeVisible();
+  for (const col of [1, 2, 3]) {
+    await expect(cell(page, 1, col)).toHaveAccessibleDescription(/Thuộc hàng thắng/);
+  }
+  await expect(page.locator("[data-winning-line]")).toBeVisible();
+  // "New game" once, in the card; "Back to menu" once, in the bar.
+  await expect(page.getByRole("button", { name: "Ván mới" })).toHaveCount(1);
+  await expect(page.getByRole("link", { name: "Về menu" })).toHaveCount(1);
+  // The confetti never covers a button: it takes no pointer.
+  await expect(page.locator("[data-confetti]")).toHaveCSS("pointer-events", "none");
+
+  // Undoing the winning move turns the card back into the turn line.
+  await page.getByRole("button", { name: "Hoàn tác" }).click();
+  await expect(status(page)).toHaveText("Đến lượt X");
+  await expect(page.getByText("Kết thúc", { exact: true })).toHaveCount(0);
+  await expect(page.locator("[data-winning-line]")).toHaveCount(0);
+
+  await play(page, [1, 3]);
+  await page.getByRole("button", { name: "Ván mới" }).click();
+  await expect(status(page)).toHaveText("Đến lượt X");
+  await expect(cell(page, 1, 1)).toHaveAccessibleName("Hàng 1, cột 1, trống");
+  // The focus follows "New game" to the game's buttons instead of falling to the page.
+  await expect(page.getByRole("button", { name: "Ván mới" })).toBeFocused();
+});
+
+test.describe("with reduced motion", () => {
+  test.use({ reducedMotion: "reduce" });
+
+  test("Giảm chuyển động: the result card and its button, without confetti", async ({ page }) => {
+    await openFromMenu(page);
+
+    await play(page, ...X_WINS_TOP_ROW);
+
+    await expect(status(page)).toHaveText("X thắng!");
+    await expect(page.getByRole("button", { name: "Ván mới" })).toBeVisible();
+    await expect(page.locator("[data-confetti]")).toHaveCount(0);
+    // The winning line is there in full at once.
+    await expect(page.locator("[data-winning-line] path").last()).toHaveCSS(
+      "stroke-dashoffset",
+      "0px",
+    );
+  });
+});
+
 test("opens the same-device play screen straight from its address", async ({ page }) => {
   await page.goto("/play/tictactoe/local");
 
@@ -101,7 +158,7 @@ test("does not keep a finished game", async ({ page }) => {
   await expect.poll(() => readSaved(page, SLOT.local)).toBeNull();
 
   await page.getByRole("link", { name: "Về menu" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Board Games Hub" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: MENU_HEADING })).toBeVisible();
   await page.goto("/play/tictactoe/local");
   await expect(status(page)).toHaveText("Đến lượt X");
   await expect(cell(page, 1, 1)).toHaveAccessibleName("Hàng 1, cột 1, trống");
@@ -254,7 +311,7 @@ test("loads the game again from the error page when its code failed to load", as
   let failedLoads = 0;
   await page.route(/\/_next\/static\/chunks\/.+\.js$/, async (route) => {
     const response = await route.fetch();
-    if (offline && (await response.text()).includes("size-3/5 text-accent")) {
+    if (offline && (await response.text()).includes("shadow-(--tictactoe-tile-shadow)")) {
       failedLoads += 1;
       await route.abort();
     } else {
@@ -287,7 +344,7 @@ test("shows a not-found page with a way back for an unknown game", async ({ page
   expect(response?.status()).toBe(404);
   await expect(page.getByRole("heading", { name: "Không tìm thấy game" })).toBeVisible();
   await page.getByRole("link", { name: "Về menu" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Board Games Hub" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: MENU_HEADING })).toBeVisible();
 });
 
 for (const address of ["/play/khong-co-game-nay/local", "/play/tictactoe/khong-co-che-do-nay"]) {
@@ -299,7 +356,7 @@ for (const address of ["/play/khong-co-game-nay/local", "/play/tictactoe/khong-c
       page.getByRole("heading", { name: "Không tìm thấy trang chơi này" }),
     ).toBeVisible();
     await page.getByRole("link", { name: "Về menu" }).click();
-    await expect(page.getByRole("heading", { level: 1, name: "Board Games Hub" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: MENU_HEADING })).toBeVisible();
   });
 }
 
@@ -309,5 +366,5 @@ test("shows a translated not-found page with a way back for any unknown URL", as
   expect(response?.status()).toBe(404);
   await expect(page.getByRole("heading", { name: "Không tìm thấy trang" })).toBeVisible();
   await page.getByRole("link", { name: "Về menu" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Board Games Hub" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: MENU_HEADING })).toBeVisible();
 });

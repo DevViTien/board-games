@@ -43,6 +43,8 @@ describe("parseClientMessage", () => {
       name: "Lan",
     },
     { type: "join", protocol: PROTOCOL_VERSION, code: "abc 234", playerId: PLAYER_ID, name: "An" },
+    // A visitor who has not chosen a name yet.
+    { type: "join", protocol: PROTOCOL_VERSION, code: "ABC234", playerId: PLAYER_ID },
     { type: "sit", name: "An" },
     { type: "move", gameNumber: 1, moveIndex: 0, move: { cell: 4 } },
     { type: "rematch", gameNumber: 2 },
@@ -84,7 +86,10 @@ describe("parseClientMessage", () => {
     ["a playerId that is too short", { playerId: "short" }],
     ["a playerId with other characters", { playerId: "player 0123456789abc" }],
     ["a playerId that is too long", { playerId: "a".repeat(65) }],
-    ["an invalid name", { name: "" }],
+    ["an empty name", { name: "" }],
+    ["a blank name", { name: "   " }],
+    ["a name that is too long", { name: "a".repeat(25) }],
+    ["a name that is not a string", { name: null }],
     ["an unknown field", { extra: true }],
   ])("rejects a greeting with %s", (_label, change) => {
     expect(
@@ -106,6 +111,10 @@ describe("parseClientMessage", () => {
     ["a fractional gameNumber", { type: "rematch", gameNumber: 1.5 }],
     ["no move", { type: "move", gameNumber: 1, moveIndex: 0 }],
     ["a sit without a name", { type: "sit" }],
+    [
+      "a create without a name",
+      { type: "create", protocol: PROTOCOL_VERSION, gameId: "tictactoe", playerId: PLAYER_ID },
+    ],
     ["a sit with an invalid name", { type: "sit", name: " " }],
     ["an unknown field", { type: "ping", at: 1 }],
     ["an ai-seat with a fractional seat", { type: "ai-seat", seat: 1.5, on: true }],

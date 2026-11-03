@@ -1,8 +1,23 @@
-import { applyEntry, createSession, toRecord } from "@board-games/engine";
+import { applyEntry, createSession, type GameRecord, toRecord } from "@board-games/engine";
 import { ludo, LUDO_DEFAULT_OPTIONS } from "@board-games/games";
-import { type Browser, type BrowserContext, expect, type Page } from "@playwright/test";
+import {
+  CLOSE_CODE,
+  type RoomCode,
+  type RoomView,
+  type ServerMessage,
+} from "@board-games/protocol";
+import {
+  type Browser,
+  type BrowserContext,
+  expect,
+  type Page,
+  type WebSocketRoute,
+} from "@playwright/test";
 
 // Shared by the E2E specs. The browser language is pinned to Vietnamese in playwright.config.ts.
+
+/** The menu's level-1 heading, its hero: how a test knows it is back on the menu. */
+export const MENU_HEADING = "Chơi cờ cùng bạn bè, ngay trên trình duyệt";
 
 export const cell = (page: Page, row: number, col: number) =>
   page.getByRole("button", { name: new RegExp(`^Hàng ${row}, cột ${col},`) });
@@ -225,7 +240,7 @@ export type LudoStep = { readonly roll: 1 | 2 | 3 | 4 | 5 | 6 } | { readonly hor
  * The record of a Cờ cá ngựa game played with the steps given, the dice decided in advance: built
  * with the engine's `applyEntry`, so a step the rules refuse fails here, not in the app.
  */
-function ludoRecord(playerCount: 2 | 3 | 4, steps: readonly LudoStep[]): unknown {
+export function ludoRecord(playerCount: 2 | 3 | 4, steps: readonly LudoStep[]): GameRecord {
   const created = createSession(ludo, { playerCount, options: LUDO_DEFAULT_OPTIONS });
   if (!created.ok) throw new Error(created.error);
   let session = created.value;
@@ -238,7 +253,7 @@ function ludoRecord(playerCount: 2 | 3 | 4, steps: readonly LudoStep[]): unknown
     if (!played.ok) throw new Error(`step ${index + 1}: ${played.error}`);
     session = played.value;
   }
-  return JSON.parse(JSON.stringify(toRecord(session)));
+  return JSON.parse(JSON.stringify(toRecord(session))) as GameRecord;
 }
 
 /** A saved same-device Cờ cá ngựa game (slot "ludo:local") with the steps given. */
@@ -256,6 +271,18 @@ export const rollButton = (page: Page) => page.getByRole("button", { name: "Gieo
 export const horseChoices = (page: Page) =>
   page.getByRole("group", { name: "Chọn ngựa" }).getByRole("button");
 export const die = (page: Page) => page.getByRole("img", { name: /^Xúc xắc/ });
+/** The roll before, shown beside the die once it waits for the next roll. */
+export const lastRoll = (page: Page) => page.locator("[data-ludo-last-roll]");
+
+/**
+ * The number of the roll just made, from the board's hint ("Đỏ gieo được 3…"): the die itself
+ * waits for the next roll as soon as the turn moves on.
+ */
+export async function lastRolledFace(page: Page): Promise<number> {
+  const hint = page.locator("[data-ludo-hint]");
+  await expect(hint).toHaveText(/gieo được [1-6]/);
+  return Number(/gieo được ([1-6])/.exec((await hint.textContent()) ?? "")?.[1]);
+}
 export const horsePositions = (page: Page) =>
   page.getByRole("list", { name: "Vị trí các ngựa" }).getByRole("listitem");
 
@@ -275,8 +302,7 @@ export async function playLudoTurnWithKeyboard(page: Page): Promise<number> {
   await rollButton(page).focus();
   await page.keyboard.press("Enter");
   await expect.poll(() => ludoPly(page)).toBe(before + 1);
-  await expect(die(page)).toHaveAccessibleName(/^Xúc xắc: [1-6] \(/);
-  const face = Number(/: ([1-6])/.exec((await die(page).getAttribute("aria-label")) ?? "")?.[1]);
+  const face = await lastRolledFace(page);
   if ((await horseChoices(page).count()) > 0) {
     await expect(horseChoices(page).first()).toBeFocused();
     await page.keyboard.press("Enter");
@@ -301,17 +327,132 @@ interface Friend {
   readonly page: Page;
 }
 
-/** Someone who has never played online opens `url` in their own browser and gives their name. */
+/**
+ * Someone who has never played online opens `url` in their own browser: the page enters the room
+ * at once, asking nothing (change `ask-name-in-lobby`).
+ */
+export async function openAsStranger(browser: Browser, url: string): Promise<Friend> {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  await page.goto(url);
+  return { context, page };
+}
+
+/**
+ * Asks for a name in the lobby of a page with none yet: the field is empty and has the focus; types
+ * `name` there, not joining yet.
+ */
+export async function giveNameInLobby(page: Page, name: string): Promise<void> {
+  await expect(nameField(page)).toBeFocused();
+  await expect(nameField(page)).toHaveValue("");
+  await nameField(page).fill(name);
+}
+
+/** A stranger opens `url` and gives their name in the lobby, before "Join game". */
 export async function openAsNewPlayer(
   browser: Browser,
   url: string,
   name: string,
 ): Promise<Friend> {
-  const context = await browser.newContext();
-  const page = await context.newPage();
-  await page.goto(url);
-  await expect(page.getByRole("heading", { name: "Chọn tên để vào phòng" })).toBeVisible();
-  await nameField(page).fill(name);
-  await page.getByRole("button", { name: "Tiếp tục" }).click();
-  return { context, page };
+  const friend = await openAsStranger(browser, url);
+  await giveNameInLobby(friend.page, name);
+  return friend;
+}
+
+/**
+ * Red has just rolled a 6 in a Cờ cá ngựa game for four, and all four of its horses can move: three
+ * on the track, far enough apart, and one still in its stable (the others lost every turn).
+ */
+export const LUDO_FOUR_CHOICES: readonly LudoStep[] = [
+  // Red: three 6s for horse 1, then a 5; the others lose their turns.
+  { roll: 6 },
+  { horse: 0 },
+  { roll: 6 },
+  { horse: 0 },
+  { roll: 6 },
+  { horse: 0 },
+  { roll: 5 },
+  { horse: 0 },
+  { roll: 2 },
+  { roll: 2 },
+  { roll: 2 },
+  // Red: horse 2 out and on by 6, then 4.
+  { roll: 6 },
+  { horse: 1 },
+  { roll: 6 },
+  { horse: 1 },
+  { roll: 4 },
+  { horse: 1 },
+  { roll: 2 },
+  { roll: 2 },
+  { roll: 2 },
+  // Red: horse 3 out and on by 3.
+  { roll: 6 },
+  { horse: 2 },
+  { roll: 3 },
+  { horse: 2 },
+  { roll: 2 },
+  { roll: 2 },
+  { roll: 2 },
+  // Red rolls a 6: horses 1–3 move on, horse 4 comes out.
+  { roll: 6 },
+];
+
+/** Sends a message of the protocol, as the server would. */
+function send(socket: WebSocketRoute, message: ServerMessage): void {
+  socket.send(JSON.stringify(message));
+}
+
+/** The room code of `openFakeRoom`. */
+const FAKE_ROOM_CODE = "ABC234" as RoomCode;
+
+/**
+ * Opens a room whose server is the test: it answers the greeting with `room` (a game with every seat
+ * taken, so the game shows at once) seen from seat `you`, and answers pings. `loseConnection` drops
+ * the socket and leaves the client's reconnections unanswered, as when the network is gone. The
+ * browser already remembers a name (Lan), so no name is asked for.
+ */
+export async function openFakeRoom(
+  page: Page,
+  room: Pick<RoomView, "gameId" | "seats" | "record">,
+  you = 0,
+): Promise<{ loseConnection: () => Promise<void> }> {
+  let answering = true;
+  const sockets: WebSocketRoute[] = [];
+  await page.routeWebSocket(/\/api\/realtime$/, (socket) => {
+    sockets.push(socket);
+    socket.onMessage((message) => {
+      if (!answering) return;
+      const data = JSON.parse(String(message)) as { type?: string };
+      if (data.type === "join") {
+        const view: RoomView = {
+          code: FAKE_ROOM_CODE,
+          revision: 1,
+          gameNumber: 1,
+          host: 0,
+          ...room,
+        };
+        send(socket, { type: "room", room: view, you });
+      } else if (data.type === "ping") {
+        send(socket, { type: "pong" });
+      }
+    });
+  });
+  // A player who has played online before (src/features/identity): no name to give, in any language.
+  await page.addInitScript(
+    (identity) => {
+      window.localStorage.setItem("board-games:identity", identity);
+    },
+    JSON.stringify({ playerId: "e2e-fake-room-player-0001", name: "Lan" }),
+  );
+  await page.goto(`/room/${FAKE_ROOM_CODE}`);
+  return {
+    loseConnection: async () => {
+      answering = false;
+      // A code the client reconnects after, as after any lost connection.
+      await Promise.all(
+        sockets.map((socket) => socket.close({ code: CLOSE_CODE.GreetingTimeout })),
+      );
+    },
+  };
 }

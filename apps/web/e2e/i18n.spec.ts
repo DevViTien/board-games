@@ -7,20 +7,31 @@ test.describe("browser language", () => {
     await page.goto("/");
 
     await expect(page.locator("html")).toHaveAttribute("lang", "ja");
-    await expect(page.getByText("ブラウザで友だちとボードゲームを楽しもう。")).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 1, name: "友だちとボードゲーム、ブラウザですぐに" }),
+    ).toBeVisible();
   });
 });
 
 test("picked language is applied and kept after reload", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByText("Chơi cờ cùng bạn bè ngay trên trình duyệt.")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Chơi cờ cùng bạn bè, ngay trên trình duyệt" }),
+  ).toBeVisible();
 
-  await page.getByRole("combobox", { name: "Ngôn ngữ" }).selectOption("en");
+  await page.getByRole("button", { name: "English" }).click();
 
   await expect(
-    page.getByText("Play board games with friends, right in your browser."),
+    page.getByRole("heading", {
+      level: 1,
+      name: "Play board games with friends, right in your browser",
+    }),
   ).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(page.getByRole("button", { name: "English" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
 
   await page.reload();
   await expect(page.getByRole("heading", { name: "Ludo" })).toBeVisible();

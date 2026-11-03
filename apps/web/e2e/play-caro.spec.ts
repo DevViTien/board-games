@@ -177,7 +177,6 @@ async function joinAs(browser: Browser, url: string, name: string) {
   const page = await context.newPage();
   await page.goto(url);
   await nameField(page).fill(name);
-  await button(page, "Tiếp tục").click();
   await button(page, "Vào chơi").click();
   return { context, page };
 }
@@ -205,7 +204,7 @@ test("plays a game of Cờ caro online through the invite link, then plays again
   }
 
   await expect(status(page)).toHaveText("Bạn thắng!");
-  await expect(status(lan.page)).toHaveText("Minh thắng");
+  await expect(status(lan.page)).toHaveText("Minh thắng!");
   await expect(cell(lan.page, 8, 12)).toHaveAccessibleDescription("Nước vừa đi Thuộc hàng thắng");
 
   await button(lan.page, "Chơi lại").click();

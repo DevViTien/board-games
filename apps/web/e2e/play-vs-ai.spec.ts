@@ -7,6 +7,7 @@ import {
   cell,
   continueSection,
   countMarks,
+  MENU_HEADING,
   modeLabel,
   play,
   playAndWaitForAi,
@@ -26,6 +27,10 @@ interface StatusChange {
   readonly at: number;
   /** Whether no cell of the board could be chosen at that moment. */
   readonly locked: boolean;
+  /** Whether a seat of the players' panel said "Thinking…". */
+  readonly seatThinking: boolean;
+  /** Whether the board was marked busy. */
+  readonly busy: boolean;
 }
 
 /**
@@ -44,6 +49,10 @@ async function recordChanges(page: Page): Promise<void> {
         text: main.querySelector('[role="status"]')?.textContent ?? "",
         at: performance.now(),
         locked: cells.every((button) => button.getAttribute("aria-disabled") === "true"),
+        seatThinking:
+          main.querySelector('ul[aria-label="Người chơi"]')?.textContent.includes("Đang nghĩ…") ??
+          false,
+        busy: main.querySelector('[aria-busy="true"]') !== null,
       });
     }).observe(main, { subtree: true, childList: true, characterData: true, attributes: true });
   });
@@ -86,6 +95,28 @@ test("answers the player's move within 2 seconds, with the board locked meanwhil
   expect((answered?.at ?? Infinity) - (thinkingFrom?.at ?? 0)).toBeLessThan(2000);
 });
 
+test("Tín hiệu máy đang nghĩ: the AI's seat says it is thinking and the board is busy until it moves", async ({
+  page,
+}) => {
+  await startAiGame(page);
+  const players = page.getByRole("list", { name: "Người chơi" });
+  await expect(players.getByRole("listitem")).toHaveText([/Bạn · X/, /Máy · O.*Mức Vừa/]);
+  await recordChanges(page);
+
+  await cell(page, 2, 2).click();
+  await expect.poll(() => countMarks(page, "O")).toBe(1);
+  await expect(status(page)).toHaveText(afterAiMove("X"));
+
+  const thinking = (await recordedChanges(page)).filter(
+    (change) => change.text === "Máy đang nghĩ…",
+  );
+  expect(thinking.length).toBeGreaterThan(0);
+  expect(thinking.every((change) => change.seatThinking && change.busy)).toBe(true);
+  // Máy đi xong.
+  await expect(players).not.toContainText("Đang nghĩ…");
+  await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+});
+
 test("thinks in a real Web Worker, without falling back to the main thread", async ({ page }) => {
   const workers: Worker[] = [];
   const stopped: Worker[] = [];
@@ -114,7 +145,7 @@ test("goes back to the menu right away while the AI is thinking", async ({ page 
   await expect(status(page)).toHaveText("Máy đang nghĩ…");
   await page.getByRole("link", { name: "Về menu" }).click();
 
-  await expect(page.getByRole("heading", { level: 1, name: "Board Games Hub" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: MENU_HEADING })).toBeVisible();
   // The player's move was kept, so the game can be continued.
   await expect(
     continueSection(page).getByRole("link", { name: "Tic-tac-toe · Với máy · Khó" }),

@@ -1,6 +1,6 @@
 // Test-only: the behaviour every RoomStore must have, run against each implementation.
 import { createRng, RECORD_VERSION } from "@board-games/engine";
-import { tictactoe } from "@board-games/games";
+import { ludo, LUDO_DEFAULT_OPTIONS, tictactoe } from "@board-games/games";
 import {
   normalizeRoomCode,
   ROOM_CODE_ALPHABET,
@@ -236,6 +236,40 @@ export function describeRoomStore(
       expect(await store.get(code)).toBeNull();
     });
 
+    it("Phòng dừng ở lượt máy: plays on when a seated player comes back without a name, keeping theirs", async () => {
+      const lan = { playerId: "player-two-0123456789", name: "Lan" };
+      // A Cờ cá ngựa room for three left on the turn of its AI in the first seat.
+      const room = testRoom({
+        gameId: "ludo",
+        revision: 4,
+        players: [{ kind: "ai" }, { kind: "human", ...lan }, { kind: "ai" }],
+        record: {
+          version: RECORD_VERSION,
+          gameId: "ludo",
+          playerCount: 3,
+          options: LUDO_DEFAULT_OPTIONS,
+          entries: [],
+        },
+      });
+      await store.create(room);
+      const service = createRoomService({
+        store,
+        rng: createRng(1),
+        now: () => 2_000,
+        games: [ludo],
+      });
+
+      const joined = await service.join(room.code, lan.playerId, null);
+
+      expect(joined.ok).toBe(true);
+      if (!joined.ok) return;
+      expect(seatOf(joined.value, lan.playerId)).toBe(1);
+      expect(joined.value.players[1]).toEqual({ kind: "human", ...lan });
+      expect(joined.value.record.entries.length).toBeGreaterThan(0);
+      expect(joined.value.revision).toBe(5);
+      expect(await store.get(room.code)).toEqual(joined.value);
+    });
+
     it("Ván dở từ bản trước: lets a seated player back into a room stored before AI seats, and play on", async () => {
       const code = randomRoomCode();
       const lan = { playerId: "player-one-0123456789", name: "Lan" };
@@ -262,7 +296,7 @@ export function describeRoomStore(
         games: [tictactoe],
       });
 
-      const joined = await service.join(code, an);
+      const joined = await service.join(code, an.playerId, an.name);
       expect(joined.ok && seatOf(joined.value, an.playerId)).toBe(1);
       expect(joined.ok && joined.value.record.entries).toEqual([{ move: { cell: 4 } }]);
 

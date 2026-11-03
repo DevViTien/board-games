@@ -1,10 +1,11 @@
 import type { PlayerIndex } from "@board-games/engine";
 import { LUDO_DEFAULT_OPTIONS } from "@board-games/games/ludo";
 import { PROTOCOL_VERSION, type RoomView } from "@board-games/protocol";
-import { act, screen } from "@testing-library/react";
+import { act, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { IDENTITY_KEY } from "@/config/storage-keys";
 import { readIdentity, saveName } from "@/features/identity/identity";
 import {
   AI,
@@ -38,6 +39,7 @@ afterEach(() => {
   vi.useRealTimers();
   vi.restoreAllMocks();
   window.localStorage.clear();
+  window.sessionStorage.clear();
 });
 
 function renderRoom() {
@@ -78,43 +80,165 @@ async function enter(room: RoomView, you: PlayerIndex | null): Promise<FakeSocke
 }
 
 describe("RoomRoute", () => {
-  it("asks a first-time player for a name before entering the room", async () => {
+  it("enters at once without a name the first time, and asks for one in the lobby", async () => {
     renderRoom();
     await settle();
 
-    expect(screen.getByRole("heading", { name: "Chọn tên để vào phòng" })).toBeInTheDocument();
-    expect(nameField()).toHaveFocus();
-    expect(sockets.all).toHaveLength(0);
-
-    await userEvent.type(screen.getByRole("textbox", { name: "Tên của bạn" }), "Lan");
-    await userEvent.click(screen.getByRole("button", { name: "Tiếp tục" }));
-
-    const identity = readIdentity();
-    expect(identity?.name).toBe("Lan");
-    sockets.last().open();
+    // No name step: the room is entered first, with a guest id remembered nowhere.
+    expect(sockets.all).toHaveLength(1);
     expect(sockets.last().url).toBe("ws://localhost:3101/api/realtime");
+    const socket = await enter(roomView({ seats: ["Minh", null] }), null);
+    const { playerId } = socket.sent[0] as { playerId: string };
+    expect(playerId).toMatch(/^[\w-]{16,64}$/u);
+    expect(socket.sent).toEqual([
+      { type: "join", protocol: PROTOCOL_VERSION, code: "ABC234", playerId },
+    ]);
+    expect(readIdentity()).toBeNull();
+
+    expect(screen.getByText("Minh")).toBeInTheDocument();
+    expect(screen.getByText("Đang chờ…")).toBeInTheDocument();
+    expect(nameField()).toHaveValue("");
+    expect(nameField()).toHaveFocus();
+    expect(nameField()).toHaveAccessibleDescription("Mọi người trong phòng sẽ thấy tên này.");
+    expect(screen.getByRole("button", { name: "Vào chơi" })).toBeInTheDocument();
+    // A room not wanted after all: the menu is one step away, no name needed.
+    expect(screen.getByRole("link", { name: "Về menu" })).toHaveAttribute("href", "/");
+    // Opening the link takes no seat.
+    expect(socket.sent).toHaveLength(1);
+  });
+
+  it("says a room does not exist before asking for a name", async () => {
+    renderRoom();
+    await settle();
+
+    act(() => {
+      sockets.last().open();
+      sockets.last().receive({ type: "error", code: "room-not-found" });
+    });
+
+    expect(screen.getByRole("heading", { name: "Không tìm thấy phòng" })).toHaveFocus();
+    expect(screen.getByRole("link", { name: "Về menu" })).toHaveAttribute("href", "/");
+    expect(screen.queryByRole("textbox", { name: "Tên của bạn" })).not.toBeInTheDocument();
+  });
+
+  it("says a room is full before asking for a name", async () => {
+    renderRoom();
+    await settle();
+
+    await enter(roomView({ seats: ["Minh", "Lan"] }), null);
+
+    expect(screen.getByRole("heading", { name: "Phòng đã đủ người" })).toHaveFocus();
+    expect(screen.getByRole("link", { name: "Về menu" })).toHaveAttribute("href", "/");
+    expect(screen.queryByRole("textbox", { name: "Tên của bạn" })).not.toBeInTheDocument();
+  });
+
+  it("does not sit with an empty name", async () => {
+    renderRoom();
+    await settle();
+    const socket = await enter(roomView({ seats: ["Minh", null] }), null);
+
+    await userEvent.type(nameField(), "   ");
+    await userEvent.click(screen.getByRole("button", { name: "Vào chơi" }));
+
+    expect(nameField()).toHaveAccessibleDescription(
+      "Mọi người trong phòng sẽ thấy tên này. Tên cần có từ 1 đến 24 ký tự.",
+    );
+    // Back to the field from the button, so the error is read with it.
+    expect(nameField()).toHaveFocus();
+    expect(socket.sent).not.toContainEqual(expect.objectContaining({ type: "sit" }));
+    expect(readIdentity()).toBeNull();
+  });
+
+  it("remembers the guest id with the name chosen in the lobby, and greets with both after a reconnection", async () => {
+    renderRoom();
+    await settle();
+    const socket = await enter(roomView({ seats: ["Minh", null] }), null);
+    const { playerId } = socket.sent[0] as { playerId: string };
+
+    await userEvent.type(nameField(), "Lan");
+    await userEvent.click(screen.getByRole("button", { name: "Vào chơi" }));
+
+    expect(socket.sent.at(-1)).toEqual({ type: "sit", name: "Lan" });
+    expect(readIdentity()).toEqual({ playerId, name: "Lan" });
+    await act(async () => {
+      socket.receive(roomMessage(roomView({ seats: ["Minh", "Lan"], revision: 2 }), 1));
+      await Promise.resolve();
+    });
+
+    act(() => {
+      socket.lose();
+    });
+    await tick();
+    expect(sockets.all).toHaveLength(2);
+    sockets.last().open();
+
+    expect(sockets.last().sent[0]).toEqual({
+      type: "join",
+      protocol: PROTOCOL_VERSION,
+      code: "ABC234",
+      playerId,
+      name: "Lan",
+    });
+  });
+
+  it("keeps the seat after a reload when another tab remembered another identity meanwhile", async () => {
+    const { unmount } = renderRoom();
+    await settle();
+    const socket = await enter(roomView({ seats: ["Minh", null] }), null);
+    const { playerId } = socket.sent[0] as { playerId: string };
+    // Another tab chooses a name first (the setup screen): that identity is the remembered one.
+    const other = saveName("Lan");
+
+    await userEvent.type(nameField(), "Khoa");
+    await userEvent.click(screen.getByRole("button", { name: "Vào chơi" }));
+    await act(async () => {
+      socket.receive(roomMessage(roomView({ seats: ["Minh", "Khoa"], revision: 2 }), 1));
+      await Promise.resolve();
+    });
+    expect(readIdentity()).toEqual(other);
+
+    // The tab reloads: it greets with the id that holds the seat, not the remembered one.
+    unmount();
+    renderRoom();
+    await settle();
+    sockets.last().open();
+
+    expect(sockets.last().sent[0]).toEqual({
+      type: "join",
+      protocol: PROTOCOL_VERSION,
+      code: "ABC234",
+      playerId,
+      name: "Khoa",
+    });
+  });
+
+  it("tries again under the same guest id, still without a name", async () => {
+    renderRoom();
+    await settle();
+    const socket = await enter({ ...roomView(), gameId: "khong-co-game-nay" }, null);
+    const { playerId } = socket.sent[0] as { playerId: string };
+    expect(screen.getByRole("heading", { name: "Không mở được phòng" })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Thử lại" }));
+    expect(sockets.all).toHaveLength(2);
+    sockets.last().open();
+
     expect(sockets.last().sent).toEqual([
-      {
-        type: "join",
-        protocol: PROTOCOL_VERSION,
-        code: "ABC234",
-        playerId: identity?.playerId,
-        name: "Lan",
-      },
+      { type: "join", protocol: PROTOCOL_VERSION, code: "ABC234", playerId },
     ]);
   });
 
-  it("does not enter with an empty name", async () => {
+  it("asks for a name in the lobby when the remembered identity is corrupt", async () => {
+    window.localStorage.setItem(IDENTITY_KEY, "{corrupt");
     renderRoom();
     await settle();
 
-    await userEvent.type(screen.getByRole("textbox", { name: "Tên của bạn" }), "   ");
-    await userEvent.click(screen.getByRole("button", { name: "Tiếp tục" }));
+    await enter(roomView({ seats: ["Minh", null] }), null);
 
-    expect(nameField()).toHaveAccessibleDescription("Tên cần có từ 1 đến 24 ký tự.");
-    // Back to the field from the button, so the error is read with it.
+    expect(sockets.all[0]?.sent[0]).not.toHaveProperty("name");
+    expect(nameField()).toHaveValue("");
     expect(nameField()).toHaveFocus();
-    expect(sockets.all).toHaveLength(0);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("enters at once with the remembered name, saying it is joining until the server answers", async () => {
@@ -247,7 +371,7 @@ describe("RoomRoute", () => {
 
   it.each([
     ["room-not-found", "Không tìm thấy phòng"],
-    ["outdated-client", "App vừa được cập nhật"],
+    ["outdated-client", "Ứng dụng vừa được cập nhật"],
   ] as const)("shows the page for error %s", async (code, title) => {
     saveName("Lan");
     renderRoom();
@@ -268,7 +392,8 @@ describe("RoomRoute", () => {
 
     const socket = await enter(roomView({ seats: ["Minh", "Lan"] }), null);
 
-    expect(screen.getByRole("heading", { name: "Phòng đã đủ người" })).toBeInTheDocument();
+    // It replaced "joining": its title has the focus, not the page body.
+    expect(screen.getByRole("heading", { name: "Phòng đã đủ người" })).toHaveFocus();
     expect(socket.closedByClient).toBe(true);
   });
 
@@ -278,7 +403,7 @@ describe("RoomRoute", () => {
     await settle();
     const socket = await enter({ ...roomView(), gameId: "khong-co-game-nay" }, 0);
 
-    expect(screen.getByRole("heading", { name: "Không mở được phòng" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Không mở được phòng" })).toHaveFocus();
     // No reconnecting by itself: the connection is closed and stays closed.
     expect(socket.closedByClient).toBe(true);
     act(() => {
@@ -325,26 +450,165 @@ describe("RoomRoute", () => {
     expect(sockets.all).toHaveLength(1);
   });
 
-  it("enters under the name typed when the browser refuses to store it", async () => {
+  it("sits and greets again under the name typed when the browser refuses to store it", async () => {
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
       throw new DOMException("blocked", "SecurityError");
     });
     renderRoom();
     await settle();
+    const socket = await enter(roomView({ seats: ["Minh", null] }), null);
+    const { playerId } = socket.sent[0] as { playerId: string };
 
     await userEvent.type(nameField(), "Khoa");
-    await userEvent.click(screen.getByRole("button", { name: "Tiếp tục" }));
+    await userEvent.click(screen.getByRole("button", { name: "Vào chơi" }));
+    expect(socket.sent.at(-1)).toEqual({ type: "sit", name: "Khoa" });
+    act(() => {
+      socket.lose();
+    });
+    await tick();
     sockets.last().open();
 
-    expect(sockets.last().sent[0]).toMatchObject({ type: "join", name: "Khoa" });
+    expect(sockets.last().sent[0]).toMatchObject({ type: "join", playerId, name: "Khoa" });
   });
 
   // Right after a test where the browser refused storage: nothing of that tab may remain.
-  it("asks again for a name on a browser that remembers none", async () => {
+  it("enters without a name on a browser that remembers none", async () => {
     renderRoom();
     await settle();
+    sockets.last().open();
 
-    expect(screen.getByRole("heading", { name: "Chọn tên để vào phòng" })).toBeInTheDocument();
+    expect(sockets.last().sent[0]).not.toHaveProperty("name");
+  });
+});
+
+describe("RoomRoute: two tabs without a name", () => {
+  /** A Cờ cá ngựa room for three, Khoa its host, with the seats given. */
+  const ludoRoom = (seats: readonly (string | null)[], revision = 1) =>
+    roomView({
+      seats,
+      revision,
+      record: {
+        version: 1,
+        gameId: "ludo",
+        playerCount: 3,
+        options: LUDO_DEFAULT_OPTIONS,
+        entries: [],
+      },
+    });
+
+  /**
+   * One tab of the same browser: its own page and sockets, the browser's storage shared. (jsdom has
+   * one sessionStorage for every tab; the tests clear it where each tab would have its own.)
+   */
+  function renderTab() {
+    const tabSockets = createFakeSockets();
+    const { container, unmount } = renderWithIntl(
+      <RoomRoute
+        code="ABC234"
+        realtimeUrl="ws://localhost:3101/api/realtime"
+        openSocket={tabSockets.openSocket}
+        environment={createFakeEnvironment()}
+      />,
+    );
+    return { sockets: tabSockets, page: within(container), unmount };
+  }
+
+  type Tab = ReturnType<typeof renderTab>;
+
+  async function receive(socket: FakeSocket, room: RoomView, you: PlayerIndex | null) {
+    await act(async () => {
+      socket.receive(roomMessage(room, you));
+      await Promise.resolve();
+    });
+  }
+
+  const idOf = (tab: Tab) => (tab.sockets.all[0]?.sent[0] as { playerId: string }).playerId;
+  const nameIn = (tab: Tab) => tab.page.getByRole("textbox", { name: "Tên của bạn" });
+
+  it("keeps each tab in its own seat, under its own name, after both reconnect", async () => {
+    const first = renderTab();
+    const second = renderTab();
+    await settle();
+    const lobby = ludoRoom(["Khoa", null, null]);
+    for (const tab of [first, second]) {
+      const socket = tab.sockets.last();
+      act(() => {
+        socket.open();
+      });
+      await receive(socket, lobby, null);
+    }
+    const lan = idOf(first);
+    const minh = idOf(second);
+    expect(lan).not.toBe(minh);
+
+    await userEvent.type(nameIn(first), "Lan");
+    await userEvent.click(first.page.getByRole("button", { name: "Vào chơi" }));
+    expect(readIdentity()).toEqual({ playerId: lan, name: "Lan" });
+    await userEvent.type(nameIn(second), "Minh");
+    await userEvent.click(second.page.getByRole("button", { name: "Vào chơi" }));
+    expect(second.sockets.last().sent.at(-1)).toEqual({ type: "sit", name: "Minh" });
+    // The first tab's identity stays the one remembered: the second writes nothing over it.
+    expect(readIdentity()).toEqual({ playerId: lan, name: "Lan" });
+
+    const seated = ludoRoom(["Khoa", "Lan", "Minh"], 3);
+    await receive(first.sockets.last(), seated, 1);
+    await receive(second.sockets.last(), seated, 2);
+    act(() => {
+      first.sockets.last().lose();
+      second.sockets.last().lose();
+    });
+    await tick();
+    first.sockets.last().open();
+    second.sockets.last().open();
+
+    expect(first.sockets.last().sent[0]).toMatchObject({
+      type: "join",
+      playerId: lan,
+      name: "Lan",
+    });
+    expect(second.sockets.last().sent[0]).toMatchObject({
+      type: "join",
+      playerId: minh,
+      name: "Minh",
+    });
+    expect(readIdentity()).toEqual({ playerId: lan, name: "Lan" });
+  });
+
+  it("keeps the second tab's seat after it reloads, though the first tab's identity is remembered", async () => {
+    const first = renderTab();
+    const second = renderTab();
+    await settle();
+    const lobby = ludoRoom(["Khoa", null, null]);
+    for (const tab of [first, second]) {
+      act(() => {
+        tab.sockets.last().open();
+      });
+      await receive(tab.sockets.last(), lobby, null);
+    }
+    const minh = idOf(second);
+
+    await userEvent.type(nameIn(first), "Lan");
+    await userEvent.click(first.page.getByRole("button", { name: "Vào chơi" }));
+    // The second tab has a sessionStorage of its own.
+    window.sessionStorage.clear();
+    await userEvent.type(nameIn(second), "Minh");
+    await userEvent.click(second.page.getByRole("button", { name: "Vào chơi" }));
+    await receive(second.sockets.last(), ludoRoom(["Khoa", "Lan", "Minh"], 3), 2);
+
+    // The second tab reloads, its sessionStorage kept.
+    second.unmount();
+    const reloaded = renderTab();
+    await settle();
+    reloaded.sockets.last().open();
+
+    expect(reloaded.sockets.last().sent[0]).toEqual({
+      type: "join",
+      protocol: PROTOCOL_VERSION,
+      code: "ABC234",
+      playerId: minh,
+      name: "Minh",
+    });
+    expect(readIdentity()).toEqual({ playerId: idOf(first), name: "Lan" });
   });
 });
 
@@ -423,7 +687,7 @@ describe("RoomRoute AI seats", () => {
     });
     await act(() => vi.advanceTimersByTimeAsync(60_000));
 
-    expect(screen.getByRole("heading", { name: "App vừa được cập nhật" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Ứng dụng vừa được cập nhật" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Tải lại trang" })).toBeInTheDocument();
     expect(sockets.all).toHaveLength(1);
   });

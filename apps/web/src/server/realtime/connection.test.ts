@@ -1,6 +1,11 @@
 import net from "node:net";
 
-import { CLOSE_CODE, type RoomCode, type ServerMessage } from "@board-games/protocol";
+import {
+  CLOSE_CODE,
+  PROTOCOL_VERSION,
+  type RoomCode,
+  type ServerMessage,
+} from "@board-games/protocol";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createMemoryRoomStore, type MemoryRoomStore } from "../store/memory";
@@ -59,6 +64,11 @@ async function join({ connect }: Context, code: string, player: TestPlayer) {
   client.send(joinMessage(code, player));
   const first = expectType(await client.next(), "room");
   return { client, first };
+}
+
+/** The greeting of a visitor who has not chosen a name yet (change `ask-name-in-lobby`). */
+function namelessJoinMessage(code: string, { playerId }: TestPlayer) {
+  return { type: "join", protocol: PROTOCOL_VERSION, code, playerId };
 }
 
 /** A Tic-tac-toe room with Lan in seat 0 and An in seat 1, both connected and up to date. */
@@ -165,6 +175,72 @@ describe("greeting", () => {
 
     expect(await client.next()).toEqual({ type: "error", code: "room-not-found" });
     expect(await client.closed).toBe(1000);
+  });
+
+  it("answers room-not-found to a greeting without a name, and closes", async () => {
+    const { connect } = await start();
+    const client = connect();
+
+    client.send(namelessJoinMessage("ZZZ999", AN));
+
+    expect(await client.next()).toEqual({ type: "error", code: "room-not-found" });
+    expect(await client.closed).toBe(1000);
+  });
+
+  it("lets a visitor without a name in without a seat, then seats them under the name of the sit", async () => {
+    const context = await start();
+    const code = await createRoom(context);
+    const client = context.connect();
+
+    client.send(namelessJoinMessage(code, AN));
+    const first = expectType(await client.next(), "room");
+    expect(first.you).toBeNull();
+    expect(first.room).toMatchObject({ revision: 1, seats: [{ name: "Lan" }, null] });
+    expect((await context.store.get(code))?.revision).toBe(1);
+
+    client.send(sitMessage(AN));
+    const seated = expectType(await client.next(), "room");
+    expect(seated.you).toBe(1);
+    expect(seated.room.seats).toEqual([
+      { kind: "human", name: "Lan" },
+      { kind: "human", name: "An" },
+    ]);
+  });
+
+  it("tells a visitor without a name that a full room has no seat for them", async () => {
+    const context = await start();
+    const { code } = await startGame(context);
+    const client = context.connect();
+
+    client.send(namelessJoinMessage(code, BINH));
+    expect(expectType(await client.next(), "room").you).toBeNull();
+
+    client.send(sitMessage(BINH));
+    expect(await client.next()).toEqual({ type: "rejected", request: "sit", code: "room-full" });
+  });
+
+  it("recognises a seated player greeting without a name, under the name the seat has", async () => {
+    const context = await start();
+    const { code, an } = await startGame(context);
+    an.socket.terminate();
+    const client = context.connect();
+
+    client.send(namelessJoinMessage(code, AN));
+
+    const first = expectType(await client.next(), "room");
+    expect(first.you).toBe(1);
+    expect(first.room.seats[1]).toEqual({ kind: "human", name: "An" });
+  });
+
+  it("still serves a greeting with a name, as sent by tabs opened before this change", async () => {
+    const context = await start();
+    const { code, an } = await startGame(context);
+    an.socket.terminate();
+
+    const { first } = await join(context, code, { ...AN, name: "An Nguyễn" });
+
+    expect(first.you).toBe(1);
+    expect(first.room.seats[1]).toEqual({ kind: "human", name: "An Nguyễn" });
   });
 
   it("finds a room from its code typed in lower case with a space", async () => {

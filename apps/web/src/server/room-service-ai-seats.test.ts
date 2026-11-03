@@ -491,10 +491,22 @@ describe("the server plays the AI seats", () => {
     skipRoomCode(context.rng);
     await roomOnAiTurn(context);
 
-    const joined = expectOk(await context.service.join(CODE, LAN));
+    const joined = expectOk(await context.service.join(CODE, LAN.playerId, LAN.name));
 
     expect(joined.record.entries).toHaveLength(1);
     expect(joined.revision).toBe(6);
+    expect(await stored(context.store, CODE)).toEqual(joined);
+  });
+
+  it("plays on when a seated player comes back without a name, keeping theirs", async () => {
+    const context = setup();
+    skipRoomCode(context.rng);
+    await roomOnAiTurn(context);
+
+    const joined = expectOk(await context.service.join(CODE, LAN.playerId, null));
+
+    expect(joined.record.entries).toHaveLength(1);
+    expect(joined.players[1]).toEqual({ kind: "human", ...LAN });
     expect(await stored(context.store, CODE)).toEqual(joined);
   });
 
@@ -503,7 +515,7 @@ describe("the server plays the AI seats", () => {
     skipRoomCode(context.rng);
     const stuck = await roomOnAiTurn(context);
 
-    expect(expectOk(await context.service.join(CODE, AN))).toEqual(stuck);
+    expect(expectOk(await context.service.join(CODE, AN.playerId, AN.name))).toEqual(stuck);
   });
 
   it("Không ai đi thay ghế máy: refuses a person's move on the AI's turn", async () => {
@@ -524,7 +536,7 @@ describe("the server plays the AI seats", () => {
     context.store.intercept("update", async () => {
       if (raced) return;
       raced = true;
-      expectOk(await context.service.join(context.code, { ...LAN, name: "Lan Anh" }));
+      expectOk(await context.service.join(context.code, LAN.playerId, "Lan Anh"));
     });
 
     const after = expectOk(
@@ -546,7 +558,7 @@ describe("the server plays the AI seats", () => {
     );
     expect(after.record.entries).toHaveLength(1 + MAX_AI_MOVES_PER_WRITE);
 
-    const joined = expectOk(await context.service.join(context.code, LAN));
+    const joined = expectOk(await context.service.join(context.code, LAN.playerId, LAN.name));
     expect(joined.record.entries).toHaveLength(1 + 2 * MAX_AI_MOVES_PER_WRITE);
   });
 

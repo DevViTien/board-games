@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, buttonVariants } from "@board-games/ui";
+import { Button, buttonVariants, StateScreen } from "@board-games/ui";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 
@@ -21,22 +21,22 @@ export function PlayLoadError({ retry }: PlayLoadErrorProps) {
   const t = useTranslations("Play");
 
   return (
-    <main className="mx-auto flex max-w-xl flex-col items-center gap-4 px-4 py-16 text-center">
-      <h1 className="text-2xl font-semibold tracking-tight">{t("loadError.title")}</h1>
-      <p className="text-fg-muted">{t("loadError.description")}</p>
-      <div className="flex flex-wrap justify-center gap-2">
-        <Button
-          onClick={() => {
-            forgetFailedGameEntryLoads();
-            retry();
-          }}
-        >
-          {t("loadError.retry")}
-        </Button>
-        <Link href="/" className={buttonVariants({ variant: "secondary" })}>
-          {t("backToMenu")}
-        </Link>
-      </div>
-    </main>
+    <StateScreen
+      title={t("loadError.title")}
+      description={t("loadError.description")}
+      tone="warning"
+    >
+      <Button
+        onClick={() => {
+          forgetFailedGameEntryLoads();
+          retry();
+        }}
+      >
+        {t("loadError.retry")}
+      </Button>
+      <Link href="/" className={buttonVariants({ variant: "secondary" })}>
+        {t("backToMenu")}
+      </Link>
+    </StateScreen>
   );
 }

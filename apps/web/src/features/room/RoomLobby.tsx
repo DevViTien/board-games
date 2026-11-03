@@ -6,7 +6,7 @@ import type { RoomView } from "@board-games/protocol";
 import { Badge, Button, buttonVariants, Card, Input } from "@board-games/ui";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { parsePlayerName } from "@/features/identity/identity";
 import { NameField } from "@/features/identity/NameField";
@@ -28,7 +28,10 @@ interface RoomLobbyProps {
   /** This player's seat, or `null` while they have none. */
   readonly you: PlayerIndex | null;
   readonly status: ConnectionStatus;
-  /** The name remembered on this browser, offered in the field before "Join game". */
+  /**
+   * The name remembered on this browser, offered in the field before "Join game"; empty for a
+   * visitor who has not chosen one yet, whom the lobby asks for it (change `ask-name-in-lobby`).
+   */
   readonly name: string;
   /**
    * Asks the server for a seat under `name` and remembers that name; `false` when it could not be
@@ -90,6 +93,8 @@ export function RoomLobby({
   const nameInput = useRef<HTMLInputElement>(null);
   const [copy, setCopy] = useState<CopyState>("idle");
   const [draft, setDraft] = useState(name);
+  // Decided once, when the lobby first shows: a visitor without a name is asked for one here.
+  const [asksName] = useState(name === "");
   const [tried, setTried] = useState(false);
   const [sitting, setSitting] = useState(false);
   const [aiSeatRequest, setAiSeatRequest] = useState<AiSeatRequest | null>(null);
@@ -112,6 +117,11 @@ export function RoomLobby({
     aiSeatRequest.refusals === aiSeatRefusals &&
     (aiSeatRequest.on ? askedSeat?.kind !== "ai" : askedSeat !== null);
   const rules = optionLabels.summary(gameId, optionChoices, room.record.options);
+
+  // The name is the one thing to do first: its field takes the focus, its hint read with it.
+  useEffect(() => {
+    if (asksName) nameInput.current?.focus();
+  }, [asksName]);
 
   // A "Join game" lost with the connection may be pressed again once back.
   if (sitting && status !== CONNECTION_STATUS.Online) setSitting(false);
@@ -165,16 +175,17 @@ export function RoomLobby({
         </Link>
       </header>
 
-      <ConnectionNotice status={status} onResume={onResume} />
+      {/* Nothing below would jump much: no space kept while the connection is fine. */}
+      <ConnectionNotice status={status} onResume={onResume} reserveSpace={false} />
 
       <Card className="flex flex-col gap-4 p-6">
-        {rules !== null && <p className="font-medium">{t("rules", { rules })}</p>}
+        {rules !== null && <p className="font-semibold">{t("rules", { rules })}</p>}
         <dl className="flex flex-col gap-1">
-          <dt className="text-sm font-medium text-fg-muted">{t("code")}</dt>
+          <dt className="text-sm font-semibold text-fg-muted">{t("code")}</dt>
           <dd className="font-mono text-2xl font-semibold tracking-widest">{room.code}</dd>
         </dl>
         <div className="flex flex-col gap-2">
-          <label htmlFor={linkId} className="text-sm font-medium text-fg-muted">
+          <label htmlFor={linkId} className="text-sm font-semibold text-fg-muted">
             {t("inviteLink")}
           </label>
           <Input
@@ -203,7 +214,7 @@ export function RoomLobby({
       </Card>
 
       <section aria-labelledby={playersId} className="flex flex-col gap-3">
-        <h2 id={playersId} className="text-lg font-medium">
+        <h2 id={playersId} className="text-lg font-semibold">
           {t("players")}
         </h2>
         <ol className="flex flex-col gap-2">
@@ -217,7 +228,7 @@ export function RoomLobby({
                   ) : seat.kind === "ai" ? (
                     <span>{t("aiSeat")}</span>
                   ) : index === you ? (
-                    <span className="font-medium">{t("you", { name: seat.name })}</span>
+                    <span className="font-semibold">{t("you", { name: seat.name })}</span>
                   ) : (
                     <span>{seat.name}</span>
                   )}
@@ -259,8 +270,14 @@ export function RoomLobby({
             sit();
           }}
         >
-          <NameField ref={nameInput} value={draft} onChange={setDraft} showError={tried} />
-          <Button type="submit" size="lg" className="self-start" aria-disabled={sitting}>
+          <NameField
+            ref={nameInput}
+            value={draft}
+            onChange={setDraft}
+            showError={tried}
+            hint={asksName ? t("nameHint") : undefined}
+          />
+          <Button type="submit" className="self-start" aria-disabled={sitting}>
             {t("sit")}
           </Button>
         </form>
