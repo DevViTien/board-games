@@ -42,7 +42,7 @@ describe("buildMenu", () => {
     expect(buildMenu().map((game) => [game.kind, game.id])).toEqual([
       ["playable", "tictactoe"],
       ["playable", "caro"],
-      ["planned", "ludo"],
+      ["playable", "ludo"],
       ["planned", "chess"],
     ]);
   });
@@ -61,6 +61,8 @@ describe("buildOptionChoices", () => {
         ],
         defaults: { size: 15, rule: "blocked-ends" },
       },
+      // Cờ cá ngựa plays only its default rules in M6: nothing to choose.
+      ludo: { choices: [], defaults: {} },
     });
     expect(JSON.parse(JSON.stringify(choices))).toEqual(choices);
   });

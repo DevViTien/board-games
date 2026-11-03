@@ -1,4 +1,4 @@
-import { caro, type CaroMove, type CaroState } from "@board-games/games";
+import { caro, type CaroMove, type CaroState } from "@board-games/games/caro";
 import { act, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
@@ -57,6 +57,12 @@ function PlayableBoard({ onMove }: { onMove?: (move: CaroMove) => void }) {
 
 const cellButton = (row: number, col: number) =>
   screen.getByRole("button", { name: new RegExp(`^Hàng ${row}, cột ${col},`) });
+/** Checks the focused element is the cell at `row`, `col`, without searching the 225 cells by name. */
+function expectFocusOn(row: number, col: number) {
+  expect(document.activeElement).toHaveAccessibleName(new RegExp(`^Hàng ${row}, cột ${col},`));
+}
+/** Keys are typed at once: the board's handlers are what is tested, not typing speed. */
+const keyboardUser = () => userEvent.setup({ delay: null });
 const selectedCells = () => screen.queryAllByRole("gridcell", { selected: true });
 
 /** Makes the board measure its cells as `px` CSS pixels wide (jsdom does no layout). */
@@ -157,10 +163,9 @@ describe("CaroBoard with the keyboard", () => {
   it("is entered with Tab on the centre cell when no move has been played", async () => {
     renderWithIntl(<CaroBoard {...boardProps(EMPTY)} />);
 
-    await userEvent.tab();
+    await keyboardUser().tab();
 
-    expect(cellButton(8, 8)).toHaveFocus();
-    expect(cellButton(8, 8)).toHaveAccessibleName("Hàng 8, cột 8, trống");
+    expect(document.activeElement).toHaveAccessibleName("Hàng 8, cột 8, trống");
   });
 
   it("is entered with Tab on the cell of the last move", async () => {
@@ -169,28 +174,27 @@ describe("CaroBoard with the keyboard", () => {
       <CaroBoard {...boardProps(state, { lastEntry: { move: { cell: at(3, 4) } } })} />,
     );
 
-    await userEvent.tab();
+    await keyboardUser().tab();
 
-    expect(cellButton(3, 4)).toHaveFocus();
+    expectFocusOn(3, 4);
   });
 
   it("moves with the arrows and places a stone with Enter, keeping the focus there", async () => {
     const onMove = vi.fn();
     renderWithIntl(<PlayableBoard onMove={onMove} />);
-    const user = userEvent.setup();
+    const user = keyboardUser();
 
     await user.tab();
     await user.keyboard("{ArrowRight}{Enter}");
 
     expect(onMove).toHaveBeenCalledWith({ cell: at(8, 9) });
-    expect(cellButton(8, 9)).toHaveAccessibleName("Hàng 8, cột 9, X");
-    expect(cellButton(8, 9)).toHaveFocus();
+    expect(document.activeElement).toHaveAccessibleName("Hàng 8, cột 9, X");
   });
 
   it("places a stone with Space too", async () => {
     const onMove = vi.fn();
     renderWithIntl(<PlayableBoard onMove={onMove} />);
-    const user = userEvent.setup();
+    const user = keyboardUser();
 
     await user.tab();
     await user.keyboard("{ArrowDown}[Space]");
@@ -200,21 +204,21 @@ describe("CaroBoard with the keyboard", () => {
 
   it("stops at the edges, and goes to the start and end of the row with Home and End", async () => {
     renderWithIntl(<CaroBoard {...boardProps(EMPTY)} />);
-    const user = userEvent.setup();
+    const user = keyboardUser();
 
     await user.tab();
     await user.keyboard("{Home}");
-    expect(cellButton(8, 1)).toHaveFocus();
+    expectFocusOn(8, 1);
     await user.keyboard("{ArrowLeft}");
-    expect(cellButton(8, 1)).toHaveFocus();
-    for (let press = 0; press < 9; press += 1) await user.keyboard("{ArrowUp}");
-    expect(cellButton(1, 1)).toHaveFocus();
+    expectFocusOn(8, 1);
+    await user.keyboard("{ArrowUp>9/}");
+    expectFocusOn(1, 1);
     await user.keyboard("{End}");
-    expect(cellButton(1, 15)).toHaveFocus();
+    expectFocusOn(1, 15);
     await user.keyboard("{ArrowRight}");
-    expect(cellButton(1, 15)).toHaveFocus();
-    for (let press = 0; press < 16; press += 1) await user.keyboard("{ArrowDown}");
-    expect(cellButton(15, 15)).toHaveFocus();
+    expectFocusOn(1, 15);
+    await user.keyboard("{ArrowDown>16/}");
+    expectFocusOn(15, 15);
   });
 
   it("is a single Tab stop: Tab leaves the board, Shift+Tab comes back to the same cell", async () => {
@@ -224,7 +228,7 @@ describe("CaroBoard with the keyboard", () => {
         <button type="button">after</button>
       </>,
     );
-    const user = userEvent.setup();
+    const user = keyboardUser();
 
     await user.tab();
     await user.keyboard("{ArrowLeft}{ArrowLeft}");
@@ -232,7 +236,7 @@ describe("CaroBoard with the keyboard", () => {
     expect(screen.getByRole("button", { name: "after" })).toHaveFocus();
 
     await user.tab({ shift: true });
-    expect(cellButton(8, 6)).toHaveFocus();
+    expectFocusOn(8, 6);
     const grid = screen.getByRole("grid", { name: "Bàn cờ" });
     expect(grid.querySelectorAll('button[tabindex="0"]')).toHaveLength(1);
   });

@@ -23,7 +23,7 @@
         "x": "X",
         "o": "O"
       },
-      "move": "hàng {row}, cột {col}"
+      "move": "đánh hàng {row}, cột {col}"
     },
     "caro": {
       "name": "Cờ caro",
@@ -31,7 +31,7 @@
         "x": "X",
         "o": "O"
       },
-      "move": "hàng {row}, cột {col}",
+      "move": "đánh hàng {row}, cột {col}",
       "winningCell": "Thuộc hàng thắng",
       "boardHint": "Chạm lần nữa để đặt quân",
       "options": {
@@ -53,7 +53,52 @@
       }
     },
     "ludo": {
-      "name": "Cờ cá ngựa"
+      "name": "Cờ cá ngựa",
+      "colours": {
+        "red": "Đỏ",
+        "blue": "Xanh dương",
+        "yellow": "Vàng",
+        "green": "Xanh lá"
+      },
+      "roll": "Gieo xúc xắc",
+      "die": "Xúc xắc: {face} ({player})",
+      "dieEmpty": "Xúc xắc: chưa gieo",
+      "hint": {
+        "choose": "{player} gieo được {face}. Chọn ngựa để đi.",
+        "rolled": "{player} gieo được {face}.",
+        "lost": "{player} gieo được {face}. Không ngựa nào đi được, mất lượt.",
+        "noMoveAgain": "{player} gieo được 6, không đi được, được gieo thêm.",
+        "again": "{player} được gieo thêm."
+      },
+      "chooseHorse": "Chọn ngựa",
+      "option": "Ngựa {number}: {action}",
+      "target": {
+        "out": "ra chuồng",
+        "gate": "tới chân chuồng",
+        "step": "lên bậc {step}",
+        "cell": "tới ô {cell}"
+      },
+      "kick": "{action}, đá ngựa {colour}",
+      "move": {
+        "roll": "gieo được {face}",
+        "lost": "gieo được {face}, mất lượt",
+        "again": "gieo được 6, không đi được, được gieo thêm",
+        "out": "cho ngựa {number} ra chuồng",
+        "gate": "đi ngựa {number} tới chân chuồng",
+        "step": "đi ngựa {number} lên bậc {step}",
+        "cell": "đi ngựa {number} tới ô {cell}"
+      },
+      "moveKick": "{action}, đá ngựa {colour}",
+      "positions": "Vị trí các ngựa",
+      "position": "{colour}, ngựa {number}: {where}",
+      "where": {
+        "stable": "trong chuồng",
+        "gate": "chân chuồng",
+        "step": "bậc {step}",
+        "cell": "ô {cell}"
+      },
+      "justMoved": "{position} (vừa đi)",
+      "justKicked": "{position} (vừa bị đá)"
     },
     "chess": {
       "name": "Cờ vua"
@@ -76,6 +121,8 @@
       "local": "Cùng máy",
       "online": "Online"
     },
+    "players": "Số người chơi",
+    "playerCount": "{count} người",
     "level": "Mức độ",
     "first": "Ai đi trước",
     "firsts": {
@@ -132,20 +179,32 @@
       "retry": "Thử lại"
     },
     "yourTurn": "Đến lượt bạn ({player})",
-    "aiMovedYourTurn": "Máy đánh {move}. Đến lượt bạn ({player})",
+    "aiMovedYourTurn": "Máy {move}. Đến lượt bạn ({player})",
     "aiThinking": "Máy đang nghĩ…",
     "youWin": "Bạn thắng!",
     "aiWins": "Máy thắng!",
+    "aiSeatThinking": "Máy ({player}) đang nghĩ…",
+    "aiSeatMovedYourTurn": "Máy ({mover}) {move}. Đến lượt bạn ({player})",
+    "aiSeatWins": "Máy ({player}) thắng!",
+    "aiSeatMovedAiThinking": "Máy ({mover}) {move}. Máy ({player}) đang nghĩ…",
+    "aiMovedAiThinking": "Máy {move}. Máy đang nghĩ…",
     "modeNotFound": {
       "title": "Không tìm thấy trang chơi này",
       "description": "Đường dẫn này không dẫn tới cách chơi nào của Board Games Hub."
     },
     "online": "Online",
     "opponent": "Đối thủ",
-    "opponentMovedYourTurn": "{name} vừa đánh {move}. Đến lượt bạn ({player})",
+    "opponentMovedYourTurn": "{name} vừa {move}. Đến lượt bạn ({player})",
     "waitingFor": "Đang chờ {name}…",
+    "opponentMovedAiThinking": "{name} vừa {move}. Máy đang nghĩ…",
+    "opponentMovedAiSeatThinking": "{name} vừa {move}. Máy ({player}) đang nghĩ…",
+    "opponentMovedWaitingFor": "{name} vừa {move}. Đang chờ {next}…",
+    "aiMovedWaitingFor": "Máy {move}. Đang chờ {name}…",
+    "aiSeatMovedWaitingFor": "Máy ({mover}) {move}. Đang chờ {name}…",
     "newGameYouFirst": "Ván mới: bạn cầm {player} và đi trước",
     "newGameOpponentFirst": "Ván mới: bạn cầm {player}, {name} đi trước",
+    "newGameAiFirst": "Ván mới: bạn cầm {player}, máy đi trước",
+    "newGameAiSeatFirst": "Ván mới: bạn cầm {player}, máy ({first}) đi trước",
     "opponentWins": "{name} thắng",
     "rematch": "Chơi lại",
     "invalidMove": "Nước đi không hợp lệ.",
@@ -184,6 +243,13 @@
     "players": "Người chơi",
     "you": "{name} (bạn)",
     "emptySeat": "Đang chờ…",
+    "aiSeat": "Máy",
+    "host": "Chủ phòng",
+    "addAi": "Cho máy chơi",
+    "addAiLabel": "Cho máy chơi ghế {seat}",
+    "addAiAndStartLabel": "Cho máy chơi ghế {seat} và bắt đầu ván",
+    "removeAi": "Bỏ máy",
+    "removeAiLabel": "Bỏ máy ở ghế {seat}",
     "sit": "Vào chơi",
     "waitingForFriends": "Gửi link mời cho bạn bè. Ván bắt đầu khi đủ người.",
     "rules": "Luật: {rules}",

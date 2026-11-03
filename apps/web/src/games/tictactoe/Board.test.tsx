@@ -1,4 +1,4 @@
-import { tictactoe, type TicTacToeMove, type TicTacToeState } from "@board-games/games";
+import { tictactoe, type TicTacToeMove, type TicTacToeState } from "@board-games/games/tictactoe";
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";

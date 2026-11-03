@@ -1,4 +1,4 @@
-import { caro } from "@board-games/games";
+import { caro } from "@board-games/games/caro";
 
 import { defineGameEntry } from "../define-game-entry";
 import { CaroBoard } from "./Board";

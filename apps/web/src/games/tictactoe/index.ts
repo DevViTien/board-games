@@ -1,4 +1,4 @@
-import { tictactoe } from "@board-games/games";
+import { tictactoe } from "@board-games/games/tictactoe";
 
 import { defineGameEntry } from "../define-game-entry";
 import { TicTacToeBoard } from "./Board";

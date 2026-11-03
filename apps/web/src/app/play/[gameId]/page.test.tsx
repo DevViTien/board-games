@@ -1,9 +1,10 @@
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { SetupScreen } from "@/features/setup/SetupScreen";
 import { renderWithIntl } from "@/test/render-with-intl";
+import { createMemoryStore } from "@/transport/memory-store";
 
 import SetupError from "./error";
 import GameNotFound from "./not-found";
@@ -30,6 +31,7 @@ describe("/play/[gameId]", () => {
     expect(page.props).toEqual({
       gameId: "tictactoe",
       supportsAI: true,
+      players: { min: 2, max: 2 },
       optionChoices: [],
       defaultOptions: {},
       realtimeUrl: "ws://localhost:3101/api/realtime",
@@ -47,6 +49,29 @@ describe("/play/[gameId]", () => {
       defaultOptions: { size: 15, rule: "blocked-ends" },
     });
     expect(JSON.parse(JSON.stringify(page.props))).toEqual(page.props);
+  });
+
+  it("Không có nhóm tuỳ chọn luật: Cờ cá ngựa offers its number of players and no rule", async () => {
+    const page = await SetupPage({ params: Promise.resolve({ gameId: "ludo" }) });
+
+    expect(page.props).toMatchObject({
+      gameId: "ludo",
+      supportsAI: true,
+      players: { min: 2, max: 4 },
+      optionChoices: [],
+      defaultOptions: {},
+    });
+    renderWithIntl(<SetupScreen {...page.props} store={createMemoryStore()} />);
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Bắt đầu" })).toHaveAttribute(
+        "aria-disabled",
+        "false",
+      );
+    });
+    const names = ["Chế độ", "Số người chơi", "Mức độ", "Ai đi trước"];
+    expect(screen.getAllByRole("group")).toEqual(
+      names.map((name) => screen.getByRole("group", { name })),
+    );
   });
 
   it("calls notFound for an unknown game", async () => {

@@ -1,7 +1,7 @@
 "use client";
 
 import type { PlayerIndex } from "@board-games/engine";
-import { type CaroMove, type CaroState, caroWinningLine } from "@board-games/games";
+import { type CaroMove, type CaroState, caroWinningLine } from "@board-games/games/caro";
 import { cn } from "@board-games/ui";
 import { useTranslations } from "next-intl";
 import {

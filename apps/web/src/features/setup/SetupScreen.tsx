@@ -27,6 +27,8 @@ import {
 
 import {
   DEFAULT_PLAY_SETUP,
+  hasPlayerChoice,
+  type PlayerRange,
   SETUP_MODE,
   type SetupChoice,
   type SetupMode,
@@ -64,6 +66,8 @@ interface SetupScreenProps {
   readonly gameId: RegisteredGameId;
   /** Whether the game can be played against the AI; otherwise that mode is not offered. */
   readonly supportsAI: boolean;
+  /** How many players the game allows; a group to choose from when it allows more than one number. */
+  readonly players: PlayerRange;
   /** The rule options the game lets players choose, one group each; none by default. */
   readonly optionChoices?: readonly OptionChoiceList[];
   /** The game's default value of each option in `optionChoices`. */
@@ -77,16 +81,17 @@ interface SetupScreenProps {
 }
 
 /**
- * `/play/<gameId>`: how to play (against the AI, on this device or online, the level, who moves
- * first, the rule options the game offers) and the games of this game still in progress. "Start"
- * opens the play screen with the new game in its address; this screen never writes or deletes a
- * saved game itself, so a saved game that cannot be read is still never overwritten (the transport
- * decides, see `createLocalTransport`). "Create room" drops no game, so it neither waits for nor
- * asks about the games in progress.
+ * `/play/<gameId>`: how to play (against the AI, on this device or online, the number of players
+ * when the game lets them choose, the level, who moves first, the rule options the game offers) and
+ * the games of this game still in progress. "Start" opens the play screen with the new game in its
+ * address; this screen never writes or deletes a saved game itself, so a saved game that cannot be
+ * read is still never overwritten (the transport decides, see `createLocalTransport`). "Create
+ * room" drops no game, so it neither waits for nor asks about the games in progress.
  */
 export function SetupScreen({
   gameId,
   supportsAI,
+  players,
   optionChoices = NO_OPTION_CHOICES,
   defaultOptions = NO_OPTIONS,
   realtimeUrl,
@@ -104,8 +109,11 @@ export function SetupScreen({
   const [choice, setChoice] = useState<SetupChoice>({
     ...DEFAULT_PLAY_SETUP,
     mode: supportsAI ? DEFAULT_PLAY_SETUP.mode : SETUP_MODE.Local,
+    playerCount: players.min,
     options: defaultOptions,
   });
+  const { min: minPlayers, max: maxPlayers } = players;
+  const playerChoice = hasPlayerChoice(players);
   const saved = useGamesInProgress(store);
   const ownGames = saved.status === "ready" ? gamesOf(saved.games, gameId) : [];
   const [confirming, setConfirming] = useState(false);
@@ -130,17 +138,20 @@ export function SetupScreen({
   // server renders the defaults, and the remembered ones are applied after mount, without a
   // hydration mismatch.
   useEffect(() => {
-    const remembered = readSetupChoice(gameId, supportsAI, optionChoices, defaultOptions);
+    const remembered = readSetupChoice(gameId, supportsAI, optionChoices, defaultOptions, {
+      min: minPlayers,
+      max: maxPlayers,
+    });
     // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is only readable after mount; reading it during render would not match the server's HTML
     if (remembered !== undefined) setChoice(remembered);
     setName(readIdentity()?.name ?? "");
-  }, [gameId, supportsAI, optionChoices, defaultOptions]);
+  }, [gameId, supportsAI, optionChoices, defaultOptions, minPlayers, maxPlayers]);
 
   function begin(): void {
     const { mode } = choice;
     if (mode === SETUP_MODE.Online) return;
     writeSetupChoice(gameId, choice);
-    router.push(toStartUrl(gameId, toPlaySetup({ ...choice, mode })));
+    router.push(toStartUrl(gameId, toPlaySetup({ ...choice, mode }, players)));
   }
 
   async function createOnlineRoom(): Promise<void> {
@@ -161,6 +172,8 @@ export function SetupScreen({
       identity: saveName(parsed),
       // `createRoom` leaves out the options of a game without any.
       options: choice.options,
+      // A game with a fixed number of players gets the server's: its request stays as it was.
+      ...(playerChoice ? { playerCount: choice.playerCount } : {}),
     });
     if (!mounted.current) return;
     if (!created.ok) {
@@ -212,6 +225,21 @@ export function SetupScreen({
             update({ mode });
           }}
         />
+        {/* Before the AI's groups: the number of players decides how many seats the AI takes. It
+            applies to every mode, and is kept when the mode changes. */}
+        {playerChoice && (
+          <RadioGroup
+            legend={t("players")}
+            options={Array.from({ length: maxPlayers - minPlayers + 1 }, (_, index) => {
+              const count = minPlayers + index;
+              return { value: String(count), label: t("playerCount", { count }) };
+            })}
+            value={String(choice.playerCount)}
+            onChange={(picked) => {
+              update({ playerCount: Number(picked) });
+            }}
+          />
+        )}
         {choice.mode === "ai" && (
           <>
             <RadioGroup

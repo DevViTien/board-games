@@ -1,4 +1,4 @@
-import { caro, type CaroState } from "@board-games/games";
+import { caro, type CaroState } from "@board-games/games/caro";
 import { screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
@@ -22,10 +22,10 @@ function PlayerLabels() {
 
 describe("Cờ caro labels", () => {
   it.each([
-    [19, 360, "hàng 19, cột 19"],
-    [15, 224, "hàng 15, cột 15"],
-    [19, 19, "hàng 2, cột 1"],
-    [15, 15, "hàng 2, cột 1"],
+    [19, 360, "đánh hàng 19, cột 19"],
+    [15, 224, "đánh hàng 15, cột 15"],
+    [19, 19, "đánh hàng 2, cột 1"],
+    [15, 15, "đánh hàng 2, cột 1"],
   ] as const)("read a move on a %i×… board by row and column (cell %i)", (size, cell, text) => {
     renderWithIntl(<MoveLabel cell={cell} state={board(size)} />);
 
@@ -35,7 +35,7 @@ describe("Cờ caro labels", () => {
   it("read a move in English", () => {
     renderWithIntl(<MoveLabel cell={360} state={board(19)} />, { locale: "en" });
 
-    expect(screen.getByText("row 19, column 19")).toBeInTheDocument();
+    expect(screen.getByText("played row 19, column 19")).toBeInTheDocument();
   });
 
   it("name the players X and O", () => {

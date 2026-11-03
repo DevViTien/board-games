@@ -21,12 +21,17 @@ export interface BoardProps<State, Move, Outcome = never> {
 /** The part of a game that lives in the app: its board and how its players are named. */
 export interface GameUI<State, Move, Outcome = never> {
   readonly Board: ComponentType<BoardProps<State, Move, Outcome>>;
-  /** Hook returning the translated name or symbol of a seat (X/O, a colour…). */
-  readonly usePlayerLabel: () => (player: PlayerIndex) => string;
   /**
-   * Hook returning how a move is read out, to fit in a sentence ("row 2, column 3"): the play
-   * screen tells where the AI or the opponent just played with it. `state` is the game's state
-   * after that move, for what the move alone does not say (the size of a Gomoku board).
+   * Hook returning the translated name or symbol of a seat (X/O, a colour…). `state` is the game on
+   * screen, for a name that depends on it (which colours a game for fewer players uses); a game
+   * whose seats are always named the same ignores it.
+   */
+  readonly usePlayerLabel: () => (player: PlayerIndex, state: State) => string;
+  /**
+   * Hook returning how a move is read out, as the action it was, to follow the name of who played
+   * it in a sentence ("played row 2, column 3", "rolled a 5"): the play screen tells what the AI or
+   * the opponent just did with it. `state` is the game's state after that move, for what the move
+   * alone does not say (the size of a Gomoku board).
    */
   readonly useMoveLabel: () => (move: Move, state: State) => string;
 }

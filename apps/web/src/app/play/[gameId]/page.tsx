@@ -34,6 +34,7 @@ export default async function SetupPage({ params }: SetupPageProps) {
     <SetupScreen
       gameId={gameId}
       supportsAI={game.meta.supportsAI}
+      players={game.meta.players}
       optionChoices={optionChoices}
       // `option-choices` of the contract suite checks the defaults are among the choices, so this
       // never falls back to `{}` for a game that offers some.

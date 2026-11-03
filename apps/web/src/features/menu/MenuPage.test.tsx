@@ -51,16 +51,26 @@ describe("MenuPage", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Board Games Hub" })).toBeInTheDocument();
   });
 
-  it("lists Tic-tac-toe and Cờ caro as playable first, then the planned games as coming soon", () => {
+  it("Menu khi có Tic-tac-toe và Cờ caro: the playable games first, Cờ cá ngựa among them, then Cờ vua coming soon", () => {
     renderWithIntl(<MenuPage />);
 
     expect(cardNames()).toEqual(["Tic-tac-toe", "Cờ caro", "Cờ cá ngựa", "Cờ vua"]);
-    for (const name of ["Tic-tac-toe", "Cờ caro"]) {
+    for (const name of ["Tic-tac-toe", "Cờ caro", "Cờ cá ngựa"]) {
       expect(gameCard(name).queryByText("Sắp có")).not.toBeInTheDocument();
+      expect(gameCard(name).getByRole("link", { name: "Chơi" })).toBeInTheDocument();
     }
-    for (const name of ["Cờ cá ngựa", "Cờ vua"]) {
-      expect(gameCard(name).getByText("Sắp có")).toBeInTheDocument();
-    }
+    expect(gameCard("Cờ vua").getByText("Sắp có")).toBeInTheDocument();
+    expect(screen.getAllByText("Sắp có")).toHaveLength(1);
+  });
+
+  it("Thẻ Cờ cá ngựa: 2–4 players, about 20 minutes and a Play link", () => {
+    renderWithIntl(<MenuPage />);
+
+    const card = gameCard("Cờ cá ngựa");
+    expect(card.getByText("2–4 người")).toBeInTheDocument();
+    expect(card.getByText("~20 phút")).toBeInTheDocument();
+    expect(card.getByRole("link", { name: "Chơi" })).toHaveAttribute("href", "/play/ludo");
+    expect(card.queryByText("Sắp có")).not.toBeInTheDocument();
   });
 
   it("shows Cờ caro's card with 2 players, about 10 minutes and a Play link", () => {
@@ -86,8 +96,8 @@ describe("MenuPage", () => {
 
     expect(gameCard("Cờ vua").queryByRole("link")).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("heading", { name: "Cờ vua" }));
-    // The two playable games' cards, and nothing more.
-    expect(screen.getAllByRole("link")).toHaveLength(2);
+    // The three playable games' cards, and nothing more.
+    expect(screen.getAllByRole("link")).toHaveLength(3);
   });
 
   it("has no list of games in progress, and says Play, when none is in progress", async () => {
@@ -161,7 +171,7 @@ describe("MenuPage", () => {
     expect(gameCard("Gomoku").getByText("2 players")).toBeInTheDocument();
     expect(gameCard("Ludo").getByText("2–4 players")).toBeInTheDocument();
     expect(gameCard("Tic-tac-toe").getByRole("link", { name: "Play" })).toBeInTheDocument();
-    expect(screen.getAllByText("Coming soon")).toHaveLength(2);
+    expect(screen.getAllByText("Coming soon")).toHaveLength(1);
   });
 
   it("renders in Japanese", () => {

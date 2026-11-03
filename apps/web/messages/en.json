@@ -23,7 +23,7 @@
         "x": "X",
         "o": "O"
       },
-      "move": "row {row}, column {col}"
+      "move": "played row {row}, column {col}"
     },
     "caro": {
       "name": "Gomoku",
@@ -31,7 +31,7 @@
         "x": "X",
         "o": "O"
       },
-      "move": "row {row}, column {col}",
+      "move": "played row {row}, column {col}",
       "winningCell": "Part of the winning line",
       "boardHint": "Tap again to place your stone",
       "options": {
@@ -53,7 +53,52 @@
       }
     },
     "ludo": {
-      "name": "Ludo"
+      "name": "Ludo",
+      "colours": {
+        "red": "Red",
+        "blue": "Blue",
+        "yellow": "Yellow",
+        "green": "Green"
+      },
+      "roll": "Roll the die",
+      "die": "Die: {face} ({player})",
+      "dieEmpty": "Die: not rolled yet",
+      "hint": {
+        "choose": "{player} rolled {face}. Choose a horse to move.",
+        "rolled": "{player} rolled {face}.",
+        "lost": "{player} rolled {face}. No horse can move; turn lost.",
+        "noMoveAgain": "{player} rolled 6. No horse can move; roll again.",
+        "again": "{player} rolls again."
+      },
+      "chooseHorse": "Choose a horse",
+      "option": "Horse {number}: {action}",
+      "target": {
+        "out": "come out",
+        "gate": "to the home entry",
+        "step": "up to home step {step}",
+        "cell": "to square {cell}"
+      },
+      "kick": "{action}, sending a {colour} horse home",
+      "move": {
+        "roll": "rolled {face}",
+        "lost": "rolled {face} and lost the turn",
+        "again": "rolled 6, could not move and rolls again",
+        "out": "brought horse {number} out",
+        "gate": "moved horse {number} to the home entry",
+        "step": "moved horse {number} up to home step {step}",
+        "cell": "moved horse {number} to square {cell}"
+      },
+      "moveKick": "{action}, sending a {colour} horse home",
+      "positions": "Horse positions",
+      "position": "{colour}, horse {number}: {where}",
+      "where": {
+        "stable": "in the stable",
+        "gate": "on the home entry",
+        "step": "home step {step}",
+        "cell": "square {cell}"
+      },
+      "justMoved": "{position} (just moved)",
+      "justKicked": "{position} (just sent home)"
     },
     "chess": {
       "name": "Chess"
@@ -76,6 +121,8 @@
       "local": "Same device",
       "online": "Online"
     },
+    "players": "Players",
+    "playerCount": "{count, plural, one {# player} other {# players}}",
     "level": "Level",
     "first": "Who moves first",
     "firsts": {
@@ -132,20 +179,32 @@
       "retry": "Try again"
     },
     "yourTurn": "Your move ({player})",
-    "aiMovedYourTurn": "The computer played {move}. Your move ({player})",
+    "aiMovedYourTurn": "The computer {move}. Your move ({player})",
     "aiThinking": "The computer is thinking…",
     "youWin": "You win!",
     "aiWins": "The computer wins!",
+    "aiSeatThinking": "The computer ({player}) is thinking…",
+    "aiSeatMovedYourTurn": "The computer ({mover}) {move}. Your move ({player})",
+    "aiSeatWins": "The computer ({player}) wins!",
+    "aiSeatMovedAiThinking": "The computer ({mover}) {move}. The computer ({player}) is thinking…",
+    "aiMovedAiThinking": "The computer {move}. The computer is thinking…",
     "modeNotFound": {
       "title": "Play page not found",
       "description": "This address does not lead to a way to play on Board Games Hub."
     },
     "online": "Online",
     "opponent": "Opponent",
-    "opponentMovedYourTurn": "{name} played {move}. Your move ({player})",
+    "opponentMovedYourTurn": "{name} {move}. Your move ({player})",
     "waitingFor": "Waiting for {name}…",
+    "opponentMovedAiThinking": "{name} {move}. The computer is thinking…",
+    "opponentMovedAiSeatThinking": "{name} {move}. The computer ({player}) is thinking…",
+    "opponentMovedWaitingFor": "{name} {move}. Waiting for {next}…",
+    "aiMovedWaitingFor": "The computer {move}. Waiting for {name}…",
+    "aiSeatMovedWaitingFor": "The computer ({mover}) {move}. Waiting for {name}…",
     "newGameYouFirst": "New game: you play {player} and move first",
     "newGameOpponentFirst": "New game: you play {player}, {name} moves first",
+    "newGameAiFirst": "New game: you play {player}, the computer moves first",
+    "newGameAiSeatFirst": "New game: you play {player}, the computer ({first}) moves first",
     "opponentWins": "{name} wins",
     "rematch": "Play again",
     "invalidMove": "That move is not allowed.",
@@ -184,6 +243,13 @@
     "players": "Players",
     "you": "{name} (you)",
     "emptySeat": "Waiting…",
+    "aiSeat": "Computer",
+    "host": "Host",
+    "addAi": "Let the computer play",
+    "addAiLabel": "Let the computer play seat {seat}",
+    "addAiAndStartLabel": "Let the computer play seat {seat} and start the game",
+    "removeAi": "Remove computer",
+    "removeAiLabel": "Remove computer from seat {seat}",
     "sit": "Join game",
     "waitingForFriends": "Send the invite link to your friends. The game starts once everyone is in.",
     "rules": "Rules: {rules}",

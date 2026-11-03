@@ -41,6 +41,7 @@ const AI_MEDIUM: ModeSettings = {
   seats: [{ kind: "human" }, { kind: "ai", level: "medium" }],
 };
 const LOCAL: ModeSettings = { kind: "local" };
+const TWO_PLAYERS = { min: 2, max: 2 } as const;
 
 const radio = (name: string) => screen.getByRole("radio", { name });
 const startButton = () => screen.getByRole("button", { name: "Bắt đầu" });
@@ -54,7 +55,13 @@ async function renderSetup({
   supportsAI?: boolean;
 } = {}) {
   const view = renderWithIntl(
-    <SetupScreen gameId="tictactoe" supportsAI={supportsAI} realtimeUrl={null} store={store} />,
+    <SetupScreen
+      gameId="tictactoe"
+      supportsAI={supportsAI}
+      players={TWO_PLAYERS}
+      realtimeUrl={null}
+      store={store}
+    />,
   );
   await waitFor(() => {
     expect(startButton()).toHaveAttribute("aria-disabled", "false");
@@ -257,6 +264,7 @@ describe("SetupScreen", () => {
       <SetupScreen
         gameId="tictactoe"
         supportsAI
+        players={TWO_PLAYERS}
         realtimeUrl={null}
         store={{ ...createMemoryStore(), listInProgress: () => new Promise(() => undefined) }}
       />,
@@ -274,6 +282,7 @@ describe("SetupScreen", () => {
       <SetupScreen
         gameId="tictactoe"
         supportsAI
+        players={TWO_PLAYERS}
         realtimeUrl={null}
         store={{ ...createMemoryStore(), listInProgress: () => new Promise(() => undefined) }}
       />,
@@ -304,7 +313,13 @@ describe("SetupScreen", () => {
 
   it("renders in English", async () => {
     renderWithIntl(
-      <SetupScreen gameId="tictactoe" supportsAI realtimeUrl={null} store={createMemoryStore()} />,
+      <SetupScreen
+        gameId="tictactoe"
+        supportsAI
+        players={TWO_PLAYERS}
+        realtimeUrl={null}
+        store={createMemoryStore()}
+      />,
       {
         locale: "en",
       },
@@ -334,6 +349,7 @@ async function renderOnline({
     <SetupScreen
       gameId="tictactoe"
       supportsAI={supportsAI}
+      players={TWO_PLAYERS}
       realtimeUrl="ws://localhost:3101/api/realtime"
       store={store}
       createRoom={createRoom}
@@ -385,7 +401,13 @@ describe("SetupScreen online", () => {
     view.unmount();
 
     renderWithIntl(
-      <SetupScreen gameId="tictactoe" supportsAI realtimeUrl={null} store={createMemoryStore()} />,
+      <SetupScreen
+        gameId="tictactoe"
+        supportsAI
+        players={TWO_PLAYERS}
+        realtimeUrl={null}
+        store={createMemoryStore()}
+      />,
     );
 
     await waitFor(() => {
@@ -556,6 +578,7 @@ async function renderCaro({
     <SetupScreen
       gameId="caro"
       supportsAI
+      players={TWO_PLAYERS}
       optionChoices={CARO_CHOICES}
       defaultOptions={CARO_DEFAULTS}
       realtimeUrl="ws://localhost:3101/api/realtime"
@@ -744,5 +767,144 @@ describe("SetupScreen rule options", () => {
     expect(createButton()).toHaveAttribute("aria-disabled", "false");
     await userEvent.click(createButton());
     expect(createRoom).toHaveBeenCalledTimes(2);
+  });
+});
+
+/** The setup screen of a game for 2–4 players, once its games in progress are known. */
+async function renderFourPlayerGame({
+  createRoom = vi.fn(() => Promise.resolve<CreateRoomResult>({ ok: true, code: CODE })),
+}: {
+  createRoom?: (options: unknown) => Promise<CreateRoomResult>;
+} = {}) {
+  const view = renderWithIntl(
+    <SetupScreen
+      gameId="tictactoe"
+      supportsAI
+      players={{ min: 2, max: 4 }}
+      realtimeUrl="ws://localhost:3101/api/realtime"
+      store={createMemoryStore()}
+      createRoom={createRoom}
+    />,
+  );
+  await waitFor(() => {
+    expect(startButton()).toHaveAttribute("aria-disabled", "false");
+  });
+  return { view, createRoom };
+}
+
+const playerGroup = () => screen.queryByRole("group", { name: "Số người chơi" });
+
+describe("SetupScreen number of players", () => {
+  it("offers every number the game allows, its smallest chosen the first time", async () => {
+    await renderFourPlayerGame();
+
+    const counts = within(screen.getByRole("group", { name: "Số người chơi" })).getAllByRole(
+      "radio",
+    );
+    expect(counts.map((count) => count.closest("label")?.textContent)).toEqual([
+      "2 người",
+      "3 người",
+      "4 người",
+    ]);
+    expect(checkedIn("Số người chơi")).toHaveAccessibleName("2 người");
+  });
+
+  it("comes before the AI's groups, which depend on it", async () => {
+    await renderFourPlayerGame();
+
+    const group = (name: string) => screen.getByRole("group", { name });
+    expect(screen.getAllByRole("group")).toEqual([
+      group("Chế độ"),
+      group("Số người chơi"),
+      group("Mức độ"),
+      group("Ai đi trước"),
+    ]);
+  });
+
+  it("is not offered for a game with a fixed number of players", async () => {
+    await renderSetup();
+
+    expect(playerGroup()).not.toBeInTheDocument();
+  });
+
+  it("starts a same-device game for 4", async () => {
+    await renderFourPlayerGame();
+
+    await userEvent.click(radio("Cùng máy"));
+    await userEvent.click(radio("4 người"));
+    await userEvent.click(startButton());
+
+    expect(router.push).toHaveBeenCalledWith("/play/tictactoe/local?new=1&players=4");
+    expect(opened()).toEqual({
+      path: "/play/tictactoe/local",
+      setup: { mode: "local", playerCount: 4 },
+    });
+  });
+
+  it("starts a game against the AI with the number chosen", async () => {
+    await renderFourPlayerGame();
+
+    await userEvent.click(radio("3 người"));
+    await userEvent.click(startButton());
+
+    expect(opened().setup).toEqual({ mode: "ai", level: "medium", first: "human", playerCount: 3 });
+  });
+
+  it("keeps the number chosen when the mode changes", async () => {
+    await renderFourPlayerGame();
+
+    await userEvent.click(radio("3 người"));
+    await userEvent.click(radio("Online"));
+
+    expect(checkedIn("Số người chơi")).toHaveAccessibleName("3 người");
+  });
+
+  it("changes the number with the keyboard, and says which one is chosen", async () => {
+    await renderFourPlayerGame();
+    const user = userEvent.setup();
+
+    radio("Đấu với máy").focus();
+    await user.tab();
+    expect(radio("2 người")).toHaveFocus();
+    await user.keyboard("{ArrowRight}");
+
+    expect(checkedIn("Số người chơi")).toHaveAccessibleName("3 người");
+  });
+
+  it("shows the number of the last game started next time", async () => {
+    const first = await renderFourPlayerGame();
+    await userEvent.click(radio("4 người"));
+    await userEvent.click(startButton());
+    first.view.unmount();
+
+    await renderFourPlayerGame();
+
+    expect(checkedIn("Số người chơi")).toHaveAccessibleName("4 người");
+  });
+
+  it("creates a room with as many seats as the number chosen", async () => {
+    const { playerId } = saveName("Minh");
+    const { createRoom } = await renderFourPlayerGame();
+
+    await userEvent.click(radio("Online"));
+    await userEvent.click(radio("3 người"));
+    await userEvent.click(createButton());
+
+    expect(createRoom).toHaveBeenCalledExactlyOnceWith({
+      url: "ws://localhost:3101/api/realtime",
+      gameId: "tictactoe",
+      identity: { playerId, name: "Minh" },
+      options: {},
+      playerCount: 3,
+    });
+  });
+
+  it("creates a room of a game with a fixed number of players without asking for a number", async () => {
+    saveName("Minh");
+    const { createRoom } = await renderOnline();
+
+    await userEvent.click(createButton());
+
+    expect(vi.mocked(createRoom).mock.calls[0]?.[0]).not.toHaveProperty("playerCount");
   });
 });

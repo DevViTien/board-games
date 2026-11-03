@@ -23,7 +23,7 @@
         "x": "X",
         "o": "O"
       },
-      "move": "{row}行{col}列"
+      "move": "{row}行{col}列に打ちました"
     },
     "caro": {
       "name": "五目並べ",
@@ -31,7 +31,7 @@
         "x": "X",
         "o": "O"
       },
-      "move": "{row}行{col}列",
+      "move": "{row}行{col}列に打ちました",
       "winningCell": "勝ちの列",
       "boardHint": "もう一度タップすると石を置きます",
       "options": {
@@ -53,7 +53,52 @@
       }
     },
     "ludo": {
-      "name": "ルドー"
+      "name": "ルドー",
+      "colours": {
+        "red": "赤",
+        "blue": "青",
+        "yellow": "黄",
+        "green": "緑"
+      },
+      "roll": "サイコロを振る",
+      "die": "サイコロ：{face}（{player}）",
+      "dieEmpty": "サイコロ：まだ振っていません",
+      "hint": {
+        "choose": "{player}は{face}を出しました。動かす駒を選んでください。",
+        "rolled": "{player}は{face}を出しました。",
+        "lost": "{player}は{face}を出しました。動かせる駒がないため、手番を失います。",
+        "noMoveAgain": "{player}は6を出しましたが動かせる駒がありません。もう一度振れます。",
+        "again": "{player}はもう一度振れます。"
+      },
+      "chooseHorse": "駒を選ぶ",
+      "option": "駒{number}：{action}",
+      "target": {
+        "out": "陣地から出す",
+        "gate": "ゴール入口へ",
+        "step": "ゴールの{step}段目へ",
+        "cell": "{cell}マス目へ"
+      },
+      "kick": "{action}、{colour}の駒を陣地に戻す",
+      "move": {
+        "roll": "{face}を出しました",
+        "lost": "{face}を出し、手番を失いました",
+        "again": "6を出しましたが動かせず、もう一度振ります",
+        "out": "駒{number}を陣地から出しました",
+        "gate": "駒{number}をゴール入口へ進めました",
+        "step": "駒{number}をゴールの{step}段目へ進めました",
+        "cell": "駒{number}を{cell}マス目へ進めました"
+      },
+      "moveKick": "{action}。{colour}の駒を陣地に戻しました",
+      "positions": "駒の位置",
+      "position": "{colour}、駒{number}：{where}",
+      "where": {
+        "stable": "陣地",
+        "gate": "ゴール入口",
+        "step": "ゴールの{step}段目",
+        "cell": "{cell}マス目"
+      },
+      "justMoved": "{position}（今動いた駒）",
+      "justKicked": "{position}（今戻された駒）"
     },
     "chess": {
       "name": "チェス"
@@ -76,6 +121,8 @@
       "local": "同じ端末で",
       "online": "オンライン"
     },
+    "players": "人数",
+    "playerCount": "{count}人",
     "level": "レベル",
     "first": "先手",
     "firsts": {
@@ -132,20 +179,32 @@
       "retry": "再試行"
     },
     "yourTurn": "あなたの番です（{player}）",
-    "aiMovedYourTurn": "コンピューターは{move}に打ちました。あなたの番です（{player}）",
+    "aiMovedYourTurn": "コンピューターは{move}。あなたの番です（{player}）",
     "aiThinking": "コンピューターが考えています…",
     "youWin": "あなたの勝ち！",
     "aiWins": "コンピューターの勝ち！",
+    "aiSeatThinking": "コンピューター（{player}）が考えています…",
+    "aiSeatMovedYourTurn": "コンピューター（{mover}）は{move}。あなたの番です（{player}）",
+    "aiSeatWins": "コンピューター（{player}）の勝ち！",
+    "aiSeatMovedAiThinking": "コンピューター（{mover}）は{move}。コンピューター（{player}）が考えています…",
+    "aiMovedAiThinking": "コンピューターは{move}。コンピューターが考えています…",
     "modeNotFound": {
       "title": "このプレイページは見つかりません",
       "description": "このアドレスに対応する遊び方は Board Games Hub にありません。"
     },
     "online": "オンライン",
     "opponent": "相手",
-    "opponentMovedYourTurn": "{name}が{move}に打ちました。あなたの番です（{player}）",
+    "opponentMovedYourTurn": "{name}が{move}。あなたの番です（{player}）",
     "waitingFor": "{name}を待っています…",
+    "opponentMovedAiThinking": "{name}が{move}。コンピューターが考えています…",
+    "opponentMovedAiSeatThinking": "{name}が{move}。コンピューター（{player}）が考えています…",
+    "opponentMovedWaitingFor": "{name}が{move}。{next}を待っています…",
+    "aiMovedWaitingFor": "コンピューターは{move}。{name}を待っています…",
+    "aiSeatMovedWaitingFor": "コンピューター（{mover}）は{move}。{name}を待っています…",
     "newGameYouFirst": "新しい対局：あなたは{player}で先手です",
     "newGameOpponentFirst": "新しい対局：あなたは{player}、{name}が先手です",
+    "newGameAiFirst": "新しい対局：あなたは{player}、コンピューターが先手です",
+    "newGameAiSeatFirst": "新しい対局：あなたは{player}、コンピューター（{first}）が先手です",
     "opponentWins": "{name}の勝ち",
     "rematch": "もう一度",
     "invalidMove": "その手は打てません。",
@@ -184,6 +243,13 @@
     "players": "プレイヤー",
     "you": "{name}（あなた）",
     "emptySeat": "待っています…",
+    "aiSeat": "コンピューター",
+    "host": "ホスト",
+    "addAi": "コンピューターに任せる",
+    "addAiLabel": "コンピューターに任せる：席{seat}",
+    "addAiAndStartLabel": "コンピューターに任せる：席{seat}（対局を始めます）",
+    "removeAi": "コンピューターを外す",
+    "removeAiLabel": "コンピューターを外す：席{seat}",
     "sit": "参加する",
     "waitingForFriends": "招待リンクを友だちに送ってください。全員そろうと対局が始まります。",
     "rules": "ルール：{rules}",

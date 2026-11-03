@@ -109,29 +109,38 @@ export function createFakeEnvironment(): FakeEnvironment {
 
 export const ROOM_CODE = "ABC234" as RoomCode;
 
+/** An AI seat in `roomView`, where a string is a person by name. */
+export const AI = { kind: "ai" } as const;
+
 interface RoomOptions {
   readonly revision?: number;
   readonly gameNumber?: number;
-  readonly seats?: readonly (string | null)[];
+  readonly seats?: readonly (string | typeof AI | null)[];
+  /** The host's seat; the first by default. */
+  readonly host?: PlayerIndex | null;
   /** Tic-tac-toe cells played, X first. */
   readonly cells?: readonly number[];
   readonly record?: GameRecord;
 }
 
-/** A Tic-tac-toe room as the server sends it. */
+/** A room as the server sends it: Tic-tac-toe, or the game of `record`. */
 export function roomView({
   revision = 1,
   gameNumber = 1,
   seats = ["Minh", null],
+  host = 0,
   cells = [],
   record,
 }: RoomOptions = {}): RoomView {
   return {
     code: ROOM_CODE,
-    gameId: "tictactoe",
+    gameId: record?.gameId ?? "tictactoe",
     revision,
     gameNumber,
-    seats: seats.map((name) => (name === null ? null : { name })),
+    seats: seats.map((seat) =>
+      seat === null || typeof seat === "object" ? seat : { kind: "human", name: seat },
+    ),
+    host,
     record: record ?? {
       version: 1,
       gameId: "tictactoe",

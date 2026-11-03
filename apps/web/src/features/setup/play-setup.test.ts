@@ -2,7 +2,16 @@ import { describe, expect, it } from "vitest";
 
 import type { PlaySetup } from "@/transport/types";
 
-import { DEFAULT_PLAY_SETUP, readStartRequest, toPlaySetup, toStartUrl } from "./play-setup";
+import {
+  DEFAULT_PLAY_SETUP,
+  hasPlayerChoice,
+  readStartRequest,
+  toPlaySetup,
+  toStartUrl,
+} from "./play-setup";
+
+const TWO_PLAYERS = { min: 2, max: 2 } as const;
+const TWO_TO_FOUR = { min: 2, max: 4 } as const;
 
 /** Splits a start URL as the play screen sees it: its path and its query. */
 function open(url: string) {
@@ -48,10 +57,20 @@ describe("play setup", () => {
   });
 
   it("keeps only the choices that matter for the mode", () => {
-    expect(toPlaySetup({ mode: "local", level: "hard", first: "ai", options: {} })).toStrictEqual({
+    expect(
+      toPlaySetup(
+        { mode: "local", level: "hard", first: "ai", playerCount: 2, options: {} },
+        TWO_PLAYERS,
+      ),
+    ).toStrictEqual({
       mode: "local",
     });
-    expect(toPlaySetup({ mode: "ai", level: "hard", first: "ai", options: {} })).toStrictEqual({
+    expect(
+      toPlaySetup(
+        { mode: "ai", level: "hard", first: "ai", playerCount: 2, options: {} },
+        TWO_PLAYERS,
+      ),
+    ).toStrictEqual({
       mode: "ai",
       level: "hard",
       first: "ai",
@@ -61,11 +80,18 @@ describe("play setup", () => {
   it("keeps the rule options of a game that has some, in every mode", () => {
     const options = { size: 19, rule: "free" };
 
-    expect(toPlaySetup({ mode: "local", level: "hard", first: "ai", options })).toEqual({
+    expect(
+      toPlaySetup(
+        { mode: "local", level: "hard", first: "ai", playerCount: 2, options },
+        TWO_PLAYERS,
+      ),
+    ).toEqual({
       mode: "local",
       options,
     });
-    expect(toPlaySetup({ mode: "ai", level: "hard", first: "ai", options })).toEqual({
+    expect(
+      toPlaySetup({ mode: "ai", level: "hard", first: "ai", playerCount: 2, options }, TWO_PLAYERS),
+    ).toEqual({
       mode: "ai",
       level: "hard",
       first: "ai",
@@ -89,7 +115,10 @@ describe("play setup", () => {
   });
 
   it("leaves rule options out of the start URL of a game without any", () => {
-    const setup = toPlaySetup({ mode: "ai", level: "hard", first: "ai", options: {} });
+    const setup = toPlaySetup(
+      { mode: "ai", level: "hard", first: "ai", playerCount: 2, options: {} },
+      TWO_PLAYERS,
+    );
 
     expect(toStartUrl("tictactoe", setup)).not.toContain("options");
   });
@@ -109,4 +138,72 @@ describe("play setup", () => {
       expect(readStartRequest(params, mode)).toBeUndefined();
     },
   );
+
+  describe("number of players", () => {
+    it("is a choice only when the game allows more than one number", () => {
+      expect(hasPlayerChoice(TWO_PLAYERS)).toBe(false);
+      expect(hasPlayerChoice(TWO_TO_FOUR)).toBe(true);
+    });
+
+    it.each(["local", "ai"] as const)(
+      "is kept in the setup of a game with a choice of players (%s)",
+      (mode) => {
+        const setup = toPlaySetup(
+          { mode, level: "easy", first: "ai", playerCount: 3, options: {} },
+          TWO_TO_FOUR,
+        );
+
+        expect(setup).toMatchObject({ mode, playerCount: 3 });
+      },
+    );
+
+    it("is left out of the setup and the start URL of a game with a fixed number", () => {
+      const setup = toPlaySetup(
+        { mode: "local", level: "easy", first: "ai", playerCount: 2, options: {} },
+        TWO_PLAYERS,
+      );
+
+      expect(setup).toStrictEqual({ mode: "local" });
+      expect(toStartUrl("tictactoe", setup)).toBe("/play/tictactoe/local?new=1");
+    });
+
+    it("puts the number of players in the start URL", () => {
+      expect(toStartUrl("ludo", { mode: "local", playerCount: 4 })).toBe(
+        "/play/ludo/local?new=1&players=4",
+      );
+    });
+
+    it.each<PlaySetup>([
+      { mode: "local", playerCount: 4 },
+      { mode: "ai", level: "hard", first: "random", playerCount: 3 },
+      { mode: "local", playerCount: 3, options: { target: 12 } },
+    ])("reads back the number of players it put in the start URL (%j)", (setup) => {
+      const { params } = open(toStartUrl("dice-race", setup));
+
+      expect(readStartRequest(params, setup.mode)).toEqual(setup);
+    });
+
+    it("reads a number the game may not allow, for the game to refuse", () => {
+      expect(readStartRequest(new URLSearchParams("new=1&players=5"), "local")).toEqual({
+        mode: "local",
+        playerCount: 5,
+      });
+    });
+
+    it.each(["abc", "", "2.5", "-3", "1e2"])(
+      "asks for no new game when the number of players is %j",
+      (players) => {
+        const params = new URLSearchParams({ new: "1", level: "hard", first: "ai", players });
+
+        expect(readStartRequest(params, "local")).toBeUndefined();
+        expect(readStartRequest(params, "ai")).toBeUndefined();
+      },
+    );
+
+    it("asks for no number of players when the URL has none", () => {
+      expect(readStartRequest(new URLSearchParams("new=1"), "local")).toStrictEqual({
+        mode: "local",
+      });
+    });
+  });
 });

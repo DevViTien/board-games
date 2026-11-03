@@ -1,6 +1,6 @@
 import type { AiPlayer, AiRequest } from "@/transport/types";
 
-import { type AiWorkerRequest, type AiWorkerResponse, computeAiMove } from "./compute-ai-move";
+import type { AiWorkerRequest, AiWorkerResponse } from "./compute-ai-move";
 
 /** How much longer than its time limit the Worker may take before it is given up on. */
 const WORKER_GRACE_MS = 2000;
@@ -62,12 +62,14 @@ export function createInlineAiPlayer(now: () => number = defaultNow): AiPlayer {
       new Promise((resolve, reject) => {
         // Computed in a later task, not right away: the request comes in as the player's move is
         // shown, and a busy main thread would only paint that move once the AI has chosen its own.
+        // The rules and AI of every game are loaded only here, when the Worker cannot be used, so
+        // they stay out of the play screen's bundle (each game's own chunk carries only its rules).
         setTimeout(() => {
-          try {
-            resolve(computeAiMove(request, now));
-          } catch (error) {
-            reject(error instanceof Error ? error : new Error(String(error)));
-          }
+          import("./compute-ai-move")
+            .then(({ computeAiMove }) => computeAiMove(request, now))
+            .then(resolve, (error: unknown) => {
+              reject(error instanceof Error ? error : new Error(String(error)));
+            });
         }, 0);
       }),
     dispose: () => undefined,

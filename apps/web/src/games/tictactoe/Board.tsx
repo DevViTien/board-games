@@ -1,6 +1,10 @@
 "use client";
 
-import { TICTACTOE_SIZE, type TicTacToeMove, type TicTacToeState } from "@board-games/games";
+import {
+  TICTACTOE_SIZE,
+  type TicTacToeMove,
+  type TicTacToeState,
+} from "@board-games/games/tictactoe";
 import { cn } from "@board-games/ui";
 import { useTranslations } from "next-intl";
 import { useId } from "react";

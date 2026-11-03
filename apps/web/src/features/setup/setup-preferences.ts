@@ -5,7 +5,7 @@ import { SETUP_CHOICE_KEY_PREFIX } from "@/config/storage-keys";
 import { type ChosenOptions, findChoice } from "@/lib/option-choices";
 import { FIRST_PLAYER } from "@/transport/types";
 
-import { SETUP_MODE, type SetupChoice } from "./play-setup";
+import { type PlayerRange, SETUP_MODE, type SetupChoice } from "./play-setup";
 
 const setupChoiceSchema = z.object({
   mode: z.enum(SETUP_MODE),
@@ -14,7 +14,20 @@ const setupChoiceSchema = z.object({
   // Absent from choices remembered before games had rule options; checked option by option, so
   // anything here (even not an object) costs the player no more than the rule options.
   options: z.unknown().optional(),
+  // Absent from choices remembered before games had a choice of players; checked against the
+  // game's range, so a wrong one costs the player no more than the number.
+  playerCount: z.unknown().optional(),
 });
+
+/** The remembered number of players when the game still allows it, otherwise its smallest. */
+function rememberedPlayerCount({ min, max }: PlayerRange, remembered: unknown): number {
+  return typeof remembered === "number" &&
+    Number.isInteger(remembered) &&
+    remembered >= min &&
+    remembered <= max
+    ? remembered
+    : min;
+}
 
 /**
  * Each option of `choices` as remembered when it is still one of the game's values, otherwise the
@@ -45,7 +58,8 @@ function rememberedOptions(
  * when there is none or it cannot be read (corrupt, storage blocked): the caller then uses the
  * default, without telling the player. A game that cannot be played against the AI gets the
  * same-device mode instead; online play is open to every game. The rule options are checked one by
- * one against `choices`, the game's `defaults` replacing any missing or no longer offered. Read
+ * one against `choices`, the game's `defaults` replacing any missing or no longer offered, and the
+ * number of players against `players`, its smallest replacing one missing or not allowed. Read
  * only after mount, since the server cannot see it.
  */
 export function readSetupChoice(
@@ -53,6 +67,7 @@ export function readSetupChoice(
   supportsAI: boolean,
   choices: readonly OptionChoiceList[],
   defaults: ChosenOptions,
+  players: PlayerRange,
 ): SetupChoice | undefined {
   let raw: string | null;
   try {
@@ -74,6 +89,7 @@ export function readSetupChoice(
     mode: supportsAI || mode !== "ai" ? mode : "local",
     level,
     first,
+    playerCount: rememberedPlayerCount(players, parsed.data.playerCount),
     options: rememberedOptions(choices, defaults, parsed.data.options),
   };
 }
@@ -87,6 +103,7 @@ export function writeSetupChoice(gameId: string, choice: SetupChoice): void {
         mode: choice.mode,
         level: choice.level,
         first: choice.first,
+        playerCount: choice.playerCount,
         options: choice.options,
       }),
     );
