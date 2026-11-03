@@ -20,7 +20,7 @@ const IDENTITY = { playerId: "player-0123456789abcdef", name: "Minh" };
 let sockets: FakeSockets;
 let environment: FakeEnvironment;
 let random: () => number;
-let identity: { playerId: string; name: string };
+let identity: { playerId: string; name: string | null };
 let connection: RoomConnection;
 
 function connect() {
@@ -71,6 +71,18 @@ describe("room connection: joining", () => {
     expect(sockets.last().sent).toEqual([
       { type: "join", protocol: PROTOCOL_VERSION, code: ROOM_CODE, ...IDENTITY },
     ]);
+  });
+
+  it("greets without a name field for a visitor who has not chosen one yet", () => {
+    identity = { playerId: IDENTITY.playerId, name: null };
+    connect();
+
+    sockets.last().open();
+
+    expect(sockets.last().sent).toEqual([
+      { type: "join", protocol: PROTOCOL_VERSION, code: ROOM_CODE, playerId: IDENTITY.playerId },
+    ]);
+    expect(sockets.last().sent[0]).not.toHaveProperty("name");
   });
 
   it("greets with the name remembered at each greeting, not the one it started with", async () => {

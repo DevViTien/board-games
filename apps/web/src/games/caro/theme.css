@@ -1,0 +1,34 @@
+/*
+ * Cờ caro's look ("vở ô li": a school notebook, a blue and a red ballpoint), as values of the shared
+ * `--game-*` contract (packages/ui styles.css), inside `[data-game="caro"]` only. Light here, dark
+ * in both blocks below, which stay identical (games/theme-css.test.ts).
+ */
+[data-game="caro"] {
+  --game-tint: #eaf1fa;
+  --game-board: #fdfdf8;
+  --game-line: #6e93c0;
+  --game-mark-1: #1f3fa8;
+  --game-mark-2: #c42b2b;
+  /* The red margin line of the notebook (decorative). */
+  --caro-margin: #e58a8a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) [data-game="caro"] {
+    --game-tint: #18213a;
+    --game-board: #161a2e;
+    --game-line: #5d6fa3;
+    --game-mark-1: #8fb0ff;
+    --game-mark-2: #ff8e8e;
+    --caro-margin: #6b3a48;
+  }
+}
+
+:root[data-theme="dark"] [data-game="caro"] {
+  --game-tint: #18213a;
+  --game-board: #161a2e;
+  --game-line: #5d6fa3;
+  --game-mark-1: #8fb0ff;
+  --game-mark-2: #ff8e8e;
+  --caro-margin: #6b3a48;
+}

@@ -7,12 +7,13 @@ import {
   type LudoOutcome,
   type LudoState,
 } from "@board-games/games/ludo";
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { PlayScreen } from "@/features/play/PlayScreen";
 import { renderWithIntl } from "@/test/render-with-intl";
-import type { ReadySnapshot, SeatView, Transport } from "@/transport/types";
+import type { ReadySnapshot, SeatView, Transport, TransportEvent } from "@/transport/types";
 
 import { LudoBoard } from "./Board";
 import { useLudoMoveLabel } from "./move-label";
@@ -269,5 +270,109 @@ describe("PlayScreen with Cờ cá ngựa online", () => {
     expect(screen.getByRole("status").textContent).toBe(
       "Minh vừa gieo được 3, mất lượt. Máy đang nghĩ…",
     );
+  });
+});
+
+/**
+ * A same-device game for two that plays each move submitted, rolling the faces given in turn: the
+ * board placed by the play screen's own layout.
+ */
+function playableTransport(
+  start: LudoState,
+  faces: LudoOutcome[],
+): Transport<LudoState, LudoMove, LudoOutcome> {
+  const listeners = new Set<(event: TransportEvent) => void>();
+  const build = (state: LudoState, moveCount: number): LudoSnapshot => ({
+    status: "ready",
+    state,
+    legalMoves: ludo.legalMoves(state),
+    currentPlayer: state.toMove,
+    result: null,
+    lastEntry: null,
+    lastMover: null,
+    moveCount,
+    canUndo: false,
+    canRedo: false,
+    canMove: true,
+    viewer: null,
+    seats: [HUMAN, HUMAN],
+    waitingFor: null,
+    inProgress: moveCount > 0,
+    supportsUndo: true,
+    canStartNewGame: true,
+    connection: null,
+    options: LUDO_DEFAULT_OPTIONS,
+  });
+  let snapshot = build(start, 0);
+  return {
+    getSnapshot: () => snapshot,
+    subscribe: (listener) => {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    submit: (move) => {
+      const state = ludo.applyMove(
+        snapshot.state,
+        move,
+        move.type === "roll" ? faces.shift() : undefined,
+      );
+      snapshot = build(state, snapshot.moveCount + 1);
+      for (const listener of listeners) listener({ type: "changed" });
+    },
+    requestUndo: vi.fn(),
+    requestRedo: vi.fn(),
+    requestNewGame: vi.fn(),
+    dispose: vi.fn(),
+  };
+}
+
+describe("PlayScreen's layout with Cờ cá ngựa", () => {
+  const start = (): LudoState => {
+    const setup = ludo.setup({ playerCount: 2, options: LUDO_DEFAULT_OPTIONS });
+    return { ...setup, horses: [[10, 30, IN_STABLE, IN_STABLE], setup.horses[1] ?? []] };
+  };
+
+  it("Gieo và đi bằng bàn phím: roll, choose and back to the roll button, wherever the controls sit", async () => {
+    const user = userEvent.setup();
+    renderWithIntl(
+      <PlayScreen gameId="ludo" transport={playableTransport(start(), [4])} ui={ui} />,
+    );
+    const rollButton = screen.getByRole("button", { name: "Gieo xúc xắc" });
+
+    // "Back to menu", then the game's controls: the board itself takes no focus.
+    await user.tab();
+    expect(screen.getByRole("link", { name: "Về menu" })).toHaveFocus();
+    await user.tab();
+    expect(rollButton).toHaveFocus();
+    await user.keyboard("{Enter}");
+
+    const [first] = within(screen.getByRole("group", { name: "Chọn ngựa" })).getAllByRole("button");
+    expect(first).toHaveFocus();
+    expect(first).toHaveAccessibleName("Ngựa 1: tới ô 15");
+    await user.keyboard("{Enter}");
+
+    expect(rollButton).toHaveFocus();
+    expect(
+      within(screen.getByRole("list", { name: "Vị trí các ngựa" })).getByText(
+        "Đỏ, ngựa 1: ô 15 (vừa đi)",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("puts the turn, the board, the game's controls and the game's buttons in that order", () => {
+    renderWithIntl(<PlayScreen gameId="ludo" transport={playableTransport(start(), [])} ui={ui} />);
+
+    const order = [
+      screen.getByRole("status"),
+      screen.getByRole("list", { name: "Vị trí các ngựa" }),
+      screen.getByRole("button", { name: "Gieo xúc xắc" }),
+      screen.getByRole("button", { name: "Hoàn tác" }),
+    ];
+    for (const [index, element] of order.slice(1).entries()) {
+      expect(order[index]?.compareDocumentPosition(element)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    }
+    expect(document.querySelector("main")).toHaveAttribute("data-game", "ludo");
   });
 });

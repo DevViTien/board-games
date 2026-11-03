@@ -78,7 +78,30 @@ function stableCorner(colour: LudoColour): RowCol {
   return corners[colour] ?? [0, 0];
 }
 
-/** The square drawn as a colour's stable, inside its corner block, as `{ x, y, size }`. */
+/**
+ * The outline of a colour's stable block: its 6×6 corner without the track square at its inner
+ * corner, moved `inset` inside (negative: outside), as the corners of a polygon. Red's, turned a
+ * quarter turn per colour.
+ */
+export function stableOutline(colour: LudoColour, inset: number): readonly Point[] {
+  const i = inset;
+  // Red's corner is x 9–15, y 0–6; the track square (row 5, column 9) is cut out of it.
+  const red: readonly Point[] = [
+    { x: 9 + i, y: i },
+    { x: GRID - i, y: i },
+    { x: GRID - i, y: 6 - i },
+    { x: 10 + i, y: 6 - i },
+    { x: 10 + i, y: 5 - i },
+    { x: 9 + i, y: 5 - i },
+  ];
+  return red.map((point) => {
+    let turned = point;
+    for (let turn = 0; turn < colour; turn += 1) turned = { x: GRID - turned.y, y: turned.x };
+    return turned;
+  });
+}
+
+/** The square of paper inside a colour's stable block where its horses wait, as `{ x, y, size }`. */
 export function stableArea(colour: LudoColour): {
   readonly x: number;
   readonly y: number;

@@ -49,8 +49,10 @@ export interface RoomConnectionOptions {
   /**
    * Who greets the server, read at each greeting: a name changed since the page opened (in the
    * lobby, or on the setup screen in another tab) is the one the room shows after a reconnection.
+   * `name: null` for a visitor who has not chosen one yet: the greeting then carries no name, and
+   * a seated player keeps the one their seat has.
    */
-  readonly getIdentity: () => { readonly playerId: string; readonly name: string };
+  readonly getIdentity: () => { readonly playerId: string; readonly name: string | null };
   readonly openSocket?: OpenSocket | undefined;
   readonly environment?: ConnectionEnvironment | undefined;
   /** For the jitter of reconnection delays, in [0, 1). */
@@ -285,7 +287,13 @@ export function createRoomConnection({
       onOpen: () => {
         if (current !== generation) return;
         const { playerId, name } = getIdentity();
-        write({ type: "join", protocol: PROTOCOL_VERSION, code, playerId, name });
+        write({
+          type: "join",
+          protocol: PROTOCOL_VERSION,
+          code,
+          playerId,
+          ...(name === null ? {} : { name }),
+        });
       },
       onMessage: (data) => {
         if (current === generation) receive(data);

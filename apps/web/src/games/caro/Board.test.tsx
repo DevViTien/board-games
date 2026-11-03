@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { observeWidthAs } from "@/test/fake-resize-observer";
 import { renderWithIntl } from "@/test/render-with-intl";
 
-import type { BoardProps } from "../types";
+import { type BoardProps, defaultBoardLayout } from "../types";
 import { CaroBoard } from "./Board";
 
 const SIZE = 15;
@@ -35,6 +35,7 @@ function boardProps(
     result: caro.result(state),
     lastEntry: null,
     viewer: null,
+    layout: defaultBoardLayout,
     ...overrides,
   };
 }
@@ -159,6 +160,48 @@ describe("CaroBoard", () => {
   });
 });
 
+describe("CaroBoard's notebook look", () => {
+  it("marks the last move by a dashed circle in its cell, apart from the focus ring outside", () => {
+    const state = played(at(8, 8));
+    renderWithIntl(
+      <CaroBoard {...boardProps(state, { lastEntry: { move: { cell: at(8, 8) } } })} />,
+    );
+
+    const last = cellButton(8, 8);
+    expect(last.querySelector("circle")).toHaveClass("stroke-game-last-move");
+    expect(last.querySelector("circle")).toHaveAttribute("stroke-dasharray");
+    expect(last).toHaveClass("focus-ring");
+    expect(last.className).not.toMatch(/border/);
+  });
+
+  it("draws X and O in the two pens' colours", () => {
+    renderWithIntl(<CaroBoard {...boardProps(played(at(8, 8), at(8, 9)))} />);
+
+    expect(cellButton(8, 8).querySelector("path")).toHaveClass("stroke-game-mark-1");
+    expect(cellButton(8, 9).querySelector("path")).toHaveClass("stroke-game-mark-2");
+  });
+
+  it("strikes the winning line in the winner's pen and circles it", () => {
+    const state = played(
+      at(8, 4),
+      at(10, 1),
+      at(8, 5),
+      at(10, 3),
+      at(8, 6),
+      at(10, 5),
+      at(8, 7),
+      at(10, 7),
+      at(8, 8),
+    );
+    const { container } = renderWithIntl(<CaroBoard {...boardProps(state)} />);
+
+    const line = container.querySelector("[data-winning-line]");
+    expect(line?.querySelector("line")).toHaveClass("stroke-game-mark-1");
+    expect(line?.querySelector("ellipse")).toHaveClass("stroke-game-win");
+    expect(container.querySelectorAll("[data-winning]")).toHaveLength(5);
+  });
+});
+
 describe("CaroBoard with the keyboard", () => {
   it("is entered with Tab on the centre cell when no move has been played", async () => {
     renderWithIntl(<CaroBoard {...boardProps(EMPTY)} />);
@@ -255,6 +298,13 @@ describe("CaroBoard on a touch screen", () => {
     expect(selectedCells()).toHaveLength(1);
     expect(selectedCells()[0]).toContainElement(cellButton(10, 10));
     expect(screen.getByText("Chạm lần nữa để đặt quân")).toBeInTheDocument();
+    // The stone it would get: in the full colour of X's pen, dashed (not a faded one).
+    const preview = cellButton(10, 10).querySelector("path");
+    expect(preview).toHaveClass("stroke-game-mark-1");
+    expect(preview).toHaveAttribute("stroke-dasharray");
+    expect(preview?.closest("svg")).not.toHaveClass("opacity-40");
+    // On the hint colour, inset so the grid lines around the cell stay on the paper.
+    expect(cellButton(10, 10).querySelector("span.bg-game-highlight")).toHaveClass("inset-[3px]");
 
     await tap(user, cellButton(10, 10));
 

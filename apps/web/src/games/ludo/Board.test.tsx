@@ -15,7 +15,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { renderWithIntl } from "@/test/render-with-intl";
 
-import type { BoardProps } from "../types";
+import { type BoardProps, defaultBoardLayout } from "../types";
 import { LudoBoard } from "./Board";
 
 const S = IN_STABLE;
@@ -47,6 +47,7 @@ function boardProps(
     result: ludo.result(state),
     lastEntry: null,
     viewer: null,
+    layout: defaultBoardLayout,
     ...overrides,
   };
 }
@@ -83,7 +84,7 @@ describe("Bàn Cờ cá ngựa", () => {
     expect(container.querySelectorAll("g[data-colour]")).toHaveLength(16);
   });
 
-  it("Đánh dấu nước vừa đi: the horse just moved and the die in the mover's colour", () => {
+  it("Đánh dấu nước vừa đi: the horse just moved, a die waiting for Yellow, the roll before", () => {
     const last: LudoEvent = {
       kind: "move",
       player: 1,
@@ -99,16 +100,131 @@ describe("Bàn Cờ cá ngựa", () => {
     );
 
     expect(positions().getByText("Xanh dương, ngựa 2: ô 7 (vừa đi)")).toBeInTheDocument();
-    const die = screen.getByRole("img", { name: "Xúc xắc: 4 (Xanh dương)" });
-    expect(die).toHaveAttribute("data-colour", "blue");
     expect(container.querySelectorAll("g[data-last]")).toHaveLength(1);
     expect(container.querySelector("g[data-last]")).toHaveAttribute("data-colour", "blue");
+    // No number yet, framed in the colour of the player about to roll.
+    const die = screen.getByRole("img", { name: "Xúc xắc: Vàng sắp gieo" });
+    expect(die).toHaveAttribute("data-colour", "yellow");
+    expect(die).toHaveAttribute("data-waiting", "true");
+    expect(screen.getByText("Lượt trước: Xanh dương gieo được 4")).toBeInTheDocument();
   });
 
-  it("shows an empty die before the first roll", () => {
+  it("Xúc xắc khi đang chọn ngựa: the number rolled, in the colour of the player choosing", () => {
+    const last: LudoEvent = { kind: "roll", player: 0, face: 6, lost: false, again: false };
+    renderWithIntl(<LudoBoard {...boardProps(position(4, { 0: [10] }, { die: 6, last }))} />);
+
+    const die = screen.getByRole("img", { name: "Xúc xắc: 6 (Đỏ)" });
+    expect(die).toHaveAttribute("data-colour", "red");
+    expect(die).not.toHaveAttribute("data-waiting");
+    // The roll is the die's: no chip of a roll before.
+    expect(screen.queryByText(/^Lượt trước/)).not.toBeInTheDocument();
+  });
+
+  it("Nút gieo theo màu người sắp gieo: Blue's colour once Red has moved", () => {
+    const last: LudoEvent = {
+      kind: "move",
+      player: 0,
+      horse: 0,
+      face: 3,
+      from: 10,
+      to: 13,
+      kicked: null,
+      again: false,
+    };
+    renderWithIntl(<LudoBoard {...boardProps(position(4, { 0: [13] }, { toMove: 1, last }))} />);
+
+    expect(rollButton()).toHaveAttribute("aria-disabled", "false");
+    expect(rollButton()).toHaveClass("bg-piece-blue", "text-piece-blue-ink");
+    expect(rollButton()).not.toHaveClass("bg-piece-red");
+    expect(screen.getByRole("img", { name: "Xúc xắc: Xanh dương sắp gieo" })).toHaveAttribute(
+      "data-colour",
+      "blue",
+    );
+  });
+
+  it("keeps a locked roll button on the board, in the shared locked look", () => {
+    const last: LudoEvent = { kind: "roll", player: 0, face: 6, lost: false, again: false };
+    renderWithIntl(<LudoBoard {...boardProps(position(4, { 0: [10] }, { die: 6, last }))} />);
+
+    // Choosing a horse: the button stays (somewhere for the focus to go), locked.
+    expect(rollButton()).toHaveAttribute("aria-disabled", "true");
+    expect(rollButton()).toHaveClass(
+      "aria-disabled:bg-surface-muted!",
+      "aria-disabled:border-dashed!",
+      "aria-disabled:text-fg-muted!",
+    );
+  });
+
+  it("shows a die waiting for Red's first roll", () => {
     renderWithIntl(<LudoBoard {...boardProps(position(2, {}))} />);
 
-    expect(screen.getByRole("img", { name: "Xúc xắc: chưa gieo" })).toBeInTheDocument();
+    // A face of its own, not an empty box: waiting to be rolled.
+    const die = screen.getByRole("img", { name: "Xúc xắc: Đỏ sắp gieo" });
+    expect(die).toHaveAttribute("data-waiting", "true");
+    expect(die).toHaveAttribute("data-colour", "red");
+    expect(screen.queryByText(/^Lượt trước/)).not.toBeInTheDocument();
+  });
+
+  it("tells the roll before once the same player rolls again after a 6", () => {
+    const last: LudoEvent = {
+      kind: "move",
+      player: 0,
+      horse: 0,
+      face: 6,
+      from: IN_STABLE,
+      to: 0,
+      kicked: null,
+      again: true,
+    };
+    renderWithIntl(<LudoBoard {...boardProps(position(2, { 0: [0] }, { toMove: 0, last }))} />);
+
+    expect(screen.getByRole("img", { name: "Xúc xắc: Đỏ sắp gieo" })).toBeInTheDocument();
+    expect(screen.getByText("Lượt trước: Đỏ gieo được 6")).toBeInTheDocument();
+  });
+});
+
+describe("Chuồng của người đang đến lượt", () => {
+  const activeStables = (container: HTMLElement) =>
+    [...container.querySelectorAll("g[data-stable][data-active]")].map((stable) =>
+      stable.getAttribute("data-stable"),
+    );
+
+  it("Chuyển lượt sang người kế tiếp: Blue's stable stands out once Red has moved", async () => {
+    const { container } = renderWithIntl(
+      <PlayableBoard start={position(4, { 0: [10] })} faces={[3]} />,
+    );
+    expect(activeStables(container)).toEqual(["red"]);
+
+    await userEvent.click(rollButton());
+    await userEvent.click(screen.getByRole("button", { name: "Ngựa 1: tới ô 14" }));
+
+    expect(activeStables(container)).toEqual(["blue"]);
+  });
+
+  it("Ván kết thúc: no stable stands out, and the die shows the winning roll", () => {
+    // Yellow's last horse has just gone up to step 3 with a 2.
+    const last: LudoEvent = {
+      kind: "move",
+      player: 1,
+      horse: 3,
+      face: 2,
+      from: step(1),
+      to: step(3),
+      kicked: null,
+      again: false,
+    };
+    const won = position(2, { 1: [step(6), step(5), step(4), step(3)] }, { winner: 1, last });
+    const { container } = renderWithIntl(<LudoBoard {...boardProps(won)} />);
+
+    expect(activeStables(container)).toEqual([]);
+    expect(container.querySelectorAll("g[data-stable]")).toHaveLength(4);
+    // Nobody is about to roll: the last number rolled, in its roller's colour, and no chip.
+    expect(screen.getByRole("img", { name: "Xúc xắc: 2 (Vàng)" })).toHaveAttribute(
+      "data-colour",
+      "yellow",
+    );
+    expect(screen.queryByRole("img", { name: /sắp gieo/ })).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Lượt trước/)).not.toBeInTheDocument();
   });
 });
 
@@ -169,7 +285,9 @@ describe("Gieo và chọn ngựa trên bàn", () => {
 
     await userEvent.click(rollButton());
 
-    expect(screen.getByText("Đỏ gieo được 6, không đi được, được gieo thêm.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Đỏ gieo được 6 nhưng không ngựa nào đi được, gieo thêm."),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/mất lượt/)).not.toBeInTheDocument();
     expect(rollButton()).toHaveAttribute("aria-disabled", "false");
   });
@@ -309,5 +427,58 @@ describe("Cờ cá ngựa bằng bàn phím và trình đọc màn hình", () =>
     );
 
     expect(positions().getByText("Vàng, ngựa 3: trong chuồng (vừa bị đá)")).toBeInTheDocument();
+  });
+});
+
+describe("Lý do không gieo được", () => {
+  it("Cần chọn ngựa trước: the roll button says a horse must be chosen first", async () => {
+    const choosing = ludo.applyMove(position(2, {}), { type: "roll" }, 6);
+    renderWithIntl(<LudoBoard {...boardProps(choosing)} />);
+    expect(rollButton()).toHaveAccessibleDescription("Chọn ngựa trước");
+    expect(screen.getByText("Chọn ngựa trước")).toHaveClass("sr-only");
+
+    await userEvent.tab();
+    while (document.activeElement !== rollButton()) await userEvent.tab();
+
+    expect(screen.getByText("Chọn ngựa trước")).not.toHaveClass("sr-only");
+  });
+
+  it("Đang chờ người ở xa: a press rolls nothing and says who the game waits for", async () => {
+    const onMove = vi.fn();
+    renderWithIntl(
+      <LudoBoard
+        {...boardProps(position(2, {}), {
+          disabled: true,
+          lockedReason: "Đang chờ Minh",
+          viewer: 1,
+          onMove,
+        })}
+      />,
+    );
+
+    await userEvent.click(rollButton());
+
+    expect(onMove).not.toHaveBeenCalled();
+    expect(rollButton()).toHaveAccessibleDescription("Đang chờ Minh");
+    expect(screen.getByText("Đang chờ Minh")).not.toHaveClass("sr-only");
+  });
+
+  it("says the play screen's reason while the board is locked", () => {
+    renderWithIntl(
+      <LudoBoard
+        {...boardProps(position(2, {}), {
+          disabled: true,
+          lockedReason: "Chờ kết nối lại với máy chủ",
+        })}
+      />,
+    );
+
+    expect(rollButton()).toHaveAccessibleDescription("Chờ kết nối lại với máy chủ");
+  });
+
+  it("says nothing while the roll button can be pressed", () => {
+    renderWithIntl(<LudoBoard {...boardProps(position(2, {}))} />);
+
+    expect(rollButton()).not.toHaveAccessibleDescription();
   });
 });

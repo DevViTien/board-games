@@ -1,4 +1,5 @@
 import {
+  IN_STABLE,
   ludo,
   LUDO_COLOUR,
   LUDO_DEFAULT_OPTIONS,
@@ -11,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithIntl } from "@/test/render-with-intl";
 import { AI_RESULT_DELAY_MS, AI_SETTLE_DELAY_MS } from "@/transport/ai-timing";
 
+import { defaultBoardLayout } from "../types";
 import { LudoBoard } from "./Board";
 import { horsePoint } from "./board-layout";
 import {
@@ -74,6 +76,7 @@ function board(current: LudoState) {
       result={null}
       lastEntry={null}
       viewer={null}
+      layout={defaultBoardLayout}
     />
   );
 }
@@ -172,6 +175,28 @@ describe("Hiệu ứng gieo và đi quân", () => {
     expect(die).not.toHaveClass("animate-dice-roll");
   });
 
+  it("Xúc xắc đang lăn khi mất lượt: the roller's die until it rests, then the next player's", () => {
+    stubReducedMotion(false);
+    const { rerender } = renderWithIntl(board(state(10, null, 0)));
+    const redLost: LudoEvent = { kind: "roll", player: 0, face: 3, lost: true, again: false };
+
+    // Red's 3 loses the turn: the rules already have Yellow to roll.
+    rerender(board(state(IN_STABLE, redLost, 1)));
+
+    const tumbling = screen.getByRole("img", { name: "Xúc xắc: 3 (Đỏ)" });
+    expect(tumbling).toHaveAttribute("data-colour", "red");
+    expect(tumbling).toHaveClass("animate-dice-roll");
+    expect(screen.queryByText(/^Lượt trước/)).not.toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(LUDO_DICE_MS);
+    });
+
+    const waiting = screen.getByRole("img", { name: "Xúc xắc: Vàng sắp gieo" });
+    expect(waiting).toHaveAttribute("data-colour", "yellow");
+    expect(screen.getByText("Lượt trước: Đỏ gieo được 3")).toBeInTheDocument();
+  });
+
   it("does not replay a move on a return to it (undo): A → B → A shows A at rest", () => {
     stubReducedMotion(false);
     const moveA = state(15, redWalk(10, 15), 1, 1);
@@ -188,7 +213,8 @@ describe("Hiệu ứng gieo và đi quân", () => {
     rerender(board(moveA));
 
     expect(redHorseAt(container)).toBe(at(15));
-    expect(screen.getByRole("img", { name: "Xúc xắc: 5 (Đỏ)" })).not.toHaveClass(
+    // At rest, waiting for Yellow's roll.
+    expect(screen.getByRole("img", { name: "Xúc xắc: Vàng sắp gieo" })).not.toHaveClass(
       "animate-dice-roll",
     );
     act(() => {

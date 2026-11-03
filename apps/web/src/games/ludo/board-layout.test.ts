@@ -1,7 +1,15 @@
 import { HORSES, LUDO_COLOUR, OWN_GATE, SEGMENT, TRACK_LENGTH } from "@board-games/games/ludo";
 import { describe, expect, it } from "vitest";
 
-import { GRID, horsePoint, stableArea, stableSlot, stepCells, TRACK_CELLS } from "./board-layout";
+import {
+  GRID,
+  horsePoint,
+  stableArea,
+  stableOutline,
+  stableSlot,
+  stepCells,
+  TRACK_CELLS,
+} from "./board-layout";
 
 const COLOURS = Object.values(LUDO_COLOUR);
 const key = ([row, col]: readonly [number, number]) => `${row},${col}`;
@@ -73,5 +81,33 @@ describe("board layout", () => {
   it("draws a horse on the square of its progress", () => {
     expect(horsePoint(LUDO_COLOUR.Blue, 0, 0)).toEqual({ x: 14.5, y: 8.5 });
     expect(horsePoint(LUDO_COLOUR.Red, 0, OWN_GATE + 6)).toEqual({ x: 7.5, y: 6.5 });
+  });
+
+  it("draws each stable's block in its corner, around its horses and off the track", () => {
+    /** Whether `point` is inside the polygon `outline` (even-odd rule). */
+    const inside = (
+      point: { x: number; y: number },
+      outline: readonly { x: number; y: number }[],
+    ) =>
+      outline.reduce((odd, a, index) => {
+        const b = outline[(index + 1) % outline.length] ?? a;
+        const crosses =
+          a.y > point.y !== b.y > point.y &&
+          point.x < ((b.x - a.x) * (point.y - a.y)) / (b.y - a.y) + a.x;
+        return crosses ? !odd : odd;
+      }, false);
+    for (const colour of COLOURS) {
+      const outline = stableOutline(colour, 0);
+      for (const [row, col] of TRACK_CELLS) {
+        expect(inside({ x: col + 0.5, y: row + 0.5 }, outline), `${row},${col}`).toBe(false);
+      }
+      for (const horse of [0, 1, 2, 3]) {
+        expect(inside(stableSlot(colour, horse), outline)).toBe(true);
+      }
+      for (const { x, y } of outline) {
+        expect(Math.min(x, y)).toBeGreaterThanOrEqual(0);
+        expect(Math.max(x, y)).toBeLessThanOrEqual(GRID);
+      }
+    }
   });
 });

@@ -1,0 +1,44 @@
+/*
+ * Tic-tac-toe's look ("sticker": an orange X, a deep purple O on rounded white tiles over lilac),
+ * as values of the shared `--game-*` contract (packages/ui styles.css), inside
+ * `[data-game="tictactoe"]` only. Light here, dark in both blocks below, which stay identical
+ * (games/theme-css.test.ts). The last move keeps the shared `--game-last-move` (`fg-muted`).
+ */
+[data-game="tictactoe"] {
+  --game-page: #ece7ff;
+  --game-tint: #ece7ff;
+  /* The face of a tile. */
+  --game-board: #ffffff;
+  /* The edge of a tile that may be chosen. */
+  --game-line: #7c62e3;
+  --game-mark-1: #d9500c;
+  --game-mark-2: #3a1fa8;
+  /* The winning line, apart from both marks: ink. */
+  --game-win: var(--fg);
+  /* The lip under a tile holding a mark (decorative), a whole shadow: `shadow-(--tictactoe-tile-shadow)`. */
+  --tictactoe-tile-shadow: 0 4px 0 #d3c7fb;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) [data-game="tictactoe"] {
+    --game-page: #1e1838;
+    --game-tint: #1e1838;
+    --game-board: #2a2450;
+    --game-line: #7d6ae0;
+    --game-mark-1: #ff9a5c;
+    --game-mark-2: #d2c7ff;
+    --game-win: var(--fg);
+    --tictactoe-tile-shadow: 0 4px 0 #14102a;
+  }
+}
+
+:root[data-theme="dark"] [data-game="tictactoe"] {
+  --game-page: #1e1838;
+  --game-tint: #1e1838;
+  --game-board: #2a2450;
+  --game-line: #7d6ae0;
+  --game-mark-1: #ff9a5c;
+  --game-mark-2: #d2c7ff;
+  --game-win: var(--fg);
+  --tictactoe-tile-shadow: 0 4px 0 #14102a;
+}

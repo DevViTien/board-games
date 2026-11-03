@@ -1,0 +1,45 @@
+/*
+ * Cờ cá ngựa's look (folk prints on "giấy điệp", seashell paper), as values of the shared
+ * `--game-*` contract (packages/ui styles.css), inside `[data-game="ludo"]` only; the colours of
+ * the seats are the shared `--piece-*`. Light here, dark in both blocks below, which stay identical
+ * (games/theme-css.test.ts).
+ */
+[data-game="ludo"] {
+  /* The paper of the page and of the board. */
+  --game-page: #fbf4e4;
+  --game-tint: #fbf4e4;
+  /* A square of the track. */
+  --game-board: #fffdf7;
+  --game-line: #8a7e66;
+  /* The ring of the horse just moved, and the target of a choice: ink. */
+  --game-last-move: #17182b;
+  --game-highlight: #17182b;
+  /* The board's outer frame. */
+  --ludo-frame: #5a2a10;
+  /* The lip under the roll button (decorative), a whole shadow: `shadow-(--ludo-roll-shadow)`. */
+  --ludo-roll-shadow: 0 3px 0 #5a2a10;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) [data-game="ludo"] {
+    --game-page: #1f1a12;
+    --game-tint: #1f1a12;
+    --game-board: #2a241a;
+    --game-line: #8f8268;
+    --game-last-move: #f1f0f7;
+    --game-highlight: #f1f0f7;
+    --ludo-frame: #fbf4e4;
+    --ludo-roll-shadow: 0 3px 0 #0c0a06;
+  }
+}
+
+:root[data-theme="dark"] [data-game="ludo"] {
+  --game-page: #1f1a12;
+  --game-tint: #1f1a12;
+  --game-board: #2a241a;
+  --game-line: #8f8268;
+  --game-last-move: #f1f0f7;
+  --game-highlight: #f1f0f7;
+  --ludo-frame: #fbf4e4;
+  --ludo-roll-shadow: 0 3px 0 #0c0a06;
+}

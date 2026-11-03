@@ -2,7 +2,9 @@
 
 import type { PlayerIndex } from "@board-games/engine";
 import { IN_STABLE, type LudoEvent } from "@board-games/games/ludo";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
+
+import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
 
 // The board's animations (design §8): the die tumbling, a horse walking square by square, a kicked
 // horse fading into its stable. Each fits within the AI's pacing delays (`transport/ai-timing.ts`,
@@ -21,26 +23,6 @@ const LUDO_WALK_MAX_STEPS = 8;
 export const LUDO_WALK_MAX_MS = LUDO_WALK_STEP_MS * LUDO_WALK_MAX_STEPS;
 /** A kicked horse fades into its stable this long (CSS `--animate-piece-kicked`), during the walk. */
 export const LUDO_KICK_MS = 300;
-
-const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
-
-function subscribeReducedMotion(onChange: () => void): () => void {
-  if (typeof window.matchMedia !== "function") return () => undefined;
-  const query = window.matchMedia(REDUCED_MOTION);
-  query.addEventListener("change", onChange);
-  return () => {
-    query.removeEventListener("change", onChange);
-  };
-}
-
-function prefersReducedMotion(): boolean {
-  return typeof window.matchMedia === "function" && window.matchMedia(REDUCED_MOTION).matches;
-}
-
-/** Whether the system asks for reduced motion, following changes. */
-function usePrefersReducedMotion(): boolean {
-  return useSyncExternalStore(subscribeReducedMotion, prefersReducedMotion, () => false);
-}
 
 /** The progress values a walk from `from` to `to` shows, ending on `to`, at most 8. */
 export function walkPath(from: number, to: number): readonly number[] {
