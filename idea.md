@@ -337,7 +337,7 @@ Vì `Board` là component React nên nằm ở `apps/web`, còn `GameDefinition`
 | 2 | Online | **WebSocket**, server làm trọng tài |
 | 3 | Tài khoản | **Không có tài khoản**: chơi online bằng tên tạm, lưu trong `localStorage` |
 | 4 | Hosting | **Vercel, gói Hobby** (WebSocket trên Vercel Functions + Upstash Redis gói miễn phí) |
-| 5 | Phong cách hình ảnh | **Tối giản phẳng** trước; theme khác làm sau, dựa trên design token |
+| 5 | Phong cách hình ảnh | Khung chung gọn gàng (chữ, nút, khoảng cách dùng chung), **mỗi game một bản sắc riêng** qua token theo game (`[data-game]`); quy trình và luật ở skill `board-games-ui`. Thay cho "tối giản phẳng" ban đầu sau khảo sát giao diện ngày 03/11/2026 (plan.md §10, mốc M6.5) |
 | 6 | Game làm trước | **Cờ caro, Cờ cá ngựa, Cờ vua**; game tự thiết kế để v2 |
 | 7 | AI cờ vua | **Chưa làm**: cờ vua chỉ có chế độ cùng máy và online |
 | 8 | Quy mô | **Dự án cá nhân, phi thương mại**, ít người dùng (bạn bè, đồng nghiệp) |

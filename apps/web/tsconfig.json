@@ -9,6 +9,7 @@
     "next-env.d.ts",
     "src",
     "e2e",
+    "ui-shots",
     "*.config.ts",
     "vitest.setup.ts",
     ".next/types/**/*.ts",

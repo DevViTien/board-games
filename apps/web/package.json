@@ -12,7 +12,8 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "ui:shots": "playwright test --config playwright.shots.config.ts"
   },
   "dependencies": {
     "@board-games/engine": "workspace:*",

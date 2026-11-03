@@ -21,6 +21,7 @@ Hướng dẫn cho Claude Code trong repo **board-games** (Board Games Hub): web
 | `pnpm knip`                | Tìm file, export, thư viện thừa                                    |
 | `pnpm spec:check`          | Kiểm tra OpenSpec (strict) + không còn change xong mà chưa archive |
 | `pnpm test:e2e`            | Playwright, khi đổi giao diện hoặc luồng người dùng                |
+| `pnpm ui:shots`            | Build rồi chụp các màn hình chính (sáng/tối × điện thoại/máy tính) |
 | `pnpm --filter <pkg> test` | Test một package (`@board-games/web`, `@board-games/ui`, …)        |
 | `pnpm exec openspec …`     | CLI OpenSpec                                                       |
 
@@ -65,6 +66,17 @@ Mỗi mốc trong `plan.md` §6 được làm qua một hoặc nhiều change; p
 ### Ngôn ngữ artifact
 
 Nội dung proposal, design, tasks, requirement, scenario viết **tiếng Việt**. Giữ **tiếng Anh**: tiêu đề cấu trúc (`## Why`, `## Purpose`, `## Requirements`, `### Requirement:`, `#### Scenario:`, `## ADDED/MODIFIED/REMOVED Requirements`), dấu `**WHEN**`/`**THEN**`/`**AND**`, từ khoá `SHALL`/`MUST` (validator bắt buộc), và mọi định danh (tên change, capability, hàm, kiểu, mã lỗi, khoá bản dịch, đường dẫn). Chi tiết: `openspec/config.yaml` (`rules`).
+
+## Quy trình làm giao diện
+
+Mọi việc giao diện (token, component, bàn cờ, hiệu ứng, responsive) theo skill **`board-games-ui`** (`.claude/skills/board-games-ui/SKILL.md`): luật cứng, hướng thiết kế, checklist UX bàn cờ; skill này thắng các skill giao diện vendored khi mâu thuẫn. Bốn pha:
+
+1. **Khảo sát**: `pnpm ui:shots`, xem ảnh trong `apps/web/.ui-shots/`.
+2. **Thiết kế**: `/opsx:propose`, mockup HTML được người dùng duyệt **trước khi code**; `design.md` ghi hướng hình ảnh, token thêm/đổi, cách kiểm tra.
+3. **Code**: `/opsx:apply`.
+4. **Kiểm tra**: `pnpm ui:shots` xem từng ảnh (sáng/tối × 390/1280 px), rà bằng `web-design-guidelines`, rồi hai lượt review code như thường lệ.
+
+Thay đổi thuần hình ảnh không cần change, nhưng vẫn qua pha 4.
 
 ## Bất biến kiến trúc
 

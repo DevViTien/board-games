@@ -24,6 +24,7 @@ App chơi cờ trên trình duyệt: cùng máy, với máy và online với b�
 | `pnpm lint` / `pnpm typecheck` / `pnpm test` / `pnpm build`     | Chạy từng bước riêng                                 |
 | `pnpm test:coverage`                                            | Test kèm báo cáo coverage (`<package>/coverage/`)    |
 | `pnpm test:e2e`                                                 | Build rồi chạy Playwright (desktop + điện thoại)     |
+| `pnpm ui:shots`                                                 | Build rồi chụp các màn hình chính để duyệt giao diện |
 | `pnpm knip`                                                     | Tìm file, export, thư viện không dùng                |
 | `pnpm spec:check`                                               | Kiểm tra OpenSpec, chặn change xong mà chưa archive  |
 | `pnpm format`                                                   | Định dạng code bằng Prettier                         |

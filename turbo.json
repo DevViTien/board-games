@@ -18,6 +18,10 @@
       "dependsOn": ["build"],
       "outputs": ["playwright-report/**", "test-results/**"]
     },
+    "ui:shots": {
+      "dependsOn": ["build"],
+      "cache": false
+    },
     "dev": {
       "cache": false,
       "persistent": true,

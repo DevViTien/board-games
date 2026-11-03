@@ -63,6 +63,7 @@ rules:
     - Chỉ ra package và thư mục bị ảnh hưởng theo plan.md §3.2, kiểm tra chiều phụ thuộc.
     - Với mỗi quyết định, nêu phương án đã cân nhắc và lý do chọn.
     - Nếu thêm thư viện, ghi phiên bản và kiểm tra chính sách tuổi phiên bản của pnpm (plan.md §2).
+    - "Change chạm giao diện (theo skill board-games-ui): nêu hướng hình ảnh (mockup đã được người dùng duyệt), các token thêm hoặc đổi kèm giá trị sáng và tối cùng tỉ số tương phản, và cách đã kiểm tra: ảnh `pnpm ui:shots` sáng/tối × điện thoại (390 px)/máy tính (1280 px)."
   tasks:
     - Viết tiếng Việt; mỗi task kiểm chứng được độc lập, đủ nhỏ để xong trong khoảng nửa buổi.
     - Mỗi nhóm task có task viết test tương ứng với các scenario.

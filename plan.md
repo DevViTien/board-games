@@ -31,7 +31,8 @@ Tra trên npm ngày 30/10/2026. Phiên bản khai báo **một lần** trong m�
 | Icon | lucide-react | 1.64 | Chỉ import qua `@board-games/ui` (ESLint chặn import trực tiếp) |
 | Font | Be Vietnam Pro + Noto Sans JP qua `next/font` | — | Đủ dấu tiếng Việt và chữ Nhật, tự host; font Nhật không tải trước, trình duyệt chỉ tải phần chữ cần dùng |
 | Đa ngôn ngữ | next-intl | 4.14 | vi (mặc định), en, ja; kiểm tra key bản dịch lúc biên dịch |
-| State phía client | Zustand | 5.0 | Chỉ cho state giao diện; luật game là hàm thuần |
+| State phía client | React (`useSyncExternalStore` + state cục bộ) | — | Không dùng Zustand (xem lại 03/11/2026): transport là kho duy nhất giữ ván, màn hình đọc ảnh chụp qua `useSyncExternalStore`, state giao diện còn lại là state cục bộ; luật game là hàm thuần |
+| Chuyển động | CSS transition / `@keyframes` (token trong `packages/ui`) + Web Animations API | — | Thư viện `motion` hoãn: chỉ thêm khi CSS không làm được, sau review (skill `board-games-ui`) |
 | Lưu trữ trình duyệt | idb-keyval | 6.3 | IndexedDB cho ván đang chơi, thống kê |
 | Sinh mã phòng/ID | nanoid | 6.0 | |
 | Kiểm tra dữ liệu | zod | 4.x (xác nhận khi cài) | Kiểm tra thông điệp online ở cả hai phía |
@@ -125,7 +126,8 @@ board-games/
 │     │  │  └─ realtime/            # connection.ts (một WebSocket), dev-server.ts + dev-main.ts (server Node cho dev, E2E)
 │     │  └─ lib/                    # tiện ích nhỏ chỉ dùng trong web (realtime-url.ts: địa chỉ server realtime)
 │     ├─ messages/                  # vi.json (gốc), en.json, ja.json
-│     └─ e2e/                       # Playwright
+│     ├─ e2e/                       # Playwright
+│     └─ ui-shots/                  # `pnpm ui:shots` (playwright.shots.config.ts): ảnh màn hình chính để duyệt giao diện
 ├─ packages/
 │  ├─ engine/src/   { types.ts, session.ts, rng.ts, ai/, index.ts }
 │  ├─ games/src/    { tictactoe/, caro/, ludo/, chess/, index.ts }
@@ -331,6 +333,7 @@ Nhờ `RoomStore` là interface, toàn bộ logic phòng (`room-service.ts`) tes
 - Ghép class bằng **`cn()`**; component có nhiều biến thể khai báo bằng **`cva()`** (xem `Button`).
 - Component nhận `className` để nơi dùng chỉnh bố cục; `cn` đảm bảo class truyền vào thắng class mặc định.
 - Không viết CSS riêng, trừ trường hợp Tailwind không làm được (ví dụ hiệu ứng bàn cờ phức tạp); khi đó dùng CSS Module đặt cạnh component.
+- Mọi việc giao diện theo skill `board-games-ui` (`.claude/skills/board-games-ui/SKILL.md`): luật cứng (tương phản AA, bàn phím, giảm chuyển động, vùng chạm, không cuộn ngang ở 360 px), hướng thiết kế (khung chung + bản sắc từng game qua biến `--game-*`), quy trình 4 pha. Component tự viết trên `cva()`; chưa dùng shadcn/ui (hoãn, xem §10 M6.5).
 
 ### 4.4 Icon và hình ảnh
 - Icon giao diện lấy từ **lucide-react**, nhưng chỉ import qua **`@board-games/ui`** (`packages/ui/src/icons.ts`), đặt tên có hậu tố `Icon` (`UsersIcon`, `ClockIcon`). Cần icon mới thì thêm một dòng re-export ở đó.
@@ -352,6 +355,7 @@ Nhờ `RoomStore` là interface, toàn bộ logic phòng (`room-service.ts`) tes
 | Mỗi PR, push `main` | GitHub Actions | `format:check`, `knip`, lint, typecheck, test, build; job E2E riêng |
 | Hằng tuần | Renovate | PR cập nhật thư viện |
 | `pnpm test` | `messages.test.ts` | Bản dịch en/ja đủ key và đúng tham số so với tiếng Việt |
+| Làm giao diện | `pnpm ui:shots` | Build rồi chụp màn hình chính từ server local (sáng/tối × 390 × 844 / 1280 × 800) vào `apps/web/.ui-shots/`; xem bằng mắt, không so ảnh tự động, không nằm trong `pnpm check` |
 
 ### 4.7 Đa ngôn ngữ (vi, en, ja)
 - Thư viện **next-intl**. Bản dịch ở `apps/web/messages/{vi,en,ja}.json`, chia namespace theo tính năng (`Menu`, `Settings`, `Games`…). Mã nguồn i18n ở `apps/web/src/i18n/`.
@@ -405,6 +409,7 @@ Từ M1, mỗi mốc được làm qua một hoặc nhiều **OpenSpec change** 
 |---|---|---|---|
 | **M5. Cờ caro** | Luật (5 quân liên tiếp, bàn 15×15 / 19×19); hàm `evaluate` theo mẫu chuỗi quân; bàn SVG (Canvas nếu bàn lớn bị chậm), đánh dấu nước vừa đi và hàng thắng | Chơi được cả 3 chế độ; AI mức Vừa chặn được chuỗi 4 | M |
 | **M6. Cờ cá ngựa** | Luật theo cột "phổ biến" (idea.md 3.4) nhưng mỗi điểm là một tuỳ chọn trong `LudoOptions`; xúc xắc qua `rng` (online thì server tung); 2–4 người; AI luật ưu tiên; ghế trống cho AI chơi thay; hiệu ứng gieo xúc xắc và đi quân | Chơi được cả 3 chế độ với 2, 3, 4 người; mỗi điểm luật có test riêng; 1000 ván ngẫu nhiên tự chơi đều kết thúc | L |
+| **M6.5. Thiết kế lại giao diện** | Nền thiết kế: bảng màu (nền trung tính ấm, màu nhấn chính + phụ không trùng màu quân, token `success`/`warning`/`celebration`), thang chữ, component dùng chung; bản sắc riêng cho Tic-tac-toe, Cờ caro, Cờ cá ngựa (biến `--game-*`); bảng người chơi và lượt, khoảnh khắc kết thúc ván (hàng thắng, ăn mừng), trạng thái rỗng/lỗi; sửa lỗi điện thoại mà khảo sát tìm ra. Ba change theo thứ tự `add-design-foundation` → `redesign-game-boards` → `add-game-feedback`, theo skill `board-games-ui` | Người dùng duyệt mockup và ảnh `pnpm ui:shots` của mọi màn hình ở sáng/tối × điện thoại/máy tính; tương phản đạt AA; mọi test (unit, E2E) xanh | M |
 | **M7. Cờ vua** | Luật đầy đủ (nhập thành, bắt tốt qua đường, phong cấp, chiếu bí, hết nước đi, hoà lặp 3 lần, luật 50 nước), `meta.supportsAI = false`; chọn quân phong cấp; lật bàn theo bên mình | Chơi được cùng máy và online; vượt bộ test thế cờ chuẩn (đếm số nước đi hợp lệ "perft" ở các thế cờ mẫu) | L |
 | **M8. Hoàn thiện MVP** | Trang luật chơi từng game; responsive điện thoại; sáng/tối; điều khiển bằng bàn phím; ký hiệu phân biệt quân ngoài màu; xử lý bỏ ván; README hướng dẫn chạy | Bạn bè dùng thử trên điện thoại và laptop không cần hướng dẫn thêm; Lighthouse Accessibility ≥ 90 | M |
 
@@ -529,5 +534,24 @@ Qua 3 change OpenSpec theo thứ tự `add-multiplayer-setup` → `add-ludo-game
 - `add-multiplayer-setup` (đã archive): phần dùng chung cho game 2–4 người có xúc xắc, chưa biết gì về Cờ cá ngựa. Nhóm "Số người chơi" ở màn hình bắt đầu ván cho game có `meta.players.min < max` (mọi chế độ, nhớ cùng lựa chọn gần nhất, đường dẫn `players=<n>`, `createRoom` gửi `playerCount`); transport cục bộ tạo ván N người; đấu với máy = một người + máy ở mọi ghế còn lại ("Ngẫu nhiên" rút đều vị trí lượt); lời báo nêu tên ghế khi có từ hai máy và nói mọi nước của máy; nhịp máy trong game có xúc xắc (`AI_SETTLE_DELAY_MS`, `AI_RESULT_DELAY_MS`); hoàn tác không vượt qua lần gieo; engine: lần gieo bắt buộc ngay sau một nước quyết định không tốn độ sâu; game mẫu `dice-race`, `roll-choose` export qua `@board-games/engine/testing`; `GameUI.usePlayerLabel(player, state)`, `useMoveLabel` trả cụm hành động. Tic-tac-toe, Cờ caro không đổi (E2E cũ xanh không sửa).
 - `add-ludo-game` (đã archive): luật Cờ cá ngựa trong `packages/games/src/ludo/` theo bộ luật người dùng chốt (một xúc xắc, ra quân bằng 6, gieo 6 được gieo thêm kể cả khi không đi được, không vượt, đá, gieo 1 nhảy tới chân chuồng kế tiếp, lên chuồng theo bậc, thắng khi chiếm bậc 3–6); `LudoOptions` có bốn biến thể nhưng ván chỉ nhận bộ mặc định (biến thể chạy qua định nghĩa chỉ cho test); máy dùng `chooseMove` chung với `evaluate` theo trọng số; bàn SVG chữ thập tự vẽ (màu + ký hiệu, nút "Gieo xúc xắc", nhóm "Chọn ngựa", danh sách vị trí cho trình đọc màn hình, hiệu ứng xúc xắc lăn và ngựa đi từng ô, tắt khi giảm chuyển động); token `piece-*` và keyframes trong `packages/ui`; thẻ menu chơi được; online giữa người với người chạy ngay (server gieo). Số đo: 1000 ván tự chơi đều kết thúc (file test ~6,6 s; ván ngẫu nhiên 4 người trung bình 1 149 nước, dài nhất 2 104, biên bản ~76 KB, `fromRecord` ~15 ms); máy Vừa ~0,5 ms/nước, Khó đạt độ sâu ≥ 5 trong 1,5 s ở 2 và 4 người; một vòng ba máy mức Dễ 2,9–5,9 s trong E2E (dài hơn khi máy gieo 6 rồi gieo thêm) (chi tiết ở design §5–§8 của change).
 - `add-room-ai-seats` (code xong, archive trong cùng PR sau review): phòng online 2–4 ghế có chủ phòng (người tạo, `hostId` chỉ ở server, `RoomView.host` theo ghế hiện tại); chủ phòng đánh dấu ghế trống là "Máy" ở sảnh chờ (`ai-seat { seat, on }`, trước nước đầu của ván, chỉ phòng từ ba ghế của game có máy — phòng hai ghế không có ghế máy), ghế trống cuối cùng thành máy là bắt đầu ván; server chơi thay ghế máy bằng `chooseMove` mức Vừa với rng của server ngay trong lần ghi đã trao lượt (không hẹn giờ, không thêm lệnh Redis), chốt an toàn 200 nước mỗi lần ghi, `join` đi tiếp phòng dừng ở lượt máy; mã lỗi mới `not-host`, `seat-taken`, `not-ai-seat`, `game-started`, `invalid-seat` (không làm nối lại); `PROTOCOL_VERSION` 2, `STORED_ROOM_FORMAT` 2 vẫn đọc được phòng định dạng 1 (ván dở không mất khi deploy); transport online hiện lần lượt các nước nhận cùng lúc theo nhịp máy cục bộ (nút khoá tới khi hiện xong; vào phòng/tải lại/nối lại hiện ngay); lời báo nêu mọi nước không đi từ thiết bị này kèm lượt kế tiếp ("Minh vừa gieo được 6. Đang chờ Minh…"), ván mới máy đi trước; "Online"/"Chơi lại" dựa vào việc ván là online (một người + ba máy). E2E: phòng 3 ghế hai trình duyệt + một máy, một người + ba máy, tab cũ nhận `outdated-client` không tự tải lại (cả hai cấu hình Playwright). Chi phí ước tính ở design §6 theo số đo biên bản ~76 KB (1 người + 3 máy ~11 MB/ván tới client, ~1/4 số lần ghi của ván 4 người).
-- M6 xong về code qua ba change; tiếp theo: **M7. Cờ vua**.
+- M6 xong về code qua ba change; tiếp theo: **M6.5. Thiết kế lại giao diện**, rồi M7. Cờ vua.
 - Còn lại: đo trên Vercel Preview (Upstash thật) thời gian từ nước của người tới khi có nước máy, số lệnh Redis và dung lượng một ván 1 người + 3 máy (việc đo trên Preview của `add-room-ai-seats`, chưa làm); chơi thử Cờ cá ngựa trên điện thoại thật và online giữa hai thiết bị trên Production (cỡ ô ~22 px, nhịp máy, theo dõi tab Usage của Upstash/Vercel với ván dài). Ghi kết quả vào đây.
+
+### M6.5. Thiết kế lại giao diện (03/11/2026, chuẩn bị)
+
+Khảo sát giao diện sau M6 (ảnh chụp mọi màn hình, sáng/tối, điện thoại/máy tính):
+- Bảng màu một sắc độ (mọi thứ quanh hue ~250); màu nhấn trùng màu quân xanh dương của Cờ cá ngựa.
+- Menu không có bản sắc của từng game; bàn cờ không có chất liệu (Cờ caro trông như bảng tính).
+- Kết thúc ván phẳng: Tic-tac-toe không vẽ hàng thắng, không có khoảnh khắc ăn mừng.
+- Không có bảng người chơi/lượt; khung xúc xắc Cờ cá ngựa mang màu người vừa gieo, không phải người sắp gieo.
+- Thang chữ phẳng (gần như mọi chữ `text-sm font-medium`); component chung chung (radio đã chọn trông như nút hành động chính).
+- Tràn trên điện thoại: danh sách chọn ngựa của Cờ cá ngựa, đầu trang Cờ caro.
+- Trạng thái lỗi/rỗng sơ sài; phòng không tồn tại vẫn hỏi tên trước khi báo.
+- Giữ: Be Vietnam Pro + Noto Sans JP, kiến trúc token, vòng `focus-visible`, `RadioGroup` dùng radio gốc, nút `aria-disabled`, roving tabindex, ký hiệu quân ●■▲◆, `motion-reduce`, `<dialog>` gốc.
+
+Quyết định về công cụ (chưa đổi code sản phẩm):
+- **Dùng**: skill `frontend-design` (chọn hướng hình ảnh, làm mockup), `web-design-guidelines` (rà giao diện; ghim bản quy tắc), `vercel-react-best-practices` và `vercel-composition-patterns` (khi code), vendored trong `.claude/skills/` (nguồn, phiên bản ở `.claude/skills/VENDORED.md`); skill dự án `board-games-ui` là nguồn chân lý và thắng các skill trên khi mâu thuẫn. Thêm `pnpm ui:shots` (Playwright, cấu hình riêng `apps/web/playwright.shots.config.ts`, cổng 3200/3201) để chụp màn hình chính từ bản build local.
+- **Không dùng**: UI UX Pro Max, Taste, Board Game UI skill, trình cài Impeccable — trùng với các skill trên, kéo theo kho dữ liệu hay script cài đặt lớn, hoặc đề xuất chung chung không hợp bất biến của repo (token, i18n, a11y).
+- **Hoãn**: thư viện `motion` (CSS + Web Animations API đủ cho các khoảnh khắc đã định và nằm trong nhịp máy `ai-timing.ts`; xét lại nếu cần chuỗi hiệu ứng phức tạp), `shadcn init` (component tự viết trên `cva()` đã đủ; xét lại khi cần component lớn như popover, tooltip).
+- **Không cần**: Zustand (transport đã là kho giữ ván qua `useSyncExternalStore`; bỏ khỏi §2).
+- Hướng thiết kế (chốt bằng mockup ở change `add-design-foundation`): khung chung + bản sắc từng game qua biến `--game-*`. Đây là bước tiếp của quyết định "tối giản phẳng trước, theme sau" (idea.md §9 mục 5): khung vẫn tối giản, nhưng mỗi game có chất liệu riêng.
