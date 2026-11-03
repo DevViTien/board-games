@@ -50,6 +50,16 @@ const SERVER_IMPORTS = [
   ]),
 ];
 
+/**
+ * Client code of the web app that must not bring every game's rules and AI into its bundle (the
+ * menu, the setup screen, the room page, the stores they share): it may import types from
+ * `@board-games/games`, and game ids from `@board-games/games/ids`. A game's own rules reach the
+ * browser only with its lazily loaded play screen (`src/games/**`) or in the AI's Worker. The
+ * menu's server-side helper builds plain data from the registry.
+ */
+const WEB_REGISTRY_FREE_FILES = ["src/features/**", "src/transport/**", "src/lib/**"];
+const WEB_REGISTRY_FREE_EXCEPTIONS = ["**/*.test.{ts,tsx}", "src/features/menu/menu-games.ts"];
+
 /** Files that frameworks require to use a default export. */
 const NEXT_DEFAULT_EXPORT_FILES = [
   "**/app/**/{page,layout,template,loading,error,global-error,not-found,default,forbidden,unauthorized}.tsx",
@@ -102,6 +112,27 @@ function boundaries(layer) {
   // `redis` and `ws` must never reach a client bundle.
   return [
     { rules },
+    {
+      files: WEB_REGISTRY_FREE_FILES,
+      ignores: WEB_REGISTRY_FREE_EXCEPTIONS,
+      rules: {
+        // A rule of its own (typescript-eslint's), so it adds to `no-restricted-imports` above
+        // instead of replacing it, and lets types through.
+        "@typescript-eslint/no-restricted-imports": [
+          "error",
+          {
+            paths: [
+              {
+                name: "@board-games/games",
+                allowTypeImports: true,
+                message:
+                  "This would put every game's rules and AI in a client bundle: import game ids from @board-games/games/ids, or pass plain data from the server.",
+              },
+            ],
+          },
+        ],
+      },
+    },
     {
       files: ["src/**"],
       ignores: WEB_SERVER_FILES,

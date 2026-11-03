@@ -97,14 +97,34 @@ describe("createIndexedDbStore", () => {
         gameId: "tictactoe",
         mode: "local",
         settings: { kind: "local" },
+        options: {},
         savedAt: "2026-10-30T10:01:00.000Z",
       },
       {
         gameId: "tictactoe",
         mode: "ai",
         settings: AI_SETTINGS,
+        options: {},
         savedAt: "2026-10-30T10:00:00.000Z",
       },
+    ]);
+  });
+
+  it("lists the rule options of a game in progress as its record has them", async () => {
+    const store = createIndexedDbStore(createMapKeyValue(), minuteClock());
+    const record = { ...sampleRecord(), gameId: "caro", options: { size: 19, rule: "free" } };
+
+    await store.save(
+      { gameId: "caro", mode: "local" },
+      {
+        settings: { kind: "local" },
+        record,
+        inProgress: true,
+      },
+    );
+
+    expect(await store.listInProgress()).toMatchObject([
+      { gameId: "caro", mode: "local", options: { size: 19, rule: "free" } },
     ]);
   });
 

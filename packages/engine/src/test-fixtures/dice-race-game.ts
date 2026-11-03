@@ -70,8 +70,10 @@ export const diceRaceRules = {
   },
 } as const satisfies GameDefinition<DiceRaceState, DiceRaceMove, number, DiceRaceOptions>;
 
+/** The dice race that validates its options and offers a choice of target. */
 export const diceRaceGame = {
   ...diceRaceRules,
+  optionChoices: { target: [12, 20, 50] },
   parseOptions: (raw: unknown) => (isDiceRaceOptions(raw) ? { target: raw.target } : null),
 } as const satisfies GameDefinition<DiceRaceState, DiceRaceMove, number, DiceRaceOptions>;
 

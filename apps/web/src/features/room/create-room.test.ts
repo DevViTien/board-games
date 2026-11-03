@@ -19,12 +19,16 @@ afterEach(() => {
 });
 
 /** Starts creating a room; `result()` is what it settled with so far. */
-function start() {
+function start({
+  gameId = "tictactoe",
+  options,
+}: { gameId?: string; options?: Readonly<Record<string, unknown>> } = {}) {
   let settled: CreateRoomResult | undefined;
   void createRoom({
     url: "ws://test",
-    gameId: "tictactoe",
+    gameId,
     identity: IDENTITY,
+    options,
     openSocket: sockets.openSocket,
   }).then((result) => {
     settled = result;
@@ -62,6 +66,40 @@ describe("createRoom", () => {
       expect(result()).toEqual({ ok: false, error: code });
     },
   );
+
+  it("asks for the rule options chosen", () => {
+    const { socket } = start({ gameId: "caro", options: { size: 19, rule: "free" } });
+
+    socket.open();
+
+    expect(socket.sent).toEqual([
+      {
+        type: "create",
+        protocol: PROTOCOL_VERSION,
+        gameId: "caro",
+        ...IDENTITY,
+        options: { size: 19, rule: "free" },
+      },
+    ]);
+  });
+
+  it("sends no rule options for a game without any", () => {
+    const { socket } = start({ options: {} });
+
+    socket.open();
+
+    expect(socket.sent[0]).not.toHaveProperty("options");
+  });
+
+  it("fails with invalid-options when the server refuses the rule options", async () => {
+    const { socket, result } = start({ gameId: "caro", options: { size: 17 } });
+
+    socket.open();
+    socket.receive({ type: "error", code: "invalid-options" });
+    await flush();
+
+    expect(result()).toEqual({ ok: false, error: "invalid-options" });
+  });
 
   it("fails when the connection is lost before an answer", async () => {
     const { socket, result } = start();

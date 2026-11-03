@@ -1,21 +1,22 @@
 import type { AnyGameDefinition } from "@board-games/engine";
 
+import { caro } from "./caro";
+import type { RegisteredGameId } from "./ids";
 import { tictactoe } from "./tictactoe";
 
 /**
- * Every game the app can play. Adding a game is one entry here; each entry is declared with
- * `as const satisfies GameDefinition<…>` so its id stays a literal and `RegisteredGameId` is a union.
+ * Every game the app can play. Adding a game is one entry here and its id in `GAME_IDS` (`ids.ts`,
+ * for client code that must not load every game's rules); each entry is declared with
+ * `as const satisfies GameDefinition<…>` so its id stays a literal, checked against `GAME_IDS`.
  */
-export const GAMES = [tictactoe] as const;
-
-export type RegisteredGameId = (typeof GAMES)[number]["id"];
-
-export function isRegisteredGameId(id: string): id is RegisteredGameId {
-  return GAMES.some((game) => game.id === id);
-}
+export const GAMES = [tictactoe, caro] as const satisfies readonly (AnyGameDefinition & {
+  readonly id: RegisteredGameId;
+})[];
 
 export function findGame(id: string): AnyGameDefinition | undefined {
   return GAMES.find((game) => game.id === id);
 }
 
+export * from "./caro";
+export { GAME_IDS, isRegisteredGameId, type RegisteredGameId } from "./ids";
 export * from "./tictactoe";

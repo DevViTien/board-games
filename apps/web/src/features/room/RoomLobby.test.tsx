@@ -148,3 +148,42 @@ describe("RoomLobby", () => {
     });
   });
 });
+
+describe("RoomLobby rules", () => {
+  it("names the room's rules before the player joins", () => {
+    renderWithIntl(
+      <RoomLobby
+        gameId="caro"
+        room={{
+          ...roomView({ seats: ["Minh", null] }),
+          gameId: "caro",
+          record: {
+            version: 1,
+            gameId: "caro",
+            playerCount: 2,
+            options: { size: 19, rule: "free" },
+            entries: [],
+          },
+        }}
+        optionChoices={[
+          { name: "size", values: [15, 19] },
+          { name: "rule", values: ["blocked-ends", "free"] },
+        ]}
+        you={null}
+        status="online"
+        name="Lan"
+        onSit={vi.fn(() => true)}
+        onResume={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Luật: 19×19 · Tự do")).toBeInTheDocument();
+    expect(sitButton()).toBeInTheDocument();
+  });
+
+  it("names no rules for a game without rule options", () => {
+    renderLobby();
+
+    expect(screen.queryByText(/^Luật/)).not.toBeInTheDocument();
+  });
+});

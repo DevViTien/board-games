@@ -25,9 +25,10 @@ export interface GameUI<State, Move, Outcome = never> {
   readonly usePlayerLabel: () => (player: PlayerIndex) => string;
   /**
    * Hook returning how a move is read out, to fit in a sentence ("row 2, column 3"): the play
-   * screen tells where the AI just played with it.
+   * screen tells where the AI or the opponent just played with it. `state` is the game's state
+   * after that move, for what the move alone does not say (the size of a Gomoku board).
    */
-  readonly useMoveLabel: () => (move: Move) => string;
+  readonly useMoveLabel: () => (move: Move, state: State) => string;
 }
 
 /**

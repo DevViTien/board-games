@@ -7,6 +7,7 @@ import {
   fromRecord,
   type GameDefinition,
   lastEntry,
+  parseGameOptions,
   type PlayerIndex,
   playMove,
   redo,
@@ -37,13 +38,19 @@ import type {
 
 /**
  * Which saved game the transport plays, and how to set up a new one. `start` begins a new game in
- * place of the saved one (the setup screen's "Start"); without it the saved game is resumed.
+ * place of the saved one (the setup screen's "Start"), unless the game refuses its rule options;
+ * otherwise the saved game is resumed, and without one a game is set up like `fallback`.
  */
 type ModeOptions =
   | {
       /** Every seat is a person on this device. */
       readonly mode?: "local" | undefined;
       readonly start?: LocalSetup | undefined;
+      /**
+       * How to set up a game when none is saved: the last choices made for this game (its rule
+       * options). Absent: the game's defaults.
+       */
+      readonly fallback?: LocalSetup | undefined;
     }
   | {
       /** The player against the AI, each AI seat at its level. */
@@ -123,9 +130,22 @@ export function createLocalTransport<
     return before === undefined ? null : definition.currentPlayer(before);
   }
 
-  function newSession(): GameSession {
-    // Choosing the number of players and rule options comes with the first game that needs it (M6).
-    const created = createSession(definition, { playerCount: definition.meta.players.min });
+  /**
+   * The rule options `setup` asks for, checked by the game (its defaults when it asks for none), or
+   * `undefined` when the game refuses them: an address or a remembered choice may hold anything.
+   */
+  function optionsOf(setup: PlaySetup): Options | undefined {
+    if (setup.options === undefined) return definition.defaultOptions;
+    const parsed = parseGameOptions(definition, setup.options);
+    return parsed.ok ? parsed.value : undefined;
+  }
+
+  function newSession(gameOptions: Options): GameSession {
+    // Choosing the number of players comes with the first game that needs it (M6).
+    const created = createSession(definition, {
+      playerCount: definition.meta.players.min,
+      options: gameOptions,
+    });
     if (!created.ok) throw new Error(`Cannot start ${definition.id}: ${created.error}`);
     return created.value;
   }
@@ -184,6 +204,7 @@ export function createLocalTransport<
       seats,
       waitingFor,
       inProgress: result === null && humanMoved,
+      options: next.options,
       supportsUndo: true,
       canStartNewGame: true,
       connection: null,
@@ -261,13 +282,15 @@ export function createLocalTransport<
 
   function persist(next: GameSession): void {
     if (!mayWrite) return;
-    // A finished game is not worth resuming, nor an empty same-device board; a game against the AI
-    // is kept from the start, for its level and seats. Storage errors (private mode, blocked
+    // A finished game is not worth resuming. Any other game is kept, an empty board too, for its
+    // rule options (and, against the AI, its level and seats): a reload after "New game" or undoing
+    // every move keeps them. Only a game where a person here has moved is marked in progress, so
+    // an empty board is neither listed nor asked about. Storage errors (private mode, blocked
     // storage) must not stop the game: it simply is not saved. The move is already on screen, so a
     // store that throws instead of rejecting must not break the click either.
     try {
       const saved =
-        sessionResult(definition, next) !== null || (mode === "local" && next.cursor === 0)
+        sessionResult(definition, next) !== null
           ? store.clear(slot)
           : store.save(slot, {
               settings,
@@ -285,8 +308,8 @@ export function createLocalTransport<
     persist(next);
   }
 
-  function start(setup: PlaySetup, save: boolean): void {
-    const next = newSession();
+  function start(setup: PlaySetup, gameOptions: Options, save: boolean): void {
+    const next = newSession(gameOptions);
     seat(setup, next);
     if (save) commit(next);
     else show(next);
@@ -348,20 +371,23 @@ export function createLocalTransport<
   }
 
   // The saved game is read even when a new one was asked for, so that one that cannot be read is
-  // never overwritten (`mayWrite`).
+  // never overwritten (`mayWrite`). In order: the new game asked for, if the game accepts its rule
+  // options (an address with options it refuses is ignored like any wrong address); the saved
+  // game; a game set up like the last one chosen, or with the defaults if those are refused too.
   void restore().then((restored) => {
     if (disposed) return;
-    if (options.start !== undefined) {
-      start(options.start, true);
+    const requested = options.start === undefined ? undefined : optionsOf(options.start);
+    if (options.start !== undefined && requested !== undefined) {
+      start(options.start, requested, true);
     } else if (restored !== undefined) {
       settings = restored.settings;
       seats = restored.seats;
       show(restored.session);
-    } else if (options.mode === "ai") {
-      // Saved at once, so a reload before the first move keeps the level and who moves first.
-      start(options.fallback, true);
     } else {
-      start({ mode: "local" }, false);
+      const fallback: PlaySetup = options.fallback ?? { mode: "local" };
+      // Against the AI, saved at once, so a reload before the first move keeps the level and who
+      // moves first; an empty same-device board is not worth saving.
+      start(fallback, optionsOf(fallback) ?? definition.defaultOptions, mode === "ai");
     }
   });
 
@@ -419,10 +445,10 @@ export function createLocalTransport<
       } while (canRedo(redone) && !isHuman(definition.currentPlayer(currentState(redone))));
       commit(redone);
     },
-    // Same seats, except that a random first player is drawn again.
+    // Same seats and rule options, except that a random first player is drawn again.
     requestNewGame: () => {
       if (disposed || session === null) return;
-      const next = newSession();
+      const next = newSession(session.options);
       const aiSeat = seats.find((controller) => controller.kind === "ai");
       if (settings.kind === "ai" && settings.first === "random" && aiSeat?.kind === "ai") {
         seat({ mode: "ai", level: aiSeat.level, first: "random" }, next);

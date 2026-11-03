@@ -1,6 +1,6 @@
 import { ENGINE_ERROR, err, ok, type Result } from "./errors";
 import { isPlainObject } from "./guards";
-import { defaultMoveKey, stableStringify } from "./move-key";
+import { moveKeyOf, stableStringify } from "./move-key";
 import { parseGameOptions } from "./options";
 import { checkOutcomeWeights } from "./outcome-weights";
 import type {
@@ -237,8 +237,7 @@ function findLegalMove<State, Move, Outcome, Options extends object>(
   candidate: unknown,
 ): Move | undefined {
   // The candidate is untrusted: a custom moveKey may throw on it, which simply means "no match".
-  const keyOf = (move: unknown): string =>
-    game.moveKey === undefined ? defaultMoveKey(move) : game.moveKey(move as Move);
+  const keyOf = (move: unknown): string => moveKeyOf(game, move as Move);
   let key: string;
   try {
     key = keyOf(candidate);

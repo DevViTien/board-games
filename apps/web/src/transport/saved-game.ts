@@ -116,3 +116,13 @@ export function readSavedGame(raw: unknown): ReadSavedGame {
   const { savedAt, inProgress, mode, record } = parsed.data;
   return { kind: "saved", savedAt, inProgress, settings: mode, record };
 }
+
+/**
+ * The rule options a saved record was played with, unchecked (only for showing them: the engine's
+ * `fromRecord` checks them when the game is resumed), or `undefined` when it has none.
+ */
+export function recordOptionsOf(record: unknown): unknown {
+  return typeof record === "object" && record !== null && "options" in record
+    ? record.options
+    : undefined;
+}

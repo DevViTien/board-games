@@ -1,6 +1,6 @@
 "use client";
 
-import type { PlayerIndex } from "@board-games/engine";
+import type { OptionChoiceList, PlayerIndex } from "@board-games/engine";
 import type { RegisteredGameId } from "@board-games/games";
 import { Badge, Button, buttonVariants, ConfirmDialog } from "@board-games/ui";
 import Link from "next/link";
@@ -9,6 +9,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import type { GameUI } from "@/games/types";
 import { useModeLabel } from "@/lib/use-mode-label";
+import { useOptionLabels } from "@/lib/use-option-labels";
 import type { ReadySnapshot, Transport } from "@/transport/types";
 
 import { ConnectionNotice } from "./ConnectionNotice";
@@ -19,6 +20,11 @@ export interface PlayScreenProps<State, Move, Outcome> {
   readonly gameId: RegisteredGameId;
   readonly transport: Transport<State, Move, Outcome>;
   readonly ui: GameUI<State, Move, Outcome>;
+  /**
+   * The rule options the game offers (`listOptionChoices` of its rules), to show the rules the game
+   * is played with next to its name. None by default.
+   */
+  readonly optionChoices?: readonly OptionChoiceList[] | undefined;
   /** Reconnects an online game paused for inactivity. */
   readonly onResume?: (() => void) | undefined;
   /**
@@ -32,6 +38,8 @@ function noop(): void {
   // A game on this device has no connection to resume.
 }
 
+const NO_OPTION_CHOICES: readonly OptionChoiceList[] = [];
+
 /**
  * The screen shared by every game and mode: whose turn it is, the board, the result, undo/redo and
  * a new game. It only reads the transport's snapshot and sends requests, so it never decides who
@@ -43,6 +51,7 @@ export function PlayScreen<State, Move, Outcome>({
   gameId,
   transport,
   ui,
+  optionChoices = NO_OPTION_CHOICES,
   onResume = noop,
   focusTitle = false,
 }: PlayScreenProps<State, Move, Outcome>) {
@@ -53,6 +62,7 @@ export function PlayScreen<State, Move, Outcome>({
   const playerLabel = ui.usePlayerLabel();
   const moveLabel = ui.useMoveLabel();
   const modeLabel = useModeLabel();
+  const optionLabels = useOptionLabels();
   const [confirmingNewGame, setConfirmingNewGame] = useState(false);
   // The number of moves when a move was refused: the refusal is told until the game changes,
   // not when the connection does.
@@ -88,8 +98,10 @@ export function PlayScreen<State, Move, Outcome>({
 
   const hasAiSeat = snapshot.seats.some((seat) => seat.kind === "ai");
   const hasRemoteSeat = snapshot.seats.some((seat) => seat.kind === "remote");
+  const rules = optionLabels.summary(gameId, optionChoices, snapshot.options);
 
   function describeStatus({
+    state,
     result,
     currentPlayer,
     viewer,
@@ -117,14 +129,14 @@ export function PlayScreen<State, Move, Outcome>({
         const mover = lastMover === null ? undefined : seats[lastMover];
         if (lastEntry !== null && lastMover !== null && mover?.kind === "ai") {
           return t("aiMovedYourTurn", {
-            move: moveLabel(lastEntry.move),
+            move: moveLabel(lastEntry.move, state),
             player: playerLabel(viewer),
           });
         }
         if (lastEntry !== null && lastMover !== null && mover?.kind === "remote") {
           return t("opponentMovedYourTurn", {
             name: nameOf(lastMover),
-            move: moveLabel(lastEntry.move),
+            move: moveLabel(lastEntry.move, state),
             player: playerLabel(viewer),
           });
         }
@@ -174,6 +186,8 @@ export function PlayScreen<State, Move, Outcome>({
           {/* Against the AI, its level stays visible, also after a reload. */}
           {hasAiSeat && <Badge className="text-sm">{modeLabel(snapshot.seats)}</Badge>}
           {hasRemoteSeat && <Badge className="text-sm">{t("online")}</Badge>}
+          {/* Every rule option, defaults included, so both players online read the same words. */}
+          {rules !== null && <Badge className="text-sm">{rules}</Badge>}
         </div>
         <Link href="/" className={buttonVariants({ variant: "ghost" })}>
           {t("backToMenu")}

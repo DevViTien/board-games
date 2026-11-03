@@ -13,4 +13,5 @@ export type GameEntryLoaders = {
  */
 export const GAME_ENTRY_LOADERS = {
   tictactoe: () => import("./tictactoe").then((module) => module.tictactoeEntry),
+  caro: () => import("./caro").then((module) => module.caroEntry),
 } satisfies GameEntryLoaders;

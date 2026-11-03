@@ -1,7 +1,7 @@
 "use client";
 
-import type { GameDefinition } from "@board-games/engine";
-import { isRegisteredGameId, type RegisteredGameId } from "@board-games/games";
+import { type GameDefinition, listOptionChoices, type OptionChoiceList } from "@board-games/engine";
+import { isRegisteredGameId, type RegisteredGameId } from "@board-games/games/ids";
 import { Button, buttonVariants, Card } from "@board-games/ui";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -38,6 +38,7 @@ import { CONNECTION_STATUS } from "@/transport/types";
 
 import { ROOM_PROBLEM, RoomError, roomProblemOf } from "./RoomError";
 import { RoomLobby } from "./RoomLobby";
+import { useGameOptionChoices } from "./use-game-option-choices";
 
 interface RoomRouteProps {
   /** In canonical form. */
@@ -233,6 +234,10 @@ function RoomContent({ connection, name, onSit, onBroken, onRetry }: RoomContent
   );
   const { status, room, you } = snapshot;
   const unknownGame = room !== null && !isRegisteredGameId(room.gameId);
+  // The lobby names the room's rules from the game's code, loaded meanwhile for the game itself.
+  const optionChoices = useGameOptionChoices(
+    room !== null && isRegisteredGameId(room.gameId) ? room.gameId : null,
+  );
   // Once the lobby was shown, the game that replaces it takes the focus its button had.
   const [wasInLobby, setWasInLobby] = useState(false);
 
@@ -254,6 +259,7 @@ function RoomContent({ connection, name, onSit, onBroken, onRetry }: RoomContent
       <RoomLobby
         gameId={room.gameId}
         room={room}
+        optionChoices={optionChoices}
         you={you}
         status={status}
         name={name}
@@ -315,13 +321,21 @@ function OnlineGame<State, Move, Outcome, Options extends object>({
   }, [definition, connection]);
 
   if (transport === null) return <PlayLoading />;
-  return <OnlineGameScreen transport={transport} onResume={connection.resume} {...rest} />;
+  return (
+    <OnlineGameScreen
+      transport={transport}
+      optionChoices={listOptionChoices(definition)}
+      onResume={connection.resume}
+      {...rest}
+    />
+  );
 }
 
 interface OnlineGameScreenProps<State, Move, Outcome> {
   readonly gameId: RegisteredGameId;
   readonly transport: OnlineTransport<State, Move, Outcome>;
   readonly ui: GameUI<State, Move, Outcome>;
+  readonly optionChoices: readonly OptionChoiceList[];
   readonly focusTitle: boolean;
   readonly onResume: () => void;
   readonly onBroken: () => void;
@@ -333,6 +347,7 @@ function OnlineGameScreen<State, Move, Outcome>({
   gameId,
   transport,
   ui,
+  optionChoices,
   focusTitle,
   onResume,
   onBroken,
@@ -350,6 +365,7 @@ function OnlineGameScreen<State, Move, Outcome>({
       gameId={gameId}
       transport={transport}
       ui={ui}
+      optionChoices={optionChoices}
       onResume={onResume}
       focusTitle={focusTitle}
     />

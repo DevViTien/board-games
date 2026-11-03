@@ -677,7 +677,7 @@ describe("createLocalTransport against the AI: saving", () => {
     });
   });
 
-  it("drops the saved same-device game when a new one is requested", async () => {
+  it("replaces the saved same-device game when a new one is requested", async () => {
     const store = createMemoryStore();
     const first = createLocalTransport({ definition: tictactoe, store, rng: createRng(1) });
     await ready(first);
@@ -697,7 +697,12 @@ describe("createLocalTransport against the AI: saving", () => {
     await vi.advanceTimersByTimeAsync(0);
 
     expect(snapshot.moveCount).toBe(0);
-    expect(store.entries.has("tictactoe:local")).toBe(false);
+    // Replaced by the new, empty game, which is not in progress.
+    expect(store.entries.get("tictactoe:local")).toMatchObject({
+      inProgress: false,
+      record: { entries: [] },
+    });
+    expect(await store.listInProgress()).toEqual([]);
   });
 
   it("saves the record it shows", async () => {

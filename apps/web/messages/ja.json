@@ -10,6 +10,7 @@
     "play": "遊ぶ",
     "continueTitle": "途中のゲームを続ける",
     "continueItem": "{game}・{mode}",
+    "continueItemWithRules": "{game}・{mode}・{rules}",
     "joinTitle": "コードでルームに入る",
     "joinCode": "ルームコード",
     "join": "入る",
@@ -25,7 +26,31 @@
       "move": "{row}行{col}列"
     },
     "caro": {
-      "name": "五目並べ"
+      "name": "五目並べ",
+      "players": {
+        "x": "X",
+        "o": "O"
+      },
+      "move": "{row}行{col}列",
+      "winningCell": "勝ちの列",
+      "boardHint": "もう一度タップすると石を置きます",
+      "options": {
+        "size": {
+          "label": "盤",
+          "values": {
+            "15": "15×15",
+            "19": "19×19"
+          }
+        },
+        "rule": {
+          "label": "勝ちの条件",
+          "values": {
+            "blocked-ends": "両端止め",
+            "free": "フリー"
+          }
+        },
+        "summary": "{size}・{rule}"
+      }
     },
     "ludo": {
       "name": "ルドー"
@@ -62,7 +87,8 @@
     "inProgress": {
       "title": "途中のゲーム",
       "continue": "続きから",
-      "continueLabel": "続きから：{mode}"
+      "continueLabel": "続きから：{mode}",
+      "itemWithRules": "{mode}・{rules}"
     },
     "confirm": {
       "title": "途中のゲームを破棄しますか？",
@@ -160,6 +186,7 @@
     "emptySeat": "待っています…",
     "sit": "参加する",
     "waitingForFriends": "招待リンクを友だちに送ってください。全員そろうと対局が始まります。",
+    "rules": "ルール：{rules}",
     "errors": {
       "notFound": {
         "title": "ルームが見つかりません",

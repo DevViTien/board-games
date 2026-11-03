@@ -6,21 +6,6 @@ Menu chọn game ở trang chủ: cho người chơi thấy những game có th�
 
 ## Requirements
 
-### Requirement: Game hiện trên menu
-
-Menu SHALL hiện mọi game đã có luật trong app dưới dạng chơi được, và mọi game đã lên kế hoạch cho MVP nhưng chưa có luật dưới dạng "Sắp có". Game chơi được SHALL đứng trước game "Sắp có". Một game MUST NOT hiện hai lần: khi game dự kiến được thêm luật, thẻ "Sắp có" của nó được thay bằng thẻ chơi được.
-
-#### Scenario: Menu khi mới có Tic-tac-toe
-
-- **WHEN** người chơi mở trang chủ
-- **THEN** thẻ Tic-tac-toe chơi được đứng đầu
-- **AND** Cờ caro, Cờ cá ngựa, Cờ vua hiện nhãn "Sắp có"
-
-#### Scenario: Game dự kiến đã có luật không bị lặp
-
-- **WHEN** một game trong danh sách dự kiến đã được thêm luật vào app
-- **THEN** menu chỉ có một thẻ cho game đó và thẻ ấy chơi được
-
 ### Requirement: Thông tin trên thẻ game
 
 Mỗi thẻ SHALL hiện tên game, số người chơi (một số nếu cố định, khoảng nếu thay đổi) và thời lượng ước tính, bằng ngôn ngữ đang dùng.
@@ -78,3 +63,37 @@ Menu SHALL có ô "Vào phòng" để nhập mã phòng online. Mã đúng đị
 
 - **WHEN** người chơi nhập `12` vào ô "Vào phòng" và xác nhận
 - **THEN** menu báo mã phòng không hợp lệ ngay tại ô, ô mã phòng có focus và người chơi vẫn ở menu
+
+### Requirement: Game chơi được và game sắp có trên menu
+
+Menu SHALL hiện mọi game đã có luật trong app dưới dạng chơi được, và mọi game đã lên kế hoạch cho MVP nhưng chưa có luật dưới dạng "Sắp có". Game chơi được SHALL đứng trước game "Sắp có". Một game MUST NOT hiện hai lần: khi game dự kiến được thêm luật, thẻ "Sắp có" của nó được thay bằng thẻ chơi được.
+
+#### Scenario: Menu khi có Tic-tac-toe và Cờ caro
+
+- **WHEN** người chơi mở trang chủ
+- **THEN** thẻ Tic-tac-toe và thẻ Cờ caro chơi được đứng trước mọi thẻ "Sắp có"
+- **AND** Cờ cá ngựa, Cờ vua hiện nhãn "Sắp có"
+
+#### Scenario: Game dự kiến đã có luật không bị lặp
+
+- **WHEN** một game trong danh sách dự kiến đã được thêm luật vào app
+- **THEN** menu chỉ có một thẻ cho game đó và thẻ ấy chơi được
+
+#### Scenario: Thẻ Cờ caro
+
+- **WHEN** menu hiện bằng tiếng Việt thẻ Cờ caro
+- **THEN** thẻ ghi "2 người" và "~10 phút", lối vào ghi "Chơi" và không có nhãn "Sắp có"
+
+### Requirement: Tuỳ chọn luật trong mục tiếp tục ván dở
+
+Với game có tuỳ chọn luật cho chọn, mỗi mục của "Tiếp tục ván dở" trên menu SHALL ghi kèm tuỳ chọn luật của ván sau tên game và chế độ, theo cùng cách ghi với màn hình chơi. Game không có tuỳ chọn luật MUST giữ cách ghi cũ.
+
+#### Scenario: Ván dở Cờ caro trên menu
+
+- **WHEN** người chơi có một ván Cờ caro 19×19 luật "tự do" đấu với máy mức Khó đang dở và quay về menu
+- **THEN** mục "Tiếp tục ván dở" có "Cờ caro · Với máy · Khó · 19×19 · Tự do"
+
+#### Scenario: Tic-tac-toe giữ cách ghi cũ
+
+- **WHEN** người chơi có một ván Tic-tac-toe cùng máy đang dở và quay về menu
+- **THEN** mục "Tiếp tục ván dở" có "Tic-tac-toe · Cùng máy"

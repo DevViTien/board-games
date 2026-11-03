@@ -1,4 +1,11 @@
+import {
+  type AnyGameDefinition,
+  listOptionChoices,
+  type OptionChoiceList,
+} from "@board-games/engine";
 import { GAMES, type RegisteredGameId } from "@board-games/games";
+
+import { type ChosenOptions, matchOptionChoices } from "@/lib/option-choices";
 
 import { PLANNED_GAMES } from "./planned-games";
 
@@ -42,4 +49,31 @@ export function buildMenu(
       durationMinutes,
     }));
   return [...playable, ...comingSoon];
+}
+
+/** The rule options a game offers and its default for each: plain data for client components. */
+interface GameOptionChoices {
+  readonly choices: readonly OptionChoiceList[];
+  readonly defaults: ChosenOptions;
+}
+
+/** `GameOptionChoices` by game id. */
+export type OptionChoicesByGame = Readonly<Record<string, GameOptionChoices>>;
+
+/**
+ * The rule options of every registered game, built on the server: the menu's list of games in
+ * progress names them without loading any game's rules into the browser.
+ */
+export function buildOptionChoices(
+  registered: readonly AnyGameDefinition[] = GAMES,
+): OptionChoicesByGame {
+  return Object.fromEntries(
+    registered.map((game) => {
+      const choices = listOptionChoices(game);
+      return [
+        game.id,
+        { choices, defaults: matchOptionChoices(choices, game.defaultOptions) ?? {} },
+      ];
+    }),
+  );
 }

@@ -157,6 +157,8 @@ export function createOnlineTransport<
       supportsUndo: false,
       canStartNewGame: result !== null,
       connection: status,
+      // As the server's record has them, checked again by `fromRecord`.
+      options: current.options,
     };
   }
 

@@ -27,6 +27,8 @@ export interface CreateRoomOptions {
   readonly gameId: string;
   /** The creator, who sits in the first seat. */
   readonly identity: Identity;
+  /** The rule options chosen; sent only when the game has some, so the server's defaults apply otherwise. */
+  readonly options?: Readonly<Record<string, unknown>> | undefined;
   readonly openSocket?: OpenSocket | undefined;
 }
 
@@ -39,6 +41,7 @@ export function createRoom({
   url,
   gameId,
   identity,
+  options,
   openSocket = openWebSocket,
 }: CreateRoomOptions): Promise<CreateRoomResult> {
   return new Promise((resolve) => {
@@ -64,6 +67,7 @@ export function createRoom({
           gameId,
           playerId: identity.playerId,
           name: identity.name,
+          ...(options !== undefined && Object.keys(options).length > 0 ? { options } : {}),
         };
         socket?.send(JSON.stringify(create));
       },

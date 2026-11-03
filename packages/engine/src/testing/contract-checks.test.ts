@@ -70,6 +70,48 @@ describe("contract checks on valid games", () => {
     expect(failingChecks(counterGame, COUNTER_CONFIG)).toEqual([]);
     expect(failingChecks(diceRaceGame, DICE_CONFIG)).toEqual([]);
   });
+
+  it("option-choices passes for a game that declares no choice", () => {
+    expect(() => {
+      check(CONTRACT_CHECK.OptionChoices).run(counterGame, COUNTER_CONFIG);
+    }).not.toThrow();
+  });
+
+  it("option-choices starts a game with every combination of choices", () => {
+    const started: unknown[] = [];
+    const recording = {
+      ...diceRaceGame,
+      defaultOptions: { target: 20, fast: false },
+      optionChoices: { target: [12, 20], fast: [false, true] },
+      parseOptions: (raw: unknown) => raw as { target: number; fast: boolean },
+      setup: (context: { playerCount: number; options: { target: number } }): DiceRaceState => {
+        started.push(context.options);
+        return diceRaceGame.setup(context);
+      },
+    };
+
+    check(CONTRACT_CHECK.OptionChoices).run(recording, { ...DICE_CONFIG, playerCounts: [2] });
+
+    expect(started).toEqual([
+      { target: 12, fast: false },
+      { target: 12, fast: true },
+      { target: 20, fast: false },
+      { target: 20, fast: true },
+    ]);
+  });
+
+  it("all pass for a game that narrows the AI's moves correctly", () => {
+    // The larger step first, and only that one while the counter is far from the target.
+    const narrowing = {
+      ...counterGame,
+      candidateMoves: (state: CounterState) => {
+        const moves = [...counterGame.legalMoves(state)].reverse();
+        return state.count < 5 ? moves.slice(0, 1) : moves;
+      },
+    };
+
+    expect(failingChecks(narrowing, COUNTER_CONFIG)).toEqual([]);
+  });
 });
 
 interface BrokenGame {
@@ -113,6 +155,8 @@ const BROKEN_GAMES: readonly BrokenGame[] = [
     what: "declares defaultOptions its own parseOptions rejects",
     game: { ...diceRaceGame, defaultOptions: { target: 2 } },
     config: DICE_CONFIG,
+    // A default the game rejects is not one of the targets it offers either.
+    alsoFails: [CONTRACT_CHECK.OptionChoices],
   },
   {
     id: CONTRACT_CHECK.NoMutation,
@@ -352,6 +396,122 @@ const BROKEN_GAMES: readonly BrokenGame[] = [
     what: "claims AI support without evaluate",
     game: { ...counterRules, meta: { ...counterRules.meta, supportsAI: true } },
     config: COUNTER_CONFIG,
+  },
+  {
+    id: CONTRACT_CHECK.CandidateMoves,
+    what: "lets the AI consider a move that is not legal",
+    game: { ...counterGame, candidateMoves: () => [{ add: 3 }] },
+    config: COUNTER_CONFIG,
+    message: "candidateMoves lists +3, which is not a legal move",
+  },
+  {
+    id: CONTRACT_CHECK.CandidateMoves,
+    what: "lets the AI consider no move in an unfinished game",
+    game: { ...counterGame, candidateMoves: () => [] },
+    config: COUNTER_CONFIG,
+    message: "candidateMoves is empty",
+  },
+  {
+    id: CONTRACT_CHECK.CandidateMoves,
+    what: "lists the AI's moves in a different order on every other call",
+    game: {
+      ...counterGame,
+      candidateMoves: (state: CounterState) => {
+        const moves = counterGame.legalMoves(state);
+        return nextCall() % 2 === 0 ? moves : [...moves].reverse();
+      },
+    },
+    config: COUNTER_CONFIG,
+    message: "different lists",
+  },
+  {
+    id: CONTRACT_CHECK.CandidateMoves,
+    what: "caches the AI's moves inside the state",
+    game: {
+      ...counterGame,
+      candidateMoves: (state: CounterState) => {
+        const moves = counterGame.legalMoves(state);
+        (state as { cache?: unknown }).cache = moves;
+        return moves;
+      },
+    },
+    config: COUNTER_CONFIG,
+    message: "candidateMoves threw",
+  },
+  {
+    id: CONTRACT_CHECK.CandidateMoves,
+    what: "lists one of the AI's moves twice",
+    game: {
+      ...counterGame,
+      candidateMoves: (state: CounterState) => [
+        ...counterGame.legalMoves(state),
+        ...counterGame.legalMoves(state),
+      ],
+    },
+    config: COUNTER_CONFIG,
+    message: "lists a move twice",
+  },
+  {
+    id: CONTRACT_CHECK.OptionChoices,
+    what: "offers targets that leave out its default",
+    game: { ...diceRaceGame, optionChoices: { target: [12, 50] } },
+    config: DICE_CONFIG,
+    message: "the default target 20 is not a choice",
+  },
+  {
+    id: CONTRACT_CHECK.OptionChoices,
+    what: "offers a target its own parseOptions refuses",
+    game: { ...diceRaceGame, optionChoices: { target: [20, 200] } },
+    config: DICE_CONFIG,
+    message: "the game rejects",
+  },
+  {
+    id: CONTRACT_CHECK.OptionChoices,
+    what: "offers a target its setup cannot start",
+    game: {
+      ...diceRaceGame,
+      setup: (context: { playerCount: number; options: { target: number } }): DiceRaceState => {
+        if (context.options.target === 50) throw new Error("too far");
+        return diceRaceGame.setup(context);
+      },
+    },
+    config: DICE_CONFIG,
+    message: "too far",
+  },
+  {
+    id: CONTRACT_CHECK.OptionChoices,
+    what: "leaves an option out of its choices",
+    game: { ...diceRaceGame, optionChoices: {} },
+    config: DICE_CONFIG,
+    message: "differ from defaultOptions",
+  },
+  {
+    id: CONTRACT_CHECK.OptionChoices,
+    what: "offers a choice for an option it does not have",
+    game: { ...diceRaceGame, optionChoices: { target: [20], speed: [1, 2] } },
+    config: DICE_CONFIG,
+    message: "differ from defaultOptions",
+  },
+  {
+    id: CONTRACT_CHECK.OptionChoices,
+    what: "offers a target whose text has a dot, which cannot be a translation key",
+    game: { ...diceRaceGame, optionChoices: { target: [20, 12.5] } },
+    config: DICE_CONFIG,
+    message: 'whose text contains "."',
+  },
+  {
+    id: CONTRACT_CHECK.OptionChoices,
+    what: "offers the same target twice",
+    game: { ...diceRaceGame, optionChoices: { target: [12, 20, 12] } },
+    config: DICE_CONFIG,
+    message: "lists a value twice",
+  },
+  {
+    id: CONTRACT_CHECK.OptionChoices,
+    what: "declares its choices with a value that is not a string, number or boolean",
+    game: { ...diceRaceGame, optionChoices: { target: [20, null] } },
+    config: DICE_CONFIG,
+    message: "must be an array",
   },
 ];
 

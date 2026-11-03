@@ -37,6 +37,17 @@ export interface Rng {
   nextFloat(this: void): number;
 }
 
+/** A value a rule option can take; only these can be listed for a player to choose. */
+export type OptionValue = string | number | boolean;
+
+/**
+ * For each rule option: the values a player may choose, in display order. Values only, no
+ * display text: the app translates them. The order of the keys is the order of the groups.
+ */
+export type OptionChoices<Options extends object> = {
+  readonly [K in keyof Options]: Options[K] extends OptionValue ? readonly Options[K][] : never;
+};
+
 export interface SetupContext<Options> {
   readonly playerCount: number;
   readonly options: Options;
@@ -57,6 +68,12 @@ export interface GameDefinition<
   readonly id: GameId;
   readonly meta: GameMeta;
   readonly defaultOptions: Options;
+  /**
+   * The values a player may choose for each rule option, read without starting a game (the setup
+   * screen). Absent: the game offers no choice. Code shared between games reads it through
+   * `listOptionChoices`; the contract suite's `option-choices` checks it.
+   */
+  readonly optionChoices?: OptionChoices<Options>;
   /** Validates options received from outside; `null` rejects them. Without it, only `{}` is accepted. */
   parseOptions?(this: void, raw: unknown): Options | null;
   /** Must be deterministic: any randomness at setup is decided by the caller and passed in `options`. */
@@ -75,6 +92,15 @@ export interface GameDefinition<
    * any difference as real, so round away differences that are only noise.
    */
   evaluate?(this: void, state: State, player: PlayerIndex): number;
+  /**
+   * The moves the AI considers in `state`, best first: for games whose boards are too large to
+   * search every legal move (Gomoku). While the game is unfinished it MUST be a non-empty subset of
+   * `legalMoves(state)`, without duplicates, deterministic and leaving `state` untouched (the
+   * contract suite's `candidate-moves` checks it). It must also keep every move that wins at once
+   * and every move that stops the opponent winning at once, or Medium and Hard lose their
+   * guarantees. Absent: the AI considers every legal move.
+   */
+  candidateMoves?(this: void, state: State): readonly Move[];
   /** Identity of a move; defaults to JSON with sorted keys. */
   moveKey?(this: void, move: Move): string;
 }

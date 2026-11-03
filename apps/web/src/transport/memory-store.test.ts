@@ -34,4 +34,18 @@ describe("createMemoryStore", () => {
 
     expect(await store.listInProgress()).toEqual([]);
   });
+
+  it("lists the rule options of a game's record, unchecked", async () => {
+    const store = createMemoryStore({
+      "caro:local": { settings: LOCAL, record: { options: { size: 19, rule: "free" } } },
+      "tictactoe:local": { settings: LOCAL, record: "corrupt" },
+    });
+
+    const listed = await store.listInProgress();
+
+    expect(listed.map(({ gameId, options }) => ({ gameId, options }))).toEqual([
+      { gameId: "tictactoe", options: undefined },
+      { gameId: "caro", options: { size: 19, rule: "free" } },
+    ]);
+  });
 });

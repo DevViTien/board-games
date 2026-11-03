@@ -1,10 +1,20 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 
-import { findGame, GAMES, isRegisteredGameId, type RegisteredGameId, tictactoe } from "./index";
+import {
+  caro,
+  findGame,
+  GAME_IDS,
+  GAMES,
+  isRegisteredGameId,
+  type RegisteredGameId,
+  tictactoe,
+} from "./index";
 
 describe("game registry", () => {
   it("finds a registered game by id", () => {
     expect(findGame("tictactoe")).toBe(tictactoe);
+    expect(findGame("caro")).toBe(caro);
+    expect(isRegisteredGameId("caro")).toBe(true);
   });
 
   it("returns undefined for an unknown id", () => {
@@ -20,8 +30,13 @@ describe("game registry", () => {
     for (const id of ids) expect(id).toMatch(/^[a-z]+(-[a-z]+)*$/);
   });
 
+  it("lists in GAME_IDS exactly the ids of GAMES, in the same order", () => {
+    expect(GAME_IDS).toEqual(GAMES.map((game) => game.id));
+    expectTypeOf<(typeof GAMES)[number]["id"]>().toEqualTypeOf<RegisteredGameId>();
+  });
+
   it("types RegisteredGameId as the union of literal ids", () => {
-    expectTypeOf<RegisteredGameId>().toEqualTypeOf<"tictactoe">();
+    expectTypeOf<RegisteredGameId>().toEqualTypeOf<"tictactoe" | "caro">();
     // Forgetting `as const satisfies` on a game would widen this union to string.
     expectTypeOf<string>().not.toExtend<RegisteredGameId>();
   });

@@ -136,3 +136,92 @@ describe("ContinueList", () => {
     ).toBeInTheDocument();
   });
 });
+
+describe("ContinueList rules", () => {
+  const OPTION_CHOICES = {
+    tictactoe: { choices: [], defaults: {} },
+    caro: {
+      choices: [
+        { name: "size", values: [15, 19] },
+        { name: "rule", values: ["blocked-ends", "free"] },
+      ],
+      defaults: { size: 15, rule: "blocked-ends" },
+    },
+  };
+
+  it("names the rules of a Cờ caro game after its mode", async () => {
+    renderWithIntl(
+      <ContinueList
+        optionChoices={OPTION_CHOICES}
+        store={createMemoryStore({
+          "caro:ai": {
+            settings: AI_HARD,
+            record: { ...RECORD, gameId: "caro", options: { size: 19, rule: "free" } },
+          },
+        })}
+      />,
+    );
+
+    await screen.findByRole("region", { name: "Tiếp tục ván dở" });
+    expect(items()).toEqual([["Cờ caro · Với máy · Khó · 19×19 · Tự do", "/play/caro/ai"]]);
+  });
+
+  it("keeps the old wording for Tic-tac-toe, which has no rule options", async () => {
+    renderWithIntl(
+      <ContinueList
+        optionChoices={OPTION_CHOICES}
+        store={createMemoryStore({ "tictactoe:local": { settings: LOCAL, record: RECORD } })}
+      />,
+    );
+
+    await screen.findByRole("region", { name: "Tiếp tục ván dở" });
+    expect(items()).toEqual([["Tic-tac-toe · Cùng máy", "/play/tictactoe/local"]]);
+  });
+
+  it("names the default of an option missing from the record, as the game plays it", async () => {
+    renderWithIntl(
+      <ContinueList
+        optionChoices={OPTION_CHOICES}
+        store={createMemoryStore({
+          "caro:local": { settings: LOCAL, record: { ...RECORD, options: { size: 19 } } },
+        })}
+      />,
+    );
+
+    await screen.findByRole("region", { name: "Tiếp tục ván dở" });
+    expect(items()).toEqual([["Cờ caro · Cùng máy · 19×19 · Chặn hai đầu", "/play/caro/local"]]);
+  });
+
+  it("leaves out rules it cannot read", async () => {
+    renderWithIntl(
+      <ContinueList
+        optionChoices={OPTION_CHOICES}
+        store={createMemoryStore({
+          "caro:local": { settings: LOCAL, record: { ...RECORD, options: { size: 17 } } },
+        })}
+      />,
+    );
+
+    await screen.findByRole("region", { name: "Tiếp tục ván dở" });
+    expect(items()).toEqual([["Cờ caro · Cùng máy", "/play/caro/local"]]);
+  });
+
+  it("is translated with the rules joined the language's way", async () => {
+    renderWithIntl(
+      <ContinueList
+        optionChoices={OPTION_CHOICES}
+        store={createMemoryStore({
+          "caro:local": {
+            settings: LOCAL,
+            record: { ...RECORD, options: { size: 15, rule: "free" } },
+          },
+        })}
+      />,
+      { locale: "ja" },
+    );
+
+    expect(
+      await screen.findByRole("link", { name: "五目並べ・同じ端末で・15×15・フリー" }),
+    ).toHaveAttribute("href", "/play/caro/local");
+  });
+});

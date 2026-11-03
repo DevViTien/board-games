@@ -5,8 +5,10 @@ import { choiceGame } from "../test-fixtures/choice-game";
 import { counterGame } from "../test-fixtures/counter-game";
 import { diceRaceAiGame } from "../test-fixtures/dice-race-game";
 import { lineGame, linePosition, type LineState } from "../test-fixtures/line-game";
+import { treeGame, type TreeNode } from "../test-fixtures/tree-game";
 import { expiresImmediately, neverExpires, ticking } from "../testing/clocks";
 import { deepFreeze } from "../testing/deep-freeze";
+import type { GameDefinition, PlayerIndex } from "../types";
 import { chooseMove, type ChooseMoveOptions } from "./choose-move";
 import { AI_LEVEL, type AiLevel } from "./levels";
 
@@ -246,5 +248,154 @@ describe("chooseMove", () => {
         expect(chosen).toEqual({ ok: true, value: { type: "roll" } });
       }
     });
+  });
+});
+
+// Ten moves, of which the game lets the AI consider two: each move adds 1 to 10 to a running total,
+// and whoever brings it to RACE_TARGET or more wins. From RACE_START, adding 7 or more wins at once.
+const RACE_TARGET = 12;
+const RACE_START = 5;
+
+interface RaceState {
+  readonly total: number;
+  readonly toMove: PlayerIndex;
+  readonly winner: PlayerIndex | null;
+}
+
+interface RaceMove {
+  readonly add: number;
+}
+
+const TEN_MOVES: readonly RaceMove[] = Array.from({ length: 10 }, (_unused, index) => ({
+  add: index + 1,
+}));
+const DECLARED: readonly RaceMove[] = [{ add: 1 }, { add: 2 }];
+
+const raceGame = {
+  id: "race",
+  meta: {
+    players: { min: 2, max: 2 },
+    category: "original",
+    durationMinutes: 1,
+    supportsAI: true,
+  },
+  defaultOptions: {},
+  setup: (): RaceState => ({ total: RACE_START, toMove: 0, winner: null }),
+  currentPlayer: (state) => state.toMove,
+  legalMoves: (state) => (state.winner === null ? TEN_MOVES : []),
+  applyMove: (state, move) => {
+    const total = state.total + move.add;
+    return { total, toMove: 1 - state.toMove, winner: total >= RACE_TARGET ? state.toMove : null };
+  },
+  result: (state) => (state.winner === null ? null : { kind: "win", winners: [state.winner] }),
+  evaluate: () => 0,
+  candidateMoves: (state) => (state.winner === null ? DECLARED : []),
+} as const satisfies GameDefinition<RaceState, RaceMove>;
+
+function raceMove(game: GameDefinition<RaceState, RaceMove>, opts: ChooseMoveOptions): number {
+  const chosen = chooseMove(game, game.setup({ playerCount: 2, options: {} }), opts);
+  if (!chosen.ok) throw new Error(chosen.error);
+  return chosen.value.add;
+}
+
+describe("candidate moves declared by the game", () => {
+  it.each(ALL_LEVELS)("only plays a declared move, even past a winning one (%s)", (level) => {
+    const chosen = new Set(
+      Array.from({ length: 30 }, (_unused, seed) => raceMove(raceGame, options(level, seed))),
+    );
+
+    expect([...chosen].every((add) => add === 1 || add === 2)).toBe(true);
+  });
+
+  it("returns the rules' own legal move object for a declared move", () => {
+    const state = raceGame.setup();
+    const chosen = chooseMove(raceGame, state, options(AI_LEVEL.Medium));
+
+    expect(chosen.ok && TEN_MOVES.includes(chosen.value)).toBe(true);
+  });
+
+  it.each(ALL_LEVELS)(
+    "still plays a legal move when every declared move is illegal (%s)",
+    (level) => {
+      const broken = { ...raceGame, candidateMoves: () => [{ add: 11 }, { add: 0 }] };
+
+      for (let seed = 0; seed < 10; seed += 1) {
+        expect(TEN_MOVES.map((move) => move.add)).toContain(raceMove(broken, options(level, seed)));
+      }
+    },
+  );
+
+  it("considers every legal move when the game declares none", () => {
+    // Tic-tac-toe's line game has no candidateMoves: Hard still finds the only block, cell 5.
+    expect(cellsChosen(MUST_BLOCK, AI_LEVEL.Hard)).toEqual(new Set([5]));
+  });
+
+  it("asks the game at every node of the search, not only at the root", () => {
+    const asked: number[] = [];
+    const recording = {
+      ...raceGame,
+      candidateMoves: (state: RaceState) => {
+        asked.push(state.total);
+        return raceGame.candidateMoves(state);
+      },
+    };
+
+    raceMove(recording, options(AI_LEVEL.Medium));
+
+    expect(asked.some((total) => total > RACE_START)).toBe(true);
+  });
+
+  it.each(ALL_LEVELS)(
+    "returns a single declared move at once, without searching or waiting (%s)",
+    (level) => {
+      const single = { ...raceGame, candidateMoves: () => [{ add: 3 }] };
+      // The clock may be read once, for the start of the search: a second read throws.
+      for (let seed = 0; seed < 10; seed += 1) {
+        expect(raceMove(single, { ...options(level, seed), now: neverExpires(1) })).toBe(3);
+      }
+    },
+  );
+
+  it("still checks the clock before returning a single move", () => {
+    const single = { ...raceGame, candidateMoves: () => [{ add: 3 }] };
+
+    expect(() =>
+      chooseMove(single, raceGame.setup(), { ...options(AI_LEVEL.Hard), now: () => Number.NaN }),
+    ).toThrow(RangeError);
+  });
+
+  it("loses as late as possible among the declared moves only (Hard)", () => {
+    // Seat 0 to move: move 0 loses at once, move 1 loses two moves later, move 2 draws. Only moves
+    // 0 and 1 are declared, so the draw is never considered.
+    const lose: TreeNode = { kind: "end", result: { kind: "win", winners: [1] } };
+    const only = (node: TreeNode) => ({ random: false, children: [{ weight: 1, node }] });
+    const root: TreeNode = {
+      kind: "turn",
+      player: 0,
+      scores: [0, 0],
+      moves: [
+        only(lose),
+        only({
+          kind: "turn",
+          player: 1,
+          scores: [0, 0],
+          moves: [only({ kind: "turn", player: 0, scores: [0, 0], moves: [only(lose)] })],
+        }),
+        only({ kind: "end", result: { kind: "draw" } }),
+      ],
+    };
+    const declared = {
+      ...treeGame,
+      candidateMoves: (node: TreeNode) => (node === root ? [0, 1] : treeGame.legalMoves(node)),
+    };
+
+    for (let seed = 0; seed < 10; seed += 1) {
+      expect(chooseMove(declared, root, options(AI_LEVEL.Hard, seed))).toEqual({
+        ok: true,
+        value: 1,
+      });
+    }
+    // Without the declaration, the draw is the best move.
+    expect(chooseMove(treeGame, root, options(AI_LEVEL.Hard))).toEqual({ ok: true, value: 2 });
   });
 });

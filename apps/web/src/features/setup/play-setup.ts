@@ -1,6 +1,7 @@
 import { AI_LEVEL, type AiLevel } from "@board-games/engine";
 import { z } from "zod";
 
+import type { ChosenOptions } from "@/lib/option-choices";
 import {
   type AiSetup,
   FIRST_PLAYER,
@@ -21,33 +22,45 @@ export type SetupMode = (typeof SETUP_MODE)[keyof typeof SETUP_MODE];
 
 /**
  * What the setup screen shows and remembers. The level and who moves first are kept even when the
- * player picks another mode, so switching back to the AI shows them again.
+ * player picks another mode, so switching back to the AI shows them again; the rule options apply
+ * to every mode.
  */
 export interface SetupChoice {
   readonly mode: SetupMode;
   readonly level: AiLevel;
   readonly first: FirstPlayer;
+  /** One value per rule option the game offers; `{}` for a game without choices. */
+  readonly options: ChosenOptions;
 }
 
-/** The choice before the player has made any: against the AI, Medium, the player first. */
+/**
+ * The choice before the player has made any: against the AI, Medium, the player first. The rule
+ * options are the game's own defaults.
+ */
 export const DEFAULT_PLAY_SETUP = {
   mode: "ai",
   level: "medium",
   first: "human",
-} as const satisfies AiSetup & SetupChoice;
+} as const satisfies AiSetup & Omit<SetupChoice, "options">;
 
-/** The game a choice sets up; the level and who moves first only matter against the AI. */
+/**
+ * The game a choice sets up; the level and who moves first only matter against the AI, and a game
+ * without rule options gets none (its start address stays as it was).
+ */
 export function toPlaySetup({
   mode,
   level,
   first,
+  options,
 }: SetupChoice & { readonly mode: SlotMode }): PlaySetup {
-  return mode === "ai" ? { mode, level, first } : { mode };
+  const withOptions = Object.keys(options).length > 0 ? { options } : {};
+  return mode === "ai" ? { mode, level, first, ...withOptions } : { mode, ...withOptions };
 }
 
 /**
  * The play screen's address that starts a new game set up like `setup`, e.g.
- * `/play/tictactoe/ai?new=1&level=hard&first=random`. The play screen reads it once and removes it.
+ * `/play/caro/ai?new=1&level=hard&first=random&options=%7B%22size%22%3A19%7D`, the rule options
+ * as JSON. The play screen reads it once and removes it.
  */
 export function toStartUrl(
   gameId: string,
@@ -58,6 +71,7 @@ export function toStartUrl(
     query.set("level", setup.level);
     query.set("first", setup.first);
   }
+  if (setup.options !== undefined) query.set("options", JSON.stringify(setup.options));
   return `/play/${gameId}/${setup.mode}?${query.toString()}`;
 }
 
@@ -72,22 +86,40 @@ const aiStartSchema = newGameSchema.extend({
   first: z.enum(FIRST_PLAYER),
 });
 
+/** The `options` of the query: absent, or the JSON it holds; `invalid` when it is not JSON. */
+function readOptions(params: SearchParamsLike): { readonly options?: unknown } | "invalid" {
+  const raw = params.get("options");
+  if (raw === null) return {};
+  try {
+    return { options: JSON.parse(raw) as unknown };
+  } catch {
+    return "invalid";
+  }
+}
+
 /**
  * The new game asked for by the address of the play screen of `mode` (see `toStartUrl`), or
  * `undefined` when it asks for none or its values are missing or wrong: the saved game is then
- * resumed instead.
+ * resumed instead. The rule options are only read as JSON here; the game checks them when it
+ * starts, and resumes the saved game if it refuses them.
  */
 export function readStartRequest(params: SearchParamsLike, mode: "local"): LocalSetup | undefined;
 export function readStartRequest(params: SearchParamsLike, mode: "ai"): AiSetup | undefined;
 export function readStartRequest(params: SearchParamsLike, mode: SlotMode): PlaySetup | undefined;
 export function readStartRequest(params: SearchParamsLike, mode: SlotMode): PlaySetup | undefined {
+  const options = readOptions(params);
+  if (options === "invalid") return undefined;
   if (mode === "local") {
-    return newGameSchema.safeParse({ new: params.get("new") }).success ? { mode } : undefined;
+    return newGameSchema.safeParse({ new: params.get("new") }).success
+      ? { mode, ...options }
+      : undefined;
   }
   const parsed = aiStartSchema.safeParse({
     new: params.get("new"),
     level: params.get("level"),
     first: params.get("first"),
   });
-  return parsed.success ? { mode, level: parsed.data.level, first: parsed.data.first } : undefined;
+  return parsed.success
+    ? { mode, level: parsed.data.level, first: parsed.data.first, ...options }
+    : undefined;
 }

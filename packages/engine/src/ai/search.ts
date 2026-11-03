@@ -27,14 +27,16 @@ export interface RootSearch<Move> {
 }
 
 /**
- * The moves the search considers. Today every legal move; the one place where a future hook can
- * narrow or order them (candidate moves on a large Gomoku board).
+ * The moves the search considers at a node: the game's `candidateMoves` when it declares them (and
+ * gives any), every legal move otherwise. Not checked against `legalMoves` here, at every node:
+ * that would cost as much as not narrowing; `chooseMove` checks the root moves it may return.
  */
 export function searchMoves<State, Move, Outcome, Options extends object>(
   game: GameDefinition<State, Move, Outcome, Options>,
   state: State,
 ): readonly Move[] {
-  return game.legalMoves(state);
+  const candidates = game.candidateMoves?.(state);
+  return candidates !== undefined && candidates.length > 0 ? candidates : game.legalMoves(state);
 }
 
 /**

@@ -1,11 +1,13 @@
 import {
   type AnyGameDefinition,
+  currentState,
+  fromRecord,
   GAME_CATEGORY,
   type GameDefinition,
   type PlayerIndex,
   type Rng,
 } from "@board-games/engine";
-import { tictactoe } from "@board-games/games";
+import { caro, tictactoe } from "@board-games/games";
 import { ROOM_CODE_ALPHABET, type RoomCode } from "@board-games/protocol";
 import { describe, expect, it, vi } from "vitest";
 
@@ -57,7 +59,7 @@ const diceGame = {
   },
 } as const satisfies GameDefinition<DiceState, { roll: true }, number, { target: number }>;
 
-const GAMES: readonly AnyGameDefinition[] = [tictactoe, diceGame];
+const GAMES: readonly AnyGameDefinition[] = [tictactoe, diceGame, caro];
 
 const LAN: RoomPlayer = { playerId: "lan-0123456789abcdef", name: "Lan" };
 const AN: RoomPlayer = { playerId: "an-0123456789abcdefgh", name: "An" };
@@ -88,6 +90,14 @@ function setup(draws: number[] = drawsFor("ABC234")) {
 function expectOk<T>(result: ServiceResult<T>): T {
   if (!result.ok) throw new Error(`Expected success, got ${result.error}`);
   return result.value;
+}
+
+/** The board size and win rule of the game a room's record rebuilds. */
+function caroRules(record: unknown) {
+  const rebuilt = fromRecord(caro, record);
+  if (!rebuilt.ok) throw new Error(rebuilt.error);
+  const { size, rule, filled } = currentState(rebuilt.value);
+  return { size, rule, filled };
 }
 
 /** A Tic-tac-toe room ABC234 with Lan in seat 0 and, if `full`, An in seat 1. */
@@ -188,6 +198,28 @@ describe("create", () => {
 
     expect(room.record).toMatchObject({ playerCount: 3, options: { target: 6 } });
     expect(room.players).toEqual([LAN, null, null]);
+  });
+
+  it("creates a Cờ caro room on a 19×19 board with the free rule", async () => {
+    const { service } = setup();
+
+    const room = expectOk(
+      await service.create({ gameId: "caro", options: { size: 19, rule: "free" }, player: LAN }),
+    );
+
+    expect(room.record.options).toEqual({ size: 19, rule: "free" });
+    expect(caroRules(room.record)).toEqual({ size: 19, rule: "free", filled: 0 });
+  });
+
+  it("refuses a Cờ caro board of 17 and creates nothing", async () => {
+    const { service, store } = setup();
+    const create = vi.fn();
+    store.intercept("create", create);
+
+    expect(
+      await service.create({ gameId: "caro", options: { size: 17 }, player: LAN }),
+    ).toMatchObject({ ok: false, error: "invalid-options" });
+    expect(create).not.toHaveBeenCalled();
   });
 
   it("generates another code when the first one is taken, leaving the old room alone", async () => {
@@ -514,6 +546,26 @@ describe("rematch", () => {
     expect(room.gameNumber).toBe(2);
     expect(room.record.entries).toEqual([]);
     expect(room.players).toEqual([AN, LAN]);
+  });
+
+  it("keeps the room's rule options for the new game", async () => {
+    const context = setup();
+    const created = expectOk(
+      await context.service.create({
+        gameId: "caro",
+        options: { size: 19, rule: "free" },
+        player: LAN,
+      }),
+    );
+    expectOk(await context.service.sit(created.code, AN));
+    // Lan (X) takes five in a row on the top row; An plays further down.
+    await play({ ...context, code: created.code }, [0, 100, 1, 101, 2, 102, 3, 103, 4]);
+
+    const room = expectOk(await context.service.rematch(created.code, AN.playerId, 1));
+
+    expect(room.gameNumber).toBe(2);
+    expect(room.record.options).toEqual({ size: 19, rule: "free" });
+    expect(caroRules(room.record)).toEqual({ size: 19, rule: "free", filled: 0 });
   });
 
   it("refuses a new game while the game is still going", async () => {

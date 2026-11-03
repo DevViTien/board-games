@@ -175,6 +175,37 @@ describe("RoomRoute", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Tic-tac-toe" })).toHaveFocus();
   });
 
+  it("names a Cờ caro room's rules in the lobby, then plays by them", async () => {
+    saveName("Lan");
+    renderRoom();
+    await settle();
+    const room: RoomView = {
+      ...roomView({ seats: ["Minh", null] }),
+      gameId: "caro",
+      record: {
+        version: 1,
+        gameId: "caro",
+        playerCount: 2,
+        options: { size: 19, rule: "free" },
+        entries: [],
+      },
+    };
+    const socket = await enter(room, null);
+
+    expect(await screen.findByText("Luật: 19×19 · Tự do")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Vào chơi" }));
+    await act(async () => {
+      socket.receive(
+        roomMessage({ ...room, seats: [{ name: "Minh" }, { name: "Lan" }], revision: 2 }, 1),
+      );
+      await Promise.resolve();
+    });
+
+    expect(await screen.findByRole("grid", { name: "Bàn cờ" })).toBeInTheDocument();
+    expect(screen.getAllByRole("gridcell")).toHaveLength(19 * 19);
+    expect(screen.getByText("19×19 · Tự do")).toBeInTheDocument();
+  });
+
   it("remembers a name chosen in the lobby, and greets with it after a reconnection", async () => {
     const { playerId } = saveName("Lan");
     renderRoom();

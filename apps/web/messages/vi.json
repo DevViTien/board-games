@@ -10,6 +10,7 @@
     "play": "Chơi",
     "continueTitle": "Tiếp tục ván dở",
     "continueItem": "{game} · {mode}",
+    "continueItemWithRules": "{game} · {mode} · {rules}",
     "joinTitle": "Vào phòng bằng mã",
     "joinCode": "Mã phòng",
     "join": "Vào phòng",
@@ -25,7 +26,31 @@
       "move": "hàng {row}, cột {col}"
     },
     "caro": {
-      "name": "Cờ caro"
+      "name": "Cờ caro",
+      "players": {
+        "x": "X",
+        "o": "O"
+      },
+      "move": "hàng {row}, cột {col}",
+      "winningCell": "Thuộc hàng thắng",
+      "boardHint": "Chạm lần nữa để đặt quân",
+      "options": {
+        "size": {
+          "label": "Bàn cờ",
+          "values": {
+            "15": "15×15",
+            "19": "19×19"
+          }
+        },
+        "rule": {
+          "label": "Luật thắng",
+          "values": {
+            "blocked-ends": "Chặn hai đầu",
+            "free": "Tự do"
+          }
+        },
+        "summary": "{size} · {rule}"
+      }
     },
     "ludo": {
       "name": "Cờ cá ngựa"
@@ -62,7 +87,8 @@
     "inProgress": {
       "title": "Ván đang dở",
       "continue": "Tiếp tục",
-      "continueLabel": "Tiếp tục: {mode}"
+      "continueLabel": "Tiếp tục: {mode}",
+      "itemWithRules": "{mode} · {rules}"
     },
     "confirm": {
       "title": "Bỏ ván đang dở?",
@@ -160,6 +186,7 @@
     "emptySeat": "Đang chờ…",
     "sit": "Vào chơi",
     "waitingForFriends": "Gửi link mời cho bạn bè. Ván bắt đầu khi đủ người.",
+    "rules": "Luật: {rules}",
     "errors": {
       "notFound": {
         "title": "Không tìm thấy phòng",

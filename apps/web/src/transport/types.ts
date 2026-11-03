@@ -63,12 +63,18 @@ export const FIRST_PLAYER = {
 export type FirstPlayer = (typeof FIRST_PLAYER)[keyof typeof FIRST_PLAYER];
 
 /**
- * How to set up a new game, from the setup screen to the play screen. M5 adds rule options here
- * without changing how it travels.
+ * How to set up a new game, from the setup screen to the play screen. `options` are the rule
+ * options, untrusted (they come from the address or browser storage): the transport checks them
+ * with the game's rules. Absent: the game's defaults.
  */
 export type PlaySetup =
-  | { readonly mode: "local" }
-  | { readonly mode: "ai"; readonly level: AiLevel; readonly first: FirstPlayer };
+  | { readonly mode: "local"; readonly options?: unknown }
+  | {
+      readonly mode: "ai";
+      readonly level: AiLevel;
+      readonly first: FirstPlayer;
+      readonly options?: unknown;
+    };
 
 export type LocalSetup = Extract<PlaySetup, { mode: "local" }>;
 export type AiSetup = Extract<PlaySetup, { mode: "ai" }>;
@@ -127,6 +133,8 @@ export interface ReadySnapshot<State, Move, Outcome = never> {
   readonly canStartNewGame: boolean;
   /** The connection to the server, or `null` for a game on this device only. */
   readonly connection: ConnectionStatus | null;
+  /** The rule options the game is played with, as the rules checked them. */
+  readonly options: unknown;
 }
 
 export type PlaySnapshot<State, Move, Outcome = never> =
@@ -172,6 +180,8 @@ export interface SavedGameSummary {
   readonly gameId: RegisteredGameId;
   readonly mode: SlotMode;
   readonly settings: ModeSettings;
+  /** The rule options of its record, unchecked: shown only when they match the game's choices. */
+  readonly options: unknown;
   /** ISO 8601. */
   readonly savedAt: string;
 }

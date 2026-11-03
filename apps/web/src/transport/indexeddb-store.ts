@@ -1,10 +1,17 @@
-import { isRegisteredGameId } from "@board-games/games";
+import { isRegisteredGameId } from "@board-games/games/ids";
 import { createStore, del, get, keys, set, type UseStore } from "idb-keyval";
 
 import { SAVED_GAMES_DB, SAVED_GAMES_STORE } from "@/config/storage-keys";
 
 import { clearLegacySave, migrateLegacySaves } from "./migrate-legacy-saves";
-import { isSlotMode, type KeyValueStore, readSavedGame, slotKey, toSavedGame } from "./saved-game";
+import {
+  isSlotMode,
+  type KeyValueStore,
+  readSavedGame,
+  recordOptionsOf,
+  slotKey,
+  toSavedGame,
+} from "./saved-game";
 import type { SavedGameStore, SavedGameSummary } from "./types";
 
 /** IndexedDB through idb-keyval. The database is opened on first use, never during SSR. */
@@ -81,7 +88,12 @@ export function createIndexedDbStore(
         if (slot === undefined) continue;
         const saved = readSavedGame(await kv.get(slotKey(slot)));
         if (saved.kind === "saved" && saved.inProgress && saved.settings.kind === slot.mode) {
-          games.push({ ...slot, settings: saved.settings, savedAt: saved.savedAt });
+          games.push({
+            ...slot,
+            settings: saved.settings,
+            options: recordOptionsOf(saved.record),
+            savedAt: saved.savedAt,
+          });
         }
       }
       // ISO 8601 times of one format compare as strings.

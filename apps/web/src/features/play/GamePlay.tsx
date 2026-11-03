@@ -1,14 +1,15 @@
 "use client";
 
-import type { GameDefinition } from "@board-games/engine";
+import { type GameDefinition, listOptionChoices } from "@board-games/engine";
 import type { RegisteredGameId } from "@board-games/games";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { createWorkerAiPlayer } from "@/ai-worker/ai-player";
 import { DEFAULT_PLAY_SETUP } from "@/features/setup/play-setup";
 import { readSetupChoice } from "@/features/setup/setup-preferences";
 import type { GameUI } from "@/games/types";
 import { cryptoRng } from "@/lib/crypto-rng";
+import { matchOptionChoices } from "@/lib/option-choices";
 import { createLocalTransport } from "@/transport/local-transport";
 import type { AiPlayer, PlaySetup, SavedGameStore, SlotMode, Transport } from "@/transport/types";
 
@@ -49,14 +50,22 @@ export function GamePlay<State, Move, Outcome, Options extends object>({
   onStarted,
 }: GamePlayProps<State, Move, Outcome, Options>) {
   const [transport, setTransport] = useState<Transport<State, Move, Outcome> | null>(null);
+  const optionChoices = useMemo(() => listOptionChoices(definition), [definition]);
 
   useEffect(() => {
     let ai: AiPlayer | undefined;
     let created: Transport<State, Move, Outcome>;
+    // Without a saved game, a game is set up like the last one started from the setup screen, its
+    // rule options included (the transport checks them again).
+    const remembered = readSetupChoice(
+      gameId,
+      definition.meta.supportsAI,
+      optionChoices,
+      matchOptionChoices(optionChoices, definition.defaultOptions) ?? {},
+    );
+    const rememberedOptions = remembered === undefined ? {} : { options: remembered.options };
     if (mode === "ai") {
       ai = createAiPlayer();
-      // Without a saved game, a game is set up like the last one started from the setup screen.
-      const remembered = readSetupChoice(gameId, definition.meta.supportsAI);
       created = createLocalTransport({
         definition,
         store,
@@ -67,6 +76,7 @@ export function GamePlay<State, Move, Outcome, Options extends object>({
           mode,
           level: remembered?.level ?? DEFAULT_PLAY_SETUP.level,
           first: remembered?.first ?? DEFAULT_PLAY_SETUP.first,
+          ...rememberedOptions,
         },
         ai,
       });
@@ -76,6 +86,7 @@ export function GamePlay<State, Move, Outcome, Options extends object>({
         store,
         rng: cryptoRng,
         start: start?.mode === "local" ? start : undefined,
+        fallback: { mode, ...rememberedOptions },
       });
     }
     // eslint-disable-next-line react-hooks/set-state-in-effect -- the transport is an external resource with a lifecycle; it must be created and disposed by the effect
@@ -85,8 +96,8 @@ export function GamePlay<State, Move, Outcome, Options extends object>({
       created.dispose();
       ai?.dispose();
     };
-  }, [gameId, mode, definition, store, start, createAiPlayer, onStarted]);
+  }, [gameId, mode, definition, optionChoices, store, start, createAiPlayer, onStarted]);
 
   if (transport === null) return <PlayLoading />;
-  return <PlayScreen gameId={gameId} transport={transport} ui={ui} />;
+  return <PlayScreen gameId={gameId} transport={transport} ui={ui} optionChoices={optionChoices} />;
 }

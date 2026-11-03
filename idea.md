@@ -174,6 +174,7 @@ Không làm (không cần cho nhóm nhỏ): ghép trận với người lạ, t�
 │  Độ khó:  [Dễ] [Vừa] [Khó]              │
 │  Đi trước: [Tôi] [Máy] [Ngẫu nhiên]     │
 │  Bàn:     [15×15] [19×19]               │
+│  Luật thắng: [Chặn hai đầu] [Tự do]     │
 │                                         │
 │  [📖 Luật chơi]          [ Bắt đầu ▶ ]  │
 └─────────────────────────────────────────┘

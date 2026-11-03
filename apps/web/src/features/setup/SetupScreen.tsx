@@ -1,6 +1,6 @@
 "use client";
 
-import { AI_LEVEL, type AiLevel } from "@board-games/engine";
+import { AI_LEVEL, type AiLevel, type OptionChoiceList } from "@board-games/engine";
 import type { RegisteredGameId } from "@board-games/games";
 import { ROOM_ERROR } from "@board-games/protocol";
 import { Button, buttonVariants, Card, ConfirmDialog, RadioGroup } from "@board-games/ui";
@@ -12,9 +12,11 @@ import { useEffect, useId, useRef, useState } from "react";
 import { parsePlayerName, readIdentity, saveName } from "@/features/identity/identity";
 import { NameField } from "@/features/identity/NameField";
 import { createRoom as createRoomOnServer } from "@/features/room/create-room";
+import type { ChosenOptions } from "@/lib/option-choices";
 import { resolveRealtimeUrl } from "@/lib/realtime-url";
 import { useGamesInProgress } from "@/lib/use-games-in-progress";
 import { seatsOf, useModeLabel } from "@/lib/use-mode-label";
+import { useOptionLabels } from "@/lib/use-option-labels";
 import { savedGameStore } from "@/transport/indexeddb-store";
 import {
   FIRST_PLAYER,
@@ -43,6 +45,9 @@ const FIRST_PLAYERS: readonly FirstPlayer[] = [
   FIRST_PLAYER.Random,
 ];
 
+const NO_OPTION_CHOICES: readonly OptionChoiceList[] = [];
+const NO_OPTIONS: ChosenOptions = {};
+
 /** Why the last "Create room" failed, as the player is told. */
 type CreateProblem = "failed" | "outdated";
 
@@ -59,6 +64,10 @@ interface SetupScreenProps {
   readonly gameId: RegisteredGameId;
   /** Whether the game can be played against the AI; otherwise that mode is not offered. */
   readonly supportsAI: boolean;
+  /** The rule options the game lets players choose, one group each; none by default. */
+  readonly optionChoices?: readonly OptionChoiceList[];
+  /** The game's default value of each option in `optionChoices`. */
+  readonly defaultOptions?: ChosenOptions;
   /** The realtime server's address, or `null` for the page's own origin. */
   readonly realtimeUrl: string | null;
   /** Where games in progress are kept; a memory store in tests. */
@@ -69,15 +78,17 @@ interface SetupScreenProps {
 
 /**
  * `/play/<gameId>`: how to play (against the AI, on this device or online, the level, who moves
- * first) and the games of this game still in progress. "Start" opens the play screen with the new
- * game in its address; this screen never writes or deletes a saved game itself, so a saved game
- * that cannot be read is still never overwritten (the transport decides, see
- * `createLocalTransport`). "Create room" drops no game, so it neither waits for nor asks about the
- * games in progress.
+ * first, the rule options the game offers) and the games of this game still in progress. "Start"
+ * opens the play screen with the new game in its address; this screen never writes or deletes a
+ * saved game itself, so a saved game that cannot be read is still never overwritten (the transport
+ * decides, see `createLocalTransport`). "Create room" drops no game, so it neither waits for nor
+ * asks about the games in progress.
  */
 export function SetupScreen({
   gameId,
   supportsAI,
+  optionChoices = NO_OPTION_CHOICES,
+  defaultOptions = NO_OPTIONS,
   realtimeUrl,
   store = savedGameStore,
   createRoom = createRoomOnServer,
@@ -87,11 +98,14 @@ export function SetupScreen({
   const tGames = useTranslations("Games");
   const tLevels = useTranslations("Levels");
   const modeLabel = useModeLabel();
+  const optionLabels = useOptionLabels();
   const router = useRouter();
   const savedHeadingId = useId();
-  const [choice, setChoice] = useState<SetupChoice>(
-    supportsAI ? DEFAULT_PLAY_SETUP : { ...DEFAULT_PLAY_SETUP, mode: "local" },
-  );
+  const [choice, setChoice] = useState<SetupChoice>({
+    ...DEFAULT_PLAY_SETUP,
+    mode: supportsAI ? DEFAULT_PLAY_SETUP.mode : SETUP_MODE.Local,
+    options: defaultOptions,
+  });
   const saved = useGamesInProgress(store);
   const ownGames = saved.status === "ready" ? gamesOf(saved.games, gameId) : [];
   const [confirming, setConfirming] = useState(false);
@@ -116,11 +130,11 @@ export function SetupScreen({
   // server renders the defaults, and the remembered ones are applied after mount, without a
   // hydration mismatch.
   useEffect(() => {
-    const remembered = readSetupChoice(gameId, supportsAI);
+    const remembered = readSetupChoice(gameId, supportsAI, optionChoices, defaultOptions);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is only readable after mount; reading it during render would not match the server's HTML
     if (remembered !== undefined) setChoice(remembered);
     setName(readIdentity()?.name ?? "");
-  }, [gameId, supportsAI]);
+  }, [gameId, supportsAI, optionChoices, defaultOptions]);
 
   function begin(): void {
     const { mode } = choice;
@@ -145,6 +159,8 @@ export function SetupScreen({
       url: resolveRealtimeUrl(realtimeUrl, window.location),
       gameId,
       identity: saveName(parsed),
+      // `createRoom` leaves out the options of a game without any.
+      options: choice.options,
     });
     if (!mounted.current) return;
     if (!created.ok) {
@@ -219,6 +235,27 @@ export function SetupScreen({
             />
           </>
         )}
+        {/* The rules apply to every mode, and are kept when the mode changes. */}
+        {optionChoices.map(({ name: option, values }) => (
+          <RadioGroup
+            key={option}
+            legend={optionLabels.field(gameId, option)}
+            options={values.map((value) => ({
+              value: String(value),
+              label: optionLabels.value(gameId, option, value),
+            }))}
+            value={String(choice.options[option])}
+            onChange={(picked) => {
+              // Radio values are text: back to the game's own value (a number for a board size).
+              const value = values.find((candidate) => String(candidate) === picked);
+              if (value === undefined) return;
+              setChoice((current) => ({
+                ...current,
+                options: { ...current.options, [option]: value },
+              }));
+            }}
+          />
+        ))}
         {online && (
           <NameField
             ref={nameInput}
@@ -275,7 +312,14 @@ export function SetupScreen({
           </h2>
           <ul className="flex flex-col gap-2">
             {ownGames.map((game) => {
-              const label = modeLabel(seatsOf(game.settings));
+              const mode = modeLabel(seatsOf(game.settings));
+              const rules = optionLabels.summary(
+                gameId,
+                optionChoices,
+                game.options,
+                defaultOptions,
+              );
+              const label = rules === null ? mode : t("inProgress.itemWithRules", { mode, rules });
               return (
                 <li key={game.mode}>
                   <Card className="flex items-center justify-between gap-4 py-3">

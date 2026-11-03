@@ -193,3 +193,59 @@ test("sends a room code in lower case to its canonical address", async ({ page }
 
   await expect(page).toHaveURL(/\/room\/ABC234$/);
 });
+
+test("plays a Cờ caro room on a 19×19 board with the free rule, named in the lobby", async ({
+  page,
+  browser,
+}) => {
+  await page.goto("/play/caro");
+  await choose(page, "Chế độ", "Online");
+  await choose(page, "Bàn cờ", "19×19");
+  await choose(page, "Luật thắng", "Tự do");
+  await nameField(page).fill("Minh");
+  await button(page, "Tạo phòng").click();
+  await expect(page).toHaveURL(ROOM_URL);
+  await expect(page.getByText("Luật: 19×19 · Tự do")).toBeVisible();
+
+  // The friend reads the rules before joining.
+  const lan = await openAsNewPlayer(browser, page.url(), "Lan");
+  await expect(lan.page.getByText("Luật: 19×19 · Tự do")).toBeVisible();
+  await button(lan.page, "Vào chơi").click();
+
+  for (const player of [page, lan.page]) {
+    await expect(board(player).getByRole("button")).toHaveCount(361);
+    await expect(
+      player.getByRole("main").getByText("19×19 · Tự do", { exact: true }),
+    ).toBeVisible();
+  }
+
+  await expect(status(page)).toHaveText("Ván mới: bạn cầm X và đi trước");
+  // Minh (X) makes five on row 19 between two of Lan's stones: a win under the free rule.
+  const lanMoves: readonly (readonly [number, number])[] = [
+    [19, 1],
+    [19, 7],
+    [10, 4],
+    [10, 5],
+  ];
+  for (const [index, col] of [2, 3, 4, 5, 6].entries()) {
+    await play(page, [19, col]);
+    const answer = lanMoves[index];
+    if (answer === undefined) break;
+    await expect(status(lan.page)).toHaveText(/Đến lượt bạn \(O\)$/);
+    await play(lan.page, answer);
+    await expect(status(page)).toHaveText(/Đến lượt bạn \(X\)$/);
+  }
+  await expect(status(page)).toHaveText("Bạn thắng!");
+  await expect(status(lan.page)).toHaveText("Minh thắng");
+
+  await button(lan.page, "Chơi lại").click();
+  for (const player of [page, lan.page]) {
+    await expect(cell(player, 19, 19)).toHaveAccessibleName("Hàng 19, cột 19, trống");
+    await expect(board(player).getByRole("button")).toHaveCount(361);
+    await expect(
+      player.getByRole("main").getByText("19×19 · Tự do", { exact: true }),
+    ).toBeVisible();
+  }
+
+  await lan.context.close();
+});

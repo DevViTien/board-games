@@ -30,8 +30,23 @@ describe("/play/[gameId]", () => {
     expect(page.props).toEqual({
       gameId: "tictactoe",
       supportsAI: true,
+      optionChoices: [],
+      defaultOptions: {},
       realtimeUrl: "ws://localhost:3101/api/realtime",
     });
+  });
+
+  it("passes the rule options a game offers, and its defaults, as plain data", async () => {
+    const page = await SetupPage({ params: Promise.resolve({ gameId: "caro" }) });
+
+    expect(page.props).toMatchObject({
+      optionChoices: [
+        { name: "size", values: [15, 19] },
+        { name: "rule", values: ["blocked-ends", "free"] },
+      ],
+      defaultOptions: { size: 15, rule: "blocked-ends" },
+    });
+    expect(JSON.parse(JSON.stringify(page.props))).toEqual(page.props);
   });
 
   it("calls notFound for an unknown game", async () => {

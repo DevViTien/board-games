@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildMenu } from "./menu-games";
+import { buildMenu, buildOptionChoices } from "./menu-games";
 
 const tictactoe = {
   id: "tictactoe",
@@ -39,6 +39,29 @@ describe("buildMenu", () => {
   });
 
   it("builds the real menu from the registered and planned games", () => {
-    expect(buildMenu().map((game) => game.id)).toEqual(["tictactoe", "caro", "ludo", "chess"]);
+    expect(buildMenu().map((game) => [game.kind, game.id])).toEqual([
+      ["playable", "tictactoe"],
+      ["playable", "caro"],
+      ["planned", "ludo"],
+      ["planned", "chess"],
+    ]);
+  });
+});
+
+describe("buildOptionChoices", () => {
+  it("lists the rule options of every registered game, as plain data", () => {
+    const choices = buildOptionChoices();
+
+    expect(choices).toEqual({
+      tictactoe: { choices: [], defaults: {} },
+      caro: {
+        choices: [
+          { name: "size", values: [15, 19] },
+          { name: "rule", values: ["blocked-ends", "free"] },
+        ],
+        defaults: { size: 15, rule: "blocked-ends" },
+      },
+    });
+    expect(JSON.parse(JSON.stringify(choices))).toEqual(choices);
   });
 });

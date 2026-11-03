@@ -10,6 +10,7 @@
     "play": "Play",
     "continueTitle": "Continue a game",
     "continueItem": "{game} · {mode}",
+    "continueItemWithRules": "{game} · {mode} · {rules}",
     "joinTitle": "Join a room by code",
     "joinCode": "Room code",
     "join": "Join",
@@ -25,7 +26,31 @@
       "move": "row {row}, column {col}"
     },
     "caro": {
-      "name": "Gomoku"
+      "name": "Gomoku",
+      "players": {
+        "x": "X",
+        "o": "O"
+      },
+      "move": "row {row}, column {col}",
+      "winningCell": "Part of the winning line",
+      "boardHint": "Tap again to place your stone",
+      "options": {
+        "size": {
+          "label": "Board",
+          "values": {
+            "15": "15×15",
+            "19": "19×19"
+          }
+        },
+        "rule": {
+          "label": "Win rule",
+          "values": {
+            "blocked-ends": "Blocked ends",
+            "free": "Free style"
+          }
+        },
+        "summary": "{size} · {rule}"
+      }
     },
     "ludo": {
       "name": "Ludo"
@@ -62,7 +87,8 @@
     "inProgress": {
       "title": "Games in progress",
       "continue": "Continue",
-      "continueLabel": "Continue: {mode}"
+      "continueLabel": "Continue: {mode}",
+      "itemWithRules": "{mode} · {rules}"
     },
     "confirm": {
       "title": "Discard the game in progress?",
@@ -160,6 +186,7 @@
     "emptySeat": "Waiting…",
     "sit": "Join game",
     "waitingForFriends": "Send the invite link to your friends. The game starts once everyone is in.",
+    "rules": "Rules: {rules}",
     "errors": {
       "notFound": {
         "title": "Room not found",

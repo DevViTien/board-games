@@ -1,6 +1,6 @@
 "use client";
 
-import type { PlayerIndex } from "@board-games/engine";
+import type { OptionChoiceList, PlayerIndex } from "@board-games/engine";
 import type { RegisteredGameId } from "@board-games/games";
 import type { RoomView } from "@board-games/protocol";
 import { Badge, Button, buttonVariants, Card, Input } from "@board-games/ui";
@@ -11,13 +11,18 @@ import { useId, useRef, useState } from "react";
 import { parsePlayerName } from "@/features/identity/identity";
 import { NameField } from "@/features/identity/NameField";
 import { ConnectionNotice } from "@/features/play/ConnectionNotice";
+import { useOptionLabels } from "@/lib/use-option-labels";
 import { CONNECTION_STATUS, type ConnectionStatus } from "@/transport/types";
 
 type CopyState = "idle" | "copied" | "failed";
 
+const NO_OPTION_CHOICES: readonly OptionChoiceList[] = [];
+
 interface RoomLobbyProps {
   readonly gameId: RegisteredGameId;
   readonly room: RoomView;
+  /** The rule options the game offers, to name the room's rules; none by default. */
+  readonly optionChoices?: readonly OptionChoiceList[];
   /** This player's seat, or `null` while they have none. */
   readonly you: PlayerIndex | null;
   readonly status: ConnectionStatus;
@@ -32,13 +37,24 @@ interface RoomLobbyProps {
 }
 
 /**
- * The room while it waits for players, or while this player has no seat yet: the invite link to
- * copy or share, the room code, and who sits where. Opening the link never takes a seat; only
+ * The room while it waits for players, or while this player has no seat yet: the room's rules (for
+ * a game with rule options, so whoever opens the invite knows them before joining), the invite
+ * link to copy or share, the room code, and who sits where. Opening the link never takes a seat; only
  * "Join game" does, under the name in the field then, so someone who opens their own link in
  * another browser (a chat app's) does not take their friend's seat.
  */
-export function RoomLobby({ gameId, room, you, status, name, onSit, onResume }: RoomLobbyProps) {
+export function RoomLobby({
+  gameId,
+  room,
+  optionChoices = NO_OPTION_CHOICES,
+  you,
+  status,
+  name,
+  onSit,
+  onResume,
+}: RoomLobbyProps) {
   const t = useTranslations("Room");
+  const optionLabels = useOptionLabels();
   const tGames = useTranslations("Games");
   const tPlay = useTranslations("Play");
   const linkId = useId();
@@ -53,6 +69,7 @@ export function RoomLobby({ gameId, room, you, status, name, onSit, onResume }: 
   const inviteUrl = `${window.location.origin}/room/${room.code}`;
   const canShare = typeof navigator.share === "function";
   const hasEmptySeat = room.seats.some((seat) => seat === null);
+  const rules = optionLabels.summary(gameId, optionChoices, room.record.options);
 
   // A "Join game" lost with the connection may be pressed again once back.
   if (sitting && status !== CONNECTION_STATUS.Online) setSitting(false);
@@ -104,6 +121,7 @@ export function RoomLobby({ gameId, room, you, status, name, onSit, onResume }: 
       <ConnectionNotice status={status} onResume={onResume} />
 
       <Card className="flex flex-col gap-4 p-6">
+        {rules !== null && <p className="font-medium">{t("rules", { rules })}</p>}
         <dl className="flex flex-col gap-1">
           <dt className="text-sm font-medium text-fg-muted">{t("code")}</dt>
           <dd className="font-mono text-2xl font-semibold tracking-widest">{room.code}</dd>

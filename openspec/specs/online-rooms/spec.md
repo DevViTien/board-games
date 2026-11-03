@@ -31,6 +31,16 @@ Server SHALL tạo phòng cho một game đã đăng ký, trả về mã phòng 
 - **WHEN** mã phòng sinh ra lần đầu trùng với một phòng đang tồn tại
 - **THEN** server sinh mã khác và phòng cũ không bị đổi
 
+#### Scenario: Tạo phòng với tuỳ chọn luật
+
+- **WHEN** một người chơi yêu cầu tạo phòng Cờ caro với bàn 19×19 và luật "tự do"
+- **THEN** ván đầu tiên của phòng có bàn 19×19 trống và dùng luật "tự do"
+
+#### Scenario: Tuỳ chọn luật không hợp lệ
+
+- **WHEN** yêu cầu tạo phòng Cờ caro mang kích thước bàn 17
+- **THEN** server trả lỗi `invalid-options` và không có phòng nào được tạo
+
 ### Requirement: Vào phòng
 
 Server SHALL cho một kết nối vào phòng bằng mã phòng, `playerId` và tên, rồi gửi trạng thái đầy đủ của phòng kèm ghế của chính người đó. Người có `playerId` đã ngồi trong phòng SHALL được nhận ra ở đúng ghế của mình (tên mới, nếu khác, thay tên cũ); người chưa có ghế vào phòng mà chưa ngồi ghế nào. Mã phòng không tồn tại MUST nhận lỗi `room-not-found`. Mã phòng SHALL được nhận không phân biệt chữ hoa chữ thường và bỏ qua khoảng trắng.
@@ -176,7 +186,7 @@ Mọi trạng thái phòng server gửi đi MUST chỉ chứa tên của ngườ
 
 ### Requirement: Ván mới trong phòng
 
-Khi ván hiện tại đã có kết quả, người có ghế trong phòng SHALL bắt đầu được ván mới trong cùng phòng; ván mới SHALL xoay ghế của mọi người để người đi trước luân phiên giữa các ván, và mỗi người trong phòng nhận ván mới kèm ghế mới của mình. Yêu cầu ván mới khi ván chưa có kết quả MUST bị từ chối với mã `game-not-over`. Hai yêu cầu ván mới cho cùng một ván SHALL chỉ tạo một ván mới.
+Khi ván hiện tại đã có kết quả, người có ghế trong phòng SHALL bắt đầu được ván mới trong cùng phòng; ván mới SHALL giữ tuỳ chọn luật của phòng và xoay ghế của mọi người để người đi trước luân phiên giữa các ván, và mỗi người trong phòng nhận ván mới kèm ghế mới của mình. Yêu cầu ván mới khi ván chưa có kết quả MUST bị từ chối với mã `game-not-over`. Hai yêu cầu ván mới cho cùng một ván SHALL chỉ tạo một ván mới.
 
 #### Scenario: Chơi lại sau khi thắng
 
@@ -193,6 +203,11 @@ Khi ván hiện tại đã có kết quả, người có ghế trong phòng SHAL
 
 - **WHEN** ván đã kết thúc và cả hai người gửi yêu cầu ván mới cho cùng ván đó
 - **THEN** chỉ một ván mới được tạo, yêu cầu còn lại bị từ chối với mã `stale-move`
+
+#### Scenario: Ván mới giữ tuỳ chọn luật
+
+- **WHEN** ván Cờ caro 19×19 luật "tự do" trong phòng đã có người thắng và một người yêu cầu ván mới
+- **THEN** ván mới có bàn 19×19 trống và vẫn dùng luật "tự do"
 
 ### Requirement: Phòng hết hạn
 

@@ -111,7 +111,13 @@ describe("createIndexedDbStore with legacy saves", () => {
     const store = createIndexedDbStore(createMapKeyValue({ tictactoe: legacySave(EARLIER) }));
 
     expect(await store.listInProgress()).toEqual([
-      { gameId: "tictactoe", mode: "local", settings: { kind: "local" }, savedAt: EARLIER },
+      {
+        gameId: "tictactoe",
+        mode: "local",
+        settings: { kind: "local" },
+        options: {},
+        savedAt: EARLIER,
+      },
     ]);
   });
 

@@ -5,7 +5,9 @@ import { expect, type Page } from "@playwright/test";
 export const cell = (page: Page, row: number, col: number) =>
   page.getByRole("button", { name: new RegExp(`^Hàng ${row}, cột ${col},`) });
 export const status = (page: Page) => page.getByRole("status");
-export const board = (page: Page) => page.getByRole("group", { name: "Bàn cờ" });
+/** The board of any game: a group of cells (Tic-tac-toe) or a grid (Cờ caro). */
+export const board = (page: Page) =>
+  page.getByRole("group", { name: "Bàn cờ" }).or(page.getByRole("grid", { name: "Bàn cờ" }));
 
 export async function play(page: Page, ...cells: readonly (readonly [number, number])[]) {
   for (const [row, col] of cells) await cell(page, row, col).click();

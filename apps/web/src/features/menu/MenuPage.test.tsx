@@ -51,14 +51,26 @@ describe("MenuPage", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Board Games Hub" })).toBeInTheDocument();
   });
 
-  it("lists Tic-tac-toe as playable first, then the planned games as coming soon", () => {
+  it("lists Tic-tac-toe and Cờ caro as playable first, then the planned games as coming soon", () => {
     renderWithIntl(<MenuPage />);
 
     expect(cardNames()).toEqual(["Tic-tac-toe", "Cờ caro", "Cờ cá ngựa", "Cờ vua"]);
-    expect(gameCard("Tic-tac-toe").queryByText("Sắp có")).not.toBeInTheDocument();
-    for (const name of ["Cờ caro", "Cờ cá ngựa", "Cờ vua"]) {
+    for (const name of ["Tic-tac-toe", "Cờ caro"]) {
+      expect(gameCard(name).queryByText("Sắp có")).not.toBeInTheDocument();
+    }
+    for (const name of ["Cờ cá ngựa", "Cờ vua"]) {
       expect(gameCard(name).getByText("Sắp có")).toBeInTheDocument();
     }
+  });
+
+  it("shows Cờ caro's card with 2 players, about 10 minutes and a Play link", () => {
+    renderWithIntl(<MenuPage />);
+
+    const card = gameCard("Cờ caro");
+    expect(card.getByText("2 người")).toBeInTheDocument();
+    expect(card.getByText("~10 phút")).toBeInTheDocument();
+    expect(card.getByRole("link", { name: "Chơi" })).toHaveAttribute("href", "/play/caro");
+    expect(card.queryByText("Sắp có")).not.toBeInTheDocument();
   });
 
   it("links a playable game to its setup screen", () => {
@@ -74,7 +86,8 @@ describe("MenuPage", () => {
 
     expect(gameCard("Cờ vua").queryByRole("link")).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("heading", { name: "Cờ vua" }));
-    expect(screen.getAllByRole("link")).toHaveLength(1);
+    // The two playable games' cards, and nothing more.
+    expect(screen.getAllByRole("link")).toHaveLength(2);
   });
 
   it("has no list of games in progress, and says Play, when none is in progress", async () => {
@@ -99,6 +112,26 @@ describe("MenuPage", () => {
       "/play/tictactoe/local",
     );
     expect(gameCard("Tic-tac-toe").getByRole("link", { name: "Chơi" })).toBeInTheDocument();
+  });
+
+  it("names the rules of a game in progress of a game that has rule options", async () => {
+    const { createMemoryStore } = await import("@/transport/memory-store");
+    saved.store = createMemoryStore({
+      "caro:ai": {
+        settings: {
+          kind: "ai",
+          first: "human",
+          seats: [{ kind: "human" }, { kind: "ai", level: "hard" }],
+        },
+        record: { options: { size: 19, rule: "free" } },
+      },
+    });
+    renderWithIntl(<MenuPage />);
+
+    const list = await screen.findByRole("region", { name: "Tiếp tục ván dở" });
+    expect(
+      within(list).getByRole("link", { name: "Cờ caro · Với máy · Khó · 19×19 · Tự do" }),
+    ).toHaveAttribute("href", "/play/caro/ai");
   });
 
   it("offers to join a room by its code, below the games", () => {
@@ -128,7 +161,7 @@ describe("MenuPage", () => {
     expect(gameCard("Gomoku").getByText("2 players")).toBeInTheDocument();
     expect(gameCard("Ludo").getByText("2–4 players")).toBeInTheDocument();
     expect(gameCard("Tic-tac-toe").getByRole("link", { name: "Play" })).toBeInTheDocument();
-    expect(screen.getAllByText("Coming soon")).toHaveLength(3);
+    expect(screen.getAllByText("Coming soon")).toHaveLength(2);
   });
 
   it("renders in Japanese", () => {

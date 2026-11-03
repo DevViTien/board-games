@@ -1,13 +1,24 @@
-import { createRng } from "@board-games/engine";
-import { tictactoe, type TicTacToeMove, type TicTacToeState } from "@board-games/games";
+import { createRng, listOptionChoices } from "@board-games/engine";
+import {
+  caro,
+  type CaroMove,
+  type CaroState,
+  tictactoe,
+  type TicTacToeMove,
+  type TicTacToeState,
+} from "@board-games/games";
 import { act, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { CaroBoard } from "@/games/caro/Board";
+import { useCaroMoveLabel } from "@/games/caro/move-label";
+import { useCaroPlayerLabel } from "@/games/caro/player-label";
 import { TicTacToeBoard } from "@/games/tictactoe/Board";
 import { useTicTacToeMoveLabel } from "@/games/tictactoe/move-label";
 import { useTicTacToePlayerLabel } from "@/games/tictactoe/player-label";
 import type { Locale } from "@/i18n/config";
+import { observeWidthAs } from "@/test/fake-resize-observer";
 import { renderWithIntl } from "@/test/render-with-intl";
 import { createLocalTransport } from "@/transport/local-transport";
 import { createMemoryStore } from "@/transport/memory-store";
@@ -62,6 +73,7 @@ function fakeTransport(
     supportsUndo: true,
     canStartNewGame: true,
     connection: null,
+    options: {},
     ...overrides,
   };
   return {
@@ -812,5 +824,156 @@ describe("PlayScreen online: the connection", () => {
     await user.click(button("Tiếp tục"));
 
     expect(onResume).toHaveBeenCalledOnce();
+  });
+});
+
+const caroUi = {
+  Board: CaroBoard,
+  usePlayerLabel: useCaroPlayerLabel,
+  useMoveLabel: useCaroMoveLabel,
+};
+
+type CaroSnapshot = ReadySnapshot<CaroState, CaroMove>;
+
+/** A Cờ caro game against the AI (X), frozen just after the AI played `cell`. */
+function caroAfterAiMove(
+  size: 15 | 19,
+  cell: number,
+  overrides: Partial<CaroSnapshot> = {},
+): Transport<CaroState, CaroMove> {
+  const options = { size, rule: "blocked-ends" } as const;
+  const start = caro.setup({ playerCount: 2, options });
+  const state = caro.applyMove(start, { cell });
+  const snapshot: CaroSnapshot = {
+    status: "ready",
+    state,
+    legalMoves: caro.legalMoves(state),
+    currentPlayer: 1,
+    result: null,
+    lastEntry: { move: { cell } },
+    lastMover: 0,
+    moveCount: 1,
+    canUndo: true,
+    canRedo: false,
+    canMove: true,
+    viewer: 1,
+    seats: [{ kind: "ai", level: "medium" }, { kind: "human" }],
+    waitingFor: null,
+    inProgress: true,
+    supportsUndo: true,
+    canStartNewGame: true,
+    connection: null,
+    options,
+    ...overrides,
+  };
+  return {
+    getSnapshot: () => snapshot,
+    subscribe: () => () => undefined,
+    submit: vi.fn(),
+    requestUndo: vi.fn(),
+    requestRedo: vi.fn(),
+    requestNewGame: vi.fn(),
+    dispose: vi.fn(),
+  };
+}
+
+describe("PlayScreen with Cờ caro", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it.each([
+    [19, 360, "Máy đánh hàng 19, cột 19. Đến lượt bạn (O)"],
+    [15, 224, "Máy đánh hàng 15, cột 15. Đến lượt bạn (O)"],
+  ] as const)(
+    "tells where the AI played by the row and column of a %i×… board",
+    (size, cell, text) => {
+      renderWithIntl(
+        <PlayScreen gameId="caro" transport={caroAfterAiMove(size, cell)} ui={caroUi} />,
+      );
+
+      expect(status()).toHaveTextContent(text);
+      expect(screen.getByRole("grid", { name: "Bàn cờ" })).toBeInTheDocument();
+    },
+  );
+
+  it("keeps the turn line as the one status of the page while a tapped cell waits", async () => {
+    // Cells measured at 17 px, as on a narrow phone.
+    observeWidthAs(17 * 15);
+    renderWithIntl(<PlayScreen gameId="caro" transport={caroAfterAiMove(15, 112)} ui={caroUi} />);
+
+    await userEvent.pointer({ keys: "[TouchA]", target: cell(10, 10) });
+
+    expect(screen.getByText("Chạm lần nữa để đặt quân")).toBeInTheDocument();
+    expect(screen.getAllByRole("status")).toHaveLength(1);
+  });
+});
+
+describe("PlayScreen rules", () => {
+  const CARO_CHOICES = listOptionChoices(caro);
+  /** The game's name and the badges next to it. */
+  const header = () => {
+    const title = screen.getByRole("heading", { level: 1 }).parentElement;
+    if (title === null) throw new Error("no title");
+    return title;
+  };
+
+  function renderCaro(overrides: Partial<CaroSnapshot>) {
+    renderWithIntl(
+      <PlayScreen
+        gameId="caro"
+        transport={caroAfterAiMove(19, 0, overrides)}
+        ui={caroUi}
+        optionChoices={CARO_CHOICES}
+      />,
+    );
+  }
+
+  it("shows the rules of a same-device game next to the game's name", () => {
+    renderCaro({
+      seats: [{ kind: "human" }, { kind: "human" }],
+      options: { size: 19, rule: "free" },
+    });
+
+    expect(within(header()).getByText("19×19 · Tự do")).toBeInTheDocument();
+  });
+
+  it("shows the rules of a game against the AI next to its level, the defaults too", () => {
+    renderCaro({ options: { size: 15, rule: "blocked-ends" } });
+
+    expect(within(header()).getByText("Với máy · Vừa")).toBeInTheDocument();
+    expect(within(header()).getByText("15×15 · Chặn hai đầu")).toBeInTheDocument();
+  });
+
+  it("shows the rules of an online game", () => {
+    renderCaro({
+      seats: [{ kind: "human" }, { kind: "remote", name: "Minh" }],
+      connection: "online",
+      supportsUndo: false,
+      options: { size: 19, rule: "free" },
+    });
+
+    expect(within(header()).getByText("Online")).toBeInTheDocument();
+    expect(within(header()).getByText("19×19 · Tự do")).toBeInTheDocument();
+  });
+
+  it("shows no rules for options the game does not offer", () => {
+    renderCaro({ options: { size: 17, rule: "free" } });
+
+    expect(within(header()).queryByText(/×/)).not.toBeInTheDocument();
+  });
+
+  it("shows nothing new for Tic-tac-toe, which has no rule options", () => {
+    renderWithIntl(
+      <PlayScreen
+        gameId="tictactoe"
+        transport={fakeTransport({})}
+        ui={ui}
+        optionChoices={listOptionChoices(tictactoe)}
+      />,
+    );
+
+    expect(within(header()).getByRole("heading")).toHaveTextContent("Tic-tac-toe");
+    expect(header().children).toHaveLength(1);
   });
 });

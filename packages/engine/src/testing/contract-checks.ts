@@ -1,4 +1,5 @@
-import { defaultMoveKey, stableStringify } from "../move-key";
+import { moveKeyOf, stableStringify } from "../move-key";
+import { listOptionChoices, type OptionChoiceList } from "../option-choices";
 import { parseGameOptions } from "../options";
 import { fromRecord, toRecord } from "../record";
 import { activeEntries, currentState, startSession } from "../session";
@@ -34,6 +35,8 @@ export const CONTRACT_CHECK = {
   PlainData: "plain-data",
   RecordRoundTrip: "record-round-trip",
   AiHasEvaluate: "ai-has-evaluate",
+  CandidateMoves: "candidate-moves",
+  OptionChoices: "option-choices",
 } as const;
 
 export type ContractCheckId = (typeof CONTRACT_CHECK)[keyof typeof CONTRACT_CHECK];
@@ -164,10 +167,6 @@ function sameOrNotPlain(a: unknown, b: unknown): boolean {
   return deepEqual(a, b);
 }
 
-function keyOf(game: AnyGameDefinition, move: unknown): string {
-  return game.moveKey === undefined ? defaultMoveKey(move) : game.moveKey(move);
-}
-
 function isValidSeat(seat: unknown, playerCount: number): boolean {
   return Number.isInteger(seat) && typeof seat === "number" && seat >= 0 && seat < playerCount;
 }
@@ -180,6 +179,63 @@ function checkWinners(result: GameResult, playerCount: number): void {
   }
   if (new Set(result.winners).size !== result.winners.length) {
     fail(`duplicate winners ${JSON.stringify(result.winners)}`);
+  }
+}
+
+/** Every combination of one value per option, as an options object (the cartesian product). */
+function combinationsOf(choices: readonly OptionChoiceList[]): Record<string, unknown>[] {
+  return choices.reduce<Record<string, unknown>[]>(
+    (combinations, { name, values }) =>
+      combinations.flatMap((combination) =>
+        values.map((value) => ({ ...combination, [name]: value })),
+      ),
+    [{}],
+  );
+}
+
+function checkOptionChoices(game: AnyGameDefinition, config: ContractConfig): void {
+  const id = CONTRACT_CHECK.OptionChoices;
+  if (game.optionChoices === undefined) return;
+  let choices: readonly OptionChoiceList[];
+  try {
+    choices = listOptionChoices(game);
+  } catch (error) {
+    return violation(id, messageOf(error));
+  }
+  const defaults: Readonly<Record<string, unknown>> = { ...game.defaultOptions };
+  const names = choices.map((choice) => choice.name);
+  const expected = Object.keys(defaults);
+  if ([...names].sort().join() !== [...expected].sort().join()) {
+    violation(id, `options [${names.join()}] differ from defaultOptions [${expected.join()}]`);
+  }
+  for (const { name, values } of choices) {
+    // The app tells values apart by their text (radio values, translation keys).
+    if (new Set(values.map(String)).size !== values.length) {
+      violation(id, `${name} lists a value twice: ${JSON.stringify(values)}`);
+    }
+    // The text of a value is one level of a translation key, where "." separates levels.
+    const dotted = values.find((value) => String(value).includes("."));
+    if (dotted !== undefined) {
+      violation(id, `${name} lists ${JSON.stringify(dotted)}, whose text contains "."`);
+    }
+    if (!values.some((value) => value === defaults[name])) {
+      violation(id, `the default ${name} ${JSON.stringify(defaults[name])} is not a choice`);
+    }
+  }
+  for (const combination of combinationsOf(choices)) {
+    // As they arrive from outside: a start link, a room created by a client.
+    const raw: unknown = JSON.parse(JSON.stringify(combination));
+    for (const playerCount of playerCountsOf(game, config)) {
+      let started: ReturnType<typeof startSession>;
+      try {
+        started = startSession(game, playerCount, raw);
+      } catch (error) {
+        return violation(id, `setup with ${stableStringify(raw)} threw: ${messageOf(error)}`);
+      }
+      if (!started.ok) {
+        violation(id, `the game rejects ${stableStringify(raw)} (${started.error})`);
+      }
+    }
   }
 }
 
@@ -326,7 +382,7 @@ export const CONTRACT_CHECKS: readonly ContractCheck[] = [
     run: (game, config) => {
       forEachPlayedGame(CONTRACT_CHECK.UniqueMoveKeys, game, config, {
         onState: (state) => {
-          const keys = game.legalMoves(state).map((move) => keyOf(game, move));
+          const keys = game.legalMoves(state).map((move) => moveKeyOf(game, move));
           if (new Set(keys).size !== keys.length) {
             fail(`legal moves share a key: ${JSON.stringify(keys)}`);
           }
@@ -431,5 +487,45 @@ export const CONTRACT_CHECKS: readonly ContractCheck[] = [
         violation(CONTRACT_CHECK.AiHasEvaluate, "meta.supportsAI is true but evaluate is missing");
       }
     },
+  },
+  {
+    id: CONTRACT_CHECK.CandidateMoves,
+    title:
+      "candidateMoves, when declared, is a non-empty, deterministic subset of the legal moves without duplicates",
+    run: (game, config) => {
+      const { candidateMoves } = game;
+      if (candidateMoves === undefined) return;
+      const listed = (state: unknown): readonly unknown[] => {
+        try {
+          return candidateMoves(state);
+        } catch (error) {
+          // The state is frozen: a hook that writes to it throws here.
+          return fail(`candidateMoves threw: ${messageOf(error)}`);
+        }
+      };
+      forEachPlayedGame(CONTRACT_CHECK.CandidateMoves, game, config, {
+        onState: (state) => {
+          if (game.result(state) !== null) return;
+          const candidates = listed(state);
+          if (candidates.length === 0) fail("candidateMoves is empty in an unfinished game");
+          const legal = new Set(game.legalMoves(state).map((move) => moveKeyOf(game, move)));
+          const keys = candidates.map((move) => moveKeyOf(game, move));
+          const stray = keys.find((key) => !legal.has(key));
+          if (stray !== undefined) fail(`candidateMoves lists ${stray}, which is not a legal move`);
+          if (new Set(keys).size !== keys.length) {
+            fail(`candidateMoves lists a move twice: ${JSON.stringify(keys)}`);
+          }
+          if (!sameOrNotPlain(candidates, listed(state))) {
+            fail("candidateMoves gave different lists for the same state");
+          }
+        },
+      });
+    },
+  },
+  {
+    id: CONTRACT_CHECK.OptionChoices,
+    title:
+      "optionChoices, when declared, list every option once, include each default and only start games, without a value containing a dot",
+    run: checkOptionChoices,
   },
 ];

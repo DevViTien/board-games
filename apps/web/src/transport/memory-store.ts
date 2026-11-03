@@ -1,6 +1,6 @@
-import { isRegisteredGameId } from "@board-games/games";
+import { isRegisteredGameId } from "@board-games/games/ids";
 
-import { slotKey } from "./saved-game";
+import { recordOptionsOf, slotKey } from "./saved-game";
 import type { ModeSettings, SavedGameStore, SavedGameSummary, SaveSlot } from "./types";
 
 interface MemorySavedGame {
@@ -71,11 +71,11 @@ export function createMemoryStore(
     // their slot, the most recently saved first (ties: the one saved last).
     listInProgress: () => {
       const games: SavedGameSummary[] = [];
-      for (const { gameId, mode, settings, inProgress, savedAt } of [
+      for (const { gameId, mode, settings, record, inProgress, savedAt } of [
         ...entries.values(),
       ].reverse()) {
         if (inProgress && settings.kind === mode && isRegisteredGameId(gameId)) {
-          games.push({ gameId, mode, settings, savedAt });
+          games.push({ gameId, mode, settings, options: recordOptionsOf(record), savedAt });
         }
       }
       // A stable sort, so ties keep the order of saving. ISO 8601 times compare as strings.

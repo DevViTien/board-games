@@ -143,14 +143,14 @@ board-games/
 
 | Phần dùng chung | Ở đâu | Game chỉ cần cung cấp |
 |---|---|---|
-| Hợp đồng luật (`GameDefinition`) | `engine` | `meta`, `defaultOptions`, `setup`, `currentPlayer`, `legalMoves`, `applyMove`, `result`, (`parseOptions`, `evaluate`, `moveKey`) |
+| Hợp đồng luật (`GameDefinition`) | `engine` | `meta`, `defaultOptions`, `setup`, `currentPlayer`, `legalMoves`, `applyMove`, `result`, (`parseOptions`, `evaluate`, `candidateMoves`, `moveKey`) |
 | Lịch sử, undo/redo, biên bản, replay | `engine` (`session`, `record`) | Không gì cả |
 | Autosave | `apps/web` | Không gì cả |
-| AI: `chooseMove(game, state, { level, rng, now, timeLimitMs })`, minimax góc nhìn ghế máy + alpha-beta + expectimax, đào sâu dần; mức `AI_LEVEL` Dễ/Vừa/Khó; chạy trong Web Worker (`AiPlayer`, không chạy được thì dự phòng trên luồng chính), transport cho máy đi khi tới ghế máy | `engine/ai` + `ai-worker` + `transport` | Hàm `evaluate` (càng cao càng tốt cho `player`; số hữu hạn, nên là số nguyên, trị tuyệt đối dưới 10^8; mọi chênh lệch đều được coi là thật) và `meta.supportsAI: true` |
+| AI: `chooseMove(game, state, { level, rng, now, timeLimitMs })`, minimax góc nhìn ghế máy + alpha-beta + expectimax, đào sâu dần; mức `AI_LEVEL` Dễ/Vừa/Khó; chạy trong Web Worker (`AiPlayer`, không chạy được thì dự phòng trên luồng chính), transport cho máy đi khi tới ghế máy | `engine/ai` + `ai-worker` + `transport` | Hàm `evaluate` (càng cao càng tốt cho `player`; số hữu hạn, nên là số nguyên, trị tuyệt đối dưới 10^8; mọi chênh lệch đều được coi là thật) và `meta.supportsAI: true`; game bàn lớn thêm `candidateMoves` (tập nước máy xét ở mỗi thế, tốt trước; tập con khác rỗng của `legalMoves`, giữ mọi nước thắng ngay và chặn ngay; bộ kiểm tra hợp đồng `candidate-moves`) |
 | Ngẫu nhiên (xúc xắc) | `engine` chọn kết quả bằng rng được truyền vào | Khai báo `outcomes(state, move)`: các kết quả có thể kèm trọng số |
 | Chơi online, kết nối lại, server trọng tài | `transport` + `server` + `protocol` | Không gì cả |
 | Menu, bộ lọc | `features/menu` | `meta` (tên, số người, thời lượng) |
-| Màn hình bắt đầu ván (chế độ, mức độ, ai đi trước, ván dở của game) | `features/setup` | `meta.supportsAI` |
+| Màn hình bắt đầu ván (chế độ, mức độ, ai đi trước, tuỳ chọn luật, ván dở của game) | `features/setup` | `meta.supportsAI`; game có tuỳ chọn luật khai báo `optionChoices` (giá trị được chọn, theo thứ tự hiện) và khoá dịch `Games.<id>.options.*` |
 | Khung màn hình ván (lượt, đồng hồ, nút) | `features/play` | Component `Board` |
 | Giao diện nền, token, theme | `packages/ui` | Không gì cả |
 
@@ -164,6 +164,8 @@ interface GameDefinition<State, Move, Outcome = never, Options extends object = 
   readonly id: GameId;                               // kebab-case; khai báo game bằng `as const satisfies`
   readonly meta: GameMeta;                           // số người, thể loại, thời lượng, supportsAI
   readonly defaultOptions: Options;
+  readonly optionChoices?: OptionChoices<Options>;   // { [tuỳ chọn]: giá trị được chọn, theo thứ tự hiện } (chỉ giá trị, không chữ);
+                                                     // đọc chung qua listOptionChoices(game) → { name, values }[]; kiểm tra hợp đồng `option-choices`
   parseOptions?(raw: unknown): Options | null;       // kiểm tra tuỳ chọn từ bên ngoài; không có thì chỉ nhận defaultOptions
   setup(ctx: { playerCount; options }): State;       // tất định; ngẫu nhiên lúc tạo ván đi vào options
   currentPlayer(state: State): PlayerIndex;
@@ -172,7 +174,16 @@ interface GameDefinition<State, Move, Outcome = never, Options extends object = 
   applyMove(state: State, move: Move, outcome?: Outcome): State; // tất định, không sửa state
   result(state: State): GameResult | null;           // { kind: "win", winners, reason? } | { kind: "draw", reason? }
   evaluate?(state: State, player: PlayerIndex): number; // bắt buộc khi supportsAI; |giá trị| < 10^8
+  candidateMoves?(state: State): readonly Move[];    // nước máy xét, tốt trước (bàn lớn); tập con khác rỗng của
+                                                     // legalMoves, giữ mọi nước thắng/chặn ngay; không có = mọi nước hợp lệ
   moveKey?(move: Move): string;                      // mặc định: JSON với khoá đã sắp xếp
+}
+
+// apps/web/src/games — phần giao diện của một game, ghép với luật bằng defineGameEntry
+interface GameUI<State, Move, Outcome = never> {
+  readonly Board: ComponentType<BoardProps<State, Move, Outcome>>; // { state, legalMoves, onMove, disabled, result, lastEntry, viewer }
+  readonly usePlayerLabel: () => (player: PlayerIndex) => string;  // "X", "O", tên màu…
+  readonly useMoveLabel: () => (move: Move, state: State) => string; // "hàng 8, cột 9"; state là thế sau nước đó
 }
 
 // Phiên chơi: dữ liệu thuần + hàm thuần, lỗi trả về dạng Result<T> với mã ENGINE_ERROR
@@ -193,7 +204,8 @@ interface Transport<State, Move, Outcome = never> {
                                                      //   seats: SeatView[], waitingFor: "ai" | "opponent" | null,
                                                      //   inProgress (người đã đi ít nhất một nước còn hiệu lực; online luôn sai),
                                                      //   supportsUndo (online: sai), canStartNewGame (online: chỉ khi
-                                                     //   ván đã có kết quả), connection (ConnectionStatus, null nếu không online) }
+                                                     //   ván đã có kết quả), connection (ConnectionStatus, null nếu không online),
+                                                     //   options (tuỳ chọn luật của ván, màn hình chơi ghi tóm tắt luật) }
   subscribe(listener: (event: TransportEvent) => void): () => void; // "changed" | { "rejected", code: RejectionCode }
   submit(move: Move): void;                          // kết quả qua sự kiện, kể cả bị từ chối (online là bất đồng bộ)
   requestUndo(): void;                               // lùi tới lượt người ở thiết bị này (bỏ cả nước máy); online không có hoàn tác
@@ -207,7 +219,9 @@ interface Transport<State, Move, Outcome = never> {
 // Transport cục bộ theo ghế: mỗi ghế là người hoặc máy.
 // Tới ghế máy thì hỏi AiPlayer, chờ tối thiểu 300 ms, kiểm lại ván chưa đổi rồi mới đi; máy lỗi thì đi nước hợp lệ ngẫu nhiên.
 createLocalTransport({ definition, store, rng, mode?: "local" | "ai", start?: PlaySetup, fallback?: PlaySetup, ai?: AiPlayer })
-// PlaySetup = { mode: "local" } | { mode: "ai", level, first: "human" | "ai" | "random" }
+// PlaySetup = { mode: "local", options? } | { mode: "ai", level, first: "human" | "ai" | "random", options? }
+// options chưa tin cậy (từ đường dẫn ?options=<JSON> hay localStorage); thứ tự: start mà luật nhận → ván đã lưu → fallback
+// (lựa chọn nhớ gần nhất, cả hai chế độ) → mặc định. "Ván mới" giữ tuỳ chọn của ván đang chơi.
 
 // Kết nối một phòng (không biết game): join với danh tính đọc lại ở mỗi lần chào (getIdentity), giữ room mới nhất (room
 // đầu tiên sau mỗi join luôn thắng), tự nối lại (0/1/2/4/8 rồi 10 giây, nhân hệ số ngẫu nhiên [0,8; 1]; về 0 chỉ sau 30
@@ -230,7 +244,8 @@ interface SavedGameStore {
   load(slot: SaveSlot): Promise<{ settings: ModeSettings; record: unknown } | undefined>; // từ chối = có thể có ván, không được ghi đè
   save(slot: SaveSlot, game: { settings; record; inProgress }): Promise<void>;
   clear(slot: SaveSlot): Promise<void>;
-  listInProgress(): Promise<SavedGameSummary[]>;    // cho menu và màn hình bắt đầu ván, mới nhất trước
+  listInProgress(): Promise<SavedGameSummary[]>;    // cho menu và màn hình bắt đầu ván, mới nhất trước; kèm options của
+                                                     // biên bản (chưa kiểm) để ghi luật cạnh chế độ
 }
 
 // apps/web/src/ai-worker — máy nghĩ ngoài luồng giao diện
@@ -333,11 +348,11 @@ Nhờ `RoomStore` là interface, toàn bộ logic phòng (`room-service.ts`) tes
 - Thêm một ngôn ngữ: thêm mã vào `LOCALES` và `LOCALE_LABELS` (`src/i18n/config.ts`), tạo `messages/<mã>.json`, thêm vào `MESSAGE_LOADERS`; TypeScript và `messages.test.ts` sẽ chỉ ra chỗ còn thiếu.
 
 ### Quy trình thêm một game mới (checklist)
-1. `packages/games/src/<id>/`: `rules.ts` cài `GameDefinition` (khai báo bằng `export const <id> = { … } as const satisfies GameDefinition<State, Move, Outcome, Options>` để mã game giữ kiểu literal), `rules.test.ts`, (tuỳ chọn) `options.ts` cho biến thể luật kèm `parseOptions`.
+1. `packages/games/src/<id>/`: `rules.ts` cài `GameDefinition` (khai báo bằng `export const <id> = { … } as const satisfies GameDefinition<State, Move, Outcome, Options>` để mã game giữ kiểu literal), `rules.test.ts`, (tuỳ chọn) `options.ts` cho biến thể luật kèm `parseOptions`, và `optionChoices` nếu người chơi được chọn biến thể ở màn hình bắt đầu ván (mọi chế độ, kể cả tạo phòng online).
 2. Trong `rules.test.ts`, gọi `describeGameContract(<game>, { seeds, maxPlies, playerCounts?, options?, timeout? })` từ `@board-games/engine/testing` → phải xanh (không truyền `playerCounts` thì thử mọi số người game cho phép).
 3. `apps/web/src/games/<id>/`: `Board.tsx`, `rules.{vi,en,ja}.mdx`, `index.ts`.
-4. Thêm tên và nội dung của game vào `apps/web/messages/{vi,en,ja}.json` (`Games.<id>…`).
-5. Thêm một dòng vào `apps/web/src/games/registry.ts`.
+4. Thêm tên và nội dung của game vào `apps/web/messages/{vi,en,ja}.json` (`Games.<id>…`); game có `optionChoices` thêm `Games.<id>.options.<tuỳ chọn>.label`, `….values.<giá trị>` và câu ICU `Games.<id>.options.summary` với tham số trùng tên tuỳ chọn (`use-option-labels.test.tsx` kiểm đủ khoá; chữ của giá trị không chứa `.`, kiểm tra hợp đồng `option-choices` bắt).
+5. Thêm game vào `GAMES` (`packages/games/src/index.ts`) và mã của nó vào `GAME_IDS` (`packages/games/src/ids.ts`, cho code client chỉ cần mã game), rồi một dòng vào `apps/web/src/games/registry.ts`.
 6. Game tự xuất hiện trong menu, chơi được cùng máy, online, và với máy nếu `meta.supportsAI` (bộ kiểm tra hợp đồng bắt buộc khi đó phải có `evaluate`).
 
 ## 5. Môi trường và hạ tầng
@@ -483,5 +498,14 @@ Còn lại:
 - Chơi thử thật giữa hai thiết bị (một điện thoại) qua link mời trên Production sau khi merge vào `main` (Preview có Deployment Protection chặn thiết bị chưa đăng nhập Vercel); ghi kết quả vào đây.
 - Theo dõi tab Usage của Vercel (GB-giờ) và Upstash (số lệnh) sau khi bạn bè bắt đầu chơi.
 
+### M5. Cờ caro (03/11/2026)
+
+Đã xong, qua 2 change OpenSpec:
+- `add-caro-game` (đã archive): luật Cờ caro trong `packages/games/src/caro/` (bàn 15×15 / 19×19, luật thắng "chặn hai đầu" và "tự do", mép bàn không chặn, hoà khi đầy bàn, hàng thắng); hook `candidateMoves` trong engine cho game bàn lớn (máy chỉ xét ô gần quân, luôn giữ ô thắng/chặn ngay, kể cả nước ngẫu nhiên của mức Dễ) và kiểm tra hợp đồng `candidate-moves`; máy Cờ caro (`evaluate` theo cửa sổ 5 ô, tôn trọng luật đang dùng); bàn `role="grid"` (lưới SVG + nút, roving tabindex, chạm hai lần khi ô < 24 px); `GameUI.useMoveLabel` nhận thêm `state`; menu có thẻ Cờ caro (~10 phút); E2E cùng máy, đấu với máy mức Vừa, online. Số đo thời gian máy ở design của change.
+- `add-game-options` (code xong, archive trong cùng PR sau review): chọn tuỳ chọn luật chung cho mọi game khai báo `optionChoices` (engine: `listOptionChoices`, kiểm tra hợp đồng `option-choices`, 16 kiểm tra); Cờ caro cho chọn bàn 15×15 / 19×19 và luật "chặn hai đầu" / "tự do" ở màn hình bắt đầu ván, mọi chế độ kể cả tạo phòng online; tuỳ chọn đi theo đường dẫn bắt đầu ván (`?options=<JSON>`), transport, ván đã lưu (định dạng lưu không đổi), "Ván mới"/"Chơi lại" và được nhớ cùng lựa chọn gần nhất; luật đang dùng hiện ở màn hình chơi, mục ván dở trên menu và màn hình bắt đầu ("Cờ caro · Với máy · Khó · 19×19 · Tự do"), sảnh chờ phòng online ("Luật: 19×19 · Tự do"). Tic-tac-toe không đổi. E2E: 19×19 + "tự do" cùng máy (tải lại, ván mới, menu, lựa chọn được nhớ), bàn 19×19 ở khung 360 px (chạm hai lần), máy mức Khó trên 19×19 (lượt sau ~1,5 giây ở cả hai cấu hình Playwright, số đo ở design §8), phòng online 19×19 "tự do" tới khi thắng và chơi lại.
+
+Còn lại:
+- Chưa thử trên thiết bị thật: bàn 19×19 và chạm hai lần trên điện thoại, thời gian máy mức Khó trên CPU điện thoại (E2E "mobile" chỉ mô phỏng khung hình và cảm ứng trên máy tính); chơi thử Cờ caro online giữa hai thiết bị trên Production. Ghi kết quả vào đây.
+
 ### Tiếp theo
-**M5. Cờ caro** (§6.2): luật 5 quân liên tiếp trên bàn 15×15 / 19×19 (chọn kích thước bàn là tuỳ chọn luật đầu tiên khi tạo ván, kể cả tạo phòng online), `evaluate` theo mẫu chuỗi quân, bàn SVG có đánh dấu nước vừa đi và hàng thắng; chơi được cả 3 chế độ.
+**M6. Cờ cá ngựa** (§6.2): luật "phổ biến" của idea.md §3.4 với các biến thể bật/tắt được, khai báo bằng `optionChoices` của M5; tuỳ chọn không liệt kê được và chọn số người chơi làm khi M6 cần.

@@ -31,3 +31,11 @@ export function stableStringify(value: unknown): string {
 export function defaultMoveKey(move: unknown): string {
   return stableStringify(move);
 }
+
+/** Identity of a move under `game`'s rules: its `moveKey`, or JSON with sorted keys. May throw. */
+export function moveKeyOf<Move>(
+  game: { readonly moveKey?: (this: void, move: Move) => string },
+  move: Move,
+): string {
+  return game.moveKey === undefined ? defaultMoveKey(move) : game.moveKey(move);
+}

@@ -148,7 +148,7 @@ describe("createLocalTransport", () => {
     expect(snapshot.legalMoves).toEqual([]);
   });
 
-  it("saves the game after every change and clears it when empty or finished", async () => {
+  it("saves the game after every change, an empty board as not in progress, and clears it when finished", async () => {
     const store = createMemoryStore();
     const transport = createTransport(store);
     await ready(transport);
@@ -161,7 +161,11 @@ describe("createLocalTransport", () => {
 
     transport.requestUndo();
     await flush();
-    expect(store.entries.has("tictactoe:local")).toBe(false);
+    expect(store.entries.get("tictactoe:local")).toMatchObject({
+      inProgress: false,
+      record: { entries: [] },
+    });
+    expect(await store.listInProgress()).toEqual([]);
 
     for (const cell of [0, 3, 1, 4, 2]) transport.submit({ cell });
     await flush();

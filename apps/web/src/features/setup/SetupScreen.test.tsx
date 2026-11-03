@@ -372,6 +372,8 @@ describe("SetupScreen online", () => {
       url: "ws://localhost:3101/api/realtime",
       gameId: "tictactoe",
       identity: { playerId, name: "Minh" },
+      // No rule options: `createRoom` sends none.
+      options: {},
     });
     expect(router.push).toHaveBeenCalledExactlyOnceWith("/room/ABC234");
   });
@@ -533,5 +535,214 @@ describe("SetupScreen online", () => {
     await renderOnline();
 
     expect(nameField()).toHaveValue("");
+  });
+});
+
+const CARO_CHOICES = [
+  { name: "size", values: [15, 19] },
+  { name: "rule", values: ["blocked-ends", "free"] },
+] as const;
+const CARO_DEFAULTS = { size: 15, rule: "blocked-ends" } as const;
+
+/** The setup screen of Cờ caro, with its rule options, once its games in progress are known. */
+async function renderCaro({
+  store = createMemoryStore(),
+  createRoom = vi.fn(() => Promise.resolve<CreateRoomResult>({ ok: true, code: CODE })),
+}: {
+  store?: SavedGameStore;
+  createRoom?: (options: unknown) => Promise<CreateRoomResult>;
+} = {}) {
+  const view = renderWithIntl(
+    <SetupScreen
+      gameId="caro"
+      supportsAI
+      optionChoices={CARO_CHOICES}
+      defaultOptions={CARO_DEFAULTS}
+      realtimeUrl="ws://localhost:3101/api/realtime"
+      store={store}
+      createRoom={createRoom}
+    />,
+  );
+  await waitFor(() => {
+    expect(startButton()).toHaveAttribute("aria-disabled", "false");
+  });
+  return { view, createRoom };
+}
+
+const checkedIn = (group: string) =>
+  within(screen.getByRole("group", { name: group })).getByRole("radio", { checked: true });
+
+describe("SetupScreen rule options", () => {
+  it("offers the board and the win rule of Cờ caro, at their defaults the first time", async () => {
+    await renderCaro();
+
+    expect(checkedIn("Bàn cờ")).toHaveAccessibleName("15×15");
+    expect(checkedIn("Luật thắng")).toHaveAccessibleName("Chặn hai đầu");
+    const sizes = within(screen.getByRole("group", { name: "Bàn cờ" })).getAllByRole("radio");
+    expect(sizes).toHaveLength(2);
+    expect(sizes[0]).toHaveAccessibleName("15×15");
+    expect(sizes[1]).toHaveAccessibleName("19×19");
+  });
+
+  it("starts a same-device game on a 19×19 board with the free rule", async () => {
+    await renderCaro();
+
+    await userEvent.click(radio("Cùng máy"));
+    await userEvent.click(radio("19×19"));
+    await userEvent.click(radio("Tự do"));
+    await userEvent.click(startButton());
+
+    expect(opened()).toEqual({
+      path: "/play/caro/local",
+      setup: { mode: "local", options: { size: 19, rule: "free" } },
+    });
+  });
+
+  it("keeps the rule options in every mode, online included", async () => {
+    await renderCaro();
+
+    await userEvent.click(radio("19×19"));
+    await userEvent.click(radio("Online"));
+
+    expect(checkedIn("Bàn cờ")).toHaveAccessibleName("19×19");
+    expect(checkedIn("Luật thắng")).toHaveAccessibleName("Chặn hai đầu");
+    await userEvent.click(radio("Cùng máy"));
+    expect(checkedIn("Bàn cờ")).toHaveAccessibleName("19×19");
+  });
+
+  it("offers no rule option for Tic-tac-toe", async () => {
+    await renderSetup();
+
+    const groups = screen.getAllByRole("group");
+    expect(groups).toHaveLength(3);
+    expect(groups[0]).toHaveAccessibleName("Chế độ");
+    expect(groups[1]).toHaveAccessibleName("Mức độ");
+    expect(groups[2]).toHaveAccessibleName("Ai đi trước");
+  });
+
+  it("changes the board size with the keyboard, and says which one is chosen", async () => {
+    await renderCaro();
+    const user = userEvent.setup();
+
+    radio("Tôi").focus();
+    await user.tab();
+    expect(radio("15×15")).toHaveFocus();
+    await user.keyboard("{ArrowRight}");
+
+    expect(checkedIn("Bàn cờ")).toHaveAccessibleName("19×19");
+    expect(radio("19×19")).toHaveFocus();
+  });
+
+  it("shows the rule options of the last game started next time", async () => {
+    const { view } = await renderCaro();
+    await userEvent.click(radio("19×19"));
+    await userEvent.click(radio("Tự do"));
+    await userEvent.click(startButton());
+    view.unmount();
+
+    await renderCaro();
+
+    await waitFor(() => {
+      expect(checkedIn("Bàn cờ")).toHaveAccessibleName("19×19");
+    });
+    expect(checkedIn("Luật thắng")).toHaveAccessibleName("Tự do");
+  });
+
+  it("shows the default rule options with a choice remembered before games had any", async () => {
+    window.localStorage.setItem(
+      `${SETUP_CHOICE_KEY_PREFIX}caro`,
+      JSON.stringify({ mode: "ai", level: "hard", first: "human" }),
+    );
+    await renderCaro();
+
+    await waitFor(() => {
+      expect(checkedIn("Mức độ")).toHaveAccessibleName("Khó");
+    });
+    expect(checkedIn("Bàn cờ")).toHaveAccessibleName("15×15");
+    expect(checkedIn("Luật thắng")).toHaveAccessibleName("Chặn hai đầu");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("still asks before dropping a game in progress of another board size", async () => {
+    await renderCaro({
+      store: createMemoryStore({
+        "caro:ai": { settings: AI_MEDIUM, record: { options: { size: 15, rule: "blocked-ends" } } },
+      }),
+    });
+
+    await userEvent.click(radio("19×19"));
+    await userEvent.click(startButton());
+
+    expect(screen.getByRole("dialog", { name: "Bỏ ván đang dở?" })).toBeInTheDocument();
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it("lists a game in progress with its rules, also in the name of its way to continue", async () => {
+    await renderCaro({
+      store: createMemoryStore({
+        "caro:ai": { settings: AI_HARD, record: { options: { size: 19, rule: "free" } } },
+      }),
+    });
+
+    const list = screen.getByRole("region", { name: "Ván đang dở" });
+    expect(within(list).getByText("Với máy · Khó · 19×19 · Tự do")).toBeInTheDocument();
+    expect(
+      within(list).getByRole("link", { name: "Tiếp tục: Với máy · Khó · 19×19 · Tự do" }),
+    ).toHaveAttribute("href", "/play/caro/ai");
+  });
+
+  it("names the default of an option missing from a game in progress", async () => {
+    await renderCaro({
+      store: createMemoryStore({
+        "caro:ai": { settings: AI_HARD, record: { options: { size: 19 } } },
+      }),
+    });
+
+    const list = screen.getByRole("region", { name: "Ván đang dở" });
+    expect(within(list).getByText("Với máy · Khó · 19×19 · Chặn hai đầu")).toBeInTheDocument();
+  });
+
+  it("lists a game in progress without rules it does not know", async () => {
+    await renderCaro({
+      store: createMemoryStore({
+        "caro:ai": { settings: AI_HARD, record: { options: { size: 17 } } },
+      }),
+    });
+
+    const list = screen.getByRole("region", { name: "Ván đang dở" });
+    expect(within(list).getByText("Với máy · Khó")).toBeInTheDocument();
+  });
+
+  it("creates a room with the rule options chosen", async () => {
+    const { playerId } = saveName("Minh");
+    const { createRoom } = await renderCaro();
+
+    await userEvent.click(radio("Online"));
+    await userEvent.click(radio("19×19"));
+    await userEvent.click(radio("Tự do"));
+    await userEvent.click(createButton());
+
+    expect(createRoom).toHaveBeenCalledExactlyOnceWith({
+      url: "ws://localhost:3101/api/realtime",
+      gameId: "caro",
+      identity: { playerId, name: "Minh" },
+      options: { size: 19, rule: "free" },
+    });
+  });
+
+  it("says the room could not be created when the server refuses the rule options", async () => {
+    saveName("Minh");
+    const createRoom = vi.fn(() =>
+      Promise.resolve<CreateRoomResult>({ ok: false, error: "invalid-options" }),
+    );
+    await renderCaro({ createRoom });
+
+    await userEvent.click(radio("Online"));
+    await userEvent.click(createButton());
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Không tạo được phòng.");
+    expect(createButton()).toHaveAttribute("aria-disabled", "false");
+    await userEvent.click(createButton());
+    expect(createRoom).toHaveBeenCalledTimes(2);
   });
 });
