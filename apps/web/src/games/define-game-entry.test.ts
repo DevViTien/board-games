@@ -45,8 +45,8 @@ describe("defineGameEntry", () => {
   });
 
   it("refuses a game that is not registered", () => {
-    // @ts-expect-error -- "chess" is not a RegisteredGameId until its rules are in GAMES
-    defineGameEntry({ ...tictactoe, id: "chess" as const }, ticTacToeUI);
+    // @ts-expect-error -- "go" is not a RegisteredGameId: its rules are not in GAMES
+    defineGameEntry({ ...tictactoe, id: "go" as const }, ticTacToeUI);
   });
 });
 

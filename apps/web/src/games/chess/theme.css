@@ -1,0 +1,100 @@
+/*
+ * Cờ vua's look (design §3 of add-chess-board): a green and cream board in the spirit of the online
+ * chess sites, with Lichess's "staunty" pieces (CC BY-NC-SA 4.0, public/pieces/staunty), and every
+ * mark two layers (ink core + light halo) so one of them is 3:1 on any square. Values of the shared
+ * `--game-*` contract (packages/ui styles.css) and of its own `--chess-*`, inside
+ * `[data-game="chess"]` only. Light here, dark in both blocks below, which stay identical
+ * (games/theme-css.test.ts, which also checks every contrast pair of the design and that the piece
+ * tokens are the colours of the piece files).
+ */
+[data-game="chess"] {
+  /* The page around the board: a faint green-grey, so the board stands out. */
+  --game-page: #f2f1ea;
+  /* The artwork's background (menu, setup screen). */
+  --game-tint: #e3e6cc;
+  /* The light squares (cream). */
+  --game-board: #ebecd0;
+  /* The dark squares (green). */
+  --chess-square-dark: #577a3a;
+  /* The 2 px ring around the board (outside the grid), the edge of a promotion choice. */
+  --game-line: #3f5a2c;
+  /* The edge of a White piece (the staunty set's own, public/pieces/staunty: never change it
+     alone). The pieces' four colours are the same in both themes, as their files are. */
+  --game-mark-1: #3c3c3c;
+  /* The edge of a Black piece (staunty). */
+  --game-mark-2: #1e1e1e;
+  /* The body of a White piece (staunty). */
+  --chess-piece-light: #f0f0f0;
+  /* The body of a Black piece (staunty). */
+  --chess-piece-dark: #5f5955;
+  /* The ink core of a mark: the selection's frame, a target's dot, a capture's corners, the check ring. */
+  --game-highlight: #1b1e14;
+  /* The light halo around every mark. */
+  --chess-paper: #ffffff;
+  /* The dashed frame of the last move. */
+  --game-last-move: #1b1e14;
+  /* The yellow tint of a light square selected or just played (a tint only: the frame says it). */
+  --chess-mark-light: #f3f08a;
+  /* The yellow-green tint of a dark square selected or just played. */
+  --chess-mark-dark: #afb83a;
+  /* Coordinates on a light square and on a tinted one. */
+  --chess-coord: #2d4420;
+  /* Coordinates on a dark square. */
+  --chess-coord-on-dark: #f7f7ea;
+  /* The red glow behind a king in check (decorative: the ring and the words say it). */
+  --chess-check: #e5534b;
+  /* The score sheet. */
+  --chess-sheet: #ffffff;
+  /* The score sheet's rules (decorative). */
+  --chess-sheet-line: #e2e4d4;
+  /* The newest move on the score sheet. */
+  --chess-sheet-current: #e7ebd2;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) [data-game="chess"] {
+    --game-page: #141711;
+    --game-tint: #232a1c;
+    --game-board: #c4c8a4;
+    --chess-square-dark: #53743b;
+    --game-line: #2a3a1e;
+    --game-mark-1: #3c3c3c;
+    --game-mark-2: #1e1e1e;
+    --chess-piece-light: #f0f0f0;
+    --chess-piece-dark: #5f5955;
+    --game-highlight: #10130b;
+    --chess-paper: #f6f6ec;
+    --game-last-move: #10130b;
+    --chess-mark-light: #d2cf6a;
+    --chess-mark-dark: #8c9530;
+    --chess-coord: #141f0d;
+    --chess-coord-on-dark: #f0f1e2;
+    --chess-check: #e5534b;
+    --chess-sheet: #1c2017;
+    --chess-sheet-line: #313826;
+    --chess-sheet-current: #2c3423;
+  }
+}
+
+:root[data-theme="dark"] [data-game="chess"] {
+  --game-page: #141711;
+  --game-tint: #232a1c;
+  --game-board: #c4c8a4;
+  --chess-square-dark: #53743b;
+  --game-line: #2a3a1e;
+  --game-mark-1: #3c3c3c;
+  --game-mark-2: #1e1e1e;
+  --chess-piece-light: #f0f0f0;
+  --chess-piece-dark: #5f5955;
+  --game-highlight: #10130b;
+  --chess-paper: #f6f6ec;
+  --game-last-move: #10130b;
+  --chess-mark-light: #d2cf6a;
+  --chess-mark-dark: #8c9530;
+  --chess-coord: #141f0d;
+  --chess-coord-on-dark: #f0f1e2;
+  --chess-check: #e5534b;
+  --chess-sheet: #1c2017;
+  --chess-sheet-line: #313826;
+  --chess-sheet-current: #2c3423;
+}

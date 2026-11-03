@@ -2,6 +2,7 @@ import type { RegisteredGameId } from "@board-games/games";
 import type { ComponentType } from "react";
 
 import { CaroArtwork } from "./caro/Artwork";
+import { ChessArtwork } from "./chess/Artwork";
 import { LudoArtwork } from "./ludo/Artwork";
 import { TicTacToeArtwork } from "./tictactoe/Artwork";
 import type { ArtworkProps } from "./types";
@@ -19,4 +20,5 @@ export const GAME_ARTWORK = {
   tictactoe: TicTacToeArtwork,
   caro: CaroArtwork,
   ludo: LudoArtwork,
+  chess: ChessArtwork,
 } as const satisfies Readonly<Record<RegisteredGameId, ComponentType<ArtworkProps>>>;

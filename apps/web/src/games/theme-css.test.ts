@@ -84,9 +84,9 @@ describe.each(GAME_IDS)("games/%s/theme.css", (id) => {
     ["light", light],
     ["dark", chosenDark],
   ] as const)(
-    "%s: one ring of the shared focus ring is 3:1 on its board and its tint",
+    "%s: one ring of the shared focus ring is 3:1 on its board, its tint and its own squares",
     (theme, tokens) => {
-      for (const name of ["--game-board", "--game-tint"]) {
+      for (const name of ["--game-board", "--game-tint", ...(FOCUS_BACKGROUNDS[id] ?? [])]) {
         const background = tokens.get(name);
         if (background === undefined) continue;
         const best = Math.max(
@@ -122,8 +122,24 @@ function resolve(theme: keyof typeof SHARED, tokens: ReadonlyMap<string, string>
   return reference === undefined ? value : shared(theme, reference);
 }
 
+/**
+ * The other backgrounds of a game the focus ring is drawn on, besides `--game-board` and
+ * `--game-tint`: a game's own squares (Chess: its dark squares, and both tints of a selected or
+ * just-played square).
+ */
+const FOCUS_BACKGROUNDS: Readonly<Record<string, readonly string[]>> = {
+  chess: ["--chess-square-dark", "--chess-mark-light", "--chess-mark-dark"],
+};
+
+/**
+ * A colour on a background, and the ratio it must meet. The colour may be two layers (a piece's
+ * body and its edge, a mark's ink core and its light halo): then the better of the two must meet it,
+ * as the eye reads the layer that stands out.
+ */
+type Pair = readonly [string | readonly [string, string], string, number];
+
 /** Pairs every game's screen must meet (text 4.5:1, marks and edges 3:1): design of each change. */
-const COMMON_PAIRS: readonly (readonly [string, string, number])[] = [
+const COMMON_PAIRS: readonly Pair[] = [
   // The turn line, the hints and the chips around the board, on the page.
   ["--fg", "--game-page", 4.5],
   ["--fg-muted", "--game-page", 4.5],
@@ -134,8 +150,16 @@ const COMMON_PAIRS: readonly (readonly [string, string, number])[] = [
   ["--game-mark-2", "--game-board", 3],
 ];
 
+/** The four backgrounds a chess piece or mark sits on. */
+const CHESS_SQUARES = [
+  "--game-board",
+  "--chess-square-dark",
+  "--chess-mark-light",
+  "--chess-mark-dark",
+] as const;
+
 /** Pairs of one game's look (`redesign-game-boards` design §2–§4). */
-const GAME_PAIRS: Readonly<Record<string, readonly (readonly [string, string, number])[]>> = {
+const GAME_PAIRS: Readonly<Record<string, readonly Pair[]>> = {
   // A tile that may be chosen: its edge against the lilac page and its own face.
   tictactoe: [
     ["--game-line", "--game-page", 3],
@@ -157,6 +181,38 @@ const GAME_PAIRS: Readonly<Record<string, readonly (readonly [string, string, nu
     ["--game-highlight", "--game-board", 3],
     ["--ludo-frame", "--game-page", 3],
   ],
+  // Design §3 of `add-chess-board`, row by row.
+  chess: [
+    ["--fg-muted", "--game-tint", 4.5],
+    // Pieces (the staunty set) on both squares, both tints and the check's glow: a light body with
+    // a dark edge, a dark grey body with a near-black edge.
+    ...CHESS_SQUARES.flatMap((square): Pair[] => [
+      [["--chess-piece-light", "--game-mark-1"], square, 3],
+      [["--chess-piece-dark", "--game-mark-2"], square, 3],
+    ]),
+    [["--chess-piece-light", "--game-mark-1"], "--chess-check", 3],
+    [["--chess-piece-dark", "--game-mark-2"], "--chess-check", 3],
+    // Marks (the selection's frame, a target's dot, a capture's corners, the check ring, the last
+    // move's dashed frame): an ink core with a light halo.
+    ...CHESS_SQUARES.flatMap((square): Pair[] => [
+      [["--game-highlight", "--chess-paper"], square, 3],
+      [["--game-last-move", "--chess-paper"], square, 3],
+    ]),
+    [["--game-highlight", "--chess-paper"], "--chess-check", 3],
+    // Coordinates: dark green on a light square and on a tinted one, cream on a dark square.
+    ["--chess-coord", "--game-board", 4.5],
+    ["--chess-coord", "--chess-mark-light", 4.5],
+    ["--chess-coord", "--chess-mark-dark", 4.5],
+    ["--chess-coord-on-dark", "--chess-square-dark", 4.5],
+    ["--game-line", "--game-board", 3],
+    // The score sheet's moves and numbers.
+    ["--fg", "--chess-sheet", 4.5],
+    ["--fg-muted", "--chess-sheet", 4.5],
+    ["--fg", "--chess-sheet-current", 4.5],
+    ["--fg-muted", "--chess-sheet-current", 4.5],
+    // The two bodies told apart by lightness alone.
+    ["--chess-piece-light", "--chess-piece-dark", 3],
+  ],
 };
 
 describe.each(GAME_IDS)("games/%s/theme.css, contrast of its screen", (id) => {
@@ -169,11 +225,12 @@ describe.each(GAME_IDS)("games/%s/theme.css, contrast of its screen", (id) => {
 
   it.each(themes)("%s: text, marks and edges meet their ratio", (theme, tokens) => {
     for (const [fg, bg, ratio] of [...COMMON_PAIRS, ...(GAME_PAIRS[id] ?? [])]) {
-      const pair = `${fg} on ${bg}`;
-      expect(
-        contrast(resolve(theme, tokens, fg), resolve(theme, tokens, bg)),
-        pair,
-      ).toBeGreaterThanOrEqual(ratio);
+      const layers = typeof fg === "string" ? [fg] : fg;
+      const background = resolve(theme, tokens, bg);
+      const best = Math.max(
+        ...layers.map((layer) => contrast(resolve(theme, tokens, layer), background)),
+      );
+      expect(best, `${layers.join(" + ")} on ${bg}`).toBeGreaterThanOrEqual(ratio);
     }
   });
 
@@ -221,4 +278,32 @@ describe("games/ludo/theme.css with the shared piece colours", () => {
       }
     },
   );
+});
+
+describe("games/chess/theme.css and its piece files", () => {
+  // The tokens of the pieces mirror the staunty files (public/pieces/staunty), so the contrast pairs
+  // above measure the pieces really drawn.
+  const css = readFileSync(path.join(GAMES_DIR, "chess", "theme.css"), "utf8");
+  const piecesDir = path.join(GAMES_DIR, "../../public/pieces/staunty");
+  const colours = (file: string) => {
+    const svg = readFileSync(path.join(piecesDir, file), "utf8");
+    return {
+      fills: new Set([...svg.matchAll(/fill="(#[0-9a-f]{6})"/g)].map((match) => match[1])),
+      strokes: new Set([...svg.matchAll(/stroke="(#[0-9a-f]{6})"/g)].map((match) => match[1])),
+    };
+  };
+
+  it.each([
+    ["light", block(css, '[data-game="chess"]')],
+    ["dark", block(css, ':root[data-theme="dark"] [data-game="chess"]')],
+  ] as const)("%s: the piece tokens are the colours of the files", (_theme, tokens) => {
+    for (const type of ["K", "Q", "R", "B", "N", "P"]) {
+      const white = colours(`w${type}.svg`);
+      const black = colours(`b${type}.svg`);
+      expect(white.fills, type).toContain(tokens.get("--chess-piece-light"));
+      expect([...white.strokes], type).toEqual([tokens.get("--game-mark-1")]);
+      expect(black.fills, type).toContain(tokens.get("--chess-piece-dark"));
+      expect([...black.strokes], type).toEqual([tokens.get("--game-mark-2")]);
+    }
+  });
 });

@@ -8,6 +8,12 @@ interface BoardParts {
   readonly board: ReactNode;
   /** Controls of the game beside the board (a die, a roll button, choices), or `null`. */
   readonly controls: ReactNode;
+  /**
+   * For a game of two seats around the board (Chess): the seat shown above the board and the one
+   * below it, as the board is turned now. The play screen then draws a bar for each seat right above
+   * and right below the board instead of its players' panel. Without it, the panel as before.
+   */
+  readonly seatOrder?: readonly [top: PlayerIndex, bottom: PlayerIndex] | undefined;
 }
 
 /**

@@ -1,0 +1,13 @@
+"staunty" chess piece set
+Author: sadsnake1
+Source: https://github.com/lichess-org/lila/tree/9af5b51f1c7fa4199c7e03273f4b10b8acdc6b1c/public/piece/staunty
+        (lichess-org/lila at commit 9af5b51f1c7fa4199c7e03273f4b10b8acdc6b1c; listed in its COPYING.md)
+License: Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)
+         https://creativecommons.org/licenses/by-nc-sa/4.0/
+
+The twelve files here (wK, wQ, wR, wB, wN, wP, bK, bQ, bR, bB, bN, bP .svg) are copied byte for
+byte from that source: no changes were made. Board Games Hub is a personal, non-commercial project.
+
+Used on the Chess board, in its promotion picker and seat marks, and in the menu and setup
+artwork. The move list shows the pieces as single-colour silhouettes (CSS mask); that adaptation
+is also licensed CC BY-NC-SA 4.0; the files themselves are unmodified.

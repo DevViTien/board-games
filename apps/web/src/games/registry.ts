@@ -15,4 +15,5 @@ export const GAME_ENTRY_LOADERS = {
   tictactoe: () => import("./tictactoe").then((module) => module.tictactoeEntry),
   caro: () => import("./caro").then((module) => module.caroEntry),
   ludo: () => import("./ludo").then((module) => module.ludoEntry),
+  chess: () => import("./chess").then((module) => module.chessEntry),
 } satisfies GameEntryLoaders;
