@@ -83,8 +83,9 @@ function board(current: LudoState) {
 
 /** Where the red horse is drawn, as "x,y". */
 function redHorseAt(container: HTMLElement): string {
-  const disc = container.querySelector('g[data-colour="red"] circle[r="0.38"]');
-  return `${disc?.getAttribute("cx") ?? ""},${disc?.getAttribute("cy") ?? ""}`;
+  return (
+    container.querySelector('g[data-colour="red"][data-horse="0"]')?.getAttribute("data-at") ?? ""
+  );
 }
 
 const at = (progress: number) => {
@@ -255,7 +256,7 @@ describe("Hiệu ứng gieo và đi quân", () => {
 
     rerender(board(state(15, kick)));
 
-    const kicked = container.querySelector('g[data-colour="yellow"].animate-piece-kicked');
+    const kicked = container.querySelector('g[data-colour="yellow"] .animate-piece-kicked');
     expect(kicked).not.toBeNull();
     expect(kicked).toHaveClass("motion-reduce:animate-none");
     act(() => {

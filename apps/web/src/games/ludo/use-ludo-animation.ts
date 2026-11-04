@@ -82,9 +82,14 @@ function frameOf({ event, frame }: Running): LudoAnimation {
 /**
  * The animation of the move just played (`state.last`, the `ply`-th move of the game), frame by
  * frame. Only a newer move is animated: the move a board opens on (a reload) is not, nor a return to
- * an older one (undo), which ends any animation at once; with reduced motion, nothing is.
+ * an older one (undo), which ends any animation at once; with reduced motion, nothing is. Nor is
+ * the move `still`: a roll the 3D die has just shown.
  */
-export function useLudoAnimation(last: LudoEvent | null, ply: number): LudoAnimation {
+export function useLudoAnimation(
+  last: LudoEvent | null,
+  ply: number,
+  still: number | null = null,
+): LudoAnimation {
   const reduced = usePrefersReducedMotion();
   // By the number of moves, not the state object: online, the state is rebuilt on every update of
   // the room, and two alike moves in a row still count as two.
@@ -95,7 +100,11 @@ export function useLudoAnimation(last: LudoEvent | null, ply: number): LudoAnima
   // Adjusted during render, so the first frame of a new move is drawn with the move itself.
   if (ply !== seen) {
     setSeen(ply);
-    setRunning(ply < seen || last === null || reduced ? null : { key, event: last, frame: 0 });
+    setRunning(
+      ply < seen || last === null || reduced || ply === still
+        ? null
+        : { key, event: last, frame: 0 },
+    );
   }
   if (reduced && running !== null) setRunning(null);
 

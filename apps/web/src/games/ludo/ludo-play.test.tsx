@@ -128,7 +128,9 @@ describe("PlayScreen with Cờ cá ngựa", () => {
     expect(screen.getAllByRole("status")).toHaveLength(1);
     expect(screen.getByRole("status")).toHaveTextContent("Đến lượt bạn (Đỏ)");
     expect(screen.getByRole("status")).not.toHaveTextContent("gieo được");
-    expect(liveHint(container)).toHaveTextContent("Đỏ gieo được 5. Chọn ngựa để đi.");
+    expect(liveHint(container)).toHaveTextContent(
+      "Đỏ gieo được 5. Chọn một ngựa được đánh dấu để đi.",
+    );
   });
 
   it("Đối thủ đá ngựa: an online opponent's kick, by name", () => {

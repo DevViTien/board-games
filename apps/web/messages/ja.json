@@ -90,8 +90,13 @@
       "die": "サイコロ：{face}（{player}）",
       "dieReady": "サイコロ：{player}が振る番",
       "lastRoll": "前の番：{player}が{face}を出しました",
+      "throw": {
+        "tip": "長押しで勢いをつけて、指を離して振る",
+        "again": "もう一度振れます",
+        "lost": "手番を失います"
+      },
       "hint": {
-        "choose": "{player}は{face}を出しました。動かす駒を選んでください。",
+        "choose": "{player}は{face}を出しました。印の付いた駒から動かす駒を選んでください。",
         "rolled": "{player}は{face}を出しました。",
         "lost": "{player}は{face}を出しました。動かせる駒がないため、手番を失います。",
         "noMoveAgain": "{player}は6を出しましたが動かせる駒がありません。もう一度振れます。",

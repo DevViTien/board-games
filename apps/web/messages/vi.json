@@ -90,8 +90,13 @@
       "die": "Xúc xắc: {face} ({player})",
       "dieReady": "Xúc xắc: {player} sắp gieo",
       "lastRoll": "Lượt trước: {player} gieo được {face}",
+      "throw": {
+        "tip": "Giữ để lấy đà · thả tay để gieo",
+        "again": "Được gieo thêm",
+        "lost": "Mất lượt"
+      },
       "hint": {
-        "choose": "{player} gieo được {face}. Chọn ngựa để đi.",
+        "choose": "{player} gieo được {face}. Chọn một ngựa được đánh dấu để đi.",
         "rolled": "{player} gieo được {face}.",
         "lost": "{player} gieo được {face}. Không ngựa nào đi được, mất lượt.",
         "noMoveAgain": "{player} gieo được 6 nhưng không ngựa nào đi được, gieo thêm.",

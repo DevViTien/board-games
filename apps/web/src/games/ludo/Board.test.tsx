@@ -2,13 +2,14 @@ import {
   IN_STABLE,
   ludo,
   LUDO_DEFAULT_OPTIONS,
+  type LudoColour,
   type LudoEvent,
   type LudoMove,
   type LudoOutcome,
   type LudoState,
   OWN_GATE,
 } from "@board-games/games/ludo";
-import { screen, within } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
@@ -17,6 +18,7 @@ import { renderWithIntl } from "@/test/render-with-intl";
 
 import { type BoardProps, defaultBoardLayout } from "../types";
 import { LudoBoard } from "./Board";
+import { horsePoint } from "./board-layout";
 
 const S = IN_STABLE;
 const step = (k: number) => OWN_GATE + k;
@@ -75,8 +77,7 @@ describe("Bàn Cờ cá ngựa", () => {
     const { container } = renderWithIntl(<LudoBoard {...boardProps(position(4, {}))} />);
 
     const symbolOf = (colour: string) => {
-      const horse = container.querySelector(`g[data-colour="${colour}"]`);
-      const symbol = horse?.lastElementChild;
+      const symbol = container.querySelector(`g[data-colour="${colour}"] [data-symbol] > *`);
       return `${symbol?.tagName ?? ""}:${symbol?.getAttribute("points")?.split(" ").length ?? 0}`;
     };
     const symbols = ["red", "blue", "yellow", "green"].map(symbolOf);
@@ -235,7 +236,9 @@ describe("Gieo và chọn ngựa trên bàn", () => {
     await userEvent.click(rollButton());
 
     expect(screen.getByRole("img", { name: "Xúc xắc: 5 (Đỏ)" })).toBeInTheDocument();
-    expect(screen.getByText("Đỏ gieo được 5. Chọn ngựa để đi.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Đỏ gieo được 5. Chọn một ngựa được đánh dấu để đi."),
+    ).toBeInTheDocument();
   });
 
   it("Chọn ngựa: bring a horse out, or move one onto a Yellow horse and kick it", () => {
@@ -244,7 +247,7 @@ describe("Gieo và chọn ngựa trên bàn", () => {
     renderWithIntl(<LudoBoard {...boardProps(state)} />);
 
     const choices = within(choiceGroup()).getAllByRole("button");
-    expect(choices.map((button) => button.textContent)).toEqual([
+    expect(choices.map((button) => button.getAttribute("aria-label"))).toEqual([
       "Ngựa 1: ra chuồng",
       "Ngựa 2: tới ô 17, đá ngựa Vàng",
     ]);
@@ -304,18 +307,6 @@ describe("Gieo và chọn ngựa trên bàn", () => {
     });
     expect(container.querySelector("g[data-highlighted]")).toHaveAttribute("data-colour", "red");
     expect(container.querySelector("g[data-ghost]")).not.toBeNull();
-  });
-
-  it("lets a horse on the board be clicked", async () => {
-    const onMove = vi.fn();
-    const state = position(2, { 0: [S, 10] }, { die: 3 });
-    const { container } = renderWithIntl(<LudoBoard {...boardProps(state, { onMove })} />);
-
-    const horse = container.querySelector('g[data-choice="1"]');
-    if (horse === null) throw new Error("No horse to click");
-    await userEvent.click(horse);
-
-    expect(onMove).toHaveBeenCalledWith({ type: "move", horse: 1 });
   });
 
   it("offers nothing while the board is disabled", () => {
@@ -392,7 +383,7 @@ describe("Cờ cá ngựa bằng bàn phím và trình đọc màn hình", () =>
     renderWithIntl(<LudoBoard {...boardProps(state, { viewer: 0, disabled: true })} />);
 
     expect(screen.getByText("Vàng gieo được 4.")).toBeVisible();
-    expect(screen.queryByText(/Chọn ngựa để đi/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Chọn một ngựa/)).not.toBeInTheDocument();
   });
 
   it("tells a roll again after a 6", () => {
@@ -480,5 +471,217 @@ describe("Lý do không gieo được", () => {
     renderWithIntl(<LudoBoard {...boardProps(position(2, {}))} />);
 
     expect(rollButton()).not.toHaveAccessibleDescription();
+  });
+});
+
+/** The board's frame laid out 300 px wide (a cell is 20 px), at the top left of the screen. */
+function layOutBoard(container: HTMLElement): HTMLElement {
+  const frame = container.querySelector<HTMLElement>("[data-ludo-board]");
+  if (frame === null) throw new Error("No board");
+  vi.spyOn(frame, "getBoundingClientRect").mockReturnValue(
+    new DOMRect(0, 0, 300, (300 * 15.3) / 15),
+  );
+  return frame;
+}
+
+/** A touch at a point of the board (in cells), pressed and let go on the board. */
+function touchAt(frame: HTMLElement, point: { x: number; y: number }) {
+  const clientX = point.x * 20;
+  const clientY = (point.y + 0.3) * 20;
+  fireEvent.pointerDown(frame, { pointerId: 1, isPrimary: true, clientX, clientY });
+  fireEvent.click(frame, { clientX, clientY });
+}
+
+/** Where a horse's figure stands: its square's centre, raised. */
+function figureOf(colour: LudoColour, horse: number, progress: number) {
+  const at = horsePoint(colour, horse, progress);
+  return { x: at.x, y: at.y - 0.3 };
+}
+
+describe("Chạm ngựa để đi", () => {
+  it("Một chạm là đi: a touch on a horse that may move moves it, with no confirming", () => {
+    const onMove = vi.fn();
+    const state = position(2, { 0: [10, 30] }, { die: 5 });
+    const { container } = renderWithIntl(<LudoBoard {...boardProps(state, { onMove })} />);
+
+    touchAt(layOutBoard(container), figureOf(0, 0, 10));
+
+    expect(onMove).toHaveBeenCalledTimes(1);
+    expect(onMove).toHaveBeenCalledWith({ type: "move", horse: 0 });
+  });
+
+  it("Chạm ngựa không đi được: nothing moves, the horses to choose still stand out", () => {
+    const onMove = vi.fn();
+    // Horse 1 is blocked by horse 2, one square ahead.
+    const state = position(2, { 0: [10, 11] }, { die: 3 });
+    const { container } = renderWithIntl(<LudoBoard {...boardProps(state, { onMove })} />);
+    expect(ludo.legalMoves(state)).toEqual([{ type: "move", horse: 1 }]);
+
+    touchAt(layOutBoard(container), figureOf(0, 0, 10));
+
+    expect(onMove).not.toHaveBeenCalled();
+    expect(container.querySelectorAll("g[data-colour][data-movable]")).toHaveLength(1);
+  });
+
+  it("Chạm ngựa không đi được cạnh ngựa đi được: a touch on the Yellow horse next to one that may move moves nothing", () => {
+    const onMove = vi.fn();
+    // Red's horse on its square 12, Yellow's on the square right after it (Red's square 13).
+    const state = position(2, { 0: [11], 1: [40] }, { die: 1 });
+    const { container } = renderWithIntl(<LudoBoard {...boardProps(state, { onMove })} />);
+    const red = figureOf(0, 0, 11);
+    const yellow = figureOf(2, 0, 40);
+    expect(Math.hypot(red.x - yellow.x, red.y - yellow.y)).toBeCloseTo(1);
+
+    touchAt(layOutBoard(container), yellow);
+
+    expect(onMove).not.toHaveBeenCalled();
+  });
+
+  it("Hai ngựa chọn được nằm sát nhau: the horse nearest the touch moves", () => {
+    const onMove = vi.fn();
+    // Horse 1 on square 3 (column 8), horse 2 on home step 2 (column 7), side by side.
+    const state = position(2, { 0: [2, step(2)] }, { die: 3 });
+    const { container } = renderWithIntl(<LudoBoard {...boardProps(state, { onMove })} />);
+    expect(ludo.legalMoves(state)).toEqual([
+      { type: "move", horse: 0 },
+      { type: "move", horse: 1 },
+    ]);
+
+    // Between the two, nearer the second.
+    const second = figureOf(0, 1, step(2));
+    touchAt(layOutBoard(container), { x: second.x + 0.3, y: second.y });
+
+    expect(onMove).toHaveBeenCalledWith({ type: "move", horse: 1 });
+  });
+
+  it("moves nothing on a touch before the roll", () => {
+    const onMove = vi.fn();
+    const { container } = renderWithIntl(
+      <LudoBoard {...boardProps(position(2, { 0: [10] }), { onMove })} />,
+    );
+
+    touchAt(layOutBoard(container), figureOf(0, 0, 10));
+
+    expect(onMove).not.toHaveBeenCalled();
+  });
+
+  it("moves the horse when the click of a touch carries another pointer id than its press", () => {
+    const onMove = vi.fn();
+    const state = position(2, { 0: [10] }, { die: 5 });
+    const { container } = renderWithIntl(<LudoBoard {...boardProps(state, { onMove })} />);
+    const frame = layOutBoard(container);
+    const at = figureOf(0, 0, 10);
+    const clientX = at.x * 20;
+    const clientY = (at.y + 0.3) * 20;
+
+    fireEvent.pointerDown(frame, { pointerId: 2, isPrimary: true, clientX, clientY });
+    fireEvent(frame, new PointerEvent("click", { bubbles: true, pointerId: 7, clientX, clientY }));
+
+    expect(onMove).toHaveBeenCalledWith({ type: "move", horse: 0 });
+  });
+
+  it("moves nothing when the browser cancelled the press (a scroll)", () => {
+    const onMove = vi.fn();
+    const state = position(2, { 0: [10] }, { die: 5 });
+    const { container } = renderWithIntl(<LudoBoard {...boardProps(state, { onMove })} />);
+    const frame = layOutBoard(container);
+    const at = figureOf(0, 0, 10);
+
+    fireEvent.pointerDown(frame, { pointerId: 1, isPrimary: true });
+    fireEvent.pointerCancel(frame, { pointerId: 1 });
+    fireEvent.click(frame, { clientX: at.x * 20, clientY: (at.y + 0.3) * 20 });
+
+    expect(onMove).not.toHaveBeenCalled();
+  });
+
+  it("moves nothing on a click that was not pressed on the board", () => {
+    const onMove = vi.fn();
+    const state = position(2, { 0: [10] }, { die: 5 });
+    const { container } = renderWithIntl(<LudoBoard {...boardProps(state, { onMove })} />);
+    const frame = layOutBoard(container);
+    const at = figureOf(0, 0, 10);
+
+    fireEvent.click(frame, { clientX: at.x * 20, clientY: (at.y + 0.3) * 20 });
+
+    expect(onMove).not.toHaveBeenCalled();
+  });
+
+  it("Không còn danh sách lựa chọn: the horses to choose stand out on the board, no list beside it", () => {
+    const state = position(2, { 0: [S, 10, step(6), step(5)] }, { die: 6 });
+    const { container } = renderWithIntl(<LudoBoard {...boardProps(state)} />);
+
+    const frame = container.querySelector("[data-ludo-board]");
+    const choices = container.querySelectorAll("[data-ludo-choice]");
+    expect(choices).toHaveLength(2);
+    for (const choice of choices) expect(frame?.contains(choice)).toBe(true);
+    expect(container.querySelectorAll("g[data-colour][data-movable]")).toHaveLength(2);
+    expect(container.querySelectorAll("[data-ring]")).toHaveLength(2);
+  });
+
+  it("Chuyển ngựa bằng phím mũi tên: the arrows go from one horse to the next, Tab leaves them", async () => {
+    const user = userEvent.setup();
+    const state = position(2, { 0: [S, 10, step(6), step(5)] }, { die: 6 });
+    renderWithIntl(
+      <>
+        <LudoBoard {...boardProps(state)} />
+        <button type="button">Sau</button>
+      </>,
+    );
+    const [first, second] = within(choiceGroup()).getAllByRole("button");
+
+    first?.focus();
+    expect(first).toHaveAttribute("tabindex", "0");
+    expect(second).toHaveAttribute("tabindex", "-1");
+    await user.keyboard("{ArrowRight}");
+    expect(second).toHaveFocus();
+    expect(second).toHaveAttribute("tabindex", "0");
+    await user.keyboard("{ArrowRight}");
+    expect(first).toHaveFocus();
+
+    await user.tab();
+    expect(choiceGroup().contains(document.activeElement)).toBe(false);
+  });
+
+  it("sizes each target at least 24 px and centres it on its horse", () => {
+    const state = position(2, { 0: [10] }, { die: 5 });
+    renderWithIntl(<LudoBoard {...boardProps(state)} />);
+
+    const [target] = within(choiceGroup()).getAllByRole("button");
+    expect(target).toHaveClass("w-[max(24px,calc(100%*1.36/15))]", "aspect-square");
+    const { x, y } = figureOf(0, 0, 10);
+    expect(parseFloat(target?.style.left ?? "")).toBeCloseTo((x / 15) * 100);
+    expect(parseFloat(target?.style.top ?? "")).toBeCloseTo(((y + 0.3) / 15.3) * 100);
+  });
+});
+
+describe("Quân hình con ngựa", () => {
+  it("Quân hình con ngựa: a Red horse on the track is a horse figure with Red's circle on its base", () => {
+    const { container } = renderWithIntl(<LudoBoard {...boardProps(position(2, { 0: [10] }))} />);
+
+    const red = container.querySelector('g[data-colour="red"]');
+    // The head and the base, and the colour's symbol on the base.
+    expect(red?.querySelectorAll("path").length).toBeGreaterThanOrEqual(2);
+    expect(red?.querySelector("[data-symbol] > circle")).not.toBeNull();
+  });
+
+  it("keeps room above the top row for the horses standing there", () => {
+    const { container } = renderWithIntl(<LudoBoard {...boardProps(position(2, { 0: [0] }))} />);
+
+    expect(container.querySelector("svg")).toHaveAttribute("viewBox", "0 -0.3 15 15.3");
+    expect(container.querySelector("[data-ludo-board]")).toHaveClass("aspect-[15/15.3]");
+  });
+});
+
+describe("Nút gieo trên điện thoại", () => {
+  it("never scrolls, selects or opens a menu on a long press, and stays the same button", () => {
+    renderWithIntl(<LudoBoard {...boardProps(position(2, {}))} />);
+
+    expect(rollButton()).toHaveClass("touch-none", "select-none", "[-webkit-touch-callout:none]");
+    const menu = new MouseEvent("contextmenu", { bubbles: true, cancelable: true });
+    rollButton().dispatchEvent(menu);
+    expect(menu.defaultPrevented).toBe(true);
+    // Still the roll button, in the colour of the player to roll.
+    expect(rollButton()).toHaveAttribute("aria-disabled", "false");
+    expect(rollButton()).toHaveClass("bg-piece-red");
   });
 });

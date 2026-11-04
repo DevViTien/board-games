@@ -18,6 +18,7 @@ import { useTranslations } from "next-intl";
 import { memo, type MouseEvent, useEffect, useId, useRef, useState } from "react";
 
 import type { BoardProps } from "../types";
+import { fromScreen, hitRadius, horseCentre, nearestHorse, VIEW_BOX } from "./board-geometry";
 import {
   GRID,
   horsePoint,
@@ -29,17 +30,15 @@ import {
   stepCells,
   TRACK_CELLS,
 } from "./board-layout";
+import { ChoiceTargets } from "./ChoiceTargets";
 import { ColourSymbol } from "./ColourSymbol";
 import { Dice } from "./Dice";
+import { ThrowOverlay } from "./dice3d/ThrowOverlay";
+import { useDiceThrow } from "./dice3d/use-dice-throw";
+import { THROW_PHASE } from "./dice3d/use-hold-to-roll";
+import { ChoiceTarget, Horse, HorseFloor, KickBadge } from "./Horse";
 import { useLudoText } from "./move-label";
-import {
-  PIECE_FILL,
-  PIECE_INK_FILL,
-  PIECE_LINE_BORDER,
-  PIECE_LINE_STROKE,
-  PIECE_TINT,
-  ROLL_BUTTON,
-} from "./piece-style";
+import { PIECE_FILL, PIECE_LINE_STROKE, PIECE_TINT, ROLL_BUTTON } from "./piece-style";
 import { colourNameOf } from "./player-label";
 import { useLudoAnimation } from "./use-ludo-animation";
 
@@ -235,112 +234,6 @@ const BoardDrawing = memo(function BoardDrawing({
   );
 });
 
-interface HorseProps {
-  readonly colour: LudoColourName;
-  readonly at: Point;
-  /** Data for a click on the board: the horse number of a move that may be chosen. */
-  readonly choice: number | null;
-  readonly last: boolean;
-  readonly highlighted: boolean;
-  readonly ghost: boolean;
-  readonly kickedNow: boolean;
-  readonly kickedMark: boolean;
-}
-
-/**
- * A horse: a disc of its colour with a dark edge and the colour's symbol in the colour's ink, never
- * told apart by colour alone. A ghost (where a previewed choice would go) is the same, dashed.
- */
-function Horse({
-  colour,
-  at,
-  choice,
-  last,
-  highlighted,
-  ghost,
-  kickedNow,
-  kickedMark,
-}: HorseProps) {
-  return (
-    <g
-      data-colour={colour}
-      data-choice={choice ?? undefined}
-      data-last={last || undefined}
-      data-highlighted={highlighted || undefined}
-      data-ghost={ghost || undefined}
-      className={cn(
-        "origin-center transform-fill",
-        choice !== null && "cursor-pointer",
-        kickedNow && "animate-piece-kicked motion-reduce:animate-none",
-      )}
-    >
-      {/* The horse just moved: a ring of ink dots. */}
-      {last && (
-        <circle
-          cx={at.x}
-          cy={at.y}
-          r="0.5"
-          fill="none"
-          strokeWidth="0.09"
-          strokeLinecap="round"
-          strokeDasharray="0.001 0.14"
-          className="stroke-game-last-move"
-        />
-      )}
-      {highlighted && (
-        <circle
-          cx={at.x}
-          cy={at.y}
-          r="0.5"
-          fill="none"
-          strokeWidth="0.1"
-          strokeDasharray="0.18 0.1"
-          className="stroke-game-highlight"
-        />
-      )}
-      {kickedMark && (
-        <circle
-          cx={at.x}
-          cy={at.y}
-          r="0.5"
-          fill="none"
-          strokeWidth="0.06"
-          strokeDasharray="0.1 0.1"
-          className="stroke-fg-muted"
-        />
-      )}
-      {ghost ? (
-        <circle
-          cx={at.x}
-          cy={at.y}
-          r="0.36"
-          strokeWidth="0.07"
-          strokeDasharray="0.12 0.08"
-          className={cn("fill-game-board", PIECE_LINE_STROKE[colour])}
-        />
-      ) : (
-        <>
-          {/* A soft shadow below (decorative). */}
-          <circle cx={at.x} cy={at.y + 0.06} r="0.36" className="fill-game-line/40" />
-          <circle
-            cx={at.x}
-            cy={at.y}
-            r="0.38"
-            strokeWidth="0.05"
-            className={cn(PIECE_FILL[colour], "stroke-piece-edge")}
-          />
-        </>
-      )}
-      <ColourSymbol
-        colour={colour}
-        at={at}
-        size={0.17}
-        className={ghost ? PIECE_FILL[colour] : PIECE_INK_FILL[colour]}
-      />
-    </g>
-  );
-}
-
 /** A colour's symbol on its own, the size of a line of text (a chip, a choice). */
 function SymbolIcon({ colour }: { colour: LudoColourName }) {
   return (
@@ -362,19 +255,34 @@ interface DieView {
   readonly label: string;
 }
 
+/** A horse on the board, where it is drawn now. */
+interface PlacedHorse {
+  readonly seat: number;
+  readonly horse: number;
+  readonly colour: LudoColourName;
+  readonly at: Point;
+}
+
+/** The id of an SVG element, from `useId`, safe inside `url(#…)`. */
+function svgId(id: string): string {
+  return `ludo-${id.replace(/[^a-zA-Z0-9_-]/g, "")}`;
+}
+
 /**
- * A Cờ cá ngựa board: the cross-shaped track drawn in SVG, and as controls the die, a "Roll" button
- * and, after a roll, one button per horse that can move, saying where it goes. Those buttons are the
- * way to play with the keyboard, a screen reader or a finger; the horses on the SVG (hidden from
- * assistive technology, which reads the list of positions instead) can also be clicked. The die and
- * the roll button take the colour of the player to move (about to roll, or choosing a horse), whose
- * stable stands out; the roll before, once the die waits again, is shown beside them. The roll of a
- * person at this device is announced by the board's hint; everything else is told by the play
- * screen's status line, so nothing is read twice.
+ * A Cờ cá ngựa board: the cross-shaped track drawn in SVG with its horses, and as controls the die
+ * and a "Roll" button (design of redesign-ludo-play). After a roll, the horses that may move bob
+ * with a ring; a touch or a click on one moves it at once (the board takes the horse whose figure is
+ * nearest, of every horse, and moves it only if it may move). The keyboard and screen readers press
+ * see-through buttons laid over those horses, read as before ("Ngựa 2: ra chuồng"). The person at
+ * this device rolls by pressing and holding the button (the 3D die, `dice3d/`), or, without it, by
+ * a press. The die and the roll button take the colour of the player to move, whose stable stands
+ * out; the roll before, once the die waits again, is shown beside them. The roll of a person at
+ * this device is announced by the board's hint, once the die rests; everything else is told by the
+ * play screen's status line, so nothing is read twice.
  */
 export function LudoBoard({
-  state,
-  legalMoves,
+  state: liveState,
+  legalMoves: liveMoves,
   onMove,
   disabled,
   viewer,
@@ -383,21 +291,52 @@ export function LudoBoard({
 }: BoardProps<LudoState, LudoMove, LudoOutcome>) {
   const t = useTranslations("Games.ludo");
   const text = useLudoText();
-  const animation = useLudoAnimation(state.last, state.ply);
   const rollButtonRef = useRef<HTMLButtonElement>(null);
   const firstChoiceRef = useRef<HTMLButtonElement>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
   const [preview, setPreview] = useState<number | null>(null);
   // The move count at which the roll button got the focus or was pressed: why it is locked shows in
   // words until the next move (a tap may focus nothing, so a blur may never come).
   const [rollReasonAt, setRollReasonAt] = useState<number | null>(null);
   const rollReasonId = useId();
-  /** Set by a roll from this board: the first choice gets the focus once the roll is in. */
+  const clipId = svgId(useId());
+  /** Set by a roll from the keyboard: the first choice gets the focus once the die rests. */
   const focusChoiceAfterRoll = useRef(false);
+  /** A primary pointer was pressed on the board, for the click that follows it. */
+  const pressed = useRef(false);
+
+  const liveCanRoll = !disabled && liveMoves.some((move) => move.type === "roll");
+  const throwing = useDiceThrow({
+    state: liveState,
+    legalMoves: liveMoves,
+    canRoll: liveCanRoll,
+    readColours: () => {
+      const style = getComputedStyle(frameRef.current ?? document.documentElement);
+      const read = (name: string) => style.getPropertyValue(name).trim();
+      return {
+        body: read("--game-board"),
+        line: read(`--piece-${colourNameOf(liveState, liveState.toMove)}-line`),
+        pip: read("--fg"),
+      };
+    },
+    roll: () => {
+      onMove(ROLL);
+    },
+    onEnd: (byKeyboard) => {
+      focusChoiceAfterRoll.current = byKeyboard;
+    },
+  });
+  // While the die is thrown, the board shows the game as it was before the roll: the number, the
+  // horses to choose and what the roll means show once the die rests.
+  const inThrow = throwing.frozen !== null;
+  const state = throwing.frozen?.state ?? liveState;
+  const legalMoves = throwing.frozen?.legalMoves ?? liveMoves;
+  const animation = useLudoAnimation(state.last, state.ply, throwing.settledPly);
 
   const player = state.toMove;
   const over = state.winner !== null;
-  const canRoll = !disabled && legalMoves.some((move) => move.type === "roll");
-  const choices = (disabled ? [] : legalMoves).flatMap((move) => {
+  const canRoll = inThrow || liveCanRoll;
+  const choices = (disabled || inThrow ? [] : legalMoves).flatMap((move) => {
     if (move.type !== "move" || state.die === null) return [];
     const from = state.horses[player]?.[move.horse] ?? IN_STABLE;
     const to = targetOf(state, player, move.horse, state.die);
@@ -409,12 +348,18 @@ export function LudoBoard({
         ? target
         : t("kick", { action: target, colour: text.colour(kicked.player, state) });
     return [
-      { move, horse: move.horse, to, label: t("option", { number: move.horse + 1, action }) },
+      {
+        move,
+        horse: move.horse,
+        to,
+        kicked,
+        label: t("option", { number: move.horse + 1, action }),
+      },
     ];
   });
   const previewed = choices.find((choice) => choice.horse === preview) ?? null;
 
-  // Moves played: changes with every roll and move, also two alike in a row.
+  // Moves shown: changes with every roll and move, also two alike in a row.
   const { ply } = state;
   useEffect(() => {
     if (!focusChoiceAfterRoll.current) return;
@@ -423,23 +368,50 @@ export function LudoBoard({
     firstChoiceRef.current?.focus();
   }, [ply]);
 
-  function roll() {
-    focusChoiceAfterRoll.current = true;
-    onMove(ROLL);
-  }
-
-  function choose(move: LudoMove) {
+  function choose(horse: number) {
+    const choice = choices.find((option) => option.horse === horse);
+    if (choice === undefined) return;
     // The choices go away with the move: the focus goes back to the roll button first.
     rollButtonRef.current?.focus();
     setPreview(null);
-    onMove(move);
+    onMove(choice.move);
   }
 
-  function handleBoardClick(event: MouseEvent<SVGSVGElement>) {
-    if (!(event.target instanceof Element)) return;
-    const value = event.target.closest<SVGElement>("[data-choice]")?.dataset.choice;
-    const choice = choices.find((option) => String(option.horse) === value);
-    if (choice !== undefined) choose(choice.move);
+  // Every horse where it is drawn now, the walking one included.
+  const placed: PlacedHorse[] = state.colours.flatMap((colour, seat) =>
+    (state.horses[seat] ?? []).map((progress, horse) => {
+      const walking =
+        animation.walking?.player === seat && animation.walking.horse === horse
+          ? animation.walking.progress
+          : progress;
+      return { seat, horse, colour: nameOf(colour), at: horsePoint(colour, horse, walking) };
+    }),
+  );
+
+  /** The horse of the player to move under a point of the screen, if it may move now. */
+  function choiceAt(clientX: number, clientY: number): number | null {
+    const frame = frameRef.current;
+    if (frame === null || choices.length === 0) return null;
+    const box = frame.getBoundingClientRect();
+    if (box.width === 0) return null;
+    const nearest = nearestHorse(
+      placed.map((horse) => ({ key: horse, centre: horseCentre(horse.at) })),
+      fromScreen(box, clientX, clientY),
+      hitRadius(box.width),
+    );
+    if (nearest?.seat !== player) return null;
+    return choices.some((choice) => choice.horse === nearest.horse) ? nearest.horse : null;
+  }
+
+  function onBoardClick(event: MouseEvent<HTMLDivElement>) {
+    const wasPressed = pressed.current;
+    pressed.current = false;
+    // Only a press that began on the board: not one that began on the overlay of a throw, nor a
+    // pointer the browser cancelled (a scroll). Not by the pointer's id: some browsers give the
+    // click of a touch another id than its press.
+    if (!wasPressed) return;
+    const horse = choiceAt(event.clientX, event.clientY);
+    if (horse !== null) choose(horse);
   }
 
   const { last } = state;
@@ -506,62 +478,119 @@ export function LudoBoard({
     last?.kind === "move" && last.kicked !== null
       ? { player: last.kicked.player, horse: last.kicked.horse }
       : null;
+  const victim = previewed?.kicked ?? null;
+  const ghostAt =
+    previewed === null
+      ? null
+      : horsePoint(state.colours[player] ?? 0, previewed.horse, previewed.to);
+  const isChoice = (horse: PlacedHorse) =>
+    horse.seat === player && choices.some((choice) => choice.horse === horse.horse);
+  // Drawn from the top row down, so a horse in front stands over the one behind it.
+  const figures = [...placed].sort((a, b) => a.at.y - b.at.y);
 
   const board = (
     // The play screen gives the room (`--board-room`); a laptop never needs more than 37.5rem.
     <div data-ply={ply} className="mx-auto w-[min(var(--board-room,100%),37.5rem)]">
-      <div className="aspect-square w-full overflow-hidden rounded-card border-2 border-(--ludo-frame)">
+      {/* The grid, and room above its top row for the horses standing there (`board-geometry`). A
+          touch or a click goes to the horse nearest it. */}
+      <div
+        ref={frameRef}
+        data-ludo-board=""
+        className="relative aspect-[15/15.3] w-full touch-manipulation select-none"
+        onPointerDown={(event) => {
+          pressed.current = event.isPrimary;
+        }}
+        onPointerCancel={() => {
+          pressed.current = false;
+        }}
+        onClick={onBoardClick}
+        onPointerMove={(event) => {
+          if (event.pointerType === "mouse") setPreview(choiceAt(event.clientX, event.clientY));
+        }}
+        onPointerLeave={(event) => {
+          if (event.pointerType === "mouse") setPreview(null);
+        }}
+      >
         {/* Hidden from assistive technology: the list of positions and the choices say it all. */}
-        <svg
-          aria-hidden
-          viewBox={`0 0 ${GRID} ${GRID}`}
-          className="size-full touch-manipulation"
-          onClick={handleBoardClick}
-        >
-          <BoardDrawing
-            colours={state.colours}
-            active={over ? null : (state.colours[player] ?? null)}
+        <svg aria-hidden viewBox={VIEW_BOX} className="size-full overflow-visible">
+          <defs>
+            <clipPath id={clipId}>
+              <rect x="0" y="0" width={GRID} height={GRID} rx="0.85" />
+            </clipPath>
+          </defs>
+          <g clipPath={`url(#${clipId})`}>
+            <BoardDrawing
+              colours={state.colours}
+              active={over ? null : (state.colours[player] ?? null)}
+            />
+          </g>
+          {/* The board's outer frame. */}
+          <rect
+            x="0.045"
+            y="0.045"
+            width={GRID - 0.09}
+            height={GRID - 0.09}
+            rx="0.82"
+            fill="none"
+            strokeWidth="0.09"
+            className="stroke-(--ludo-frame)"
           />
-          {previewed !== null && (
-            <ChoiceTarget
-              at={horsePoint(state.colours[player] ?? 0, previewed.horse, previewed.to)}
+          {ghostAt !== null && <ChoiceTarget at={ghostAt} />}
+          {placed.map((horse) => (
+            <HorseFloor
+              key={`floor-${horse.seat}-${horse.horse}`}
+              colour={horse.colour}
+              at={horse.at}
+              last={
+                animation.walking === null &&
+                last?.kind === "move" &&
+                last.player === horse.seat &&
+                last.horse === horse.horse
+              }
+              kickedMark={justKicked?.player === horse.seat && justKicked.horse === horse.horse}
+              movable={isChoice(horse)}
+              previewed={isChoice(horse) && previewed?.horse === horse.horse}
+              victim={victim?.player === horse.seat && victim.horse === horse.horse}
             />
-          )}
-          {state.colours.map((colour, seat) =>
-            (state.horses[seat] ?? []).map((progress, horse) => {
-              const walking =
-                animation.walking?.player === seat && animation.walking.horse === horse
-                  ? animation.walking.progress
-                  : progress;
-              const isChoice = seat === player && choices.some((c) => c.horse === horse);
-              return (
-                <Horse
-                  key={`${seat}-${horse}`}
-                  colour={nameOf(colour)}
-                  at={horsePoint(colour, horse, walking)}
-                  choice={isChoice ? horse : null}
-                  last={last?.kind === "move" && last.player === seat && last.horse === horse}
-                  highlighted={seat === player && previewed?.horse === horse}
-                  ghost={false}
-                  kickedNow={animation.kicked?.player === seat && animation.kicked.horse === horse}
-                  kickedMark={justKicked?.player === seat && justKicked.horse === horse}
-                />
-              );
-            }),
-          )}
-          {previewed !== null && (
+          ))}
+          {figures.map((horse) => (
             <Horse
-              colour={nameOf(state.colours[player] ?? 0)}
-              at={horsePoint(state.colours[player] ?? 0, previewed.horse, previewed.to)}
-              choice={null}
-              last={false}
-              highlighted={false}
-              ghost
-              kickedNow={false}
-              kickedMark={false}
+              key={`${horse.seat}-${horse.horse}`}
+              colour={horse.colour}
+              horse={horse.horse}
+              at={horse.at}
+              movable={isChoice(horse)}
+              previewed={isChoice(horse) && previewed?.horse === horse.horse}
+              last={
+                last?.kind === "move" && last.player === horse.seat && last.horse === horse.horse
+              }
+              kickedNow={
+                animation.kicked?.player === horse.seat && animation.kicked.horse === horse.horse
+              }
             />
-          )}
+          ))}
+          {ghostAt !== null && <Horse colour={toMove} at={ghostAt} ghost />}
+          {victim !== null &&
+            placed
+              .filter((horse) => horse.seat === victim.player && horse.horse === victim.horse)
+              .map((horse) => <KickBadge key="kick" at={horse.at} />)}
         </svg>
+        {choices.length > 0 && (
+          <ChoiceTargets
+            label={t("chooseHorse")}
+            firstRef={firstChoiceRef}
+            choices={choices.map((choice) => ({
+              horse: choice.horse,
+              label: choice.label,
+              centre: horseCentre(
+                placed.find((horse) => horse.seat === player && horse.horse === choice.horse)
+                  ?.at ?? { x: 0, y: 0 },
+              ),
+            }))}
+            onChoose={choose}
+            onPreview={setPreview}
+          />
+        )}
       </div>
 
       <ul aria-label={t("positions")} className="sr-only">
@@ -595,19 +624,23 @@ export function LudoBoard({
         <Dice face={die.face} colour={die.colour} rolling={rolling} label={die.label} />
         {/* Always there, so the focus has somewhere to go after a move or a lost turn. Locked, the
             shared disabled look wins over the colour; the colour of the player to move stays on
-            the die's frame. */}
+            the die's frame. Pressed and held, it shakes the 3D die; on a phone, a long press never
+            scrolls, selects or opens a menu. */}
         <Button
           ref={rollButtonRef}
           size="lg"
           data-ludo-roll=""
+          // Which die a press throws: the end-to-end tests' contract.
+          data-dice={throwing.threeD ? "3d" : "2d"}
           aria-disabled={!canRoll}
           aria-describedby={rollReason === null ? undefined : rollReasonId}
-          onClick={roll}
+          {...throwing.buttonProps}
           onFocus={() => {
             setRollReasonAt(ply);
           }}
-          onPointerDown={() => {
+          onPointerDown={(event) => {
             setRollReasonAt(ply);
+            throwing.buttonProps.onPointerDown(event);
           }}
           onBlur={() => {
             setRollReasonAt(null);
@@ -616,6 +649,8 @@ export function LudoBoard({
             ROLL_BUTTON[toMove],
             // A lip below (decorative) that gives way when pressed.
             "shadow-(--ludo-roll-shadow) active:translate-y-0.5 active:shadow-none",
+            "touch-none select-none [-webkit-touch-callout:none]",
+            throwing.phase === THROW_PHASE.Hold && "translate-y-0.5 shadow-none",
           )}
         >
           {t("roll")}
@@ -634,10 +669,20 @@ export function LudoBoard({
             {rollReason}
           </p>
         )}
+        <ThrowOverlay
+          phase={throwing.phase}
+          stage={throwing.stage}
+          colour={toMove}
+          holdStartedAt={throwing.holdStartedAt}
+          result={throwing.result}
+          topFace={throwing.topFace}
+          restAt={throwing.restAt}
+          fading={throwing.fading}
+        />
       </div>
 
       {/* What the roll means, and the roll before: one block, with no room kept while both are
-          empty (the die row and the choices sit close then). */}
+          empty. */}
       <div className="flex flex-col items-center gap-2 lg:items-start short-landscape:items-start">
         {/* Not a status: the play screen's turn line is the one status of the page. Live only for
             a roll made here; the others are told by that status line. */}
@@ -656,65 +701,8 @@ export function LudoBoard({
           </Badge>
         )}
       </div>
-
-      {choices.length > 0 && (
-        <div
-          role="group"
-          aria-label={t("chooseHorse")}
-          className="grid gap-2 lg:grid-cols-2 short-landscape:grid-cols-2"
-        >
-          {choices.map((choice, index) => (
-            <Button
-              key={choice.horse}
-              ref={index === 0 ? firstChoiceRef : undefined}
-              variant="secondary"
-              data-ludo-choice=""
-              // A long label (other languages, a kick) wraps instead of overflowing the button.
-              className={cn(
-                "h-auto min-h-11 justify-start px-3 py-2 text-left text-small",
-                PIECE_LINE_BORDER[toMove],
-              )}
-              onClick={() => {
-                choose(choice.move);
-              }}
-              onFocus={() => {
-                setPreview(choice.horse);
-              }}
-              onBlur={() => {
-                setPreview(null);
-              }}
-              onMouseEnter={() => {
-                setPreview(choice.horse);
-              }}
-              onMouseLeave={() => {
-                setPreview(null);
-              }}
-            >
-              <SymbolIcon colour={toMove} />
-              {choice.label}
-            </Button>
-          ))}
-        </div>
-      )}
     </div>
   );
 
   return layout({ board, controls });
-}
-
-/** The square a previewed choice goes to: a thick dashed frame of ink. */
-function ChoiceTarget({ at }: { at: Point }) {
-  return (
-    <rect
-      data-target=""
-      x={at.x - 0.45}
-      y={at.y - 0.45}
-      width="0.9"
-      height="0.9"
-      fill="none"
-      strokeWidth="0.1"
-      strokeDasharray="0.2 0.1"
-      className="stroke-game-highlight"
-    />
-  );
 }

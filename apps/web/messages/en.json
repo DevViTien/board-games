@@ -90,8 +90,13 @@
       "die": "Die: {face} ({player})",
       "dieReady": "Die: {player} to roll",
       "lastRoll": "Last turn: {player} rolled {face}",
+      "throw": {
+        "tip": "Hold to build up · let go to roll",
+        "again": "Roll again",
+        "lost": "Turn lost"
+      },
       "hint": {
-        "choose": "{player} rolled {face}. Choose a horse to move.",
+        "choose": "{player} rolled {face}. Choose one of the marked horses to move.",
         "rolled": "{player} rolled {face}.",
         "lost": "{player} rolled {face}. No horse can move; turn lost.",
         "noMoveAgain": "{player} rolled 6. No horse can move; roll again.",
