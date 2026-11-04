@@ -199,7 +199,7 @@ Với cờ vua, lựa chọn "Đấu với máy" bị ẩn trong giai đoạn đ
 | Offline | PWA (Serwist cho Next.js) | Cài như app |
 | Online | **WebSocket trên Vercel Functions** (`upgradeWebSocket` của `@vercel/functions`, thư viện `ws`) | Server kiểm tra nước đi bằng engine luật dùng chung |
 | Trạng thái online | **Upstash Redis**, gói miễn phí (qua Vercel Marketplace): lưu phòng + pub/sub giữa các instance | Function không giữ state lâu dài; xem 6.3 |
-| Hẹn giờ phía server | Upstash QStash (tin nhắn hẹn giờ) hoặc Vercel Cron | Xử thua khi bỏ ván / hết giờ mà không cần tiến trình chạy liên tục |
+| Hẹn giờ phía server | **Không dùng** (chốt 04/11/2026, M8): thời điểm bắt đầu lượt lưu cùng phòng trong Redis, server kiểm khi người chơi yêu cầu xử bỏ ván | Không thêm dịch vụ; đồng hồ cho mỗi bên (v1) sẽ xét lại |
 | Test | Vitest (luật), Playwright (luồng online 2 trình duyệt) | |
 
 Không cần cơ sở dữ liệu quan hệ: không có tài khoản, dữ liệu online (phòng, lịch sử ván của nhóm) đều nằm gọn trong Redis.
@@ -267,7 +267,7 @@ Những điểm riêng do chạy trên Vercel Functions:
 - **Function không có trạng thái**: mọi thứ về phòng nằm trong Redis, không giữ trong bộ nhớ function.
 - **Hai người có thể nối vào hai instance khác nhau** → mỗi phòng có một kênh pub/sub trên Redis để các instance chuyển nước đi cho nhau.
 - **Kết nối WebSocket bị giới hạn thời gian** (bài thử nghiệm ghi nhận bị ngắt sau khoảng 5 phút) trong khi một ván cờ vua/cá ngựa dài hơn thế → client **tự kết nối lại ngầm** và tải các nước đi còn thiếu. Người chơi chỉ thấy chấm trạng thái chớp nhẹ, không mất ván.
-- **Không có tiến trình chạy nền** để đếm giờ → lưu thời điểm hết hạn trong Redis, kiểm tra mỗi khi có thông điệp; với ván bị bỏ thì đặt một tin nhắn hẹn giờ QStash để xử lý.
+- **Không có tiến trình chạy nền** để đếm giờ → lưu thời điểm bắt đầu lượt cùng phòng trong Redis (`turnStartedAt`) và kiểm khi có thông điệp: người còn lại bấm "Xử thắng" / "Cho máy chơi thay" sau 5 phút, server xét bằng đồng hồ của nó. Không dùng QStash hay Vercel Cron (chốt 04/11/2026, M8).
 - **Phương án dự phòng**: tính năng WebSocket của Vercel còn mới (đã GA; thử nghiệm M3 cho thấy dùng được, xem plan.md §10). Nếu giới hạn gây khó, chuyển phần realtime sang dịch vụ chuyên có gói miễn phí (Ably, Pusher) hoặc một server Node nhỏ riêng; nhờ có `Transport` nên phần còn lại không phải sửa.
 
 ### 6.4 Cấu trúc thư mục dự kiến (monorepo pnpm + Turborepo)
@@ -345,3 +345,6 @@ Vì `Board` là component React nên nằm ở `apps/web`, còn `GameDefinition`
 | 10 | Ngôn ngữ | **Tiếng Việt (mặc định), tiếng Anh, tiếng Nhật**, có ngay từ đầu |
 | 11 | Ván dở | **Lưu theo game × chế độ chơi** (cùng máy / với máy): ván cùng máy và ván với máy của cùng một game không đè lên nhau |
 | 12 | Thứ tự mốc | **M2 (AI) trước M3** (thử nghiệm online trên Vercel) |
+| 13 | Bỏ ván online | **5 phút** cho mọi game: người còn lại bấm nút (không hẹn giờ phía server); phòng 2 ghế → kết thúc ván (người kia thắng), phòng Cờ cá ngựa từ 3 ghế → máy chơi thay tới hết ván, ghế trả lại ở "Chơi lại" (04/11/2026, change `add-resign-and-abandon`) |
+| 14 | Đầu hàng | **Online và khi đấu với máy**, có hộp thoại xác nhận; cùng máy dùng "Ván mới". Cùng quy tắc với bỏ ván: phòng 2 ghế kết thúc ván, phòng Cờ cá ngựa từ 3 ghế cho máy chơi thay (04/11/2026) |
+| 15 | Giấy phép mã nguồn | **Không có giấy phép** (giữ mọi quyền, không có file `LICENSE`); phần mềm và hình của bên thứ ba giữ giấy phép riêng, liệt kê ở `apps/web/public/third-party-licenses.txt` (chốt 04/11/2026, `polish-accessibility-and-mobile`) |

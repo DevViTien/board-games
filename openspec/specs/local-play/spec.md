@@ -240,12 +240,12 @@ Ván cùng máy đang dở do bản trước của app lưu SHALL tiếp tục �
 
 ### Requirement: Tuỳ chọn luật của ván
 
-Ván SHALL chơi theo tuỳ chọn luật chọn lúc bắt đầu. "Ván mới" SHALL giữ tuỳ chọn của ván đang chơi; tải lại trang SHALL khôi phục cả tuỳ chọn. Mở thẳng màn hình chơi khi chưa có ván SHALL dùng tuỳ chọn nhớ gần nhất của game (capability `game-setup`). Đường dẫn bắt đầu ván mang tuỳ chọn không hợp lệ SHALL bị bỏ qua như đường dẫn có giá trị sai khác. Với game có tuỳ chọn, màn hình chơi SHALL ghi tuỳ chọn cạnh tên game.
+Ván SHALL chơi theo tuỳ chọn luật chọn lúc bắt đầu. "Ván mới" SHALL giữ tuỳ chọn của ván đang chơi; tải lại trang SHALL khôi phục cả tuỳ chọn. Mở thẳng màn hình chơi khi chưa có ván SHALL dùng tuỳ chọn nhớ gần nhất của game (capability `game-setup`). Đường dẫn bắt đầu ván mang tuỳ chọn không hợp lệ SHALL bị bỏ qua như đường dẫn có giá trị sai khác. Với game có tuỳ chọn, màn hình chơi SHALL ghi tuỳ chọn ở đầu phần nội dung, ngoài thanh trên cùng.
 
 #### Scenario: Màn hình chơi ghi luật
 
 - **WHEN** người chơi bắt đầu một ván Cờ caro cùng máy 19×19 luật "tự do"
-- **THEN** màn hình chơi ghi "19×19 · Tự do" cạnh tên game
+- **THEN** màn hình chơi ghi "19×19 · Tự do" ở đầu phần nội dung, không nằm trên thanh trên cùng
 
 #### Scenario: Ván mới giữ tuỳ chọn
 
@@ -367,3 +367,12 @@ Khi nút "Hoàn tác" hoặc "Làm lại" hiện mà không bấm được, nút
 
 - **WHEN** người chơi vừa gieo xúc xắc trong ván Cờ cá ngựa cùng máy và bấm "Hoàn tác"
 - **THEN** không có gì được hoàn tác và màn hình nói không hoàn tác được lần gieo xúc xắc
+
+### Requirement: Không đầu hàng khi chơi cùng máy
+
+Màn hình chơi cùng máy MUST NOT có nút "Đầu hàng": mọi người chơi ở cùng thiết bị, và "Ván mới" là cách bỏ ván đang chơi.
+
+#### Scenario: Ván cùng máy
+
+- **WHEN** hai người đang chơi dở một ván Cờ vua cùng máy
+- **THEN** màn hình không có nút "Đầu hàng" và vẫn có nút "Ván mới"
