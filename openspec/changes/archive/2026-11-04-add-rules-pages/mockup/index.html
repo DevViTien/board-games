@@ -1,0 +1,1223 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mockup: trang luật chơi</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* Token values copied from packages/ui/src/styles.css and games/<id>/theme.css (04/11/2026). */
+      :root {
+        --bg: #f6f5f1;
+        --surface: #ffffff;
+        --surface-muted: #efede6;
+        --fg: #17182b;
+        --fg-muted: #5e6072;
+        --border: #e2e0d8;
+        --border-control: #7c7a72;
+        --accent: #5b34e6;
+        --accent-fg: #ffffff;
+        --accent-press: #3a1fa8;
+        --accent-soft: #ece7ff;
+        --accent-ink: #3a1fa8;
+        --success-ink: #0d6b4b;
+        --danger-ink: #a42a21;
+        --overlay: rgb(40 42 60 / 0.4);
+        --caro-page: #f6f5f1;
+        --caro-tint: #eaf1fa;
+        --caro-board: #fdfdf8;
+        --caro-line: #6e93c0;
+        --caro-x: #1f3fa8;
+        --caro-o: #c42b2b;
+        --ludo-page: #fbf4e4;
+        --ludo-board: #fffdf7;
+        --ludo-line: #8a7e66;
+        --piece-red: #c8372d;
+        --piece-blue: #2c4a8c;
+        --piece-yellow: #d99a12;
+        --piece-green: #287a4c;
+        --piece-ink: #fffdf7;
+        --piece-edge: #5a2a10;
+      }
+      .dark {
+        --bg: #121322;
+        --surface: #1b1c30;
+        --surface-muted: #24253b;
+        --fg: #f1f0f7;
+        --fg-muted: #a9aabf;
+        --border: #2c2e47;
+        --border-control: #8a8cab;
+        --accent: #a894ff;
+        --accent-fg: #121322;
+        --accent-press: #6f5bd6;
+        --accent-soft: #2d2752;
+        --accent-ink: #d9d0ff;
+        --success-ink: #7fe3bd;
+        --danger-ink: #ffb3aa;
+        --overlay: rgb(0 0 0 / 0.6);
+        --caro-page: #121322;
+        --caro-tint: #18213a;
+        --caro-board: #161a2e;
+        --caro-line: #5d6fa3;
+        --caro-x: #8fb0ff;
+        --caro-o: #ff8e8e;
+        --ludo-page: #1f1a12;
+        --ludo-board: #2a241a;
+        --ludo-line: #8f8268;
+        --piece-red: #e0574b;
+        --piece-blue: #4f9ad6;
+        --piece-yellow: #e8b13a;
+        --piece-green: #4fb47e;
+        --piece-ink: #1f1a12;
+        --piece-edge: #fbf4e4;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: "Be Vietnam Pro", system-ui, sans-serif;
+        background: #d9d6cc;
+        color: #17182b;
+      }
+      .doc {
+        padding: 24px 16px 8px;
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+      .doc h1 {
+        font-size: 1.6rem;
+        margin: 0 0 6px;
+      }
+      .doc p {
+        margin: 4px 0;
+        max-width: 75ch;
+        line-height: 1.5;
+      }
+      .toolbar {
+        display: flex;
+        gap: 8px;
+        margin: 12px 0;
+      }
+      .toolbar button {
+        font: inherit;
+        padding: 8px 14px;
+        border-radius: 10px;
+        border: 1px solid #7c7a72;
+        background: #fff;
+        cursor: pointer;
+      }
+      .toolbar button[aria-pressed="true"] {
+        background: #17182b;
+        color: #fff;
+      }
+      .grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 28px;
+        padding: 16px;
+        max-width: 1400px;
+        margin: 0 auto;
+        align-items: flex-start;
+      }
+      figure.frame {
+        margin: 0;
+      }
+      figure.frame > figcaption {
+        font-size: 0.9rem;
+        margin-bottom: 8px;
+        max-width: 390px;
+        line-height: 1.4;
+      }
+      .screen {
+        background: var(--page);
+        color: var(--fg);
+        border-radius: 28px;
+        overflow: hidden;
+        box-shadow: 0 6px 24px rgb(0 0 0 / 0.18);
+        position: relative;
+      }
+      .phone {
+        width: 390px;
+      }
+      .desktop {
+        width: 1280px;
+        border-radius: 14px;
+      }
+      .caro {
+        --page: var(--caro-page);
+      }
+      .ludo {
+        --page: var(--ludo-page);
+      }
+      .topbar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 16px;
+        border-bottom: 1px solid var(--border);
+        min-height: 64px;
+      }
+      .back {
+        font-weight: 600;
+        padding: 8px 10px;
+      }
+      .icon-btn {
+        margin-left: auto;
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        border: 2px solid var(--border-control);
+        background: var(--surface);
+      }
+      .page {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        max-width: 68ch;
+      }
+      .desktop .page {
+        max-width: 1040px;
+        margin: 0 auto;
+        padding: 32px 40px;
+      }
+      .hero {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+      }
+      .art {
+        width: 72px;
+        height: 72px;
+        border-radius: 14px;
+        background: var(--caro-tint);
+        flex: none;
+        display: grid;
+        place-items: center;
+        font-weight: 700;
+        font-size: 1.6rem;
+        color: var(--caro-x);
+      }
+      .ludo .art {
+        background: var(--ludo-board);
+        color: var(--piece-red);
+      }
+      h2.page-title {
+        margin: 0;
+        font-size: 1.7rem;
+        line-height: 1.2;
+      }
+      .meta {
+        color: var(--fg-muted);
+        margin-top: 4px;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font: inherit;
+        font-weight: 600;
+        min-height: 44px;
+        padding: 0 18px;
+        border-radius: 12px;
+        border: 2px solid var(--accent);
+        background: var(--accent);
+        color: var(--accent-fg);
+        box-shadow: 0 2px 0 var(--accent-press);
+        align-self: flex-start;
+      }
+      section h3 {
+        font-size: 1.2rem;
+        margin: 0 0 6px;
+      }
+      section p,
+      section li {
+        line-height: 1.6;
+        margin: 0;
+      }
+      section ul {
+        padding-left: 1.2em;
+        margin: 0;
+      }
+      .desktop section {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 360px;
+        gap: 32px;
+        align-items: start;
+      }
+      figure.rule {
+        margin: 10px 0 0;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 12px;
+        max-width: 360px;
+      }
+      .desktop figure.rule {
+        margin: 0;
+      }
+      figure.rule figcaption {
+        font-size: 0.88rem;
+        color: var(--fg-muted);
+        margin-top: 8px;
+        line-height: 1.45;
+      }
+      figure.rule svg {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+      .ok {
+        color: var(--success-ink);
+        font-weight: 700;
+      }
+      .no {
+        color: var(--danger-ink);
+        font-weight: 700;
+      }
+      .scrim {
+        position: absolute;
+        inset: 0;
+        background: var(--overlay);
+        display: grid;
+        place-items: stretch;
+      }
+      .dialog {
+        background: var(--surface);
+        color: var(--fg);
+        margin: 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .dialog header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 12px 12px 16px;
+        border-bottom: 1px solid var(--border);
+      }
+      .dialog header h3 {
+        margin: 0;
+        font-size: 1.2rem;
+      }
+      .dialog .body {
+        padding: 16px;
+        overflow: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .badge {
+        display: inline-block;
+        background: var(--accent-soft);
+        color: var(--accent-ink);
+        font-weight: 600;
+        font-size: 0.85rem;
+        padding: 2px 10px;
+        border-radius: 999px;
+        align-self: flex-start;
+      }
+      .link {
+        color: var(--accent-ink);
+        text-decoration: underline;
+        font-weight: 600;
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 14px;
+      }
+      .menu-links {
+        display: flex;
+        gap: 8px;
+      }
+      .menu-links .secondary {
+        background: var(--surface);
+        color: var(--fg);
+        border-color: var(--border-control);
+        box-shadow: none;
+      }
+      .new {
+        outline: 3px dashed var(--accent);
+        outline-offset: 3px;
+        border-radius: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="doc">
+      <h1>Trang luật chơi — mockup để duyệt</h1>
+      <p>
+        Change <code>add-rules-pages</code> (M8). Trang luật Cờ caro (điện thoại, máy tính), một
+        phần trang Cờ cá ngựa (điện thoại), hộp thoại luật trên màn hình chơi, và liên kết trên thẻ
+        menu (viền đứt nét tím = chỗ mới). Hình là bản nháp của hình thật; hình Cờ cá ngựa thật vẽ
+        từ hình học của bàn hiện có (56 ô).
+      </p>
+      <div class="toolbar" role="group" aria-label="Giao diện">
+        <button type="button" data-theme="light" aria-pressed="true">Sáng</button>
+        <button type="button" data-theme="dark" aria-pressed="false">Tối</button>
+      </div>
+    </div>
+
+    <main class="grid" id="frames">
+      <figure class="frame">
+        <figcaption>
+          <strong>A. /rules/caro, điện thoại 390 px.</strong> Một cột; hình dưới đoạn chữ, chú thích
+          ghi rõ thắng/không thắng.
+        </figcaption>
+        <div class="screen phone caro">
+          <div class="topbar"><span class="back">← Về menu</span></div>
+          <div class="page">
+            <div class="hero">
+              <div class="art" aria-hidden="true">X O</div>
+              <div>
+                <h2 class="page-title">Luật chơi Cờ caro</h2>
+                <div class="meta">2 người · ~10 phút</div>
+              </div>
+            </div>
+            <span class="btn">Chơi Cờ caro</span>
+            <section>
+              <div>
+                <h3>Mục tiêu</h3>
+                <p>
+                  Hai người lần lượt đánh X và O trên bàn ô vuông. Ai có
+                  <b>5 quân liền nhau</b> trước là thắng; với luật "chặn hai đầu", chuỗi đó không
+                  được bị quân đối thủ chặn cả hai đầu.
+                </p>
+              </div>
+            </section>
+            <section>
+              <div>
+                <h3>Bàn và lượt đi</h3>
+                <p>
+                  Bàn 15×15 hoặc 19×19, chọn ở màn hình bắt đầu ván. X đi trước; mỗi lượt đánh một
+                  quân vào một ô trống.
+                </p>
+              </div>
+            </section>
+            <section>
+              <div>
+                <h3>Luật "tự do"</h3>
+                <p>
+                  Từ 5 quân liền trở lên theo hàng ngang, cột dọc hay đường chéo là thắng, dù hai
+                  đầu có gì.
+                </p>
+              </div>
+              <figure class="rule">
+                <svg data-fig="five" viewBox="0 0 210 150" role="img" aria-labelledby="t-five">
+                  <title id="t-five">Năm quân X liền nhau theo đường chéo: X thắng</title>
+                </svg>
+                <figcaption>
+                  Năm X liền nhau theo đường chéo: <span class="ok">X thắng</span>.
+                </figcaption>
+              </figure>
+            </section>
+            <section>
+              <div>
+                <h3>Luật "chặn hai đầu"</h3>
+                <p>
+                  Như luật tự do, trừ khi <b>cả hai</b> ô ngay ngoài hai đầu chuỗi là quân O. Mép
+                  bàn không tính là chặn. Chuỗi dài hơn 5 thắng theo cùng điều kiện.
+                </p>
+              </div>
+              <figure class="rule">
+                <svg
+                  data-fig="blocked"
+                  viewBox="0 0 210 104"
+                  role="img"
+                  aria-labelledby="t-blocked"
+                >
+                  <title id="t-blocked">
+                    Hàng trên: năm X bị hai quân O chặn hai đầu, không thắng. Hàng dưới: năm X bị
+                    chặn một đầu, X thắng
+                  </title>
+                </svg>
+                <figcaption>
+                  Trên: bị chặn hai đầu — <span class="no">không thắng</span>. Dưới: chỉ chặn một
+                  đầu — <span class="ok">thắng</span>.
+                </figcaption>
+              </figure>
+              <figure class="rule">
+                <svg data-fig="edge" viewBox="0 0 210 56" role="img" aria-labelledby="t-edge">
+                  <title id="t-edge">
+                    Năm X chạm mép bàn, đầu kia là O: X thắng vì mép bàn không chặn
+                  </title>
+                </svg>
+                <figcaption>
+                  Chạm mép bàn, đầu kia là O: <span class="ok">thắng</span> — mép bàn không chặn.
+                </figcaption>
+              </figure>
+            </section>
+            <section>
+              <div>
+                <h3>Hoà</h3>
+                <p>Bàn đầy mà không ai thắng thì hoà.</p>
+              </div>
+            </section>
+            <span class="btn">Chơi Cờ caro</span>
+          </div>
+        </div>
+      </figure>
+
+      <figure class="frame">
+        <figcaption>
+          <strong>B. /rules/ludo, điện thoại (một phần).</strong> Ba hình: đường đi + chuồng đích,
+          gieo 1, lên chuồng.
+        </figcaption>
+        <div class="screen phone ludo">
+          <div class="topbar"><span class="back">← Về menu</span></div>
+          <div class="page">
+            <div class="hero">
+              <div class="art" aria-hidden="true">●■</div>
+              <div>
+                <h2 class="page-title">Luật chơi Cờ cá ngựa</h2>
+                <div class="meta">2–4 người · ~20 phút</div>
+              </div>
+            </div>
+            <section>
+              <div>
+                <h3>Mục tiêu</h3>
+                <p>
+                  Người đầu tiên đưa đủ <b>4 ngựa lên bậc 3, 4, 5 và 6</b> của chuồng đích là thắng.
+                </p>
+              </div>
+            </section>
+            <section>
+              <div>
+                <h3>Bàn và đường đi</h3>
+                <p>
+                  Mỗi người một màu và một ký hiệu (● ■ ▲ ◆). Ngựa ra ở ô xuất phát của màu mình, đi
+                  một vòng theo chiều mũi tên tới chân chuồng, rồi lên chuồng đích 6 bậc.
+                </p>
+              </div>
+              <figure class="rule">
+                <svg data-fig="path" viewBox="0 0 240 240" role="img" aria-labelledby="t-path">
+                  <title id="t-path">
+                    Bàn chữ thập: ngựa Đỏ ra ở ô xuất phát, đi một vòng theo chiều kim đồng hồ tới
+                    chân chuồng, rồi lên chuồng đích từ bậc 1 tới bậc 6
+                  </title>
+                </svg>
+                <figcaption>
+                  Đường chung 56 ô (vẽ từ bàn thật): ô xuất phát của Đỏ (★), chiều đi (›), chân
+                  chuồng (⌂) và chuồng đích bậc 1–6.
+                </figcaption>
+              </figure>
+            </section>
+            <section>
+              <div>
+                <h3>Gieo 1: nhảy tới chân chuồng</h3>
+                <p>
+                  Gieo 1, ngựa trên đường chung nhảy tới <b>chân chuồng gần nhất phía trước</b> (của
+                  bất kỳ màu nào) nếu mọi ô ở giữa trống. Nhảy được thì <b>bắt buộc</b> nhảy, và
+                  ngựa đối thủ đứng ở chân chuồng đó bị đá. Không nhảy được thì đi 1 ô.
+                </p>
+              </div>
+              <figure class="rule">
+                <svg data-fig="jump" viewBox="0 0 240 110" role="img" aria-labelledby="t-jump">
+                  <title id="t-jump">
+                    Hàng trên: ngựa Đỏ gieo 1, đường trống, nhảy tới chân chuồng kế tiếp và đá ngựa
+                    Vàng đứng ở đó. Hàng dưới: có ngựa Xanh dương chắn ở giữa, ngựa Đỏ chỉ đi 1 ô
+                  </title>
+                </svg>
+                <figcaption>
+                  Trên: đường trống — <span class="ok">nhảy tới ⌂ và đá ngựa Vàng</span>. Dưới: có
+                  ngựa chắn — chỉ đi 1 ô.
+                </figcaption>
+              </figure>
+            </section>
+            <section>
+              <div>
+                <h3>Lên chuồng</h3>
+                <p>
+                  Ở chân chuồng gieo k thì lên thẳng bậc k nếu các bậc 1…k trống. Ở bậc n chỉ lên
+                  bậc n + 1 khi gieo đúng n + 1. Trong chuồng không vượt và không bị đá.
+                </p>
+              </div>
+              <figure class="rule">
+                <svg data-fig="home" viewBox="0 0 240 90" role="img" aria-labelledby="t-home">
+                  <title id="t-home">
+                    Chuồng đích 6 bậc: từ chân chuồng gieo 4 lên thẳng bậc 4; từ bậc 4 cần gieo đúng
+                    5 để lên bậc 5
+                  </title>
+                </svg>
+                <figcaption>
+                  Gieo 4 từ chân chuồng: lên bậc 4. Từ bậc 4: cần gieo đúng 5.
+                </figcaption>
+              </figure>
+            </section>
+            <section>
+              <div>
+                <h3>Ra quân</h3>
+                <p>
+                  Chỉ ra được khi gieo <b>6</b>, tới ô xuất phát (★). Ô xuất phát đang có ngựa mình
+                  thì không ra được; có ngựa đối thủ thì ngựa đó bị đá về chuồng.
+                </p>
+              </div>
+            </section>
+            <section>
+              <div>
+                <h3>Chơi online: đầu hàng và bỏ ván</h3>
+                <p>
+                  Bấm "Đầu hàng" để chịu thua (có hỏi lại). Người đến lượt mà 5 phút không đi thì
+                  người khác có thể xử. Phòng 3–4 người: <b>máy chơi thay</b> người đó tới hết ván,
+                  họ chơi lại từ ván sau. Phòng 2 người: ván kết thúc, người kia thắng.
+                </p>
+              </div>
+            </section>
+          </div>
+        </div>
+      </figure>
+
+      <figure class="frame">
+        <figcaption>
+          <strong>C. Hộp thoại luật trên màn hình chơi (điện thoại).</strong> Nút sách ở thanh trên
+          (44 × 44, tên "Luật chơi"); toàn màn hình dưới 640 px; dòng "Ván này"; không có liên kết
+          rời màn hình chơi; đóng thì đọc lại dòng lượt.
+        </figcaption>
+        <div class="screen phone caro" style="height: 844px">
+          <div class="topbar">
+            <span class="back">← Về menu</span><strong style="font-size: 1.3rem">Cờ caro</strong>
+            <span class="icon-btn new" aria-label="Luật chơi">📖</span>
+          </div>
+          <div class="scrim">
+            <div class="dialog new">
+              <header>
+                <h3>Luật chơi Cờ caro</h3>
+                <span class="icon-btn" aria-label="Đóng">✕</span>
+              </header>
+              <div class="body">
+                <span class="badge">Ván này: 19×19 · Tự do</span>
+                <section>
+                  <div>
+                    <h3 style="font-size: 1.05rem">Mục tiêu</h3>
+                    <p>Hai người lần lượt đánh X và O. Ai có 5 quân liền nhau trước là thắng.</p>
+                  </div>
+                </section>
+                <section>
+                  <div>
+                    <h3 style="font-size: 1.05rem">Luật "tự do"</h3>
+                    <p>Từ 5 quân liền trở lên theo ngang, dọc hay chéo là thắng.</p>
+                  </div>
+                  <figure class="rule">
+                    <svg
+                      data-fig="five"
+                      viewBox="0 0 210 150"
+                      role="img"
+                      aria-label="Năm quân X liền nhau theo đường chéo: X thắng"
+                    ></svg>
+                    <figcaption>Năm X liền nhau: <span class="ok">X thắng</span>.</figcaption>
+                  </figure>
+                </section>
+                <section>
+                  <div>
+                    <h3 style="font-size: 1.05rem">Luật "chặn hai đầu"</h3>
+                    <p>…</p>
+                  </div>
+                </section>
+              </div>
+            </div>
+          </div>
+        </div>
+      </figure>
+
+      <figure class="frame">
+        <figcaption>
+          <strong>D. Thẻ menu với liên kết "Luật chơi"</strong> (đã chốt: chữ nhỏ dưới hai nút; tên
+          game ẩn cho trình đọc màn hình nên mỗi liên kết có tên riêng).
+        </figcaption>
+        <div class="screen phone caro" style="padding: 16px; border-radius: 20px">
+          <div class="card">
+            <div style="display: flex; gap: 12px; align-items: center">
+              <div class="art" aria-hidden="true">X O</div>
+              <div>
+                <strong style="font-size: 1.2rem">Cờ caro</strong>
+                <div class="meta">2 người · ~10 phút</div>
+              </div>
+            </div>
+            <div class="menu-links" style="margin-top: 12px">
+              <span class="btn" style="flex: 1">Chơi</span><span class="btn secondary">Online</span>
+            </div>
+            <div style="margin-top: 10px; text-align: center">
+              <span class="link new"
+                >Luật chơi<span
+                  style="
+                    position: absolute;
+                    width: 1px;
+                    height: 1px;
+                    overflow: hidden;
+                    clip: rect(0 0 0 0);
+                  "
+                >
+                  Cờ caro</span
+                ></span
+              >
+              <div class="note" style="font-size: 0.75rem; color: var(--fg-muted); margin-top: 4px">
+                Tên đọc được: "Luật chơi Cờ caro"
+              </div>
+            </div>
+          </div>
+        </div>
+      </figure>
+
+      <figure class="frame">
+        <figcaption>
+          <strong>E. /rules/caro, máy tính 1280 px.</strong> Cột chữ ≤ 68 ký tự, hình đặt cạnh đoạn
+          (lưới hai cột từ 1024 px).
+        </figcaption>
+        <div class="screen desktop caro">
+          <div class="topbar" style="padding: 10px 40px"><span class="back">← Về menu</span></div>
+          <div class="page">
+            <div class="hero">
+              <div class="art" aria-hidden="true">X O</div>
+              <div>
+                <h2 class="page-title">Luật chơi Cờ caro</h2>
+                <div class="meta">2 người · ~10 phút</div>
+              </div>
+              <span class="btn" style="margin-left: auto; align-self: center">Chơi Cờ caro</span>
+            </div>
+            <section>
+              <div>
+                <h3>Luật "tự do"</h3>
+                <p>
+                  Từ 5 quân liền trở lên theo hàng ngang, cột dọc hay đường chéo là thắng, dù hai
+                  đầu có gì.
+                </p>
+              </div>
+              <figure class="rule">
+                <svg
+                  data-fig="five"
+                  viewBox="0 0 210 150"
+                  role="img"
+                  aria-label="Năm quân X liền nhau theo đường chéo: X thắng"
+                ></svg>
+                <figcaption>
+                  Năm X liền nhau theo đường chéo: <span class="ok">X thắng</span>.
+                </figcaption>
+              </figure>
+            </section>
+            <section>
+              <div>
+                <h3>Luật "chặn hai đầu"</h3>
+                <p>
+                  Như luật tự do, trừ khi <b>cả hai</b> ô ngay ngoài hai đầu chuỗi là quân O. Mép
+                  bàn không tính là chặn. Chuỗi dài hơn 5 thắng theo cùng điều kiện.
+                </p>
+              </div>
+              <figure class="rule">
+                <svg
+                  data-fig="blocked"
+                  viewBox="0 0 210 104"
+                  role="img"
+                  aria-label="Chuỗi bị chặn hai đầu không thắng; chuỗi bị chặn một đầu thắng"
+                ></svg>
+                <figcaption>
+                  Trên: bị chặn hai đầu — <span class="no">không thắng</span>. Dưới: chỉ chặn một
+                  đầu — <span class="ok">thắng</span>.
+                </figcaption>
+              </figure>
+            </section>
+          </div>
+        </div>
+      </figure>
+    </main>
+
+    <script>
+      const NS = "http://www.w3.org/2000/svg";
+      const el = (name, attrs, text) => {
+        const node = document.createElementNS(NS, name);
+        for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value);
+        if (text !== undefined) node.textContent = text;
+        return node;
+      };
+      // A strip of notebook cells; marks: "x", "o", "" (empty), "|" (board edge before the cell).
+      function caroRow(svg, y, marks, size = 28, x0 = 7) {
+        marks.forEach((mark, i) => {
+          const x = x0 + i * size;
+          svg.append(
+            el("rect", {
+              x,
+              y,
+              width: size,
+              height: size,
+              fill: "var(--caro-board)",
+              stroke: "var(--caro-line)",
+            }),
+          );
+          if (mark === "x") {
+            svg.append(
+              el("path", {
+                d: `M${x + 7} ${y + 7}L${x + size - 7} ${y + size - 7}M${x + size - 7} ${y + 7}L${x + 7} ${y + size - 7}`,
+                stroke: "var(--caro-x)",
+                "stroke-width": 3,
+                "stroke-linecap": "round",
+              }),
+            );
+          }
+          if (mark === "o") {
+            svg.append(
+              el("circle", {
+                cx: x + size / 2,
+                cy: y + size / 2,
+                r: size / 2 - 7,
+                fill: "none",
+                stroke: "var(--caro-o)",
+                "stroke-width": 3,
+              }),
+            );
+          }
+        });
+      }
+      const figures = {
+        five(svg) {
+          const n = 7,
+            s = 20;
+          for (let r = 0; r < n; r += 1)
+            for (let c = 0; c < 10; c += 1) {
+              const x = 5 + c * s,
+                y = 5 + r * s;
+              svg.append(
+                el("rect", {
+                  x,
+                  y,
+                  width: s,
+                  height: s,
+                  fill: "var(--caro-board)",
+                  stroke: "var(--caro-line)",
+                }),
+              );
+            }
+          for (let k = 0; k < 5; k += 1) {
+            const x = 5 + (2 + k) * s,
+              y = 5 + (1 + k) * s;
+            svg.append(
+              el("path", {
+                d: `M${x + 5} ${y + 5}L${x + 15} ${y + 15}M${x + 15} ${y + 5}L${x + 5} ${y + 15}`,
+                stroke: "var(--caro-x)",
+                "stroke-width": 2.6,
+                "stroke-linecap": "round",
+              }),
+            );
+          }
+          [
+            [1, 4],
+            [3, 6],
+            [5, 3],
+          ].forEach(([c, r]) =>
+            svg.append(
+              el("circle", {
+                cx: 5 + c * s + 10,
+                cy: 5 + r * s + 10,
+                r: 6,
+                fill: "none",
+                stroke: "var(--caro-o)",
+                "stroke-width": 2.6,
+              }),
+            ),
+          );
+          svg.append(
+            el("path", {
+              d: `M${5 + 2 * s + 2} ${5 + s + 2}L${5 + 7 * s - 2} ${5 + 6 * s - 2}`,
+              stroke: "var(--caro-x)",
+              "stroke-width": 3,
+              opacity: 0.55,
+              "stroke-linecap": "round",
+            }),
+          );
+        },
+        blocked(svg) {
+          caroRow(svg, 8, ["o", "x", "x", "x", "x", "x", "o"]);
+          caroRow(svg, 64, ["o", "x", "x", "x", "x", "x", ""]);
+          svg.append(
+            el("path", {
+              d: "M42 92L174 92",
+              stroke: "var(--caro-x)",
+              "stroke-width": 3,
+              "stroke-linecap": "round",
+              opacity: 0.6,
+            }),
+          );
+        },
+        edge(svg) {
+          caroRow(svg, 14, ["x", "x", "x", "x", "x", "o"], 28, 14);
+          svg.append(el("rect", { x: 4, y: 6, width: 8, height: 44, fill: "var(--fg)" }));
+          svg.append(
+            el("path", {
+              d: "M24 28L150 28",
+              stroke: "var(--caro-x)",
+              "stroke-width": 3,
+              opacity: 0.6,
+              "stroke-linecap": "round",
+            }),
+          );
+        },
+        path(svg) {
+          // Same geometry as apps/web/src/games/ludo/board-layout.ts: 15×15 grid, Red's 14-cell
+          // segment turned a quarter turn per colour, 56 track cells; Red's gate is track 55.
+          const s = 16;
+          const RED_SEGMENT = [
+            [0, 8],
+            [1, 8],
+            [2, 8],
+            [3, 8],
+            [4, 8],
+            [5, 8],
+            [5, 9],
+            [6, 9],
+            [6, 10],
+            [6, 11],
+            [6, 12],
+            [6, 13],
+            [6, 14],
+            [7, 14],
+          ];
+          const rotate = ([r, c], times) => {
+            let p = [r, c];
+            for (let t = 0; t < times; t += 1) p = [p[1], 14 - p[0]];
+            return p;
+          };
+          const track = Array.from({ length: 56 }, (_, n) =>
+            rotate(RED_SEGMENT[n % 14], Math.floor(n / 14)),
+          );
+          const rect = (r, c, fill) =>
+            svg.append(
+              el("rect", {
+                x: c * s,
+                y: r * s,
+                width: s,
+                height: s,
+                fill,
+                stroke: "var(--ludo-line)",
+              }),
+            );
+          svg.append(
+            el("rect", {
+              x: 0,
+              y: 0,
+              width: 240,
+              height: 240,
+              rx: 10,
+              fill: "var(--ludo-board)",
+              stroke: "var(--fg)",
+              "stroke-width": 2,
+            }),
+          );
+          // Stables in the corners (Red top right, Blue bottom right, Yellow bottom left, Green top left).
+          [
+            ["var(--piece-red)", 0, 9],
+            ["var(--piece-blue)", 9, 9],
+            ["var(--piece-yellow)", 9, 0],
+            ["var(--piece-green)", 0, 0],
+          ].forEach(([fill, r, c]) =>
+            svg.append(
+              el("rect", {
+                x: c * s + 3,
+                y: r * s + 3,
+                width: 6 * s - 6,
+                height: 6 * s - 6,
+                rx: 10,
+                fill,
+              }),
+            ),
+          );
+          track.forEach(([r, c]) => rect(r, c, "var(--ludo-board)"));
+          // Red's home column: steps 1–6 below its gate [0, 7].
+          for (let k = 1; k <= 6; k += 1) {
+            rect(k, 7, "var(--piece-red)");
+            svg.append(
+              el(
+                "text",
+                {
+                  x: 7 * s + 8,
+                  y: k * s + 12,
+                  "text-anchor": "middle",
+                  "font-size": 9,
+                  "font-weight": 700,
+                  fill: "var(--piece-ink)",
+                },
+                String(k),
+              ),
+            );
+          }
+          const mark = ([r, c], text) =>
+            svg.append(
+              el(
+                "text",
+                {
+                  x: c * s + 8,
+                  y: r * s + 12,
+                  "text-anchor": "middle",
+                  "font-size": 11,
+                  fill: "var(--fg)",
+                },
+                text,
+              ),
+            );
+          mark(track[0], "★");
+          mark(track[55], "⌂");
+          // Small chevrons on track cells only, pointing to the next cell: the way round.
+          for (const n of [3, 10, 17, 24, 31, 38, 45, 52]) {
+            const [r, c] = track[n];
+            const [r2, c2] = track[n + 1];
+            const angle = (Math.atan2(r2 - r, c2 - c) * 180) / Math.PI;
+            const g = el("g", {
+              transform: `translate(${c * s + 8} ${r * s + 8}) rotate(${angle})`,
+            });
+            g.append(
+              el("path", {
+                d: "M-3 -4L3 0L-3 4",
+                fill: "none",
+                stroke: "var(--fg)",
+                "stroke-width": 1.6,
+                "stroke-linecap": "round",
+              }),
+            );
+            svg.append(g);
+          }
+          // A red horse a few cells after its start.
+          const [hr, hc] = track[3];
+          svg.append(
+            el("circle", {
+              cx: hc * s + 8,
+              cy: hr * s + 8,
+              r: 6,
+              fill: "var(--piece-red)",
+              stroke: "var(--piece-edge)",
+              "stroke-width": 1.5,
+            }),
+          );
+          svg.append(
+            el("circle", { cx: hc * s + 8, cy: hr * s + 8, r: 2, fill: "var(--piece-ink)" }),
+          );
+        },
+        jump(svg) {
+          const s = 26;
+          const row = (y, blocker) => {
+            for (let i = 0; i < 8; i += 1)
+              svg.append(
+                el("rect", {
+                  x: 8 + i * s,
+                  y,
+                  width: s,
+                  height: s,
+                  fill: "var(--ludo-board)",
+                  stroke: "var(--ludo-line)",
+                }),
+              );
+            svg.append(
+              el(
+                "text",
+                {
+                  x: 8 + 7 * s + 13,
+                  y: y + 18,
+                  "text-anchor": "middle",
+                  "font-size": 14,
+                  fill: "var(--fg)",
+                },
+                "⌂",
+              ),
+            );
+            svg.append(
+              el("circle", {
+                cx: 8 + 13,
+                cy: y + 13,
+                r: 8,
+                fill: "var(--piece-red)",
+                stroke: "var(--piece-edge)",
+                "stroke-width": 1.5,
+              }),
+            );
+            svg.append(el("circle", { cx: 8 + 13, cy: y + 13, r: 2.6, fill: "var(--piece-ink)" }));
+            if (blocker) {
+              svg.append(
+                el("circle", {
+                  cx: 8 + 4 * s + 13,
+                  cy: y + 13,
+                  r: 8,
+                  fill: "var(--piece-blue)",
+                  stroke: "var(--piece-edge)",
+                  "stroke-width": 1.5,
+                }),
+              );
+              svg.append(
+                el("rect", {
+                  x: 8 + 4 * s + 10,
+                  y: y + 10,
+                  width: 6,
+                  height: 6,
+                  fill: "var(--piece-ink)",
+                }),
+              );
+              svg.append(
+                el("path", {
+                  d: `M${8 + 20} ${y - 2} Q ${8 + s + 6} ${y - 14} ${8 + s + 12} ${y - 2}`,
+                  fill: "none",
+                  stroke: "var(--fg)",
+                  "stroke-width": 2,
+                  "marker-end": "url(#arrow2)",
+                }),
+              );
+            } else {
+              svg.append(
+                el("path", {
+                  d: `M${8 + 20} ${y - 2} Q ${8 + 4 * s} ${y - 22} ${8 + 7 * s + 8} ${y - 2}`,
+                  fill: "none",
+                  stroke: "var(--fg)",
+                  "stroke-width": 2,
+                  "marker-end": "url(#arrow2)",
+                }),
+              );
+            }
+          };
+          const defs = el("defs", {});
+          const marker = el("marker", {
+            id: "arrow2",
+            viewBox: "0 0 10 10",
+            refX: 8,
+            refY: 5,
+            markerWidth: 6,
+            markerHeight: 6,
+            orient: "auto-start-reverse",
+          });
+          marker.append(el("path", { d: "M0 0L10 5L0 10z", fill: "var(--fg)" }));
+          defs.append(marker);
+          svg.append(defs);
+          row(22, false);
+          svg.append(
+            el("circle", {
+              cx: 8 + 7 * 26 + 13,
+              cy: 22 + 13,
+              r: 8,
+              fill: "var(--piece-yellow)",
+              stroke: "var(--piece-edge)",
+              "stroke-width": 1.5,
+            }),
+          );
+          svg.append(
+            el("path", {
+              d: `M${8 + 7 * 26 + 9} ${22 + 17}L${8 + 7 * 26 + 13} ${22 + 9}L${8 + 7 * 26 + 17} ${22 + 17}z`,
+              fill: "var(--piece-ink)",
+            }),
+          );
+          row(76, true);
+        },
+        home(svg) {
+          const s = 30;
+          svg.append(
+            el("rect", {
+              x: 8,
+              y: 30,
+              width: s,
+              height: s,
+              fill: "var(--ludo-board)",
+              stroke: "var(--ludo-line)",
+            }),
+          );
+          svg.append(
+            el(
+              "text",
+              { x: 23, y: 25, "text-anchor": "middle", "font-size": 13, fill: "var(--fg)" },
+              "⌂",
+            ),
+          );
+          svg.append(
+            el("circle", {
+              cx: 23,
+              cy: 45,
+              r: 9,
+              fill: "var(--piece-red)",
+              stroke: "var(--piece-edge)",
+              "stroke-width": 1.5,
+            }),
+          );
+          for (let k = 1; k <= 6; k += 1) {
+            const x = 8 + k * s + 6;
+            svg.append(
+              el("rect", {
+                x,
+                y: 30,
+                width: s,
+                height: s,
+                fill: "var(--piece-red)",
+                opacity: 0.85,
+                stroke: "var(--ludo-line)",
+              }),
+            );
+            svg.append(
+              el(
+                "text",
+                {
+                  x: x + s / 2,
+                  y: 80,
+                  "text-anchor": "middle",
+                  "font-size": 11,
+                  "font-weight": 700,
+                  fill: "var(--fg)",
+                },
+                String(k),
+              ),
+            );
+          }
+          svg.append(
+            el("path", {
+              d: `M30 28 Q ${8 + 2.5 * s} 2 ${8 + 4 * s + 18} 26`,
+              fill: "none",
+              stroke: "var(--fg)",
+              "stroke-width": 2,
+              "marker-end": "url(#arrow3)",
+            }),
+          );
+          svg.append(
+            el(
+              "text",
+              {
+                x: 8 + 2.5 * s,
+                y: 12,
+                "text-anchor": "middle",
+                "font-size": 11,
+                fill: "var(--fg)",
+              },
+              "4",
+            ),
+          );
+          const defs = el("defs", {});
+          const marker = el("marker", {
+            id: "arrow3",
+            viewBox: "0 0 10 10",
+            refX: 8,
+            refY: 5,
+            markerWidth: 6,
+            markerHeight: 6,
+            orient: "auto-start-reverse",
+          });
+          marker.append(el("path", { d: "M0 0L10 5L0 10z", fill: "var(--fg)" }));
+          defs.append(marker);
+          svg.append(defs);
+        },
+      };
+      for (const svg of document.querySelectorAll("svg[data-fig]")) figures[svg.dataset.fig](svg);
+
+      const frames = document.getElementById("frames");
+      for (const button of document.querySelectorAll("[data-theme]")) {
+        button.addEventListener("click", () => {
+          frames.classList.toggle("dark", button.dataset.theme === "dark");
+          for (const other of document.querySelectorAll("[data-theme]")) {
+            other.setAttribute("aria-pressed", String(other === button));
+          }
+        });
+      }
+      if (matchMedia("(prefers-color-scheme: dark)").matches) {
+        document.querySelector('[data-theme="dark"]').click();
+      }
+    </script>
+  </body>
+</html>

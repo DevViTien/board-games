@@ -1,0 +1,963 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mockup: đầu hàng và bỏ ván</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* Token values copied from packages/ui/src/styles.css and games/<id>/theme.css (04/11/2026). */
+      :root {
+        color-scheme: light;
+        --bg: #f6f5f1;
+        --surface: #ffffff;
+        --surface-muted: #efede6;
+        --fg: #17182b;
+        --fg-muted: #5e6072;
+        --border: #e2e0d8;
+        --border-control: #7c7a72;
+        --accent: #5b34e6;
+        --accent-fg: #ffffff;
+        --accent-press: #3a1fa8;
+        --accent-soft: #ece7ff;
+        --accent-ink: #3a1fa8;
+        --success: #138a62;
+        --success-soft: #dff5ec;
+        --success-ink: #0d6b4b;
+        --warning-soft: #fff1d6;
+        --warning-ink: #9a5500;
+        --celebration-soft: #ffe9db;
+        --celebration-ink: #a6430c;
+        --overlay: rgb(40 42 60 / 0.4);
+        --piece-red: #c8372d;
+        --piece-blue: #2c4a8c;
+        --piece-yellow: #d99a12;
+        --piece-green: #287a4c;
+        --chess-page: #f2f1ea;
+        --chess-light: #ebecd0;
+        --chess-dark: #739552;
+        --ludo-page: #fbf4e4;
+      }
+      .dark {
+        color-scheme: dark;
+        --bg: #121322;
+        --surface: #1b1c30;
+        --surface-muted: #24253b;
+        --fg: #f1f0f7;
+        --fg-muted: #a9aabf;
+        --border: #2c2e47;
+        --border-control: #8a8cab;
+        --accent: #a894ff;
+        --accent-fg: #121322;
+        --accent-press: #6f5bd6;
+        --accent-soft: #2d2752;
+        --accent-ink: #d9d0ff;
+        --success: #4cd3a0;
+        --success-soft: #173a30;
+        --success-ink: #7fe3bd;
+        --warning-soft: #3a2e17;
+        --warning-ink: #ffd08a;
+        --celebration-soft: #3a2a1e;
+        --celebration-ink: #ffb98c;
+        --overlay: rgb(0 0 0 / 0.6);
+        --piece-red: #e0574b;
+        --piece-blue: #4f9ad6;
+        --piece-yellow: #e8b13a;
+        --piece-green: #4fb47e;
+        --chess-page: #141711;
+        --chess-light: #c9cba9;
+        --chess-dark: #5b7a3f;
+        --ludo-page: #1f1a12;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: "Be Vietnam Pro", system-ui, sans-serif;
+        background: #d9d6cc;
+        color: #17182b;
+      }
+      header.doc {
+        padding: 24px 16px 8px;
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+      header.doc h1 {
+        font-size: 1.6rem;
+        margin: 0 0 6px;
+      }
+      header.doc p {
+        margin: 4px 0;
+        max-width: 75ch;
+        line-height: 1.5;
+      }
+      .toolbar {
+        display: flex;
+        gap: 8px;
+        margin: 12px 0;
+      }
+      .toolbar button {
+        font: inherit;
+        padding: 8px 14px;
+        border-radius: 10px;
+        border: 1px solid #7c7a72;
+        background: #fff;
+        cursor: pointer;
+      }
+      .toolbar button[aria-pressed="true"] {
+        background: #17182b;
+        color: #fff;
+      }
+      .grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 28px;
+        padding: 16px;
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+      figure.frame {
+        margin: 0;
+      }
+      figure.frame figcaption {
+        font-size: 0.9rem;
+        margin-bottom: 8px;
+        max-width: 390px;
+        line-height: 1.4;
+      }
+      .phone {
+        width: 390px;
+        min-height: 844px;
+        background: var(--page, var(--bg));
+        color: var(--fg);
+        border-radius: 28px;
+        overflow: hidden;
+        position: relative;
+        box-shadow: 0 6px 24px rgb(0 0 0 / 0.18);
+      }
+      .phone.chess {
+        --page: var(--chess-page);
+      }
+      .phone.ludo {
+        --page: var(--ludo-page);
+      }
+      .topbar {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 16px;
+        border-bottom: 1px solid var(--border);
+        min-height: 64px;
+      }
+      .back {
+        font-weight: 600;
+        padding: 8px 10px;
+        border-radius: 10px;
+      }
+      .title {
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+      }
+      .title h2 {
+        margin: 0;
+        font-size: 1.35rem;
+      }
+      .badge {
+        display: inline-block;
+        background: var(--accent-soft);
+        color: var(--accent-ink);
+        font-weight: 600;
+        font-size: 0.8rem;
+        padding: 2px 10px;
+        border-radius: 999px;
+      }
+      .content {
+        padding: 12px 16px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .status {
+        text-align: center;
+      }
+      .status .line {
+        font-size: 1.25rem;
+        font-weight: 700;
+        text-wrap: balance;
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 14px 16px;
+        text-align: center;
+      }
+      .card.over {
+        border-color: var(--border-control);
+      }
+      .card.won {
+        background: var(--celebration-soft);
+        border-color: var(--celebration-ink);
+      }
+      .chip {
+        display: inline-block;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: var(--fg);
+        color: var(--bg);
+        margin-bottom: 6px;
+      }
+      .chip.win {
+        background: var(--celebration-ink);
+        color: var(--surface);
+      }
+      .detail {
+        color: var(--fg-muted);
+        font-size: 0.95rem;
+        margin-top: 4px;
+      }
+      .new {
+        outline: 3px dashed var(--accent);
+        outline-offset: 3px;
+        border-radius: 12px;
+      }
+      .wait {
+        margin-top: 8px;
+        font-size: 0.9rem;
+        color: var(--fg-muted);
+        line-height: 1.45;
+      }
+      .wait .clock {
+        font-variant-numeric: tabular-nums;
+        font-weight: 600;
+        color: var(--fg);
+      }
+      .warn {
+        background: var(--warning-soft);
+        color: var(--warning-ink);
+        border-radius: 12px;
+        padding: 8px 12px;
+        font-size: 0.9rem;
+        margin-top: 8px;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font: inherit;
+        font-weight: 600;
+        min-height: 44px;
+        padding: 0 18px;
+        border-radius: 12px;
+        border: 2px solid var(--accent);
+        background: var(--accent);
+        color: var(--accent-fg);
+        box-shadow: 0 2px 0 var(--accent-press);
+      }
+      .btn.secondary {
+        background: var(--surface);
+        color: var(--fg);
+        border: 2px solid var(--border-control);
+        box-shadow: none;
+      }
+      .btn.muted {
+        background: var(--surface-muted);
+        color: var(--fg-muted);
+        border: 2px dashed var(--border-control);
+        box-shadow: none;
+      }
+      .btn svg {
+        width: 18px;
+        height: 18px;
+      }
+      .buttons {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+      }
+      .seat {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 6px 12px;
+        min-height: 44px;
+      }
+      .seat.turn {
+        border: 2px solid var(--fg);
+      }
+      .seat .mark {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        font-size: 1.1rem;
+        background: var(--surface-muted);
+        border: 1px solid var(--border-control);
+      }
+      .seat .who {
+        font-weight: 600;
+        line-height: 1.2;
+      }
+      .seat .sub {
+        font-size: 0.82rem;
+        color: var(--fg-muted);
+      }
+      .seat .tag {
+        margin-left: auto;
+        font-size: 0.75rem;
+        font-weight: 700;
+        border-radius: 999px;
+        padding: 2px 8px;
+        background: var(--fg);
+        color: var(--bg);
+      }
+      .seat .tag.ok {
+        background: var(--success-soft);
+        color: var(--success-ink);
+      }
+      .board {
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        aspect-ratio: 1;
+        border: 3px solid #3f5a2c;
+      }
+      .board div {
+        display: grid;
+        place-items: center;
+        font-size: 30px;
+        line-height: 1;
+        color: #1e1e1e;
+      }
+      .board .l {
+        background: var(--chess-light);
+      }
+      .board .d {
+        background: var(--chess-dark);
+      }
+      .ludo-board {
+        aspect-ratio: 1;
+        border-radius: 14px;
+        border: 3px solid var(--fg);
+        display: grid;
+        grid-template-columns: 1fr 0.6fr 1fr;
+        grid-template-rows: 1fr 0.6fr 1fr;
+        overflow: hidden;
+      }
+      .ludo-board > div {
+        display: grid;
+        place-items: center;
+        font-size: 0.8rem;
+        color: var(--fg-muted);
+      }
+      .panels {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+      }
+      .scrim {
+        position: absolute;
+        inset: 0;
+        background: var(--overlay);
+        display: grid;
+        place-items: center;
+        padding: 16px;
+      }
+      .dialog {
+        background: var(--surface);
+        color: var(--fg);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 24px;
+        max-width: 24rem;
+        width: 100%;
+        box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+      }
+      .dialog h3 {
+        margin: 0;
+        font-size: 1.2rem;
+      }
+      .dialog p {
+        color: var(--fg-muted);
+        margin: 8px 0 0;
+        line-height: 1.5;
+      }
+      .dialog .buttons {
+        justify-content: flex-end;
+        margin-top: 24px;
+      }
+      .focus {
+        outline: 3px solid var(--fg);
+        outline-offset: 2px;
+        box-shadow: 0 0 0 6px var(--surface);
+      }
+      .note {
+        font-size: 0.78rem;
+        color: var(--fg-muted);
+        text-align: center;
+      }
+      .desktop {
+        width: 1280px;
+        height: 800px;
+        background: var(--chess-page);
+        color: var(--fg);
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 6px 24px rgb(0 0 0 / 0.18);
+      }
+      .desktop .layout {
+        display: grid;
+        grid-template-columns: 600px 24rem;
+        gap: 40px;
+        justify-content: center;
+        align-items: center;
+        padding: 24px 40px;
+        height: calc(100% - 64px);
+      }
+      .desktop .col {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="doc">
+      <h1>Đầu hàng và bỏ ván — mockup để duyệt</h1>
+      <p>
+        Change <code>add-resign-and-abandon</code> (M8). Chỉ phần <strong>mới</strong> được vẽ kỹ
+        (viền đứt nét tím đánh dấu chỗ mới); bàn cờ là hình giữ chỗ (quân thật là bộ "staunty", bàn
+        Cờ cá ngựa là bàn chữ thập hiện có). Chữ là bản tiếng Việt gốc.
+      </p>
+      <p>
+        Cần duyệt: vị trí và kiểu nút "Đầu hàng" (nút phụ, cuối hàng nút), câu trong hộp thoại, dòng
+        "chưa đi · m:ss" (từ phút 1), nút xử bỏ ván (từ phút 5), lời nhắc cho người đến lượt (từ
+        phút 4), ghế "Máy chơi thay", dòng giải thích kết quả.
+      </p>
+      <div class="toolbar" role="group" aria-label="Giao diện">
+        <button type="button" data-theme="light" aria-pressed="true">Sáng</button>
+        <button type="button" data-theme="dark" aria-pressed="false">Tối</button>
+      </div>
+    </header>
+
+    <main class="grid" id="frames">
+      <!-- A -->
+      <figure class="frame">
+        <figcaption>
+          <strong>A. Online Cờ vua, chờ Minh 2:13.</strong> Dòng chờ nằm trong thẻ lượt nhưng ngoài
+          vùng đọc tự động; "Đầu hàng" là nút phụ duy nhất trong lúc chơi online.
+        </figcaption>
+        <div class="phone chess">
+          <div class="topbar">
+            <span class="back">← Về menu</span>
+            <div class="title">
+              <h2>Cờ vua</h2>
+              <span class="badge">Online</span>
+            </div>
+          </div>
+          <div class="content">
+            <div class="card status">
+              <div class="line">Đang chờ Minh…</div>
+              <div class="wait new">
+                <span class="clock">Minh chưa đi · 2:13</span><br />Sau 5 phút, bạn có thể xử thắng.
+              </div>
+            </div>
+            <div class="seat turn">
+              <span class="mark">♚</span>
+              <span
+                ><span class="who">Minh</span><br /><span class="sub">Đen · Chơi từ xa</span></span
+              >
+              <span class="tag">Đến lượt</span>
+            </div>
+            <div class="board" data-board="chess"></div>
+            <div class="seat">
+              <span class="mark">♔</span>
+              <span><span class="who">Bạn</span><br /><span class="sub">Trắng</span></span>
+              <span class="tag ok">● Đã kết nối</span>
+            </div>
+            <div class="buttons">
+              <span class="btn secondary new"
+                ><svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 8 2a6 6 0 0 0 4-1.5V14a6 6 0 0 1-4 1.5c-3 0-5-2-8-2a6 6 0 0 0-4 1.5"
+                  /></svg
+                >Đầu hàng</span
+              >
+            </div>
+          </div>
+        </div>
+      </figure>
+
+      <!-- B -->
+      <figure class="frame">
+        <figcaption>
+          <strong>B. Đủ 5 phút.</strong> Dòng lượt đổi một lần (được đọc), nút "Xử thắng" là nút
+          chính trong thẻ lượt. Cờ cá ngựa: "Cho máy chơi thay".
+        </figcaption>
+        <div class="phone chess">
+          <div class="topbar">
+            <span class="back">← Về menu</span>
+            <div class="title">
+              <h2>Cờ vua</h2>
+              <span class="badge">Online</span>
+            </div>
+          </div>
+          <div class="content">
+            <div class="card status">
+              <div class="line">Minh đã 5 phút chưa đi. Bạn có thể xử thắng.</div>
+              <div class="wait"><span class="clock">Minh chưa đi · 5:04</span></div>
+              <div style="margin-top: 10px"><span class="btn new">Xử thắng</span></div>
+            </div>
+            <div class="seat turn">
+              <span class="mark">♚</span>
+              <span
+                ><span class="who">Minh</span><br /><span class="sub">Đen · Chơi từ xa</span></span
+              >
+              <span class="tag">Đến lượt</span>
+            </div>
+            <div class="board" data-board="chess"></div>
+            <div class="seat">
+              <span class="mark">♔</span>
+              <span><span class="who">Bạn</span><br /><span class="sub">Trắng</span></span>
+              <span class="tag ok">● Đã kết nối</span>
+            </div>
+            <div class="buttons"><span class="btn secondary">⚑ Đầu hàng</span></div>
+          </div>
+        </div>
+      </figure>
+
+      <!-- C -->
+      <figure class="frame">
+        <figcaption>
+          <strong>C. Xác nhận xử bỏ ván.</strong> <code>ConfirmDialog</code> có sẵn; "Chờ thêm" có
+          tiêu điểm trước.
+        </figcaption>
+        <div class="phone chess">
+          <div class="topbar">
+            <span class="back">← Về menu</span>
+            <div class="title">
+              <h2>Cờ vua</h2>
+              <span class="badge">Online</span>
+            </div>
+          </div>
+          <div class="content">
+            <div class="card status"><div class="line">Minh đã 5 phút chưa đi.</div></div>
+            <div class="board" data-board="chess"></div>
+          </div>
+          <div class="scrim">
+            <div class="dialog new" role="presentation">
+              <h3>Xử Minh thua vì bỏ ván?</h3>
+              <p>Minh đã không đi 5 phút. Bạn sẽ thắng ván này; sau đó cả phòng có thể chơi lại.</p>
+              <div class="buttons">
+                <span class="btn secondary focus">Chờ thêm</span><span class="btn">Xử thắng</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </figure>
+
+      <!-- D -->
+      <figure class="frame">
+        <figcaption>
+          <strong>D. Kết quả bỏ ván.</strong> Câu kết quả như mọi lần thắng; dòng giải thích mới.
+          Màn hình của Minh: "Minh thắng" ↔ "Bạn bỏ ván: quá 5 phút không đi."
+        </figcaption>
+        <div class="phone chess">
+          <div class="topbar">
+            <span class="back">← Về menu</span>
+            <div class="title">
+              <h2>Cờ vua</h2>
+              <span class="badge">Online</span>
+            </div>
+          </div>
+          <div class="content">
+            <div class="card status won">
+              <span class="chip win">Thắng</span>
+              <div class="line">Bạn thắng!</div>
+              <div class="detail new">Minh bỏ ván: quá 5 phút không đi.</div>
+              <div style="margin-top: 10px"><span class="btn">Chơi lại</span></div>
+            </div>
+            <div class="seat">
+              <span class="mark">♚</span>
+              <span
+                ><span class="who">Minh</span><br /><span class="sub">Đen · Chơi từ xa</span></span
+              >
+            </div>
+            <div class="board" data-board="chess"></div>
+            <div class="seat">
+              <span class="mark">♔</span>
+              <span><span class="who">Bạn</span><br /><span class="sub">Trắng</span></span>
+              <span class="tag">Thắng</span>
+            </div>
+          </div>
+        </div>
+      </figure>
+
+      <!-- E -->
+      <figure class="frame">
+        <figcaption>
+          <strong>E. Hỏi trước khi đầu hàng (online, hai người).</strong> Cờ cá ngựa: "Máy sẽ chơi
+          thay bạn tới hết ván. Bạn vẫn ở trong phòng để xem và chơi ván sau."
+        </figcaption>
+        <div class="phone chess">
+          <div class="topbar">
+            <span class="back">← Về menu</span>
+            <div class="title">
+              <h2>Cờ vua</h2>
+              <span class="badge">Online</span>
+            </div>
+          </div>
+          <div class="content">
+            <div class="card status"><div class="line">Đến lượt bạn (Trắng)</div></div>
+            <div class="board" data-board="chess"></div>
+          </div>
+          <div class="scrim">
+            <div class="dialog new" role="presentation">
+              <h3>Đầu hàng ván này?</h3>
+              <p>Minh sẽ thắng ván này. Sau đó cả phòng có thể chơi lại.</p>
+              <div class="buttons">
+                <span class="btn secondary focus">Chơi tiếp</span><span class="btn">Đầu hàng</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </figure>
+
+      <!-- F -->
+      <figure class="frame">
+        <figcaption>
+          <strong>F. Lời nhắc cho người đến lượt (từ phút 4).</strong> Một dòng nền vàng nhạt (token
+          <code>warning-soft</code>/<code>warning-ink</code>), đọc một lần khi hiện.
+        </figcaption>
+        <div class="phone chess">
+          <div class="topbar">
+            <span class="back">← Về menu</span>
+            <div class="title">
+              <h2>Cờ vua</h2>
+              <span class="badge">Online</span>
+            </div>
+          </div>
+          <div class="content">
+            <div class="card status">
+              <div class="line">Đến lượt bạn (Trắng)</div>
+              <div class="warn new">
+                Còn
+                <span class="clock" style="font-variant-numeric: tabular-nums; font-weight: 700"
+                  >0:42</span
+                >. Quá 5 phút, Minh có thể xử thắng.
+              </div>
+            </div>
+            <div class="seat">
+              <span class="mark">♚</span>
+              <span
+                ><span class="who">Minh</span><br /><span class="sub">Đen · Chơi từ xa</span></span
+              >
+            </div>
+            <div class="board" data-board="chess"></div>
+            <div class="seat turn">
+              <span class="mark">♔</span>
+              <span><span class="who">Bạn</span><br /><span class="sub">Trắng</span></span>
+              <span class="tag">Đến lượt</span>
+            </div>
+            <div class="buttons"><span class="btn secondary">⚑ Đầu hàng</span></div>
+          </div>
+        </div>
+      </figure>
+
+      <!-- G -->
+      <figure class="frame">
+        <figcaption>
+          <strong>G. Online Cờ cá ngựa, máy chơi thay Minh.</strong> Ghế giữ tên người, dòng phụ
+          "Máy chơi thay"; nước của ghế đó báo "Máy (thay Minh) …". "Đầu hàng" ở hàng nút của khung,
+          tách khỏi "Gieo xúc xắc" và lựa chọn ngựa (sửa theo review).
+        </figcaption>
+        <div class="phone ludo">
+          <div class="topbar">
+            <span class="back">← Về menu</span>
+            <div class="title">
+              <h2>Cờ cá ngựa</h2>
+              <span class="badge">Online</span>
+            </div>
+          </div>
+          <div class="content">
+            <div class="card status">
+              <div class="line new">Máy (thay Minh) gieo được 3, mất lượt. Đến lượt bạn (Đỏ)</div>
+            </div>
+            <div class="panels">
+              <div class="seat turn">
+                <span class="mark" style="background: var(--piece-red); color: #fff">●</span>
+                <span
+                  ><span class="who">Bạn · Đỏ</span><br /><span class="sub">Đến lượt</span></span
+                >
+              </div>
+              <div class="seat new">
+                <span class="mark" style="background: var(--piece-blue); color: #fff">■</span>
+                <span
+                  ><span class="who">Minh · Xanh dương</span><br /><span class="sub"
+                    >Máy chơi thay</span
+                  ></span
+                >
+              </div>
+              <div class="seat">
+                <span class="mark" style="background: var(--piece-yellow)">▲</span>
+                <span
+                  ><span class="who">Lan · Vàng</span><br /><span class="sub"
+                    >Chơi từ xa</span
+                  ></span
+                >
+              </div>
+            </div>
+            <div class="ludo-board">
+              <div style="background: var(--piece-green)"></div>
+              <div></div>
+              <div style="background: var(--piece-red)"></div>
+              <div></div>
+              <div>bàn hiện có</div>
+              <div></div>
+              <div style="background: var(--piece-yellow)"></div>
+              <div></div>
+              <div style="background: var(--piece-blue)"></div>
+            </div>
+            <div class="buttons"><span class="btn">Gieo xúc xắc</span></div>
+            <div class="note">(lựa chọn ngựa sau khi gieo, như hiện có)</div>
+            <div
+              class="buttons new"
+              style="margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--border)"
+            >
+              <span class="btn secondary">⚑ Đầu hàng</span>
+            </div>
+          </div>
+        </div>
+      </figure>
+
+      <!-- K -->
+      <figure class="frame">
+        <figcaption>
+          <strong>K. Máy chơi thay Lan về đích trước (màn hình của Lan).</strong> "Máy (thay Lan)
+          thắng!", không ăn mừng; nút "Chơi lại" trả ghế cho Lan ở ván sau.
+        </figcaption>
+        <div class="phone ludo">
+          <div class="topbar">
+            <span class="back">← Về menu</span>
+            <div class="title">
+              <h2>Cờ cá ngựa</h2>
+              <span class="badge">Online</span>
+            </div>
+          </div>
+          <div class="content">
+            <div class="card status over">
+              <span class="chip">Kết thúc</span>
+              <div class="line new">Máy (thay Lan) thắng!</div>
+              <div class="detail">Đủ 4 ngựa ở bậc 3–6.</div>
+              <div style="margin-top: 10px"><span class="btn">Chơi lại</span></div>
+            </div>
+            <div class="panels">
+              <div class="seat">
+                <span class="mark" style="background: var(--piece-red); color: #fff">●</span>
+                <span
+                  ><span class="who">Bạn · Đỏ</span><br /><span class="sub"
+                    >Máy chơi thay</span
+                  ></span
+                >
+                <span class="tag">Thắng</span>
+              </div>
+              <div class="seat">
+                <span class="mark" style="background: var(--piece-blue); color: #fff">■</span>
+                <span
+                  ><span class="who">Minh · Xanh dương</span><br /><span class="sub"
+                    >Chơi từ xa</span
+                  ></span
+                >
+              </div>
+            </div>
+            <div class="ludo-board">
+              <div style="background: var(--piece-green)"></div>
+              <div></div>
+              <div style="background: var(--piece-red)"></div>
+              <div></div>
+              <div>bàn hiện có</div>
+              <div></div>
+              <div style="background: var(--piece-yellow)"></div>
+              <div></div>
+              <div style="background: var(--piece-blue)"></div>
+            </div>
+          </div>
+        </div>
+      </figure>
+
+      <!-- H -->
+      <figure class="frame">
+        <figcaption>
+          <strong>H. Đấu với máy, Cờ caro.</strong> Bốn nút xuống hai dòng ở 390 px (chấp nhận; gọn
+          lại ở <code>polish-accessibility-and-mobile</code>). Hộp thoại: "Máy sẽ thắng ván này."
+        </figcaption>
+        <div class="phone">
+          <div class="topbar">
+            <span class="back">← Về menu</span>
+            <div class="title">
+              <h2>Cờ caro</h2>
+              <span class="badge">Với máy · Vừa</span>
+            </div>
+          </div>
+          <div class="content">
+            <div class="card status"><div class="line">Đến lượt bạn (X)</div></div>
+            <div
+              style="
+                aspect-ratio: 1;
+                border: 2px solid #6e93c0;
+                background: #fdfdf8;
+                border-radius: 6px;
+              "
+            ></div>
+            <div class="buttons">
+              <span class="btn secondary">Hoàn tác</span><span class="btn muted">Làm lại</span
+              ><span class="btn">Ván mới</span><span class="btn secondary new">⚑ Đầu hàng</span>
+            </div>
+          </div>
+          <div class="scrim" style="align-items: end">
+            <div class="dialog new" role="presentation">
+              <h3>Đầu hàng ván này?</h3>
+              <p>Máy sẽ thắng ván này.</p>
+              <div class="buttons">
+                <span class="btn secondary focus">Chơi tiếp</span><span class="btn">Đầu hàng</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </figure>
+
+      <!-- I -->
+      <figure class="frame">
+        <figcaption>
+          <strong>I. Sau khi đầu hàng máy.</strong> "Máy thắng!" (kể cả ba máy Cờ cá ngựa), dòng
+          giải thích, chỉ còn "Ván mới"; hoàn tác/làm lại không bấm được.
+        </figcaption>
+        <div class="phone">
+          <div class="topbar">
+            <span class="back">← Về menu</span>
+            <div class="title">
+              <h2>Cờ caro</h2>
+              <span class="badge">Với máy · Vừa</span>
+            </div>
+          </div>
+          <div class="content">
+            <div class="card status over">
+              <span class="chip">Kết thúc</span>
+              <div class="line">Máy thắng!</div>
+              <div class="detail new">Bạn đã đầu hàng.</div>
+              <div style="margin-top: 10px"><span class="btn">Ván mới</span></div>
+            </div>
+            <div
+              style="
+                aspect-ratio: 1;
+                border: 2px solid #6e93c0;
+                background: #fdfdf8;
+                border-radius: 6px;
+              "
+            ></div>
+            <div class="buttons">
+              <span class="btn muted">Hoàn tác</span><span class="btn muted">Làm lại</span>
+            </div>
+          </div>
+        </div>
+      </figure>
+
+      <!-- Desktop -->
+      <figure class="frame">
+        <figcaption>
+          <strong>J. Máy tính 1280 × 800, khung B.</strong> Thẻ lượt ở cột phải với dòng chờ và nút
+          xử; "Đầu hàng" ở hàng nút cuối cột.
+        </figcaption>
+        <div class="desktop">
+          <div class="topbar" style="grid-template-columns: 1fr auto 1fr; padding: 10px 40px">
+            <span class="back">← Về menu</span>
+            <div class="title" style="flex-direction: row">
+              <h2>Cờ vua</h2>
+              <span class="badge">Online</span>
+            </div>
+            <span></span>
+          </div>
+          <div class="layout">
+            <div class="col">
+              <div class="seat turn">
+                <span class="mark">♚</span>
+                <span
+                  ><span class="who">Minh</span><br /><span class="sub"
+                    >Đen · Chơi từ xa</span
+                  ></span
+                >
+                <span class="tag">Đến lượt</span>
+              </div>
+              <div class="board" data-board="chess" style="width: 560px"></div>
+              <div class="seat">
+                <span class="mark">♔</span>
+                <span><span class="who">Bạn</span><br /><span class="sub">Trắng</span></span>
+                <span class="tag ok">● Đã kết nối</span>
+              </div>
+            </div>
+            <div class="col">
+              <div class="card status" style="text-align: left">
+                <div class="line">Minh đã 5 phút chưa đi. Bạn có thể xử thắng.</div>
+                <div class="wait"><span class="clock">Minh chưa đi · 5:04</span></div>
+                <div style="margin-top: 10px"><span class="btn new">Xử thắng</span></div>
+              </div>
+              <div class="card" style="text-align: left; color: var(--fg-muted)">
+                Sổ ghi nước đi (hiện có)
+              </div>
+              <div class="buttons" style="justify-content: flex-start">
+                <span class="btn secondary new">⚑ Đầu hàng</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </figure>
+    </main>
+
+    <script>
+      const START = "♜♞♝♛♚♝♞♜♟♟♟♟♟♟♟♟" + " ".repeat(32) + "♙♙♙♙♙♙♙♙♖♘♗♕♔♗♘♖";
+      for (const board of document.querySelectorAll('[data-board="chess"]')) {
+        for (let i = 0; i < 64; i += 1) {
+          const square = document.createElement("div");
+          square.className = (Math.floor(i / 8) + i) % 2 === 0 ? "l" : "d";
+          square.textContent = START[i] === " " ? "" : START[i];
+          board.append(square);
+        }
+      }
+      const frames = document.getElementById("frames");
+      for (const button of document.querySelectorAll("[data-theme]")) {
+        button.addEventListener("click", () => {
+          const dark = button.dataset.theme === "dark";
+          frames.classList.toggle("dark", dark);
+          for (const other of document.querySelectorAll("[data-theme]")) {
+            other.setAttribute("aria-pressed", String(other === button));
+          }
+        });
+      }
+      if (matchMedia("(prefers-color-scheme: dark)").matches) {
+        document.querySelector('[data-theme="dark"]').click();
+      }
+    </script>
+  </body>
+</html>
