@@ -73,7 +73,7 @@ export function ContinueList({
               <Link
                 href={`/play/${game.gameId}/${game.mode}`}
                 // Long with the rules on a phone: it wraps inside the row.
-                className="focus-ring flex min-h-11 items-center justify-between gap-3 rounded-control bg-surface-muted px-3 py-2 text-small font-semibold text-fg transition-colors hover:bg-border"
+                className="focus-ring flex min-h-11 items-center justify-between gap-3 rounded-control bg-surface-muted px-3 py-2 text-small font-semibold text-fg transition-lift hover:bg-border active:bg-border motion-reduce:transition-none"
               >
                 {rules === null
                   ? t("continueItem", item)

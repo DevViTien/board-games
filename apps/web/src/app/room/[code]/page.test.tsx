@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { RoomRoute } from "@/features/room/RoomRoute";
@@ -77,6 +77,9 @@ describe("/room/[code]", () => {
     renderWithIntl(<RoomNotFound />);
 
     expect(screen.getByRole("heading", { name: "Không tìm thấy phòng" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Về menu" })).toHaveAttribute("href", "/");
+    expect(within(screen.getByRole("main")).getByRole("link", { name: "Về menu" })).toHaveAttribute(
+      "href",
+      "/",
+    );
   });
 });

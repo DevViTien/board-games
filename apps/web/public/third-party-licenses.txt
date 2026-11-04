@@ -32,7 +32,8 @@ POSSIBILITY OF SUCH DAMAGE.
 -----------------------------------------------------------------------
 
 "staunty" chess pieces (the Chess board, its promotion picker, seat marks, move
-list, and the menu and setup artwork; /pieces/staunty/*.svg)
+list, the menu and setup artwork, and the figures of the Chess rules page;
+/pieces/staunty/*.svg)
 Author: sadsnake1
 Source: https://github.com/lichess-org/lila/tree/9af5b51f1c7fa4199c7e03273f4b10b8acdc6b1c/public/piece/staunty
 License: Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International

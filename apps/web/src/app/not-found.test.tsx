@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { renderWithIntl } from "@/test/render-with-intl";
@@ -13,6 +13,9 @@ describe("not-found page", () => {
     renderWithIntl(<NotFound />, { locale });
 
     expect(screen.getByRole("heading", { name: title })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: back })).toHaveAttribute("href", "/");
+    expect(within(screen.getByRole("main")).getByRole("link", { name: back })).toHaveAttribute(
+      "href",
+      "/",
+    );
   });
 });

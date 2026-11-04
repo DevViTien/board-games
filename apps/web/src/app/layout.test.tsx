@@ -1,7 +1,11 @@
-import type { ReactElement } from "react";
+import { NextIntlClientProvider } from "next-intl";
+import { Children, isValidElement, type ReactElement, type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import RootLayout from "./layout";
+import { InitialThemeProvider } from "@/features/settings/InitialThemeProvider";
+
+import messages from "../../messages/vi.json";
+import RootLayout, { generateViewport } from "./layout";
 
 const cookie = vi.hoisted(() => ({ value: undefined as string | undefined }));
 
@@ -21,6 +25,7 @@ vi.mock("next/font/google", () => ({
 vi.mock("next-intl/server", () => ({
   getLocale: () => Promise.resolve("vi"),
   getTranslations: () => Promise.resolve(() => ""),
+  getMessages: () => Promise.resolve(messages),
 }));
 
 async function html(): Promise<ReactElement<{ lang: string; "data-theme"?: string }>> {
@@ -28,6 +33,17 @@ async function html(): Promise<ReactElement<{ lang: string; "data-theme"?: strin
     lang: string;
     "data-theme"?: string;
   }>;
+}
+
+/** The first element of `type` in a tree of elements, depth first. */
+function findElement(node: ReactNode, type: unknown): ReactElement | undefined {
+  for (const child of Children.toArray(node)) {
+    if (!isValidElement<{ children?: ReactNode }>(child)) continue;
+    if (child.type === type) return child;
+    const found = findElement(child.props.children, type);
+    if (found !== undefined) return found;
+  }
+  return undefined;
 }
 
 describe("RootLayout", () => {
@@ -59,4 +75,41 @@ describe("RootLayout", () => {
       expect((await html()).props["data-theme"]).toBeUndefined();
     },
   );
+
+  it("sends every message to the browser but the rules", async () => {
+    const provider = findElement(await html(), NextIntlClientProvider) as
+      ReactElement<{ messages: Record<string, unknown> }> | undefined;
+
+    expect(provider?.props.messages).not.toHaveProperty("Rules");
+    expect(provider?.props.messages).toHaveProperty("Play");
+    expect(provider?.props.messages).toHaveProperty("Games");
+  });
+
+  it("gives the browser's bar the picked theme's background, the one chosen too", async () => {
+    cookie.value = "dark";
+    const provider = findElement(await html(), InitialThemeProvider) as
+      ReactElement<{ theme: string }> | undefined;
+
+    expect(provider?.props.theme).toBe("dark");
+    expect((await generateViewport()).themeColor).toBe("#121322");
+  });
+
+  it("gives the browser's bar one background per colour scheme while following the system", async () => {
+    expect((await generateViewport()).themeColor).toEqual([
+      { media: "(prefers-color-scheme: light)", color: "#f6f5f1" },
+      { media: "(prefers-color-scheme: dark)", color: "#121322" },
+    ]);
+  });
+
+  it("Phóng to: draws to the screen's edges and never blocks zooming", async () => {
+    const viewport = await generateViewport();
+
+    expect(viewport).toMatchObject({
+      width: "device-width",
+      initialScale: 1,
+      viewportFit: "cover",
+    });
+    expect(viewport).not.toHaveProperty("maximumScale");
+    expect(viewport).not.toHaveProperty("userScalable");
+  });
 });

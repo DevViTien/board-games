@@ -36,4 +36,22 @@ describe("PlayLinks", () => {
     expect(screen.getByRole("link", { name: "Online" })).toHaveAccessibleDescription("Cờ cá ngựa");
     expect(screen.getByRole("link", { name: "Chơi" })).toHaveAccessibleDescription("Cờ cá ngựa");
   });
+
+  it("Từ menu: a small link opens the game's rules, named with the game", () => {
+    renderLinks();
+
+    expect(screen.getByRole("link", { name: "Luật chơi Cờ cá ngựa" })).toHaveAttribute(
+      "href",
+      "/rules/ludo",
+    );
+  });
+
+  it("names the rules link in each language's own order", () => {
+    renderWithIntl(<PlayLinks gameId="caro" describedBy="game-caro" />, { locale: "ja" });
+
+    expect(screen.getByRole("link", { name: "五目並べのルール" })).toHaveAttribute(
+      "href",
+      "/rules/caro",
+    );
+  });
 });

@@ -1,5 +1,5 @@
 import type * as Games from "@board-games/games";
-import { act, screen } from "@testing-library/react";
+import { act, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -84,7 +84,10 @@ describe("/play/[gameId]/[mode]", () => {
     expect(
       screen.getByRole("heading", { name: "Không tìm thấy trang chơi này" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Về menu" })).toHaveAttribute("href", "/");
+    expect(within(screen.getByRole("main")).getByRole("link", { name: "Về menu" })).toHaveAttribute(
+      "href",
+      "/",
+    );
   });
 
   it("offers to retry, or to go back to the menu, when the game fails to load", async () => {
@@ -96,6 +99,8 @@ describe("/play/[gameId]/[mode]", () => {
     expect(screen.getByRole("heading", { name: "Couldn't load the game" })).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(retry).toHaveBeenCalledOnce();
-    expect(screen.getByRole("link", { name: "Back to menu" })).toHaveAttribute("href", "/");
+    expect(
+      within(screen.getByRole("main")).getByRole("link", { name: "Back to menu" }),
+    ).toHaveAttribute("href", "/");
   });
 });

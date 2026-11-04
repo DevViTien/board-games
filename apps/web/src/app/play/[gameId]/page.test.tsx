@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps } from "react";
 import { describe, expect, it, vi } from "vitest";
@@ -145,7 +145,10 @@ describe("/play/[gameId]", () => {
     renderWithIntl(<GameNotFound />);
 
     expect(screen.getByRole("heading", { name: "Không tìm thấy game" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Về menu" })).toHaveAttribute("href", "/");
+    expect(within(screen.getByRole("main")).getByRole("link", { name: "Về menu" })).toHaveAttribute(
+      "href",
+      "/",
+    );
   });
 
   it("offers to retry, or to go back to the menu, when the screen fails", async () => {
@@ -154,6 +157,9 @@ describe("/play/[gameId]", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Thử lại" }));
     expect(retry).toHaveBeenCalledOnce();
-    expect(screen.getByRole("link", { name: "Về menu" })).toHaveAttribute("href", "/");
+    expect(within(screen.getByRole("main")).getByRole("link", { name: "Về menu" })).toHaveAttribute(
+      "href",
+      "/",
+    );
   });
 });

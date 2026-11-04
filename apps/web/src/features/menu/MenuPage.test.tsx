@@ -63,13 +63,31 @@ describe("MenuPage", () => {
   it("offers the theme and the language in its bar", () => {
     // The page as the server sends it for a player who picked dark.
     document.documentElement.dataset.theme = "dark";
-    renderWithIntl(<MenuPage theme="dark" />);
+    renderWithIntl(<MenuPage />);
 
     const bar = within(screen.getByRole("banner"));
-    expect(bar.getByRole("group", { name: "Giao diện" })).toBeInTheDocument();
-    expect(bar.getByRole("radio", { name: "Tối" })).toBeChecked();
-    expect(bar.getByRole("group", { name: "Ngôn ngữ" })).toBeInTheDocument();
-    expect(bar.getByRole("button", { name: "Tiếng Việt", pressed: true })).toBeInTheDocument();
+    expect(bar.getByRole("button", { name: "Giao diện: Tối" })).toHaveAttribute(
+      "aria-haspopup",
+      "menu",
+    );
+    expect(bar.getByRole("button", { name: "Ngôn ngữ: Tiếng Việt, VI" })).toHaveAttribute(
+      "aria-haspopup",
+      "menu",
+    );
+    // The menu has no way back to itself.
+    expect(bar.queryByRole("link", { name: "Về menu" })).not.toBeInTheDocument();
+  });
+
+  it("lifts a game card pointed at or reached with Tab, without moving it when motion is reduced", () => {
+    renderWithIntl(<MenuPage />);
+
+    const card = screen.getByRole("heading", { name: "Cờ caro" }).closest("li")?.firstElementChild;
+    expect(card).toHaveClass(
+      "motion-safe:hover:-translate-y-0.5",
+      "motion-safe:has-focus-visible:-translate-y-0.5",
+      "hover:shadow-raised",
+      "motion-reduce:transition-none",
+    );
   });
 
   it("Menu có bốn game chơi được: all four games are playable, none coming soon", () => {
@@ -164,14 +182,37 @@ describe("MenuPage", () => {
     expect(gameCard("Cờ vua").getByText("Sắp có")).toBeInTheDocument();
     expect(gameCard("Cờ vua").queryByRole("link")).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("heading", { name: "Cờ vua" }));
-    // Play and Online on the three playable games' cards, and nothing more.
-    expect(within(screen.getByRole("main")).getAllByRole("link")).toHaveLength(6);
+    // Play, Online and the rules on the three playable games' cards, and nothing more.
+    expect(within(screen.getByRole("main")).getAllByRole("link")).toHaveLength(9);
   });
 
-  it("links every game of the real menu: Play and Online on each of the four cards", () => {
+  it("links every game of the real menu: Play, Online and the rules on each of the four cards", () => {
     renderWithIntl(<MenuPage />);
 
-    expect(within(screen.getByRole("main")).getAllByRole("link")).toHaveLength(8);
+    expect(within(screen.getByRole("main")).getAllByRole("link")).toHaveLength(12);
+  });
+
+  it("Tên liên kết không trùng: four links to the rules, each named with its game", () => {
+    renderWithIntl(<MenuPage />);
+
+    const rules = within(screen.getByRole("main")).getAllByRole("link", { name: /^Luật chơi/ });
+    expect(rules.map((link) => link.textContent)).toEqual([
+      "Luật chơi Tic-tac-toe",
+      "Luật chơi Cờ caro",
+      "Luật chơi Cờ cá ngựa",
+      "Luật chơi Cờ vua",
+    ]);
+    expect(new Set(rules.map((link) => link.getAttribute("href")))).toEqual(
+      new Set(["/rules/tictactoe", "/rules/caro", "/rules/ludo", "/rules/chess"]),
+    );
+    for (const [index, name] of [
+      "Luật chơi Tic-tac-toe",
+      "Luật chơi Cờ caro",
+      "Luật chơi Cờ cá ngựa",
+      "Luật chơi Cờ vua",
+    ].entries()) {
+      expect(rules[index]).toHaveAccessibleName(name);
+    }
   });
 
   it("links the third-party licences from its footer, in every language", () => {

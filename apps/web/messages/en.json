@@ -19,7 +19,8 @@
     "heroLead": "On one device, against the computer or with an invite link — no account needed.",
     "online": "Online",
     "joinPlaceholder": "e.g. ABC234",
-    "thirdPartyLicenses": "Third-party licenses"
+    "thirdPartyLicenses": "Third-party licenses",
+    "rulesLink": "Rules <hidden>of {game}</hidden>"
   },
   "Games": {
     "tictactoe": {
@@ -293,7 +294,8 @@
     "creating": "Creating the room…",
     "createFailed": "Couldn't create the room. Check your connection and try again.",
     "createOutdated": "The app has just been updated. Reload the page to create a room with the new version.",
-    "reload": "Reload page"
+    "reload": "Reload page",
+    "rules": "Rules"
   },
   "Play": {
     "board": "Board",
@@ -385,7 +387,69 @@
     "locked": {
       "waiting": "Waiting for {player}",
       "reconnecting": "Waiting for the connection to the server",
-      "sending": "Sending…"
+      "sending": "Sending…",
+      "idle": "Paused: press “Continue” to reconnect"
+    },
+    "resign": "Resign",
+    "confirmResign": {
+      "title": "Resign this game?",
+      "descriptionWin": "{name} will win this game. Then the room can play again.",
+      "descriptionStandIn": "The computer will play for you until the game ends. You stay in the room to watch and play the next game.",
+      "descriptionAi": "The computer will win this game.",
+      "confirm": "Resign",
+      "cancel": "Keep playing"
+    },
+    "abandon": {
+      "waiting": "{name} hasn't moved · {elapsed}",
+      "hintWin": "After 5 minutes, you can claim the win.",
+      "hintStandIn": "After 5 minutes, you can let the computer play for {name}.",
+      "hintEnd": "After 5 minutes, you can end the game.",
+      "warnWin": "{remaining} left. After 5 minutes, the others can claim the win.",
+      "warnStandIn": "{remaining} left. After 5 minutes, the others can let the computer play for you.",
+      "readyWin": "{name} hasn't moved for 5 minutes. You can claim the win.",
+      "readyStandIn": "{name} hasn't moved for 5 minutes. You can let the computer play for them.",
+      "readyEnd": "{name} hasn't moved for 5 minutes. You can end the game.",
+      "turnWarnWin": "In less than a minute, the others can claim the win.",
+      "turnWarnStandIn": "In less than a minute, the others can let the computer play for you.",
+      "claimWin": "Claim the win",
+      "claimStandIn": "Let the computer play",
+      "claimEnd": "End the game",
+      "notYet": "Not yet: {name}'s turn hasn't lasted 5 minutes."
+    },
+    "confirmAbandon": {
+      "titleWin": "Claim the win from {name}?",
+      "titleStandIn": "Let the computer play for {name}?",
+      "titleEnd": "End the game since {name} left?",
+      "descriptionWin": "{name} hasn't moved for 5 minutes. You will win this game; then the room can play again.",
+      "descriptionStandIn": "{name} hasn't moved for 5 minutes. The computer will play for {name} until the game ends.",
+      "descriptionEnd": "{name} hasn't moved for 5 minutes and nobody else is playing. The game will end; then the room can play again.",
+      "cancel": "Wait longer"
+    },
+    "ending": {
+      "youResigned": "You resigned.",
+      "opponentResigned": "{name} resigned.",
+      "youAbandoned": "You left the game: no move for 5 minutes.",
+      "opponentAbandoned": "{name} left the game: no move for 5 minutes."
+    },
+    "standIn": "Played by the computer",
+    "standInName": "The computer (for {name})",
+    "standInThinking": "The computer (for {name}) is thinking…",
+    "standInThinkingForYou": "The computer is playing for you.",
+    "standInWins": "The computer (for {name}) wins!",
+    "aiStandInMoved": "The computer (for {name}) {move}",
+    "aiMoved": "The computer {move}",
+    "aiSeatMoved": "The computer ({mover}) {move}",
+    "opponentMoved": "{name} {move}",
+    "movedThen": "{moved}. {then}",
+    "aiSeatTitle": "The computer ({player})",
+    "rules": "Rules",
+    "rulesDialog": {
+      "title": "How to play {game}",
+      "inThisGame": "This game: {rules}",
+      "close": "Close",
+      "loading": "Loading the rules…",
+      "loadError": "Couldn’t load the rules. Check your connection and try again; the game goes on.",
+      "retry": "Try again"
     }
   },
   "NotFound": {
@@ -393,14 +457,22 @@
     "description": "This page is not part of Board Games Hub.",
     "backToMenu": "Back to menu"
   },
+  "PageError": {
+    "title": "Something went wrong",
+    "description": "This page could not be shown. Try again, or go back to the menu.",
+    "retry": "Try again",
+    "backToMenu": "Back to menu"
+  },
   "Settings": {
-    "language": "Language",
-    "theme": "Theme",
+    "themeButton": "Theme: {theme}",
     "themes": {
       "light": "Light",
       "dark": "Dark",
       "system": "System"
-    }
+    },
+    "languageButton": "Language: {language}, {code}",
+    "languageSwitching": "Changing the language…",
+    "languageFailed": "Couldn't change the language. Please try again."
   },
   "Identity": {
     "name": "Your name",
@@ -449,6 +521,192 @@
         "title": "Couldn't open the room",
         "description": "The room's data can't be read. Try again.",
         "retry": "Try again"
+      }
+    }
+  },
+  "Rules": {
+    "title": "How to play {game}",
+    "play": "Play {game}",
+    "backToMenu": "Back to menu",
+    "notFound": {
+      "title": "No rules here",
+      "description": "There is no game at this address. Go back to the menu to pick one."
+    },
+    "common": {
+      "leaving": {
+        "title": "Resigning and leaving",
+        "resign": "Press <b>“Resign”</b> to give up; the app asks first before ending the game.",
+        "abandon": "Online: if the player to move has not moved for <b>5 minutes</b>, the other player can press “Claim the win” and win the game.",
+        "abandonRoom": "Online: if the player to move has not moved for <b>5 minutes</b>, the others can claim their turn abandoned.",
+        "standIn": "In a room of 3–4: <b>the computer plays</b> for whoever resigned or left (“Played by the computer”) until the game ends; they play again from the next game. In a room of 2: the game ends and the other player wins.",
+        "vsAi": "Against the computer: resigning means the computer wins."
+      }
+    },
+    "tictactoe": {
+      "goal": {
+        "title": "Goal",
+        "body": "Two players take turns marking X and O on a 3×3 board. The first to get three in a row wins."
+      },
+      "moves": {
+        "title": "Moves",
+        "body": "<b>X goes first.</b> On your turn, place one mark on an empty square; a square already marked cannot be taken."
+      },
+      "win": {
+        "title": "Winning",
+        "body": "Three of your marks in one of the eight lines: 3 rows, 3 columns or 2 diagonals. The game ends at once, even when the winning move fills the last square."
+      },
+      "draw": {
+        "title": "Draw",
+        "body": "All 9 squares are marked and nobody has three in a row: it’s a draw."
+      },
+      "figures": {
+        "lines": {
+          "label": "Three 3×3 boards: three X in a row, three O in a column, three X on a diagonal",
+          "caption": "Three kinds of winning line: a row, a column, a diagonal."
+        }
+      }
+    },
+    "caro": {
+      "goal": {
+        "title": "Goal",
+        "body": "Two players take turns marking X and O on a grid. The first to get <b>5 in a row</b> across, down or diagonally wins; with the “Blocked ends” rule, that line must not be blocked by the opponent at both ends."
+      },
+      "board": {
+        "title": "Board and turns",
+        "body": "A 15×15 or 19×19 board, picked on the setup screen along with the winning rule. <b>X goes first</b>; on your turn, mark any empty square."
+      },
+      "free": {
+        "title": "The “Free style” rule",
+        "body": "Five or more in a row across, down or diagonally wins, whatever is at either end."
+      },
+      "blocked": {
+        "title": "The “Blocked ends” rule (default)",
+        "body": "As in free style, unless <b>both</b> squares just past the two ends of the line hold the opponent’s marks: then that line does not win. The edge of the board does not block. A line longer than 5 wins on the same condition."
+      },
+      "draw": {
+        "title": "Draw",
+        "body": "The board is full and nobody has won: it’s a draw."
+      },
+      "figures": {
+        "five": {
+          "label": "Five X in a row on a diagonal: X wins",
+          "caption": "Five X in a row on a diagonal: <yes>X wins</yes>."
+        },
+        "blocked": {
+          "label": "Top row: five X blocked by an O at both ends, no win. Bottom row: five X blocked at one end only, X wins",
+          "caption": "Top: blocked at both ends, <no>no win</no>. Bottom: blocked at one end only, <yes>a win</yes>."
+        },
+        "edge": {
+          "label": "Five X touching the edge of the board, an O at the other end: X wins, as the edge does not block",
+          "caption": "Touching the edge, an O at the other end: <yes>a win</yes>, as the edge does not block."
+        }
+      }
+    },
+    "ludo": {
+      "board": {
+        "title": "Board and track",
+        "body": "2–4 players, each with a colour and a symbol (Red ●, Blue ■, Yellow ▲, Green ◆) and 4 horses starting in the stable. A horse comes out on its colour’s start square, goes exactly once round the shared 56-square track in one direction to its home entry (the square just before the start square), then climbs the 6 home steps."
+      },
+      "turn": {
+        "title": "Turns and rolling a 6",
+        "body": "On your turn, roll the die, then choose a horse that can move by that number; if none can, you lose the turn. <b>Rolling a 6 gives you another roll</b> after moving, even when no horse could move."
+      },
+      "out": {
+        "title": "Bringing a horse out",
+        "body": "Only with a <b>6</b>, onto your colour’s start square. <b>You cannot bring one out while one of your horses is on the start square</b>; an opponent’s horse there is sent back to its stable."
+      },
+      "move": {
+        "title": "Moving and sending home",
+        "item1": "Move exactly as many squares as you rolled.",
+        "item2": "Never jump over a horse, yours or an opponent’s.",
+        "item3": "Never stop on a square holding one of your horses.",
+        "item4": "Stopping right on an opponent’s horse <b>sends it home</b> to its stable.",
+        "item5": "Never move past your own home entry: stop right on it before climbing home."
+      },
+      "one": {
+        "title": "Rolling a 1: jump to a home entry",
+        "body": "With a 1, a horse on the track jumps to the <b>nearest home entry ahead</b> (of any colour, even one nobody plays; at most as far as its own) if every square in between is empty and none of your horses is on it. <b>If it can jump, it must</b>, and <b>an opponent’s horse on that home entry is sent home</b>. If it cannot jump, it moves 1 square."
+      },
+      "home": {
+        "title": "Climbing home",
+        "body": "From your home entry, a roll of k goes straight to step k if steps 1 to k are all empty. From step n, you only climb to step n + 1 with exactly n + 1. At home, horses never pass each other and are never sent home."
+      },
+      "win": {
+        "title": "Winning",
+        "body": "The first player with all <b>4 horses on steps 3, 4, 5 and 6</b> of their home wins; the game ends at once."
+      },
+      "figures": {
+        "path": {
+          "label": "The cross-shaped board: a Red horse comes out on its start square, goes once round clockwise to its home entry, then climbs home from step 1 to step 6",
+          "caption": "Red’s way on the real board: start square (●), direction (arrows), home entry (ring) and home steps 1–6."
+        },
+        "jump": {
+          "label": "Top row: a Red horse rolls a 1, the way is clear, it jumps to the next home entry and sends the Yellow horse there home. Bottom row: a Blue horse is in the way, the Red horse only moves 1 square",
+          "caption": "Top: the way is clear, <yes>it jumps to the home entry and sends Yellow home</yes>. Bottom: a horse in the way, it moves 1 square."
+        },
+        "home": {
+          "label": "The 6 home steps: from the home entry a 4 goes straight to step 4; from step 4 it takes exactly a 5 to reach step 5",
+          "caption": "A 4 from the home entry: step 4. From step 4: exactly a 5. Four horses on steps 3–6 win."
+        }
+      }
+    },
+    "chess": {
+      "goal": {
+        "title": "Goal",
+        "body": "<b>Checkmate</b> the opponent’s king: it is in check and has no way out."
+      },
+      "board": {
+        "title": "Board and turns",
+        "body": "An 8×8 board, with the light square h1 in White’s right-hand corner. <b>White moves first</b>, then the players take turns. No move may leave your own king in check."
+      },
+      "pieces": {
+        "title": "How the pieces move",
+        "king": "<b>King</b>: one square in any direction.",
+        "queen": "<b>Queen</b>: any number of squares along a row, a column or a diagonal.",
+        "rook": "<b>Rook</b>: any number of squares along a row or a column.",
+        "bishop": "<b>Bishop</b>: any number of squares along a diagonal.",
+        "knight": "<b>Knight</b>: an L shape (two squares, then one to the side), jumping over other pieces.",
+        "pawn": "<b>Pawn</b>: one square forward (two from its starting row), capturing one square diagonally forward.",
+        "capture": "Except the knight, no piece passes over another. A piece captures by moving onto an opponent’s piece."
+      },
+      "castling": {
+        "title": "Castling",
+        "body": "The king moves two squares towards a rook, and the rook jumps to the square on the king’s other side. Allowed when the king and that rook have never moved, the squares between them are empty, the king is not in check, and neither the square the king crosses nor the one it lands on is attacked."
+      },
+      "enPassant": {
+        "title": "En passant",
+        "body": "An opponent’s pawn has just moved two squares and stopped right beside your pawn on the same row: your pawn may capture it by moving diagonally to the square it passed over. Only on the <b>very next move</b>."
+      },
+      "promotion": {
+        "title": "Promotion",
+        "body": "A pawn reaching the last row becomes a queen, rook, bishop or knight of its colour, chosen by the player."
+      },
+      "end": {
+        "title": "End of the game",
+        "checkmate": "<b>Checkmate</b>: the side checkmated loses.",
+        "stalemate": "<b>Stalemate</b>: the side to move is not in check but has no move: a draw.",
+        "automatic": "<b>Automatic draw</b>: a position repeated for the fifth time, 75 moves by each side without a pawn move or a capture, or too little material to checkmate (such as two kings alone, or two kings and a knight).",
+        "claim": "<b>Claiming a draw</b>: once a position has repeated three times, or after 50 moves by each side without a pawn move or a capture, the side to move gets a “Claim a draw” button that ends the game drawn at once, without the opponent’s agreement."
+      },
+      "credit": "Pieces: the “staunty” set by sadsnake1 (Lichess), licensed CC BY-NC-SA 4.0.",
+      "licence": "Licence",
+      "figures": {
+        "moves": {
+          "label": "Six small boards, each with a piece in the middle and dots on the squares it can reach: king, queen, rook, bishop, knight, pawn",
+          "caption": "Where each piece can go (dots): king, queen, rook; bishop, knight, pawn."
+        },
+        "castling": {
+          "label": "White castles kingside: before, the king on e1 and the rook on h1; after, the king on g1 and the rook on f1",
+          "caption": "Castling kingside: king e1 → g1, rook h1 → f1."
+        },
+        "enPassant": {
+          "label": "En passant: a black pawn has just moved from d7 to d5, beside a white pawn on e5; the white pawn captures by moving to d6",
+          "caption": "Black has just played d7 → d5: the white pawn on e5 captures by moving to d6."
+        },
+        "promotion": {
+          "label": "Promotion: a white pawn moves from e7 to e8 and becomes a queen, rook, bishop or knight, as chosen",
+          "caption": "A pawn on the last row: choose a queen, rook, bishop or knight."
+        }
       }
     }
   }
