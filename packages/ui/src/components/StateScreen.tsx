@@ -41,6 +41,8 @@ interface StateScreenProps {
    * button is gone: the title takes the focus, so the keyboard and screen readers start here.
    */
   readonly focusTitle?: boolean;
+  /** The page's top bar (`TopBar`), above the screen: the way back and the settings. */
+  readonly topBar?: ReactNode;
 }
 
 /**
@@ -55,6 +57,7 @@ export function StateScreen({
   tone = "neutral",
   busy = false,
   focusTitle = false,
+  topBar,
 }: StateScreenProps) {
   const titleRef = useCallback(
     (heading: HTMLHeadingElement | null) => {
@@ -64,33 +67,36 @@ export function StateScreen({
   );
 
   return (
-    <main className="mx-auto flex min-h-[70dvh] max-w-xl flex-col items-center justify-center gap-6 px-4 py-14 text-center">
-      <div className={artFrame({ tone })}>
-        {art ?? <LogoMark tone={tone} pulse={busy} className="size-12" />}
-      </div>
-      <div className="flex flex-col items-center gap-2">
-        {busy ? (
-          <p role="status" className="text-heading">
-            {title}
-          </p>
-        ) : (
-          <h1
-            ref={titleRef}
-            tabIndex={focusTitle ? -1 : undefined}
-            className={cn("text-title text-balance", focusTitle && "focus:outline-none")}
-          >
-            {title}
-          </h1>
-        )}
-        {description !== undefined && (
-          <p className="max-w-prose text-body text-pretty text-fg-muted">{description}</p>
-        )}
-      </div>
-      {children !== undefined && (
-        <div className="flex w-full flex-col items-stretch justify-center gap-3 sm:w-auto sm:flex-row sm:items-center">
-          {children}
+    <>
+      {topBar}
+      <main className="mx-auto flex min-h-[70dvh] max-w-xl flex-col items-center justify-center gap-6 py-14 px-safe-4 text-center">
+        <div className={artFrame({ tone })}>
+          {art ?? <LogoMark tone={tone} pulse={busy} className="size-12" />}
         </div>
-      )}
-    </main>
+        <div className="flex flex-col items-center gap-2">
+          {busy ? (
+            <p role="status" className="text-heading">
+              {title}
+            </p>
+          ) : (
+            <h1
+              ref={titleRef}
+              tabIndex={focusTitle ? -1 : undefined}
+              className={cn("text-title text-balance", focusTitle && "focus:outline-none")}
+            >
+              {title}
+            </h1>
+          )}
+          {description !== undefined && (
+            <p className="max-w-prose text-body text-pretty text-fg-muted">{description}</p>
+          )}
+        </div>
+        {children !== undefined && (
+          <div className="flex w-full flex-col items-stretch justify-center gap-3 sm:w-auto sm:flex-row sm:items-center">
+            {children}
+          </div>
+        )}
+      </main>
+    </>
   );
 }

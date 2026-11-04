@@ -328,6 +328,79 @@
 }
 
 /*
+ * Layout values that are not colours (no dark value, no Tailwind colour), read by `var()` in
+ * components and by the play screen's "fits without scrolling" maths.
+ *
+ * - `--safe-*`: the screen's safe area (a notch, rounded corners), 0 elsewhere. Read through these
+ *   variables, never `env()` directly, so a test can set them (`--safe-left: 44px`). Text and
+ *   controls stay inside them (`px-safe-*`, the top bar's top padding); backgrounds still reach the
+ *   edges.
+ * - `--top-bar-height`: the top bar of every page (`TopBar`), one row: 3.5rem on a phone, 4rem from
+ *   640 px, 3rem on a phone turned sideways (`short-landscape:`).
+ * - `--duration-fast`, `--duration-base`, `--ease-standard`: the motion of a control pointed at,
+ *   focused or pressed (`transition-lift`), off when motion is reduced.
+ */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --top-bar-height: 3.5rem;
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+}
+
+@media (min-width: 40rem) {
+  :root {
+    --top-bar-height: 4rem;
+  }
+}
+
+/* A phone turned sideways: little height, so the play screen puts its column beside the board. */
+@custom-variant short-landscape (@media (orientation: landscape) and (max-height: 32rem));
+
+@media (orientation: landscape) and (max-height: 32rem) {
+  :root {
+    --top-bar-height: 3rem;
+  }
+}
+
+/* Tab, `scrollIntoView` and anchors never leave the focused element under the sticky top bar
+   (WCAG 2.4.11). */
+html {
+  scroll-padding-top: calc(var(--top-bar-height) + var(--safe-top));
+}
+
+/*
+ * Horizontal padding that also keeps clear of the safe area: `px-safe-4` is `px-4`, or the notch's
+ * width where that is more. Responsive like any utility (`lg:px-safe-10`).
+ */
+@utility px-safe-* {
+  padding-left: max(--spacing(--value(integer)), var(--safe-left));
+  padding-right: max(--spacing(--value(integer)), var(--safe-right));
+}
+
+/* Bottom padding that also clears the home indicator: `pb-safe-14`. */
+@utility pb-safe-* {
+  padding-bottom: max(--spacing(--value(integer)), var(--safe-bottom));
+}
+
+/*
+ * The motion of a surface pointed at, focused or pressed (a card lifting, a button's colour): short,
+ * on the properties that change. Always paired with `motion-reduce:transition-none` (and
+ * `motion-reduce:transform-none` where it moves).
+ */
+@utility transition-lift {
+  transition-property:
+    transform, translate, scale, box-shadow, background-color, border-color, color,
+    text-decoration-color, text-decoration-thickness;
+  /* A `duration-*` or `ease-*` beside it wins, as with Tailwind's own `transition`. */
+  transition-duration: var(--tw-duration, var(--duration-base));
+  transition-timing-function: var(--tw-ease, var(--ease-standard));
+}
+
+/*
  * The focus ring of every control: an ink outline 2 px away from the element, the gap filled with
  * a paper ring (Tailwind's ring, so it adds to the element's own `shadow-*` instead of replacing
  * it). Drawn above its neighbours (a board's cells): `z-index`, and `position: relative` unless the

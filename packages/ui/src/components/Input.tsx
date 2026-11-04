@@ -7,6 +7,8 @@ const inputVariants = cva(
   [
     "focus-ring h-12 w-full rounded-control border-[1.5px] border-border-control bg-surface px-4 text-body text-fg",
     "placeholder:text-fg-muted read-only:bg-surface-muted",
+    // Pointed at: a sunken field; focused: an ink edge (a field to fix keeps its danger edge).
+    "transition-lift duration-(--duration-fast) hover:bg-surface-muted focus:bg-surface not-aria-invalid:focus:border-fg motion-reduce:transition-none",
     "disabled:cursor-not-allowed disabled:border-dashed disabled:bg-surface-muted disabled:text-fg-muted aria-invalid:border-danger",
   ],
   {

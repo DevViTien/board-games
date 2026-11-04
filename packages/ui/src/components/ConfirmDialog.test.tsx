@@ -85,4 +85,26 @@ describe("ConfirmDialog", () => {
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
+
+  it("keeps the confirm button focusable but inert while it cannot be pressed, saying why", async () => {
+    const onConfirm = vi.fn();
+    render(
+      <ConfirmDialog
+        open
+        title="Đầu hàng ván này?"
+        confirmLabel="Đầu hàng"
+        cancelLabel="Chơi tiếp"
+        onConfirm={onConfirm}
+        onCancel={vi.fn()}
+        confirmUnavailableReason="Chờ kết nối lại với máy chủ"
+      />,
+    );
+    const confirm = screen.getByRole("button", { name: "Đầu hàng" });
+
+    await userEvent.click(confirm);
+
+    expect(confirm).toHaveAttribute("aria-disabled", "true");
+    expect(confirm).toHaveAccessibleDescription("Chờ kết nối lại với máy chủ");
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
 });

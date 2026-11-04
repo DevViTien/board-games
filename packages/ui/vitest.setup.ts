@@ -1,5 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 
+import { installPopoverStub } from "@board-games/config/vitest/popover";
 import { cleanup } from "@testing-library/react";
 import { afterEach } from "vitest";
 
@@ -13,6 +14,9 @@ Object.assign(HTMLDialogElement.prototype, {
     this.open = false;
   },
 });
+
+// jsdom has no `popover`: a shared stand-in (packages/config).
+installPopoverStub();
 
 afterEach(() => {
   cleanup();

@@ -13,7 +13,8 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "ui:shots": "playwright test --config playwright.shots.config.ts"
+    "ui:shots": "playwright test --config playwright.shots.config.ts",
+    "test:a11y": "playwright test e2e/a11y.spec.ts"
   },
   "dependencies": {
     "@board-games/engine": "workspace:*",
@@ -42,6 +43,7 @@
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@types/ws": "catalog:",
+    "axe-core": "catalog:",
     "eslint": "catalog:",
     "jsdom": "catalog:",
     "tailwindcss": "catalog:",

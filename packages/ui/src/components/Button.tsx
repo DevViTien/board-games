@@ -6,7 +6,9 @@ import { cn } from "../lib/cn";
 /** Also used to style links that look like buttons (e.g. a Next.js `Link` to a page). */
 export const buttonVariants = cva(
   [
-    "focus-ring inline-flex cursor-pointer items-center justify-center gap-2 rounded-control font-semibold transition-colors",
+    // Colours (and the primary's lip) change quickly when pointed at or pressed; at once when
+    // motion is reduced. Pointing only counts on a device that hovers (Tailwind's `hover:`).
+    "focus-ring inline-flex cursor-pointer items-center justify-center gap-2 rounded-control font-semibold transition-lift duration-(--duration-fast) motion-reduce:transition-none",
     // Disabled: a dashed, sunken look whose text still reads (4.5:1), never a faded one. It wins
     // over every colour of a variant or of the caller (a roll button's piece colour). The app uses
     // `aria-disabled` (still focusable); `disabled` looks the same.
@@ -19,8 +21,9 @@ export const buttonVariants = cva(
         // The lip below gives way when pressed.
         primary:
           "bg-accent font-bold text-accent-fg shadow-press hover:bg-accent-hover active:translate-y-0.5 active:shadow-none",
-        secondary: "border-[1.5px] border-fg bg-surface text-fg hover:bg-surface-muted",
-        ghost: "text-fg hover:bg-surface-muted",
+        secondary:
+          "border-[1.5px] border-fg bg-surface text-fg hover:bg-surface-muted active:bg-border",
+        ghost: "text-fg hover:bg-surface-muted active:bg-border",
       },
       size: {
         sm: "h-10 px-4 text-small",

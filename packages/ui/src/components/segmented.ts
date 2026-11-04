@@ -1,10 +1,9 @@
 import { cva } from "class-variance-authority";
 
 /*
- * The look shared by `RadioGroup` and `ToggleGroup`: a sunken track holding the choices, the
+ * The look of `RadioGroup` (a segmented control): a sunken track holding the choices, the
  * chosen one raised above it (a lighter face, a control edge, a check mark), so it never looks
- * like the main action. A radio's label is chosen when its radio is checked (`has-checked`), a
- * toggle button when pressed (`aria-pressed`).
+ * like the main action. A radio's label is chosen when its radio is checked (`has-checked`).
  */
 
 export const segmentTrack = cva(
@@ -14,9 +13,8 @@ export const segmentTrack = cva(
 export const segmentItem = cva(
   [
     "inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-[calc(var(--radius-control)-0.25rem)] border border-transparent font-semibold whitespace-nowrap text-fg transition-colors",
-    "hover:not-has-checked:not-aria-pressed:bg-surface-raised/60",
+    "hover:not-has-checked:bg-surface-raised/60",
     "has-checked:border-border-control has-checked:bg-surface-raised has-checked:font-bold has-checked:shadow-raised",
-    "aria-pressed:border-border-control aria-pressed:bg-surface-raised aria-pressed:font-bold aria-pressed:shadow-raised",
   ],
   {
     variants: {

@@ -3,6 +3,8 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { PAGE_BACKGROUND } from "./page-background";
+
 // The tokens of styles.css, read as text: every colour has a light value and the same dark value in
 // both dark blocks, and the pairs of the contrast table (design §2 of `add-design-foundation`) meet
 // WCAG 2.2 AA. A token changed without its table fails here.
@@ -115,6 +117,30 @@ describe("styles.css", () => {
       if (name.startsWith("--elevation-") || name === "--overlay") continue;
       expect(css, name).toContain(`--color-${name.slice(2)}: var(${name});`);
     }
+  });
+
+  it("gives the page's background to what cannot read a variable (the server's theme-color)", () => {
+    expect(PAGE_BACKGROUND).toEqual({ light: light.get("--bg"), dark: chosenDark.get("--bg") });
+  });
+
+  it("has the layout and motion tokens, and the variant and padding they go with", () => {
+    for (const token of [
+      "--safe-top",
+      "--safe-right",
+      "--safe-bottom",
+      "--safe-left",
+      "--top-bar-height",
+      "--duration-fast",
+      "--duration-base",
+      "--ease-standard",
+    ]) {
+      expect(css, token).toMatch(new RegExp(`${token}:`));
+    }
+    expect(css).toContain("@custom-variant short-landscape");
+    expect(css).toContain("scroll-padding-top: calc(var(--top-bar-height) + var(--safe-top))");
+    expect(css).toMatch(
+      /@utility transition-lift \{[^}]*var\(--tw-duration, var\(--duration-base\)\)[^}]*var\(--tw-ease, var\(--ease-standard\)\)/,
+    );
   });
 
   it("names no game: games give their own values in apps/web", () => {

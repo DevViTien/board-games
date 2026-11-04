@@ -41,4 +41,12 @@ describe("StateScreen", () => {
 
     expect(container.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
   });
+
+  it("puts the page's top bar above its main content", () => {
+    render(<StateScreen title="Không tìm thấy trang" topBar={<header>Thanh trên</header>} />);
+
+    const bar = screen.getByRole("banner");
+    expect(bar).toHaveTextContent("Thanh trên");
+    expect(screen.getByRole("main")).not.toContainElement(bar);
+  });
 });

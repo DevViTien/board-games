@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useId, useRef } from "react";
+import { useId } from "react";
 
 import { Button } from "./Button";
+import { DialogFrame } from "./DialogFrame";
 
 export interface ConfirmDialogProps {
   open: boolean;
@@ -13,11 +14,16 @@ export interface ConfirmDialogProps {
   onConfirm: () => void;
   /** Also called when the player presses Esc. */
   onCancel: () => void;
+  /**
+   * Why the confirm button cannot be pressed right now (the connection is lost), shown under the
+   * question; the button stays focusable (`aria-disabled`) and does nothing. Absent: it can.
+   */
+  confirmUnavailableReason?: string | undefined;
 }
 
 /**
- * A modal question built on the native `<dialog>`: `showModal()` traps focus and puts the rest of
- * the page out of reach, and Esc cancels, without a dialog library. Texts arrive already translated.
+ * A modal question in the shared `DialogFrame` (the native `<dialog>`): Esc cancels. Texts arrive
+ * already translated.
  */
 export function ConfirmDialog({
   open,
@@ -27,35 +33,20 @@ export function ConfirmDialog({
   cancelLabel,
   onConfirm,
   onCancel,
+  confirmUnavailableReason,
 }: ConfirmDialogProps) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const descriptionId = useId();
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (dialog === null) return;
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
-  }, [open]);
+  const reasonId = useId();
+  const unavailable = confirmUnavailableReason !== undefined;
 
   return (
-    <dialog
-      ref={dialogRef}
-      aria-labelledby={titleId}
-      aria-describedby={description === undefined ? undefined : descriptionId}
-      // Esc fires `cancel`; the parent owns `open`, so let it close the dialog.
-      onCancel={(event) => {
-        event.preventDefault();
-        onCancel();
-      }}
-      // The browser may also close the dialog by itself: Chromium's close watcher skips `cancel`
-      // for a repeated Esc without user activation. Tell the parent, or `open` stays true and the
-      // dialog can never be opened again. A close the parent asked for arrives with `open` false.
-      onClose={() => {
-        if (open) onCancel();
-      }}
-      className="m-auto w-[calc(100%-2rem)] max-w-sm rounded-card border border-border bg-surface p-6 text-fg shadow-raised backdrop:bg-overlay"
+    <DialogFrame
+      open={open}
+      onDismiss={onCancel}
+      labelledBy={titleId}
+      describedBy={description === undefined ? undefined : descriptionId}
+      className="m-auto w-[calc(100%-2rem)] max-w-sm rounded-card border border-border p-6"
     >
       <h2 id={titleId} className="text-heading">
         {title}
@@ -66,12 +57,25 @@ export function ConfirmDialog({
         </p>
       )}
       {/* Cancel comes first: showModal() focuses it, so Enter right away never discards anything. */}
+      {unavailable && (
+        <p id={reasonId} className="mt-3 text-small text-fg-muted">
+          {confirmUnavailableReason}
+        </p>
+      )}
       <div className="mt-6 flex flex-wrap justify-end gap-2">
         <Button variant="secondary" onClick={onCancel}>
           {cancelLabel}
         </Button>
-        <Button onClick={onConfirm}>{confirmLabel}</Button>
+        <Button
+          aria-disabled={unavailable}
+          aria-describedby={unavailable ? reasonId : undefined}
+          onClick={() => {
+            if (!unavailable) onConfirm();
+          }}
+        >
+          {confirmLabel}
+        </Button>
       </div>
-    </dialog>
+    </DialogFrame>
   );
 }

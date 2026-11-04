@@ -4,10 +4,16 @@
 export type { LucideIcon as IconComponent, LucideProps as IconProps } from "lucide-react";
 export {
   ArrowLeft as ArrowLeftIcon,
+  ArrowUpDown as ArrowUpDownIcon,
+  BookOpen as BookOpenIcon,
   Check as CheckIcon,
   ChevronRight as ChevronRightIcon,
+  Flag as FlagIcon,
+  Globe as GlobeIcon,
+  LoaderCircle as LoaderIcon,
   Monitor as MonitorIcon,
   Moon as MoonIcon,
   Sun as SunIcon,
   Trophy as TrophyIcon,
+  X as XIcon,
 } from "lucide-react";

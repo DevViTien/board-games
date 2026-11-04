@@ -72,6 +72,43 @@ const WEB_GAME_UI_FILES = ["src/games/**"];
  */
 const WEB_GAME_ARTWORK_FILES = ["src/games/artwork.ts", "src/games/*/Artwork.tsx"];
 
+/**
+ * Each game's rules (`Rules.tsx`), their figures (`rules/**`) and the map of them (`rules.ts`): the
+ * rules page renders them on the server, the play screen's dialog loads them in the browser when it
+ * first opens. An allow-list of what each may import, so a board, a game's entry or the registry
+ * (which would load every board with the rules) never slips in.
+ */
+const WEB_GAME_RULES = {
+  /** `games/rules.ts` imports each game's `./<id>/Rules`. */
+  map: { files: ["src/games/rules.ts"], relative: String.raw`^\./[\w-]+/Rules$` },
+  /** `games/<id>/Rules.tsx` imports its theme and its figures. */
+  rules: {
+    files: ["src/games/*/Rules.tsx"],
+    relative: String.raw`^\./(theme\.css|rules/[\w-]+)$`,
+  },
+  /** `games/<id>/rules/*.tsx` import each other and the board's geometry, symbols and pieces. */
+  figures: {
+    files: ["src/games/*/rules/**"],
+    relative: String.raw`^(\./[\w-]+|\.\./(board-layout|ColourSymbol|piece-style|pieces))$`,
+  },
+};
+
+/**
+ * A `no-restricted-imports` pattern barring every relative import but those `allowed` matches,
+ * and every `@/` import but `@/features/rules/*` (types are let through).
+ *
+ * @param {string} allowed
+ */
+function rulesImportPatterns(allowed) {
+  const message =
+    "A game's rules may only import their own figures, the board's geometry, symbols and pieces, and features/rules: a board, a game's entry or the registry would load with the rules (design of add-rules-pages).";
+  return [
+    // `allowed` without its `^`, as a lookahead from the specifier's start.
+    { regex: String.raw`^(?!${allowed.slice(1)})\.`, message },
+    { regex: String.raw`^@/(?!features/rules/)`, allowTypeImports: true, message },
+  ];
+}
+
 /** Files that frameworks require to use a default export. */
 const NEXT_DEFAULT_EXPORT_FILES = [
   "**/app/**/{page,layout,template,loading,error,global-error,not-found,default,forbidden,unauthorized}.tsx",
@@ -208,7 +245,7 @@ function boundaries(layer) {
               },
               {
                 // The registry, a game's entry (`.`, `./index`, `./caro`) and its board.
-                regex: "(^|/)(registry|index|Board[\w.-]*)$|^\.{1,2}$|^\./(?!types$)[\w-]+$",
+                regex: String.raw`(^|/)(registry|index|Board[\w.-]*)$|^\.{1,2}$|^\./(?!types$)[\w-]+$`,
                 message:
                   "An artwork is drawn on the server for the menu: importing a board, a game's entry or the registry would put every board in the menu's bundle (design of add-design-foundation).",
               },
@@ -217,6 +254,27 @@ function boundaries(layer) {
         ],
       },
     },
+    ...Object.values(WEB_GAME_RULES).map(({ files, relative }) => ({
+      files,
+      ignores: ["**/*.test.{ts,tsx}"],
+      rules: {
+        // Replaces the game UI block's rule for these files, so it repeats its path.
+        "@typescript-eslint/no-restricted-imports": [
+          "error",
+          {
+            paths: [
+              {
+                name: "@board-games/games",
+                allowTypeImports: true,
+                message:
+                  "A game's rules must not bring every game's rules: import from the game's own subpath (@board-games/games/<id>).",
+              },
+            ],
+            patterns: rulesImportPatterns(relative),
+          },
+        ],
+      },
+    })),
     { files: ["src/**"], ignores: WEB_SERVER_FILES, rules: restrict(serverOnly, TESTING_ONLY) },
     {
       files: TEST_FILES.map((glob) => (glob.startsWith("src/") ? glob : `src/${glob}`)),
@@ -225,6 +283,17 @@ function boundaries(layer) {
     },
   ];
 }
+
+/**
+ * The `Rules` messages never reach the browser (the root layout's provider leaves them out,
+ * plan.md §4.7): a client component asking for them would only get missing keys. The rules dialog
+ * loads them itself (`features/rules/load-rules.ts`, `createTranslator`).
+ */
+const CLIENT_RULES_MESSAGES = {
+  selector: String.raw`Program:has(> ExpressionStatement[directive='use client']) CallExpression[callee.name=/^(useTranslations|getTranslations)$/][arguments.0.value=/^Rules($|\.)/]`,
+  message:
+    "The Rules messages are not sent to the client: translate the rules on the server, or load them as features/rules/load-rules.ts does.",
+};
 
 /** @param {string} tsconfigRootDir */
 function typescript(tsconfigRootDir) {
@@ -255,8 +324,14 @@ function typescript(tsconfigRootDir) {
         "no-restricted-syntax": [
           "error",
           { selector: "ExportDefaultDeclaration", message: "Use named exports (plan.md §4)." },
+          CLIENT_RULES_MESSAGES,
         ],
       },
+    },
+    // Framework files may export a default, but a client one must not translate the rules either.
+    {
+      files: NEXT_DEFAULT_EXPORT_FILES,
+      rules: { "no-restricted-syntax": ["error", CLIENT_RULES_MESSAGES] },
     },
     {
       plugins: { "simple-import-sort": simpleImportSort },

@@ -40,6 +40,9 @@ catalog:
 
   # testing
   "@playwright/test": ^1.64.1
+  # Accessibility checks in Playwright (e2e/axe.ts); already in the lockfile through
+  # eslint-plugin-jsx-a11y, so no new package (design of polish-accessibility-and-mobile §1).
+  axe-core: ^4.14.0
   "@testing-library/dom": ^10.4.2
   "@testing-library/jest-dom": ^7.0.1
   "@testing-library/react": ^16.3.3
