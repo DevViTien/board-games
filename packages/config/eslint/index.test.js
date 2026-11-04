@@ -117,3 +117,59 @@ describe("the Rules messages stay on the server", () => {
     expect(problems("src/features/play/A.tsx", client)).toEqual([]);
   });
 });
+
+describe("Ludo's 3D die stays in its lazy chunk", () => {
+  const coreLinter = new Linter({ cwd: CWD });
+  const coreConfig = [
+    {
+      files: ["**/*.{ts,tsx}"],
+      languageOptions: {
+        parser: tseslint.parser,
+        parserOptions: { ecmaFeatures: { jsx: true } },
+      },
+    },
+    ...createConfig("web", CWD).flatMap((block) =>
+      block.rules?.["no-restricted-imports"] === undefined
+        ? []
+        : [
+            {
+              ...(block.files && { files: block.files }),
+              ...(block.ignores && { ignores: block.ignores }),
+              rules: { "no-restricted-imports": block.rules["no-restricted-imports"] },
+            },
+          ],
+    ),
+  ];
+  /** The messages of the core `no-restricted-imports` for `code` in the file at `path`. */
+  const coreProblems = (path, code) =>
+    coreLinter
+      .verify(code, coreConfig, { filename: `${CWD}/${path}` })
+      .filter((message) => message.ruleId === "no-restricted-imports");
+
+  it.each([
+    ["src/games/ludo/dice3d/dice-stage.ts", "three"],
+    ["src/games/ludo/dice3d/dice-stage.ts", "./throw-sim"],
+    ["src/games/ludo/dice3d/throw-sim.ts", "cannon-es"],
+    ["src/games/ludo/dice3d/throw-sim.test.ts", "./throw-sim"],
+    ["src/games/ludo/dice3d/load-dice3d.ts", "./stage-types"],
+  ])("%s may import %s", (path, specifier) => {
+    expect(coreProblems(path, imports(specifier))).toEqual([]);
+  });
+
+  it.each([
+    ["src/games/ludo/Board.tsx", "three"],
+    ["src/games/ludo/dice3d/ThrowOverlay.tsx", "three/src/math/Vector3.js"],
+    ["src/games/ludo/dice3d/use-dice-throw.ts", "cannon-es"],
+    ["src/games/ludo/Board.tsx", "./dice3d/dice-stage"],
+    ["src/games/ludo/dice3d/load-dice3d.ts", "./dice-stage"],
+    ["src/games/ludo/dice3d/use-dice-throw.ts", "./throw-sim"],
+    ["src/features/play/PlayScreen.tsx", "three"],
+  ])("%s may not import %s", (path, specifier) => {
+    expect(coreProblems(path, imports(specifier))).toHaveLength(1);
+  });
+
+  it("lets load-dice3d.ts load the stage with import()", () => {
+    const code = `export const load = () => import("./dice-stage");`;
+    expect(coreProblems("src/games/ludo/dice3d/load-dice3d.ts", code)).toEqual([]);
+  });
+});

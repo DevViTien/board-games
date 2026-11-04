@@ -29,6 +29,11 @@ Object.assign(globalThis, {
 // jsdom has no `popover`: a shared stand-in (packages/config).
 installPopoverStub();
 
+// jsdom draws no canvas (it logs "Not implemented" for each try): no context, as in a browser
+// without WebGL, so Ludo's board rolls with its 2D die unless a test gives it a stage of its own.
+HTMLCanvasElement.prototype.getContext = (() =>
+  null) as typeof HTMLCanvasElement.prototype.getContext;
+
 afterEach(() => {
   cleanup();
 });

@@ -126,6 +126,28 @@ const TESTING_ONLY = {
   message: "Test-only entry point (it imports Vitest): import it from tests and src/test/ only.",
 };
 
+/**
+ * Ludo's 3D die (design of redesign-ludo-play §2): three.js and cannon-es only in its two modules,
+ * and those only through the `import()` of `load-dice3d.ts`, so they stay in a chunk of their own,
+ * out of every page's first load. `dice-stage.ts` may import `throw-sim.ts`.
+ */
+const DICE_3D_MODULES = [
+  "src/games/ludo/dice3d/dice-stage.ts",
+  "src/games/ludo/dice3d/throw-sim.ts",
+];
+const DICE_3D_ONLY = [
+  {
+    group: ["three", "three/**", "cannon-es", "cannon-es/**"],
+    message:
+      "three.js and cannon-es belong to Ludo's lazy 3D chunk: import them only in games/ludo/dice3d/dice-stage.ts and throw-sim.ts.",
+  },
+  {
+    regex: String.raw`(^|/)(dice-stage|throw-sim)$`,
+    message:
+      "This would put three.js and cannon-es in a page's first load: load the 3D die with load-dice3d.ts (`import()`).",
+  },
+];
+
 /** @param {Layer} layer */
 function boundaries(layer) {
   const { internal, runtime } = LAYERS[layer];
@@ -275,7 +297,13 @@ function boundaries(layer) {
         ],
       },
     })),
-    { files: ["src/**"], ignores: WEB_SERVER_FILES, rules: restrict(serverOnly, TESTING_ONLY) },
+    {
+      files: ["src/**"],
+      ignores: WEB_SERVER_FILES,
+      rules: restrict(serverOnly, TESTING_ONLY, ...DICE_3D_ONLY),
+    },
+    // The 3D die's own modules: the libraries, and `dice-stage.ts` the physics.
+    { files: DICE_3D_MODULES, rules: restrict(serverOnly, TESTING_ONLY) },
     {
       files: TEST_FILES.map((glob) => (glob.startsWith("src/") ? glob : `src/${glob}`)),
       ignores: WEB_SERVER_FILES,

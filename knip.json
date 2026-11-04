@@ -9,5 +9,8 @@
       "ignoreUnresolved": ["next"]
     },
     "packages/*": {}
-  }
+  },
+  // A change's approved mockup (plain scripts opened from file://), kept as the user approved it:
+  // reference files, not app code.
+  "ignore": ["openspec/changes/**/mockup/**"]
 }

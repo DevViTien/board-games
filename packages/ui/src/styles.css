@@ -435,6 +435,10 @@ html {
   --animate-dice-roll: dice-roll 450ms ease-out;
   /* A piece sent back to its starting area, fading in there. */
   --animate-piece-kicked: piece-kicked 300ms ease-out;
+  /* A piece that may be chosen, bobbing on its square until it is chosen. For an SVG group of the
+     Ludo board: its px are the board's user units, a cell each (0.1px = a tenth of a cell), within
+     the room that board keeps above its top row; on an HTML element it would barely move. */
+  --animate-piece-bob: piece-bob 900ms ease-in-out infinite alternate;
   /* The blocks of a loading screen, one after another. */
   --animate-loading-pulse: loading-pulse 1.2s ease-in-out infinite;
   /* A piece of confetti falling once, for a player here who just won; removed when it ends. */
@@ -454,6 +458,15 @@ html {
     }
     100% {
       transform: rotate(0deg) scale(1);
+    }
+  }
+
+  @keyframes piece-bob {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(-0.1px);
     }
   }
 

@@ -11,3 +11,6 @@ plan.md
 .claude/skills/web-design-guidelines/
 .claude/skills/vercel-react-best-practices/
 .claude/skills/vercel-composition-patterns/
+
+# Approved mockups of a change: reference files kept as the user approved them, not app code.
+openspec/changes/**/mockup/
