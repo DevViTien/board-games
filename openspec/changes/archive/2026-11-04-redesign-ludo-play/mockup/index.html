@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="vi" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mockup Cờ cá ngựa</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&subset=vietnamese&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      /* board drawn as SVG with its own frame, so standing horses may rise above the top row */
+      .board-box {
+        border: 0;
+        border-radius: 0;
+        overflow: visible;
+        background: none;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="mock-head">
+      <h1>Mockup — Cờ cá ngựa: quân ngựa, chạm để đi, xúc xắc 3D</h1>
+      <p>
+        Bản thử cục bộ (không phải code của app). Giữ nút “Gieo xúc xắc” để lấy đà rồi thả (bàn phím:
+        giữ Space; Enter = gieo nhanh). Sau khi gieo, chạm vào ngựa có vòng tròn để đi ngay. Thế cờ mẫu:
+        Đỏ đi; gieo 5 thì Ngựa 1 đá ngựa Vàng, gieo 6 thì Ngựa 2 ra chuồng đá ngựa Xanh dương.
+      </p>
+    </header>
+
+    <div class="toolbar" role="toolbar" aria-label="Điều khiển mockup">
+      <div class="tgroup" role="group" aria-label="Giao diện">
+        <span class="tlabel">Giao diện</span>
+        <button class="tbtn" type="button" data-theme-set="light" aria-pressed="true">Sáng</button>
+        <button class="tbtn" type="button" data-theme-set="dark" aria-pressed="false">Tối</button>
+      </div>
+      <div class="tgroup" role="group" aria-label="Khung">
+        <span class="tlabel">Khung</span>
+        <button class="tbtn" type="button" data-frame-set="phone" aria-pressed="true">Điện thoại 360×740</button>
+        <button class="tbtn" type="button" data-frame-set="desktop" aria-pressed="false">Máy tính 1280×800</button>
+      </div>
+      <div class="tgroup" role="group" aria-label="Giả lập">
+        <span class="tlabel">Giả lập</span>
+        <button class="tbtn" type="button" id="simNoGl" aria-pressed="false">Không WebGL</button>
+        <button class="tbtn" type="button" id="simReduced" aria-pressed="false">Giảm chuyển động</button>
+        <button class="tbtn" type="button" id="simBlur" aria-pressed="true">Blur nền</button>
+        <button class="tbtn" type="button" id="simHits" aria-pressed="false">Hiện vùng chạm</button>
+      </div>
+      <div class="tgroup" role="group" aria-label="Ép số lần gieo tới">
+        <span class="tlabel">Ép số</span>
+        <button class="tbtn" type="button" data-force="0" aria-pressed="true">Tắt</button>
+        <button class="tbtn" type="button" data-force="1" aria-pressed="false">1</button>
+        <button class="tbtn" type="button" data-force="2" aria-pressed="false">2</button>
+        <button class="tbtn" type="button" data-force="3" aria-pressed="false">3</button>
+        <button class="tbtn" type="button" data-force="4" aria-pressed="false">4</button>
+        <button class="tbtn" type="button" data-force="5" aria-pressed="false">5</button>
+        <button class="tbtn" type="button" data-force="6" aria-pressed="false">6</button>
+      </div>
+      <div class="tgroup">
+        <button class="tbtn" type="button" id="aiRoll">Máy gieo</button>
+        <button class="tbtn" type="button" id="resetPos">Thế cờ mẫu</button>
+        <button class="tbtn" type="button" id="selfTest">Tự kiểm 1–6</button>
+      </div>
+    </div>
+
+    <div class="stage">
+      <section class="device" id="devPhone" aria-label="Khung điện thoại">
+        <div class="device-label">Điện thoại · 360 × 740 (dọc)</div>
+        <div class="frame phone" id="framePhone"></div>
+      </section>
+      <section class="device" id="devDesktop" aria-label="Khung máy tính" hidden>
+        <div class="device-label">Máy tính · 1280 × 800</div>
+        <div id="desktopScaleBox">
+          <div class="frame-scale" id="desktopScale"><div class="frame desktop" id="frameDesktop"></div></div>
+        </div>
+      </section>
+
+      <aside class="side">
+        <div class="panel">
+          <h2>Đo đạc lần gieo gần nhất</h2>
+          <dl class="dbg" id="dbg"></dl>
+          <div class="hist" id="hist" aria-label="Số lần ra từng mặt"></div>
+        </div>
+        <div class="panel">
+          <h2>Kích thước thư viện (tải lười khi vào màn chơi)</h2>
+          <dl class="dbg">
+            <dt>three 0.186.0, tree-shake (esbuild, min)</dt><dd>535 KB · gzip 133 KB</dd>
+            <dt>cannon-es 0.20.0, tree-shake (min)</dt><dd>82 KB · gzip 24 KB</dd>
+            <dt>Cộng (chunk lười)</dt><dd>617 KB · gzip ≈ 157 KB</dd>
+            <dt>CDN: three.module.min + three.core.min</dt><dd>393 + 416 KB · br 90 + 84 KB</dd>
+            <dt>CDN: cannon-es.js (chưa min)</dt><dd>346 KB · br 77 KB</dd>
+            <dt>Thời gian tải trong trang này</dt><dd id="loadMs">—</dd>
+          </dl>
+          <p>three gần như không tree-shake được (WebGLRenderer kéo cả bộ shader). Toàn app hiện chưa có thư viện 3D nào.</p>
+        </div>
+        <div class="panel">
+          <h2>Ngựa ở cỡ thật (ô 22 / 30 / 40 px)</h2>
+          <div class="strip" id="strip"></div>
+          <p>Mỗi hàng: Đỏ (đi được, vòng tròn), Xanh dương, Vàng (vừa đi, vòng chấm), Xanh lá, và bóng mờ nơi tới.</p>
+        </div>
+      </aside>
+    </div>
+
+    <script src="dice3d.js"></script>
+    <script src="app.js"></script>
+    <script>
+      (function () {
+        const M = window.__mock;
+        const root = document.documentElement;
+        const framePhone = document.getElementById("framePhone");
+        const frameDesktop = document.getElementById("frameDesktop");
+        framePhone.appendChild(M.host);
+
+        function pressed(selector, test) {
+          document.querySelectorAll(selector).forEach((b) => b.setAttribute("aria-pressed", String(test(b))));
+        }
+        document.querySelectorAll("[data-theme-set]").forEach((b) =>
+          b.addEventListener("click", () => {
+            root.dataset.theme = b.dataset.themeSet;
+            pressed("[data-theme-set]", (x) => x === b);
+          }),
+        );
+        function fitDesktop() {
+          const box = document.getElementById("desktopScaleBox");
+          const avail = Math.min(window.innerWidth - 40, 1292);
+          const s = Math.min(1, avail / 1292);
+          document.getElementById("desktopScale").style.transform = `scale(${s})`;
+          box.style.width = `${1292 * s}px`;
+          box.style.height = `${812 * s}px`;
+        }
+        function setFrame(which) {
+          document.getElementById("devPhone").hidden = which !== "phone";
+          document.getElementById("devDesktop").hidden = which !== "desktop";
+          (which === "phone" ? framePhone : frameDesktop).appendChild(M.host);
+          pressed("[data-frame-set]", (x) => x.dataset.frameSet === which);
+          fitDesktop();
+          requestAnimationFrame(() => M.resize());
+        }
+        document.querySelectorAll("[data-frame-set]").forEach((b) => b.addEventListener("click", () => setFrame(b.dataset.frameSet)));
+        window.addEventListener("resize", fitDesktop);
+        M.setFrame = setFrame;
+
+        const toggle = (id, key, after) => {
+          const b = document.getElementById(id);
+          b.addEventListener("click", () => {
+            M.sim[key] = !M.sim[key];
+            b.setAttribute("aria-pressed", String(M.sim[key]));
+            after?.();
+            M.render();
+          });
+        };
+        toggle("simNoGl", "noWebGL");
+        toggle("simReduced", "reduced", () => M.host.classList.toggle("reduce-motion", M.sim.reduced));
+        toggle("simBlur", "blur");
+        toggle("simHits", "showHits", () => M.host.querySelector("#hits").toggleAttribute("data-debug", M.sim.showHits));
+
+        M.onForce = () => pressed("[data-force]", (x) => Number(x.dataset.force) === (M.force ?? 0));
+        document.querySelectorAll("[data-force]").forEach((b) =>
+          b.addEventListener("click", () => {
+            const n = Number(b.dataset.force);
+            M.setForce(n === 0 ? null : n);
+            M.onForce();
+          }),
+        );
+        document.getElementById("aiRoll").addEventListener("click", () => M.machineTurn());
+        document.getElementById("resetPos").addEventListener("click", () => M.reset());
+
+        const dbg = document.getElementById("dbg");
+        const hist = document.getElementById("hist");
+        const f = (v, unit = " ms") => (v === null || v === undefined ? "—" : `${Math.round(v)}${unit}`);
+        let selfTestText = "—";
+        M.dbg = () => {
+          const t = M.timings;
+          const ok = t.check ? `<span class="${t.check.ok ? "ok" : "bad"}">yêu cầu ${t.check.n} → mặt trên ${t.check.top} ${t.check.ok ? "✓" : "✗"}</span>` : "—";
+          const budget = t.afterNumberMs == null ? "—" : `<span class="${t.afterNumberMs <= 2200 ? "ok" : "bad"}">${f(t.afterNumberMs)} (≤ 2200)</span>`;
+          dbg.innerHTML = `
+            <dt>Chế độ</dt><dd>${t.mode}</dd>
+            <dt>Giữ nút</dt><dd>${f(t.holdMs)}</dd>
+            <dt>Chờ số (máy chủ giả)</dt><dd>${f(t.latencyMs)}</dd>
+            <dt>Nhấc tay (script)</dt><dd>${f(t.liftMs)}</dd>
+            <dt>Bay (thả → nằm yên)</dt><dd>${f(t.flightMs)}</dd>
+            <dt>Từ lúc có số → đóng lớp phủ</dt><dd>${budget}</dd>
+            <dt>Mô phỏng trước</dt><dd>${t.planMs == null ? "—" : `${t.planMs.toFixed(1)} ms · ${t.tries} lần thử`}</dd>
+            <dt>Khung hình khi bay</dt><dd>${t.fpsAvg == null ? "—" : `TB ${Math.round(t.fpsAvg)} fps · tệ nhất ${Math.round(t.fpsMin)} fps`}</dd>
+            <dt>Kiểm mặt trên</dt><dd>${ok}</dd>
+            <dt>Tự kiểm 1–6</dt><dd>${selfTestText}</dd>`;
+          hist.innerHTML = M.facesRolled.map((c, i) => `<span>${i + 1}: ${c}</span>`).join("");
+        };
+        document.getElementById("selfTest").addEventListener("click", async () => {
+          await Dice3D.load();
+          const r = Dice3D.selfTest(8);
+          const bad = r.filter((x) => x.n !== x.top).length;
+          const avg = r.reduce((s, x) => s + x.ms, 0) / r.length;
+          selfTestText = `<span class="${bad ? "bad" : "ok"}">${r.length - bad}/${r.length} đúng</span> · ${avg.toFixed(1)} ms/lần`;
+          window.__selfTest = { total: r.length, bad, avgMs: avg };
+          M.dbg();
+        });
+
+        // the zoom strip, in both themes
+        const strip = document.getElementById("strip");
+        function stripTheme(theme) {
+          let rows = "";
+          for (const px of [22, 30, 40]) {
+            const cells = 5;
+            let svg = "";
+            for (let i = 0; i < cells; i += 1) svg += `<rect x="${i}" y="0.8" width="1" height="1" stroke-width="0.04" style="fill:var(--game-board);stroke:var(--game-line)"/>`;
+            svg += `<ellipse class="ring-movable" cx="0.5" cy="1.63" rx="0.58" ry="0.24"/>`;
+            svg += `<ellipse class="mark-last" cx="2.5" cy="1.63" rx="0.56" ry="0.24"/>`;
+            svg += `<rect class="target-frame" x="4.05" y="0.85" width="0.9" height="0.9"/>`;
+            svg += M.horseSvg(0, 0.5, 1.3, { cls: "is-movable" });
+            svg += M.horseSvg(1, 1.5, 1.3);
+            svg += M.horseSvg(2, 2.5, 1.3);
+            svg += M.horseSvg(3, 3.5, 1.3);
+            svg += M.horseSvg(0, 4.5, 1.3, { cls: "ghost" });
+            rows += `<div class="strip-row"><span class="strip-cap">${px} px</span><svg viewBox="0 0 ${cells} 2" width="${cells * px}" height="${2 * px}" aria-hidden="true">${svg}</svg></div>`;
+          }
+          return `<div class="strip-theme" data-theme="${theme}" data-game="ludo"><div style="font-size:.75rem;font-weight:700">${theme === "light" ? "Sáng" : "Tối"}</div>${rows}</div>`;
+        }
+        strip.innerHTML = stripTheme("light") + stripTheme("dark");
+
+        M.render();
+        M.init3D()
+          .then((ok) => {
+            document.getElementById("loadMs").textContent = ok ? `${Math.round(Dice3D.loadMs)} ms (CDN, lần đầu)` : "không có WebGL";
+            M.resize();
+            M.render();
+            window.__ready = true;
+          })
+          .catch((e) => {
+            document.getElementById("loadMs").textContent = `lỗi tải: ${e.message}`;
+            window.__ready = true;
+          });
+      })();
+    </script>
+  </body>
+</html>

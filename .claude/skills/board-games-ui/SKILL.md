@@ -96,7 +96,7 @@ Trước khi coi một màn hình chơi là xong, kiểm từng mục ở mọi 
 ## Chuyển động
 
 - Ưu tiên CSS transition / `@keyframes` trong `packages/ui/src/styles.css` (như `animate-dice-roll`) hoặc Web Animations API. Thư viện `motion` chỉ sau review, có lý do ghi trong `design.md`.
-- Thời lượng nằm trong nhịp máy ở `apps/web/src/transport/ai-timing.ts`: game không xúc xắc ≤ `AI_MIN_DELAY_MS` (300 ms); đi quân ≤ 400 ms trong `AI_SETTLE_DELAY_MS` (500 ms); xúc xắc ≤ `AI_RESULT_DELAY_MS` (800 ms) kể cả thời gian đọc số. Máy không bao giờ được đi trước khi animation trước xong.
+- Thời lượng nằm trong nhịp máy ở `apps/web/src/transport/ai-timing.ts`: game không xúc xắc ≤ `AI_MIN_DELAY_MS` (300 ms); đi quân ≤ 400 ms trong `AI_SETTLE_DELAY_MS` (500 ms); xúc xắc ≤ `AI_RESULT_DELAY_MS` (800 ms) kể cả thời gian đọc số; riêng cú tung xúc xắc 3D của người ở thiết bị này (Cờ cá ngựa) đóng lớp mờ ≤ 1,9 s sau khi có số, trong `AI_THROW_DELAY_MS` (2500 ms). Máy không bao giờ được đi trước khi animation trước xong.
 - Mỗi sự kiện **một** khoảnh khắc có chủ đích (đặt quân, gieo, đá quân, thắng), không chồng hiệu ứng. Ăn mừng thắng ngắn, không chặn nút.
 - Mọi animation có nhánh giảm chuyển động; test bằng `reducedMotion: "reduce"` khi animation ảnh hưởng tới thứ tự hiển thị.
 

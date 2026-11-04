@@ -96,7 +96,7 @@ packages/config     tsconfig, ESLint, Vitest dùng chung
 ## Giấy phép
 
 - **Mã nguồn của dự án**: giữ mọi quyền (all rights reserved). Repo không có file `LICENSE`: được xem và chạy thử, không được sao chép hay phân phối lại khi chưa hỏi tác giả.
-- **Bên thứ ba** đi kèm app: [chess.js](https://github.com/jhlywa/chess.js) (BSD-2-Clause, luật Cờ vua) và bộ quân Cờ vua **"staunty"** của Lichess (CC BY-NC-SA 4.0, file giữ nguyên trong `apps/web/public/pieces/staunty/`). Văn bản giấy phép đầy đủ: [apps/web/public/third-party-licenses.txt](apps/web/public/third-party-licenses.txt), cũng mở được từ chân trang menu của app ("Giấy phép bên thứ ba").
+- **Bên thứ ba** đi kèm app: [chess.js](https://github.com/jhlywa/chess.js) (BSD-2-Clause, luật Cờ vua), [three.js](https://github.com/mrdoob/three.js) và [cannon-es](https://github.com/pmndrs/cannon-es) (MIT, xúc xắc 3D của Cờ cá ngựa, chỉ tải trên màn chơi đó) và bộ quân Cờ vua **"staunty"** của Lichess (CC BY-NC-SA 4.0, file giữ nguyên trong `apps/web/public/pieces/staunty/`). Văn bản giấy phép đầy đủ: [apps/web/public/third-party-licenses.txt](apps/web/public/third-party-licenses.txt), cũng mở được từ chân trang menu của app ("Giấy phép bên thứ ba").
 - Thư viện chỉ dùng khi phát triển (axe-core, Playwright, …) không vào bản build.
 
 ## Phát triển theo spec (OpenSpec)
