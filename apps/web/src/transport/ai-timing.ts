@@ -14,13 +14,26 @@ export const AI_MIN_DELAY_MS = 300;
 export const AI_SETTLE_DELAY_MS = 500;
 
 /**
- * In a game with random outcomes, the delay right after a move with one (a roll, the player's or the
- * AI's own): the dice animation and the time to read the number. Never shorter than the board's
- * dice animation. Still within 2 s with the thinking below, which runs alongside it.
+ * In a game with random outcomes, the delay right after a move with one made by the AI (its own
+ * roll): the dice animation and the time to read the number. Never shorter than the board's dice
+ * animation. Still within 2 s with the thinking below, which runs alongside it.
  */
 export const AI_RESULT_DELAY_MS = 800;
 
-/** How long the AI may think per move. With the delays above, every move lands within 2 s. */
+/**
+ * In a game with random outcomes, the delay right after a move with one made by a person here (a
+ * roll thrown with the 3D die, Ludo): the throw closes within 1.9 s of the number (design of
+ * redesign-ludo-play §1, §7), and this leaves room for a dropped frame or the first throw. The
+ * thinking runs alongside it, so the AI's move lands within 3 s of the number. Also with the 2D
+ * die: the transport does not know which one the board used. Online, the pause after a roll of the
+ * player's own seat before the next move shows, whoever made it.
+ */
+export const AI_THROW_DELAY_MS = 2500;
+
+/**
+ * How long the AI may think per move. With the delays above, every move lands within 2 s, but
+ * within 3 s of a person's roll (`AI_THROW_DELAY_MS`).
+ */
 export const AI_TIME_LIMIT_MS: Readonly<Record<AiLevel, number>> = {
   easy: 500,
   medium: 500,

@@ -20,12 +20,20 @@ import {
   roomView,
 } from "@/test/fake-realtime";
 
-import { AI_MIN_DELAY_MS, AI_RESULT_DELAY_MS, AI_SETTLE_DELAY_MS } from "./ai-timing";
+import {
+  AI_MIN_DELAY_MS,
+  AI_RESULT_DELAY_MS,
+  AI_SETTLE_DELAY_MS,
+  AI_THROW_DELAY_MS,
+} from "./ai-timing";
 import { createOnlineTransport, type OnlineTransport } from "./online-transport";
 import { createRoomConnection, type RoomConnection } from "./room-connection";
 
 // Several moves in one room (the AI seats the server plays answer in the write of the move before
 // them) are shown one at a time (change `add-room-ai-seats`, design §4).
+
+/** The seats of a room, as `roomView` takes them. */
+type RoomOptionsSeats = NonNullable<Parameters<typeof roomView>[0]>["seats"];
 
 /** Any game's transport: the tests read snapshots, whatever the game. */
 type AnyTransport = OnlineTransport<unknown, unknown, unknown>;
@@ -162,9 +170,10 @@ describe("online transport: showing moves received together", () => {
     }
 
     expect(seen.map(({ lastMover }) => lastMover)).toEqual([0, 1, 1, 1, 1, 2, 3]);
-    // After a roll, the dice's time; after a horse moved, its walk's.
+    // After his roll, its throw's time; after a roll of the AI, the dice's; after a horse moved,
+    // its walk's.
     expect(delays).toEqual([
-      AI_RESULT_DELAY_MS,
+      AI_THROW_DELAY_MS,
       AI_RESULT_DELAY_MS,
       AI_SETTLE_DELAY_MS,
       AI_RESULT_DELAY_MS,
@@ -321,6 +330,145 @@ describe("online transport: showing moves received together", () => {
     // Nothing left to show later.
     await wait(5000);
     expect(ready().moveCount).toBe(4);
+  });
+});
+
+describe("online transport: the pause after a roll thrown here", () => {
+  /** Minh in the first seat, Lan in the second, a game of two. */
+  const MINH_AND_LAN = ["Minh", "Lan"] as const;
+
+  function startTwo(record: GameRecord, seats: RoomOptionsSeats = MINH_AND_LAN): FakeSocket {
+    const socket = connect(roomView({ seats, record }), 0);
+    transport = createOnlineTransport({ definition: ludo, connection });
+    return socket;
+  }
+
+  it("Người ở xa gieo nhanh trong lúc xúc xắc còn lăn: Lan's roll waits for the end of Minh's throw", async () => {
+    const socket = startTwo(ludoRecord([], 2));
+    transport.submit({ type: "roll" });
+    // Minh rolls a 2 and loses the turn: the answer shows at once, for his throw.
+    socket.receive(
+      roomMessage(roomView({ seats: MINH_AND_LAN, record: ludoRecord([2], 2), revision: 2 }), 0),
+    );
+    expect(ready()).toMatchObject({ moveCount: 1, lastMover: 0, currentPlayer: 1 });
+
+    // Lan rolls as soon as her turn comes, in a later update.
+    await wait(300);
+    socket.receive(
+      roomMessage(roomView({ seats: MINH_AND_LAN, record: ludoRecord([2, 3], 2), revision: 3 }), 0),
+    );
+    expect(ready()).toMatchObject({ moveCount: 1, canMove: false });
+
+    await wait(AI_THROW_DELAY_MS - 300 - 1);
+    expect(ready().moveCount).toBe(1);
+    await wait(1);
+    expect(ready()).toMatchObject({ moveCount: 2, lastMover: 1, currentPlayer: 0, canMove: true });
+  });
+
+  it("keeps the order of the moves that came during the pause", async () => {
+    const socket = startTwo(ludoRecord([], 2));
+    transport.submit({ type: "roll" });
+    socket.receive(
+      roomMessage(roomView({ seats: MINH_AND_LAN, record: ludoRecord([2], 2), revision: 2 }), 0),
+    );
+    // Lan rolls a 6, brings a horse out: two moves, in two updates.
+    socket.receive(
+      roomMessage(roomView({ seats: MINH_AND_LAN, record: ludoRecord([2, 6], 2), revision: 3 }), 0),
+    );
+    expect(ready().moveCount).toBe(1);
+
+    await wait(AI_THROW_DELAY_MS);
+    expect(ready()).toMatchObject({ moveCount: 2, lastMover: 1 });
+    await wait(AI_RESULT_DELAY_MS);
+    expect(ready()).toMatchObject({ moveCount: 3, lastMover: 1 });
+  });
+
+  it("shows the player's own next move at once, during the pause", async () => {
+    const socket = startTwo(ludoRecord([], 2));
+    transport.submit({ type: "roll" });
+    // A 6: Minh chooses a horse.
+    const rolled = ludoRecord([6], 2);
+    socket.receive(
+      roomMessage(
+        roomView({
+          seats: MINH_AND_LAN,
+          record: { ...rolled, entries: rolled.entries.slice(0, 1) },
+          revision: 2,
+        }),
+        0,
+      ),
+    );
+    expect(ready()).toMatchObject({ moveCount: 1, canMove: true });
+
+    await wait(1000);
+    transport.submit(ready().legalMoves[0]);
+    socket.receive(roomMessage(roomView({ seats: MINH_AND_LAN, record: rolled, revision: 3 }), 0));
+
+    expect(ready().moveCount).toBe(2);
+  });
+
+  it("does not pause after a roll the server made for the player (stand-in)", async () => {
+    const standIn = [{ kind: "human", name: "Minh", standIn: true }, "Lan"] as const;
+    const socket = startTwo(ludoRecord([], 2), standIn);
+    socket.receive(
+      roomMessage(roomView({ seats: standIn, record: ludoRecord([2, 3], 2), revision: 2 }), 0),
+    );
+    expect(ready().moveCount).toBe(1);
+
+    await wait(AI_RESULT_DELAY_MS);
+    expect(ready().moveCount).toBe(2);
+  });
+
+  it("keeps the pause after a reconnection that brings nothing newer than the roll", async () => {
+    const socket = startTwo(ludoRecord([], 2));
+    transport.submit({ type: "roll" });
+    socket.receive(
+      roomMessage(roomView({ seats: MINH_AND_LAN, record: ludoRecord([2], 2), revision: 2 }), 0),
+    );
+
+    // Lost and back within the throw: the room has only Minh's roll still.
+    socket.lose();
+    await wait(800);
+    const again = sockets.last();
+    again.open();
+    again.receive(
+      roomMessage(roomView({ seats: MINH_AND_LAN, record: ludoRecord([2], 2), revision: 2 }), 0),
+    );
+    expect(ready()).toMatchObject({ moveCount: 1, connection: "online" });
+
+    // Lan rolls right away: her roll still waits for the end of Minh's throw.
+    await wait(200);
+    again.receive(
+      roomMessage(roomView({ seats: MINH_AND_LAN, record: ludoRecord([2, 3], 2), revision: 3 }), 0),
+    );
+    expect(ready().moveCount).toBe(1);
+    await wait(AI_THROW_DELAY_MS);
+    expect(ready()).toMatchObject({ moveCount: 2, lastMover: 1 });
+  });
+
+  it("Kết nối lại khi đang tung: shows the latest state at once after reconnecting", async () => {
+    const socket = startTwo(ludoRecord([], 2));
+    transport.submit({ type: "roll" });
+    socket.receive(
+      roomMessage(roomView({ seats: MINH_AND_LAN, record: ludoRecord([2], 2), revision: 2 }), 0),
+    );
+    socket.receive(
+      roomMessage(roomView({ seats: MINH_AND_LAN, record: ludoRecord([2, 3], 2), revision: 3 }), 0),
+    );
+    expect(ready().moveCount).toBe(1);
+
+    socket.lose();
+    await wait(1000);
+    const again = sockets.last();
+    again.open();
+    again.receive(
+      roomMessage(
+        roomView({ seats: MINH_AND_LAN, record: ludoRecord([2, 3, 4], 2), revision: 4 }),
+        0,
+      ),
+    );
+
+    expect(ready()).toMatchObject({ moveCount: 3, canMove: false, connection: "online" });
   });
 });
 

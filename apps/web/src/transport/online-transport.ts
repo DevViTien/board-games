@@ -23,7 +23,12 @@ import {
   seatPlays,
 } from "@board-games/protocol";
 
-import { AI_MIN_DELAY_MS, AI_RESULT_DELAY_MS, AI_SETTLE_DELAY_MS } from "./ai-timing";
+import {
+  AI_MIN_DELAY_MS,
+  AI_RESULT_DELAY_MS,
+  AI_SETTLE_DELAY_MS,
+  AI_THROW_DELAY_MS,
+} from "./ai-timing";
 import type { RoomConnection } from "./room-connection";
 import {
   CONNECTION_STATUS,
@@ -84,8 +89,10 @@ export interface OnlineTransport<State, Move, Outcome> extends Transport<State, 
  * A room may bring several new moves at once: the AI seats the server plays answer in the same
  * write as the move before them. Those are shown one at a time, each no sooner than the board's
  * animation of the one before it, at the pace of the AI on this device, with the board locked until
- * the last one shows (design of `add-room-ai-seats`, §4). Entering the room, reloading or
- * reconnecting shows the latest state at once.
+ * the last one shows (design of `add-room-ai-seats`, §4). After a roll of this player's own seat,
+ * whose throw plays out on the board, the next move by anyone else waits `AI_THROW_DELAY_MS`, also
+ * when it comes in a later update (design of `redesign-ludo-play`, §7). Entering the room,
+ * reloading or reconnecting shows the latest state at once.
  */
 // `Outcome` defaults to `never`, as in the engine and the local transport.
 export function createOnlineTransport<
@@ -116,6 +123,15 @@ export function createOnlineTransport<
   /** Moves of `session` on screen; behind its end while moves received together are shown. */
   let shown = 0;
   let revealTimer: ReturnType<typeof setTimeout> | undefined;
+  /** `revealTimer` is only the pause after a roll thrown here, with nothing waiting behind it. */
+  let pausing = false;
+  /** The `shown` the pause after a roll thrown here ran for, so it runs once. */
+  let pausedFor = -1;
+  /**
+   * The pause after the last roll thrown here, by game and move, and when it ends: kept across a
+   * reconnection, so the others' moves still wait for the throw if that roll is still the latest.
+   */
+  let throwPause: { gameNumber: number; shown: number; endsAt: number } | null = null;
   /** The connection's status when the room was last read: a new greeting shows the latest state. */
   let lastStatus: ConnectionStatus | null = null;
   let broken = false;
@@ -140,6 +156,8 @@ export function createOnlineTransport<
   function stopRevealing(): void {
     if (revealTimer !== undefined) clearTimeout(revealTimer);
     revealTimer = undefined;
+    pausing = false;
+    pausedFor = -1;
   }
 
   function waitForAnswer(sentAt: Pending): void {
@@ -159,15 +177,35 @@ export function createOnlineTransport<
     return rebuilt.ok ? rebuilt.value : null;
   }
 
+  /** The seat that made the `index`-th move of a game (from 0): the player to move before it. */
+  function moverOf(current: GameSession, index: number): PlayerIndex | null {
+    const before = current.states[index];
+    return before === undefined ? null : definition.currentPlayer(before);
+  }
+
+  /**
+   * Whether the move just shown (the `shown`-th) is a roll of this player's own seat, thrown on
+   * this board: not while the server plays the seat for them (`standIn`).
+   */
+  function thrownHere(current: GameSession): boolean {
+    const entry = current.entries[shown - 1];
+    if (entry === undefined || !("outcome" in entry) || seat === null) return false;
+    if (moverOf(current, shown - 1) !== seat) return false;
+    const own = room?.seats[seat];
+    return !(own?.kind === "human" && own.standIn);
+  }
+
   /**
    * How long the move just shown (the `shown`-th) stays alone on screen before the next: never
-   * shorter than the board's animation of it, longer after a roll, as the AI's pace on this device.
-   * A game without random outcomes animates nothing long, and keeps the AI's shortest delay.
+   * shorter than the board's animation of it, longer after a roll, as the AI's pace on this device,
+   * and longest after a roll thrown here. A game without random outcomes animates nothing long, and
+   * keeps the AI's shortest delay.
    */
   function revealDelay(current: GameSession): number {
     if (definition.outcomes === undefined) return AI_MIN_DELAY_MS;
     const entry = current.entries[shown - 1];
-    return entry !== undefined && "outcome" in entry ? AI_RESULT_DELAY_MS : AI_SETTLE_DELAY_MS;
+    if (entry === undefined || !("outcome" in entry)) return AI_SETTLE_DELAY_MS;
+    return thrownHere(current) ? AI_THROW_DELAY_MS : AI_RESULT_DELAY_MS;
   }
 
   /** The game waiting behind the one on screen now replaces it, from its empty board. */
@@ -176,22 +214,62 @@ export function createOnlineTransport<
     ({ room, session, seat } = queued);
     queued = null;
     shown = 0;
+    pausedFor = -1;
   }
 
   /**
    * Shows the next move received after a pause, and so on until the last; then the new game
-   * waiting behind it, if any.
+   * waiting behind it, if any. After a roll thrown here, the pause runs even with nothing behind
+   * it yet: a move that comes meanwhile waits for its end.
    */
   function scheduleReveal(): void {
     if (revealTimer !== undefined || session === null) return;
-    if (shown >= session.cursor && queued === null) return;
+    const more = shown < session.cursor || queued !== null;
+    const pause = !more && pausedFor !== shown && thrownHere(session);
+    if (!more && !pause) return;
+    const delay = revealDelay(session);
+    if (thrownHere(session)) {
+      pausedFor = shown;
+      if (room !== null) {
+        throwPause = { gameNumber: room.gameNumber, shown, endsAt: Date.now() + delay };
+      }
+    }
+    pausing = pause;
+    startRevealTimer(delay);
+  }
+
+  function startRevealTimer(delay: number): void {
     revealTimer = setTimeout(() => {
       revealTimer = undefined;
+      pausing = false;
       if (session !== null && shown < session.cursor) shown += 1;
       else adoptQueued();
       render();
       scheduleReveal();
-    }, revealDelay(session));
+    }, delay);
+  }
+
+  /**
+   * After the latest state was shown at once (a reconnection): if it ends with the roll thrown
+   * here whose pause had not run out, the rest of the pause runs, so a move coming next still
+   * waits for the throw on the board.
+   */
+  function resumeThrowPause(): void {
+    if (throwPause === null || room === null || session === null || revealTimer !== undefined) {
+      return;
+    }
+    const left = throwPause.endsAt - Date.now();
+    if (
+      throwPause.gameNumber !== room.gameNumber ||
+      throwPause.shown !== shown ||
+      shown !== session.cursor ||
+      left <= 0
+    ) {
+      return;
+    }
+    pausedFor = shown;
+    pausing = true;
+    startRevealTimer(left);
   }
 
   /** The seat that played the last move shown: the player to move before it. */
@@ -351,6 +429,7 @@ export function createOnlineTransport<
     if (previous === null || greeted || latest.gameNumber < previous.gameNumber) {
       stopRevealing();
       shown = next.cursor;
+      if (greeted) resumeThrowPause();
       return;
     }
     if (latest.gameNumber !== previous.gameNumber) {
@@ -361,6 +440,13 @@ export function createOnlineTransport<
       return;
     }
     if (shown > next.cursor) shown = next.cursor;
+    // The player's own next move (a horse chosen after the roll) never waits for the pause after
+    // their roll: the pause is for the others' moves.
+    if (pausing && shown < next.cursor && moverOf(next, shown) === seat) {
+      if (revealTimer !== undefined) clearTimeout(revealTimer);
+      revealTimer = undefined;
+      pausing = false;
+    }
     // While moves are being shown, the newer ones queue behind them; otherwise the first new move
     // shows at once, and any after it one at a time.
     if (revealTimer === undefined && shown < next.cursor) {
@@ -413,6 +499,7 @@ export function createOnlineTransport<
     adoptQueued();
     if (session !== null) shown = session.cursor;
     refresh();
+    resumeThrowPause();
   }
 
   const unsubscribe = [

@@ -25,6 +25,7 @@ import {
   AI_MIN_DELAY_MS,
   AI_RESULT_DELAY_MS,
   AI_SETTLE_DELAY_MS,
+  AI_THROW_DELAY_MS,
   AI_TIME_LIMIT_MS,
 } from "./ai-timing";
 import { withStoreTimeout } from "./store-timeout";
@@ -274,12 +275,15 @@ export function createLocalTransport<
   /**
    * How long the AI's move waits at least, from the start of its turn. In a game with random
    * outcomes, the board's animation of the last move must end first, and right after a roll the
-   * player needs a moment to read it; other games keep the short delay.
+   * player needs a moment to read it: longer after a person's roll, whose throw of the 3D die must
+   * end first. Other games keep the short delay.
    */
   function aiDelayMs(position: GameSession): number {
     if (!hasRandomOutcomes) return AI_MIN_DELAY_MS;
     const last = lastEntry(position);
-    return last !== null && isRandom(last) ? AI_RESULT_DELAY_MS : AI_SETTLE_DELAY_MS;
+    if (last === null || !isRandom(last)) return AI_SETTLE_DELAY_MS;
+    const mover = lastMover(position);
+    return mover !== null && isHuman(mover) ? AI_THROW_DELAY_MS : AI_RESULT_DELAY_MS;
   }
 
   /**

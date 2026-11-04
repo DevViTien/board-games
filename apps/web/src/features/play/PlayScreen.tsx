@@ -31,6 +31,7 @@ import { Confetti } from "./Confetti";
 import { ConnectionNotice } from "./ConnectionNotice";
 import { PlayerPanel, SeatBar } from "./PlayerPanel";
 import { PlayLoading } from "./PlayLoading";
+import { PresentationHoldProvider, useHeldPresentation } from "./presentation-hold";
 import { ResultCard } from "./ResultCard";
 import { isAiThinking, unavailableReasons } from "./unavailable-reason";
 import { useLostForAWhile } from "./use-lost-for-a-while";
@@ -145,7 +146,11 @@ export function PlayScreen<State, Move, Outcome>({
   const t = useTranslations("Play");
   const tGames = useTranslations("Games");
   const format = useFormatter();
-  const snapshot = useTransportSnapshot(transport);
+  const live = useTransportSnapshot(transport);
+  const readLive = useCallback(() => transport.getSnapshot(), [transport]);
+  // What the screen around the board shows: the live snapshot, or the one a board asked to keep
+  // while it plays out a moment of its own (Ludo's throw); the board always gets the live one.
+  const { shown: snapshot, control: presentation, held } = useHeldPresentation(live, readLive);
   const playerLabel = ui.usePlayerLabel();
   const moveLabel = ui.useMoveLabel();
   const modeLabel = useModeLabel();
@@ -181,7 +186,9 @@ export function PlayScreen<State, Move, Outcome>({
     snapshot.status === "ready" ? (snapshot.turn?.startedAt ?? null) : null,
   );
   const reducedMotion = usePrefersReducedMotion();
-  const connectionLost = useLostForAWhile(snapshot.status === "ready" ? snapshot.connection : null);
+  // The connection as it is now, also while the screen is held: a lost connection always shows.
+  const connection = live.status === "ready" ? live.connection : null;
+  const connectionLost = useLostForAWhile(connection);
   const useResultDetail = ui.useResultDetail ?? noResultDetail;
   const resultDetail = useResultDetail();
   const undoReasonId = useId();
@@ -241,7 +248,17 @@ export function PlayScreen<State, Move, Outcome>({
     [transport],
   );
 
-  if (snapshot.status === "loading") return <PlayLoading />;
+  // A game replaced while held (a new game, undo, the room as it is after reconnecting): the
+  // latest state at once. Adjusted during render.
+  if (
+    held &&
+    (live.status !== "ready" ||
+      (snapshot.status === "ready" && live.moveCount < snapshot.moveCount))
+  ) {
+    presentation.release();
+  }
+
+  if (snapshot.status === "loading" || live.status === "loading") return <PlayLoading />;
 
   // Adjusted during render: once a move is played (or a new game begins), the refusal is old news.
   if (refusedAt !== null && refusedAt !== snapshot.moveCount) setRefusedAt(null);
@@ -270,7 +287,7 @@ export function PlayScreen<State, Move, Outcome>({
   // Why resigning or claiming cannot be done now: the connection, lost or paused for inactivity
   // (then "Continue" on the connection line brings it back).
   const unavailableReason =
-    snapshot.connection === CONNECTION_STATUS.Idle ? t("locked.idle") : t("locked.reconnecting");
+    connection === CONNECTION_STATUS.Idle ? t("locked.idle") : t("locked.reconnecting");
 
   // A seat the AI plays for a person who left is told by their name, not counted among AI seats.
   const aiSeatCount = snapshot.seats.filter(
@@ -564,12 +581,13 @@ export function PlayScreen<State, Move, Outcome>({
 
   // Why the board is locked while the game is on, for a board's own controls to say it: the
   // connection, someone else to play, or a move on its way to the server.
+  // From the live snapshot, as the board's own `disabled` is.
   let lockedReason: string | null = null;
-  if (!snapshot.canMove && !finished) {
-    if (snapshot.connection !== null && snapshot.connection !== CONNECTION_STATUS.Online) {
+  if (!live.canMove && live.result === null) {
+    if (connection !== null && connection !== CONNECTION_STATUS.Online) {
       lockedReason = unavailableReason;
-    } else if (snapshot.waitingFor !== null) {
-      lockedReason = t("locked.waiting", { player: waitingName(snapshot.currentPlayer) });
+    } else if (live.waitingFor !== null) {
+      lockedReason = t("locked.waiting", { player: waitingName(live.currentPlayer) });
     } else {
       lockedReason = t("locked.sending");
     }
@@ -580,9 +598,9 @@ export function PlayScreen<State, Move, Outcome>({
   // skips instead of rendering the turn line and the buttons again.
   // Online only. Its space is kept even when empty, so a lost connection never moves the board.
   const notice =
-    snapshot.connection === null ? null : (
+    connection === null ? null : (
       <ConnectionNotice
-        status={snapshot.connection}
+        status={connection}
         onResume={onResume}
         // Below 1024 px it takes back half of the column's gaps: one small line, close to the chips.
         className="-my-2 lg:my-1.5 lg:justify-start lg:[grid-area:notice] short-landscape:my-1 short-landscape:justify-start short-landscape:[grid-area:notice]"
@@ -655,9 +673,7 @@ export function PlayScreen<State, Move, Outcome>({
     result: snapshot.result,
     viewer: snapshot.viewer,
     connectionLost:
-      snapshot.connection === null
-        ? null
-        : snapshot.connection === CONNECTION_STATUS.Idle || connectionLost,
+      connection === null ? null : connection === CONNECTION_STATUS.Idle || connectionLost,
     thinking,
   } as const;
   const players = (
@@ -856,11 +872,17 @@ export function PlayScreen<State, Move, Outcome>({
         "short-landscape:[--board-room:min(100vw_-_22rem_-_var(--safe-left)_-_var(--safe-right),100dvh_-_var(--top-bar-height)_-_var(--safe-top)_-_1rem)]",
       )}
     >
-      {chips}
-      {notice}
-      {statusLine}
-      {seatOrder === undefined && players}
+      {/* While a board holds the screen (Ludo's throw), everything but the board's own controls is
+          inert: nothing behind the throw can be reached by Tab or a click. The wrappers have no
+          box of their own (`contents`), so the grid places what they hold as before. */}
+      <div className="contents" inert={held || undefined}>
+        {chips}
+        {notice}
+        {statusLine}
+        {seatOrder === undefined && players}
+      </div>
       <div
+        inert={held || undefined}
         aria-busy={seatOrder === undefined ? thinking : undefined}
         className={cn(
           "min-w-0 lg:self-center lg:[grid-area:board] aria-busy:[&_*]:cursor-progress",
@@ -897,7 +919,9 @@ export function PlayScreen<State, Move, Outcome>({
           {controls}
         </div>
       )}
-      {gameButtons}
+      <div className="contents" inert={held || undefined}>
+        {gameButtons}
+      </div>
       {confetti}
     </div>
   );
@@ -907,48 +931,52 @@ export function PlayScreen<State, Move, Outcome>({
   return (
     // The game's own look (`games/<id>/theme.css`) applies from here down, the top bar included.
     <div data-game={gameId} className="flex min-h-dvh flex-col bg-game-page">
-      <AppTopBar
-        title={
-          <h1
-            ref={titleRef}
-            // Focusable by script only: where the focus goes when what had it is gone.
-            tabIndex={-1}
-            // One line: cut short on a phone, whole for screen readers.
-            className="truncate text-heading focus:outline-none lg:text-title"
-          >
-            {gameName}
-          </h1>
-        }
-        actions={
-          // The rules, in a dialog: the game goes on (online too) while they are read. Its icon
-          // alone on a phone, named all the same.
-          <Button
-            variant="secondary"
-            size="icon"
-            className="sm:w-auto sm:px-4"
-            onClick={() => {
-              setRulesOpen(true);
-              setRulesOpened(true);
-            }}
-          >
-            <BookOpenIcon aria-hidden className="size-5" />
-            <span className="sr-only sm:not-sr-only">{t("rules")}</span>
-          </Button>
-        }
-      />
+      <div className="contents" inert={held || undefined}>
+        <AppTopBar
+          title={
+            <h1
+              ref={titleRef}
+              // Focusable by script only: where the focus goes when what had it is gone.
+              tabIndex={-1}
+              // One line: cut short on a phone, whole for screen readers.
+              className="truncate text-heading focus:outline-none lg:text-title"
+            >
+              {gameName}
+            </h1>
+          }
+          actions={
+            // The rules, in a dialog: the game goes on (online too) while they are read. Its icon
+            // alone on a phone, named all the same.
+            <Button
+              variant="secondary"
+              size="icon"
+              className="sm:w-auto sm:px-4"
+              onClick={() => {
+                setRulesOpen(true);
+                setRulesOpened(true);
+              }}
+            >
+              <BookOpenIcon aria-hidden className="size-5" />
+              <span className="sr-only sm:not-sr-only">{t("rules")}</span>
+            </Button>
+          }
+        />
+      </div>
 
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col py-4 px-safe-4 lg:justify-center lg:py-6 lg:px-safe-10 short-landscape:justify-start short-landscape:py-2">
-        <Board
-          state={snapshot.state}
-          legalMoves={snapshot.legalMoves}
-          onMove={transport.submit}
-          disabled={!snapshot.canMove}
-          result={snapshot.result}
-          lastEntry={snapshot.lastEntry}
-          viewer={snapshot.viewer}
-          layout={layout}
-          lockedReason={lockedReason}
-        />
+        <PresentationHoldProvider value={presentation}>
+          <Board
+            state={live.state}
+            legalMoves={live.legalMoves}
+            onMove={transport.submit}
+            disabled={!live.canMove}
+            result={live.result}
+            lastEntry={live.lastEntry}
+            viewer={live.viewer}
+            layout={layout}
+            lockedReason={lockedReason}
+          />
+        </PresentationHoldProvider>
       </main>
 
       {

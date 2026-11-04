@@ -35,7 +35,7 @@ import {
 } from "@/test/fake-realtime";
 import { observeWidthAs } from "@/test/fake-resize-observer";
 import { renderWithIntl } from "@/test/render-with-intl";
-import { AI_RESULT_DELAY_MS } from "@/transport/ai-timing";
+import { AI_RESULT_DELAY_MS, AI_THROW_DELAY_MS } from "@/transport/ai-timing";
 import { createLocalTransport } from "@/transport/local-transport";
 import { createMemoryStore } from "@/transport/memory-store";
 import { createOnlineTransport } from "@/transport/online-transport";
@@ -1270,7 +1270,10 @@ describe("PlayScreen online: moves received together, told one by one", () => {
     });
     said.push(status().textContent);
     for (let step = 0; step < 3; step += 1) {
-      await act(() => vi.advanceTimersByTimeAsync(AI_RESULT_DELAY_MS));
+      // Minh's own roll is thrown on his board first: the AI's moves wait for it longer.
+      await act(() =>
+        vi.advanceTimersByTimeAsync(step === 0 ? AI_THROW_DELAY_MS : AI_RESULT_DELAY_MS),
+      );
       said.push(status().textContent);
     }
 

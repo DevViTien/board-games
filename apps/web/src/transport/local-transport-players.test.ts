@@ -10,7 +10,7 @@ import {
 } from "@board-games/engine/testing";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { AI_RESULT_DELAY_MS, AI_SETTLE_DELAY_MS } from "./ai-timing";
+import { AI_RESULT_DELAY_MS, AI_SETTLE_DELAY_MS, AI_THROW_DELAY_MS } from "./ai-timing";
 import { createLocalTransport } from "./local-transport";
 import { createMemoryStore } from "./memory-store";
 import type {
@@ -306,6 +306,9 @@ describe("createLocalTransport against several AIs: seats", () => {
     expect((await ready(transport)).seats).toEqual([HUMAN, ai("easy"), ai("easy"), ai("easy")]);
 
     transport.submit(ROLL);
+    // The player's roll is thrown first: the AI waits for it longer than for its own rolls.
+    await vi.advanceTimersByTimeAsync(AI_THROW_DELAY_MS - AI_RESULT_DELAY_MS);
+    expect(readySnapshot(transport).moveCount).toBe(1);
     const movers: number[] = [];
     while (readySnapshot(transport).waitingFor === "ai") {
       await vi.advanceTimersByTimeAsync(AI_RESULT_DELAY_MS);
@@ -401,6 +404,25 @@ describe("createLocalTransport: the AI's pace in a game with dice", () => {
     await vi.advanceTimersByTimeAsync(1);
     expect(readySnapshot(transport).moveCount).toBe(2);
     expect(AI_RESULT_DELAY_MS).toBeLessThan(2000);
+  });
+
+  it("Máy chờ cú tung của người chơi: waits for the throw of the player's roll, then moves within 3 s of it", async () => {
+    const aiPlayer = firstMoveAi(diceRaceAiGame);
+    const transport = raceVsAi(createMemoryStore(), {
+      start: { mode: "ai", level: "easy", first: "human", playerCount: 2 },
+      aiPlayer,
+    });
+    await ready(transport);
+
+    // The player's roll ends the turn: the number is known now.
+    transport.submit(ROLL);
+    expect(readySnapshot(transport)).toMatchObject({ moveCount: 1, waitingFor: "ai" });
+
+    await vi.advanceTimersByTimeAsync(AI_THROW_DELAY_MS - 1);
+    expect(readySnapshot(transport).moveCount).toBe(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(readySnapshot(transport)).toMatchObject({ moveCount: 2, lastMover: 1 });
+    expect(AI_THROW_DELAY_MS).toBeLessThan(3000);
   });
 
   it("waits after the player's roll as after its own", async () => {
