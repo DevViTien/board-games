@@ -60,6 +60,8 @@ function onlineSnapshot(
     inProgress: false,
     supportsUndo: false,
     canStartNewGame: result !== null,
+    resign: null,
+    turn: null,
     connection: "online",
     options: {},
     ...overrides,

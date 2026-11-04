@@ -591,7 +591,7 @@ export function LudoBoard({
 
   const controls = (
     <div className="flex w-full flex-col gap-3">
-      <div className="relative flex items-center justify-center gap-3 lg:justify-start">
+      <div className="relative flex items-center justify-center gap-3 lg:justify-start short-landscape:justify-start">
         <Dice face={die.face} colour={die.colour} rolling={rolling} label={die.label} />
         {/* Always there, so the focus has somewhere to go after a move or a lost turn. Locked, the
             shared disabled look wins over the colour; the colour of the player to move stays on
@@ -627,7 +627,7 @@ export function LudoBoard({
             id={rollReasonId}
             className={cn(
               rollReasonShown
-                ? "absolute top-full z-10 mt-1.5 rounded-control border border-border bg-surface px-2.5 py-1 text-small text-fg-muted shadow-raised lg:left-0"
+                ? "absolute top-full z-10 mt-1.5 rounded-control border border-border bg-surface px-2.5 py-1 text-small text-fg-muted shadow-raised lg:left-0 short-landscape:left-0"
                 : "sr-only",
             )}
           >
@@ -638,10 +638,13 @@ export function LudoBoard({
 
       {/* What the roll means, and the roll before: one block, with no room kept while both are
           empty (the die row and the choices sit close then). */}
-      <div className="flex flex-col items-center gap-2 lg:items-start">
+      <div className="flex flex-col items-center gap-2 lg:items-start short-landscape:items-start">
         {/* Not a status: the play screen's turn line is the one status of the page. Live only for
             a roll made here; the others are told by that status line. */}
-        <div data-ludo-hint="" className="text-center text-small text-fg-muted lg:text-left">
+        <div
+          data-ludo-hint=""
+          className="text-center text-small text-fg-muted lg:text-left short-landscape:text-left"
+        >
           <p aria-live="polite">{here ? hint : ""}</p>
           {!here && hint !== "" && <p>{hint}</p>}
         </div>
@@ -655,7 +658,11 @@ export function LudoBoard({
       </div>
 
       {choices.length > 0 && (
-        <div role="group" aria-label={t("chooseHorse")} className="grid gap-2 lg:grid-cols-2">
+        <div
+          role="group"
+          aria-label={t("chooseHorse")}
+          className="grid gap-2 lg:grid-cols-2 short-landscape:grid-cols-2"
+        >
           {choices.map((choice, index) => (
             <Button
               key={choice.horse}

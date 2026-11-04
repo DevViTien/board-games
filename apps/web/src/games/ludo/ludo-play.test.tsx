@@ -37,6 +37,8 @@ function fakeTransport(snapshot: LudoSnapshot): Transport<LudoState, LudoMove, L
     requestUndo: vi.fn(),
     requestRedo: vi.fn(),
     requestNewGame: vi.fn(),
+    resign: vi.fn(),
+    claimAbandoned: vi.fn(),
     dispose: vi.fn(),
   };
 }
@@ -77,6 +79,8 @@ function snapshotAfter(
     inProgress: true,
     supportsUndo: !seats.some((seat) => seat.kind === "remote"),
     canStartNewGame: true,
+    resign: null,
+    turn: null,
     connection: seats.some((seat) => seat.kind === "remote") ? "online" : null,
     options: LUDO_DEFAULT_OPTIONS,
   };
@@ -300,6 +304,8 @@ function playableTransport(
     inProgress: moveCount > 0,
     supportsUndo: true,
     canStartNewGame: true,
+    resign: null,
+    turn: null,
     connection: null,
     options: LUDO_DEFAULT_OPTIONS,
   });
@@ -324,6 +330,8 @@ function playableTransport(
     requestUndo: vi.fn(),
     requestRedo: vi.fn(),
     requestNewGame: vi.fn(),
+    resign: vi.fn(),
+    claimAbandoned: vi.fn(),
     dispose: vi.fn(),
   };
 }
@@ -341,9 +349,16 @@ describe("PlayScreen's layout with Cờ cá ngựa", () => {
     );
     const rollButton = screen.getByRole("button", { name: "Gieo xúc xắc" });
 
-    // "Back to menu", then the game's controls: the board itself takes no focus.
+    // "Back to menu", the rules, the theme and the language in the top bar, then the game's
+    // controls: the board itself takes no focus.
     await user.tab();
     expect(screen.getByRole("link", { name: "Về menu" })).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole("button", { name: "Luật chơi" })).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole("button", { name: /^Giao diện/ })).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole("button", { name: /^Ngôn ngữ/ })).toHaveFocus();
     await user.tab();
     expect(rollButton).toHaveFocus();
     await user.keyboard("{Enter}");
@@ -373,6 +388,9 @@ describe("PlayScreen's layout with Cờ cá ngựa", () => {
     for (const [index, element] of order.slice(1).entries()) {
       expect(order[index]?.compareDocumentPosition(element)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     }
-    expect(document.querySelector("main")).toHaveAttribute("data-game", "ludo");
+    expect(document.querySelector("main")?.closest("[data-game]")).toHaveAttribute(
+      "data-game",
+      "ludo",
+    );
   });
 });

@@ -16,7 +16,7 @@ import {
   type ChessState,
   isChessDrawClaim,
 } from "@board-games/games/chess";
-import { Badge, Button, cn } from "@board-games/ui";
+import { ArrowUpDownIcon, Badge, Button, cn } from "@board-games/ui";
 import { useFormatter, useTranslations } from "next-intl";
 import {
   type KeyboardEvent,
@@ -227,32 +227,34 @@ const Square = memo(function Square({
             className="pointer-events-none absolute inset-0 shadow-[inset_0_0_0_2px_var(--chess-paper),inset_0_0_0_5px_var(--game-highlight)]"
           />
         )}
-        {/* HTML, not SVG text: never smaller than 10 px, whatever the size of the board. */}
-        {rank !== null && (
-          <span
-            data-coordinate="rank"
-            aria-hidden
-            className={cn(
-              "pointer-events-none absolute top-[3px] left-1 text-[max(10px,2cqw)] leading-none font-bold",
-              light || tinted ? "text-(--chess-coord)" : "text-(--chess-coord-on-dark)",
-            )}
-          >
-            {rank}
-          </span>
-        )}
-        {file !== null && (
-          <span
-            data-coordinate="file"
-            aria-hidden
-            className={cn(
-              "pointer-events-none absolute right-1 bottom-[3px] text-[max(10px,2cqw)] leading-none font-bold",
-              light || tinted ? "text-(--chess-coord)" : "text-(--chess-coord-on-dark)",
-            )}
-          >
-            {file}
-          </span>
-        )}
       </button>
+      {/* HTML, not SVG text: never smaller than 10 px, whatever the size of the board. Beside the
+        button, not in it: the square's name is its own ("Ô a6 trống"), and a visible "6" inside
+        it would not be part of that name (WCAG 2.5.3). Over the button, letting presses through. */}
+      {rank !== null && (
+        <span
+          data-coordinate="rank"
+          aria-hidden
+          className={cn(
+            "pointer-events-none absolute top-[3px] left-1 text-[max(10px,2cqw)] leading-none font-bold",
+            light || tinted ? "text-(--chess-coord)" : "text-(--chess-coord-on-dark)",
+          )}
+        >
+          {rank}
+        </span>
+      )}
+      {file !== null && (
+        <span
+          data-coordinate="file"
+          aria-hidden
+          className={cn(
+            "pointer-events-none absolute right-1 bottom-[3px] text-[max(10px,2cqw)] leading-none font-bold",
+            light || tinted ? "text-(--chess-coord)" : "text-(--chess-coord-on-dark)",
+          )}
+        >
+          {file}
+        </span>
+      )}
     </div>
   );
 });
@@ -572,9 +574,11 @@ export function ChessBoard({
   );
 
   const controls = (
-    <div className="flex flex-col gap-3">
-      {/* One reserved line on a phone (the words wrap next to each other), two beside the board. */}
-      <div className="flex min-h-7 flex-wrap items-center gap-x-3 gap-y-1 lg:flex-col lg:items-start lg:gap-1">
+    <div className="flex flex-col gap-2 lg:gap-3">
+      {/* No room kept on a phone, where height is short: the words (wrapping next to each other)
+          push the buttons below down a line while a piece is chosen, never the board. Two reserved
+          lines beside the board. */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 lg:flex-col lg:items-start lg:gap-1">
         {/* The board's one live region: what the selection is, in words (also on screen). */}
         <p aria-live="polite" className="text-small text-fg-muted lg:min-h-5">
           {hint}
@@ -609,17 +613,19 @@ export function ChessBoard({
           </span>
         </div>
       )}
-      <div className="flex items-stretch gap-2 lg:flex-col lg:items-start lg:gap-3">
-        <MoveSheet san={state.san} result={result} className="flex-1 lg:w-full" />
+      {/* One row on a phone: the sheet, and "Lật bàn" as its icon alone (named all the same). */}
+      <div className="flex items-center gap-2 lg:flex-col lg:items-start lg:gap-3">
+        <MoveSheet san={state.san} result={result} className="flex-1 max-lg:min-w-0 lg:w-full" />
         <Button
           variant="secondary"
           aria-pressed={flipped}
           onClick={() => {
             setFlip({ base, flipped: !flipped });
           }}
-          className="shrink-0"
+          className="shrink-0 max-lg:size-11 max-lg:px-0"
         >
-          {t("flip")}
+          <ArrowUpDownIcon aria-hidden className="size-5 lg:hidden" />
+          <span className="max-lg:sr-only">{t("flip")}</span>
         </Button>
       </div>
     </div>

@@ -429,7 +429,7 @@ export function CaroBoard({
       // Room kept on a phone, where a tap selects; a laptop's cells are large enough to place at once.
       <p
         aria-live="polite"
-        className="min-h-5 text-center text-small text-fg-muted lg:min-h-0 lg:text-left"
+        className="min-h-5 text-center text-small text-fg-muted lg:min-h-0 lg:text-left short-landscape:text-left"
       >
         {selectedCell === null ? "" : tCaro("boardHint")}
       </p>

@@ -137,11 +137,13 @@ describe("ChessBoard: what it shows", () => {
     const rows = screen.getAllByRole("row");
     const bottom = within(rows[7] ?? document.body).getAllByRole("button");
     expect(
-      bottom.map((button) => button.querySelector("[data-coordinate='file']")?.textContent),
+      bottom.map(
+        (button) => button.parentElement?.querySelector("[data-coordinate='file']")?.textContent,
+      ),
     ).toEqual(["h", "g", "f", "e", "d", "c", "b", "a"]);
     const leftRanks = rows.map(
       (row) =>
-        within(row).getAllByRole("button")[0]?.querySelector("[data-coordinate='rank']")
+        within(row).getAllByRole("gridcell")[0]?.querySelector("[data-coordinate='rank']")
           ?.textContent,
     );
     expect(leftRanks).toEqual(["1", "2", "3", "4", "5", "6", "7", "8"]);
@@ -536,6 +538,17 @@ describe("ChessBoard: flipping", () => {
     expect(shownSquares()[7]?.[0]).toBe("h8");
     expect(flip).toHaveAttribute("aria-pressed", "true");
     expect(onMove).not.toHaveBeenCalled();
+  });
+
+  it("is its icon alone beside the score sheet on a phone, still named Lật bàn, 44 px", () => {
+    renderWithIntl(<ChessBoard {...boardProps(START)} />);
+
+    const flip = screen.getByRole("button", { name: "Lật bàn" });
+    expect(flip).toHaveClass("max-lg:size-11");
+    expect(flip.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+    expect(screen.getByText("Lật bàn")).toHaveClass("max-lg:sr-only");
+    // In the same row as the sheet.
+    expect(flip.parentElement).toContainElement(screen.getByRole("region", { name: "Sổ ghi" }));
   });
 
   it("Không tự lật sau nước đi: White stays at the bottom after White's move", async () => {

@@ -19,7 +19,8 @@
     "heroLead": "Cùng máy, đấu với máy hoặc gửi link mời — không cần tài khoản.",
     "online": "Online",
     "joinPlaceholder": "VD: ABC234",
-    "thirdPartyLicenses": "Giấy phép bên thứ ba"
+    "thirdPartyLicenses": "Giấy phép bên thứ ba",
+    "rulesLink": "Luật chơi <hidden>{game}</hidden>"
   },
   "Games": {
     "tictactoe": {
@@ -293,7 +294,8 @@
     "creating": "Đang tạo phòng…",
     "createFailed": "Không tạo được phòng. Hãy kiểm tra kết nối mạng rồi thử lại.",
     "createOutdated": "Ứng dụng vừa được cập nhật. Hãy tải lại trang để tạo phòng bằng phiên bản mới.",
-    "reload": "Tải lại trang"
+    "reload": "Tải lại trang",
+    "rules": "Luật chơi"
   },
   "Play": {
     "board": "Bàn cờ",
@@ -385,7 +387,69 @@
     "locked": {
       "waiting": "Đang chờ {player}",
       "reconnecting": "Chờ kết nối lại với máy chủ",
-      "sending": "Đang gửi…"
+      "sending": "Đang gửi…",
+      "idle": "Đã tạm ngắt: bấm “Tiếp tục” để kết nối lại"
+    },
+    "resign": "Đầu hàng",
+    "confirmResign": {
+      "title": "Đầu hàng ván này?",
+      "descriptionWin": "{name} sẽ thắng ván này. Sau đó cả phòng có thể chơi lại.",
+      "descriptionStandIn": "Máy sẽ chơi thay bạn tới hết ván. Bạn vẫn ở trong phòng để xem và chơi ván sau.",
+      "descriptionAi": "Máy sẽ thắng ván này.",
+      "confirm": "Đầu hàng",
+      "cancel": "Chơi tiếp"
+    },
+    "abandon": {
+      "waiting": "{name} chưa đi · {elapsed}",
+      "hintWin": "Sau 5 phút, bạn có thể xử thắng.",
+      "hintStandIn": "Sau 5 phút, bạn có thể cho máy chơi thay {name}.",
+      "hintEnd": "Sau 5 phút, bạn có thể kết thúc ván.",
+      "warnWin": "Còn {remaining}. Quá 5 phút, người khác có thể xử thắng.",
+      "warnStandIn": "Còn {remaining}. Quá 5 phút, người khác có thể cho máy chơi thay bạn.",
+      "readyWin": "{name} đã 5 phút chưa đi. Bạn có thể xử thắng.",
+      "readyStandIn": "{name} đã 5 phút chưa đi. Bạn có thể cho máy chơi thay.",
+      "readyEnd": "{name} đã 5 phút chưa đi. Bạn có thể kết thúc ván.",
+      "turnWarnWin": "Chưa tới 1 phút nữa, người khác có thể xử thắng.",
+      "turnWarnStandIn": "Chưa tới 1 phút nữa, người khác có thể cho máy chơi thay bạn.",
+      "claimWin": "Xử thắng",
+      "claimStandIn": "Cho máy chơi thay",
+      "claimEnd": "Kết thúc ván",
+      "notYet": "Chưa thể xử: lượt của {name} chưa đủ 5 phút."
+    },
+    "confirmAbandon": {
+      "titleWin": "Xử {name} thua vì bỏ ván?",
+      "titleStandIn": "Cho máy chơi thay {name}?",
+      "titleEnd": "Kết thúc ván vì {name} bỏ đi?",
+      "descriptionWin": "{name} đã không đi 5 phút. Bạn sẽ thắng ván này; sau đó cả phòng có thể chơi lại.",
+      "descriptionStandIn": "{name} đã không đi 5 phút. Máy sẽ chơi thay {name} tới hết ván.",
+      "descriptionEnd": "{name} đã không đi 5 phút và không còn ai khác tự chơi. Ván sẽ kết thúc; sau đó cả phòng có thể chơi lại.",
+      "cancel": "Chờ thêm"
+    },
+    "ending": {
+      "youResigned": "Bạn đã đầu hàng.",
+      "opponentResigned": "{name} đã đầu hàng.",
+      "youAbandoned": "Bạn bỏ ván: quá 5 phút không đi.",
+      "opponentAbandoned": "{name} bỏ ván: quá 5 phút không đi."
+    },
+    "standIn": "Máy chơi thay",
+    "standInName": "Máy (thay {name})",
+    "standInThinking": "Máy (thay {name}) đang nghĩ…",
+    "standInThinkingForYou": "Máy đang chơi thay bạn.",
+    "standInWins": "Máy (thay {name}) thắng!",
+    "aiStandInMoved": "Máy (thay {name}) {move}",
+    "aiMoved": "Máy {move}",
+    "aiSeatMoved": "Máy ({mover}) {move}",
+    "opponentMoved": "{name} vừa {move}",
+    "movedThen": "{moved}. {then}",
+    "aiSeatTitle": "Máy ({player})",
+    "rules": "Luật chơi",
+    "rulesDialog": {
+      "title": "Luật chơi {game}",
+      "inThisGame": "Ván này: {rules}",
+      "close": "Đóng",
+      "loading": "Đang tải luật chơi…",
+      "loadError": "Không tải được luật chơi. Kiểm tra kết nối rồi thử lại; ván vẫn đang tiếp tục.",
+      "retry": "Thử lại"
     }
   },
   "NotFound": {
@@ -393,14 +457,22 @@
     "description": "Trang này không có trong Board Games Hub.",
     "backToMenu": "Về menu"
   },
+  "PageError": {
+    "title": "Trang này gặp lỗi",
+    "description": "Có gì đó trục trặc khi mở trang. Hãy thử lại, hoặc về menu.",
+    "retry": "Thử lại",
+    "backToMenu": "Về menu"
+  },
   "Settings": {
-    "language": "Ngôn ngữ",
-    "theme": "Giao diện",
+    "themeButton": "Giao diện: {theme}",
     "themes": {
       "light": "Sáng",
       "dark": "Tối",
       "system": "Theo hệ thống"
-    }
+    },
+    "languageButton": "Ngôn ngữ: {language}, {code}",
+    "languageSwitching": "Đang đổi ngôn ngữ…",
+    "languageFailed": "Chưa đổi được ngôn ngữ. Hãy thử lại."
   },
   "Identity": {
     "name": "Tên của bạn",
@@ -449,6 +521,192 @@
         "title": "Không mở được phòng",
         "description": "Dữ liệu của phòng không đọc được. Hãy thử lại.",
         "retry": "Thử lại"
+      }
+    }
+  },
+  "Rules": {
+    "title": "Luật chơi {game}",
+    "play": "Chơi {game}",
+    "backToMenu": "Về menu",
+    "notFound": {
+      "title": "Không có luật chơi này",
+      "description": "Không có game nào ở địa chỉ này. Về menu để chọn một game."
+    },
+    "common": {
+      "leaving": {
+        "title": "Đầu hàng và bỏ ván",
+        "resign": "Bấm <b>“Đầu hàng”</b> để chịu thua; app hỏi lại trước khi kết thúc ván.",
+        "abandon": "Chơi online: người đến lượt mà <b>5 phút</b> không đi thì người kia bấm được “Xử thắng” và thắng ván.",
+        "abandonRoom": "Chơi online: người đến lượt mà <b>5 phút</b> không đi thì người khác xử được bỏ ván.",
+        "standIn": "Phòng 3–4 người: <b>máy chơi thay</b> người đầu hàng hay bỏ ván (“Máy chơi thay”) tới hết ván, người đó chơi lại từ ván sau. Phòng 2 người: ván kết thúc, người kia thắng.",
+        "vsAi": "Khi đấu với máy: đầu hàng thì máy thắng."
+      }
+    },
+    "tictactoe": {
+      "goal": {
+        "title": "Mục tiêu",
+        "body": "Hai người lần lượt đánh X và O trên bàn 3×3. Ai có ba quân thẳng hàng trước là thắng."
+      },
+      "moves": {
+        "title": "Cách đi",
+        "body": "<b>X đi trước.</b> Mỗi lượt đặt một quân của mình vào một ô trống; ô đã có quân thì không đặt được."
+      },
+      "win": {
+        "title": "Thắng",
+        "body": "Ba quân của mình thẳng hàng theo một trong tám đường: 3 hàng ngang, 3 cột dọc hoặc 2 đường chéo. Ván kết thúc ngay, kể cả khi nước thắng lấp ô cuối cùng."
+      },
+      "draw": {
+        "title": "Hoà",
+        "body": "Cả 9 ô đã có quân mà không ai có ba quân thẳng hàng thì hoà."
+      },
+      "figures": {
+        "lines": {
+          "label": "Ba bàn 3×3: ba X thẳng một hàng ngang, ba O thẳng một cột dọc, ba X thẳng một đường chéo",
+          "caption": "Ba kiểu đường thắng: một hàng ngang, một cột dọc, một đường chéo."
+        }
+      }
+    },
+    "caro": {
+      "goal": {
+        "title": "Mục tiêu",
+        "body": "Hai người lần lượt đánh X và O trên bàn ô vuông. Ai có <b>5 quân liền nhau</b> theo hàng ngang, cột dọc hay đường chéo trước là thắng; với luật “chặn hai đầu”, chuỗi đó không được bị quân đối thủ chặn cả hai đầu."
+      },
+      "board": {
+        "title": "Bàn và lượt đi",
+        "body": "Bàn 15×15 hoặc 19×19, chọn ở màn hình bắt đầu ván cùng với luật thắng. <b>X đi trước</b>; mỗi lượt đánh một quân vào một ô trống bất kỳ."
+      },
+      "free": {
+        "title": "Luật “tự do”",
+        "body": "Từ 5 quân liền trở lên theo hàng ngang, cột dọc hay đường chéo là thắng, dù hai đầu chuỗi có gì."
+      },
+      "blocked": {
+        "title": "Luật “chặn hai đầu” (mặc định)",
+        "body": "Như luật tự do, trừ khi <b>cả hai</b> ô ngay ngoài hai đầu chuỗi là quân đối thủ: chuỗi đó không thắng. Mép bàn không tính là chặn. Chuỗi dài hơn 5 quân thắng theo cùng điều kiện."
+      },
+      "draw": {
+        "title": "Hoà",
+        "body": "Bàn đầy mà không ai thắng thì hoà."
+      },
+      "figures": {
+        "five": {
+          "label": "Năm quân X liền nhau theo đường chéo: X thắng",
+          "caption": "Năm X liền nhau theo đường chéo: <yes>X thắng</yes>."
+        },
+        "blocked": {
+          "label": "Hàng trên: năm X bị hai quân O chặn hai đầu, không thắng. Hàng dưới: năm X chỉ bị chặn một đầu, X thắng",
+          "caption": "Trên: bị chặn hai đầu, <no>không thắng</no>. Dưới: chỉ bị chặn một đầu, <yes>thắng</yes>."
+        },
+        "edge": {
+          "label": "Năm X chạm mép bàn, đầu kia là O: X thắng vì mép bàn không chặn",
+          "caption": "Chạm mép bàn, đầu kia là O: <yes>thắng</yes>, vì mép bàn không chặn."
+        }
+      }
+    },
+    "ludo": {
+      "board": {
+        "title": "Bàn và đường đi",
+        "body": "2–4 người, mỗi người một màu và một ký hiệu (Đỏ ●, Xanh dương ■, Vàng ▲, Xanh lá ◆) và 4 ngựa bắt đầu trong chuồng. Ngựa ra ở ô xuất phát của màu mình, đi đúng một vòng đường chung 56 ô theo một chiều tới chân chuồng (ô ngay trước ô xuất phát), rồi lên chuồng đích 6 bậc."
+      },
+      "turn": {
+        "title": "Lượt đi và gieo 6",
+        "body": "Mỗi lượt gieo xúc xắc rồi chọn một ngựa đi được theo số vừa gieo; không ngựa nào đi được thì mất lượt. <b>Gieo được 6 thì được gieo thêm</b> sau khi đi, kể cả khi không ngựa nào đi được."
+      },
+      "out": {
+        "title": "Ra quân",
+        "body": "Chỉ ra được khi gieo <b>6</b>, tới ô xuất phát của màu mình. <b>Ô xuất phát đang có ngựa mình thì không ra được</b>; có ngựa đối thủ thì ngựa đó bị đá về chuồng."
+      },
+      "move": {
+        "title": "Đi và đá",
+        "item1": "Đi đúng số ô bằng số vừa gieo.",
+        "item2": "Không vượt qua ngựa nào, của mình hay của đối thủ.",
+        "item3": "Không dừng ở ô có ngựa mình.",
+        "item4": "Dừng đúng ô có ngựa đối thủ thì <b>đá</b> ngựa đó về chuồng.",
+        "item5": "Không đi quá chân chuồng của mình: phải dừng đúng ở đó rồi mới lên chuồng."
+      },
+      "one": {
+        "title": "Gieo 1: nhảy tới chân chuồng",
+        "body": "Gieo 1, ngựa trên đường chung nhảy tới <b>chân chuồng gần nhất phía trước</b> (của bất kỳ màu nào, kể cả màu không có người chơi; xa nhất là chân chuồng của chính nó) nếu mọi ô ở giữa trống và ô đó không có ngựa mình. <b>Nhảy được thì bắt buộc nhảy</b>, và <b>ngựa đối thủ đứng ở chân chuồng đó bị đá</b>. Không nhảy được thì đi 1 ô."
+      },
+      "home": {
+        "title": "Lên chuồng",
+        "body": "Ở chân chuồng của mình, gieo k thì lên thẳng bậc k nếu các bậc 1 tới k đều trống. Ở bậc n chỉ lên bậc n + 1 khi gieo đúng n + 1. Trong chuồng, ngựa không vượt nhau và không bị đá."
+      },
+      "win": {
+        "title": "Thắng",
+        "body": "Người đầu tiên có đủ <b>4 ngựa ở bậc 3, 4, 5 và 6</b> của chuồng đích thắng; ván kết thúc ngay."
+      },
+      "figures": {
+        "path": {
+          "label": "Bàn chữ thập: ngựa Đỏ ra ở ô xuất phát, đi một vòng theo chiều kim đồng hồ tới chân chuồng, rồi lên chuồng đích từ bậc 1 tới bậc 6",
+          "caption": "Đường đi của Đỏ trên bàn thật: ô xuất phát (●), chiều đi (mũi tên), chân chuồng (vòng tròn) và chuồng đích bậc 1–6."
+        },
+        "jump": {
+          "label": "Hàng trên: ngựa Đỏ gieo 1, đường trống, nhảy tới chân chuồng kế tiếp và đá ngựa Vàng đứng ở đó. Hàng dưới: có ngựa Xanh dương chắn ở giữa, ngựa Đỏ chỉ đi 1 ô",
+          "caption": "Trên: đường trống, <yes>nhảy tới chân chuồng và đá ngựa Vàng</yes>. Dưới: có ngựa chắn, chỉ đi 1 ô."
+        },
+        "home": {
+          "label": "Chuồng đích 6 bậc: từ chân chuồng gieo 4 lên thẳng bậc 4; từ bậc 4 cần gieo đúng 5 để lên bậc 5",
+          "caption": "Gieo 4 từ chân chuồng: lên bậc 4. Từ bậc 4: cần gieo đúng 5. Bốn ngựa ở bậc 3–6 là thắng."
+        }
+      }
+    },
+    "chess": {
+      "goal": {
+        "title": "Mục tiêu",
+        "body": "<b>Chiếu hết</b> vua đối phương: vua bị chiếu mà không còn nước nào thoát."
+      },
+      "board": {
+        "title": "Bàn và lượt đi",
+        "body": "Bàn 8×8, ô h1 màu sáng ở góc phải phía Trắng. <b>Trắng đi trước</b>, hai bên đi luân phiên. Không được đi nước để vua bên mình bị chiếu."
+      },
+      "pieces": {
+        "title": "Cách đi của quân",
+        "king": "<b>Vua</b>: một ô theo mọi hướng.",
+        "queen": "<b>Hậu</b>: bao nhiêu ô cũng được, theo hàng, cột và đường chéo.",
+        "rook": "<b>Xe</b>: bao nhiêu ô cũng được, theo hàng và cột.",
+        "bishop": "<b>Tượng</b>: bao nhiêu ô cũng được, theo đường chéo.",
+        "knight": "<b>Mã</b>: hình chữ L (hai ô rồi rẽ một ô), nhảy qua được quân khác.",
+        "pawn": "<b>Tốt</b>: tiến một ô (từ hàng xuất phát được tiến hai ô), ăn chéo một ô phía trước.",
+        "capture": "Trừ Mã, không quân nào đi qua quân khác. Ăn quân là đi vào ô của quân đối phương."
+      },
+      "castling": {
+        "title": "Nhập thành",
+        "body": "Vua đi hai ô về phía một Xe, Xe nhảy sang ô bên kia vua. Được nhập thành khi vua và Xe đó chưa từng đi, các ô giữa chúng trống, vua không đang bị chiếu, và ô vua đi qua lẫn ô vua đến không bị quân đối phương khống chế."
+      },
+      "enPassant": {
+        "title": "Bắt tốt qua đường",
+        "body": "Tốt đối phương vừa tiến hai ô và dừng ngay cạnh Tốt của bạn trên cùng hàng: Tốt của bạn ăn được nó bằng cách đi chéo tới ô Tốt kia vừa đi qua. Chỉ được làm ở <b>ngay nước kế tiếp</b>."
+      },
+      "promotion": {
+        "title": "Phong cấp",
+        "body": "Tốt đi tới hàng cuối được phong thành Hậu, Xe, Tượng hoặc Mã cùng màu, do người đi chọn."
+      },
+      "end": {
+        "title": "Kết thúc ván",
+        "checkmate": "<b>Chiếu hết</b>: bên bị chiếu hết thua.",
+        "stalemate": "<b>Hết nước đi</b>: bên đến lượt không bị chiếu nhưng không còn nước nào thì hoà.",
+        "automatic": "<b>Hoà tự động</b>: một thế lặp lại lần thứ năm, 75 nước mỗi bên không đi Tốt và không ăn quân, hoặc không đủ quân để chiếu hết (như chỉ còn hai Vua, hay hai Vua và một Mã).",
+        "claim": "<b>Đòi hoà</b>: khi thế cờ đã lặp lại ba lần, hoặc 50 nước mỗi bên không đi Tốt và không ăn quân, bên đến lượt có nút “Đòi hoà” để kết thúc ván hoà ngay, không cần đối phương đồng ý."
+      },
+      "credit": "Quân cờ: bộ “staunty” của sadsnake1 (Lichess), giấy phép CC BY-NC-SA 4.0.",
+      "licence": "Giấy phép",
+      "figures": {
+        "moves": {
+          "label": "Sáu bàn nhỏ, mỗi bàn một quân ở giữa và chấm ở các ô nó đi tới được: Vua, Hậu, Xe, Tượng, Mã, Tốt",
+          "caption": "Các ô mỗi quân đi tới được (chấm): Vua, Hậu, Xe; Tượng, Mã, Tốt."
+        },
+        "castling": {
+          "label": "Nhập thành cánh vua của Trắng: trước, Vua ở e1 và Xe ở h1; sau, Vua ở g1 và Xe ở f1",
+          "caption": "Nhập thành cánh vua: Vua e1 → g1, Xe h1 → f1."
+        },
+        "enPassant": {
+          "label": "Bắt tốt qua đường: Tốt đen vừa đi từ d7 tới d5, cạnh Tốt trắng ở e5; Tốt trắng ăn bằng cách đi tới d6",
+          "caption": "Tốt đen vừa đi d7 → d5: Tốt trắng ở e5 ăn bằng cách đi tới d6."
+        },
+        "promotion": {
+          "label": "Phong cấp: Tốt trắng đi từ e7 tới e8 và được chọn thành Hậu, Xe, Tượng hoặc Mã",
+          "caption": "Tốt tới hàng cuối: chọn Hậu, Xe, Tượng hoặc Mã."
+        }
       }
     }
   }
