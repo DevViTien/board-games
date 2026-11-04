@@ -1,3 +1,12 @@
+import {
+  applyEntry,
+  createSession,
+  currentState,
+  type GameRecord,
+  sessionResult,
+  toRecord,
+} from "@board-games/engine";
+import { ludo, LUDO_DEFAULT_OPTIONS } from "@board-games/games";
 import { expect, type Page, test } from "@playwright/test";
 
 import {
@@ -30,7 +39,7 @@ import {
   status,
   writeSaved,
 } from "../e2e/helpers";
-import { shoot } from "./shoot";
+import { shoot, shootScreen } from "./shoot";
 
 // The key screens, each in every project of playwright.shots.config.ts (phone and desktop, light
 // and dark). The numbers keep the files in the order a player meets the screens.
@@ -229,7 +238,8 @@ test("Cờ caro against the AI, while it thinks", async ({ page }) => {
   await pressStart(page);
   await expect(status(page)).toHaveText("Đến lượt bạn (X)");
   await expect(page).toHaveURL(/\/play\/caro\/ai$/);
-  await page.clock.pauseAt(Date.now() + 1000);
+  // From the page's own clock: Node's may already be behind it.
+  await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1000));
   await play(page, [8, 8]);
   await expect(status(page)).toHaveText("Máy đang nghĩ…");
   await shoot(page, "07e-caro-ai-thinking");
@@ -387,8 +397,8 @@ test("an online Cờ cá ngựa game, then the connection lost", async ({ page }
   const room = await openFakeRoom(page, {
     gameId: "ludo",
     seats: [
-      { kind: "human", name: "Lan" },
-      { kind: "human", name: "Minh" },
+      { kind: "human", name: "Lan", standIn: false },
+      { kind: "human", name: "Minh", standIn: false },
       { kind: "ai" },
       { kind: "ai" },
     ],
@@ -412,8 +422,8 @@ for (const locale of ["vi", "en", "ja"] as const) {
     const room = await openFakeRoom(page, {
       gameId: "ludo",
       seats: [
-        { kind: "human", name: "Lan" },
-        { kind: "human", name: "Minh" },
+        { kind: "human", name: "Lan", standIn: false },
+        { kind: "human", name: "Minh", standIn: false },
         { kind: "ai" },
         { kind: "ai" },
       ],
@@ -580,8 +590,8 @@ test("an online Cờ vua game, holding Black", async ({ page }) => {
     {
       gameId: "chess",
       seats: [
-        { kind: "human", name: "Minh" },
-        { kind: "human", name: "Lan" },
+        { kind: "human", name: "Minh", standIn: false },
+        { kind: "human", name: "Lan", standIn: false },
       ],
       record: chessRecord(["e2e4", "e7e5", "g1f3"]),
     },
@@ -591,3 +601,344 @@ test("an online Cờ vua game, holding Black", async ({ page }) => {
   await expect(page.getByRole("group", { name: "Bạn · Đen" })).toBeVisible();
   await shoot(page, "21-online-chess-black");
 });
+
+// --- Resigning and a player gone too long (change `add-resign-and-abandon`) ---------------------
+
+const MINH_AND_LAN = [
+  { kind: "human", name: "Lan", standIn: false },
+  { kind: "human", name: "Minh", standIn: false },
+] as const;
+
+/** An online Cờ vua game seen by Lan (White), the turn running for `turnIdleMs`. */
+async function openOnlineChess(page: Page, moves: readonly string[], turnIdleMs: number) {
+  await openFakeRoom(page, {
+    gameId: "chess",
+    seats: [...MINH_AND_LAN],
+    record: chessRecord(moves),
+    turnIdleMs,
+  });
+  await expect(board(page)).toBeVisible();
+}
+
+/**
+ * A Cờ cá ngựa game for three that the first seat wins, every die chosen: it rolls the face that
+ * lets it move (a 6 first, so it plays again), the others roll a 1 and pass.
+ */
+function ludoWonByFirstSeat(): GameRecord {
+  const created = createSession(ludo, { playerCount: 3, options: LUDO_DEFAULT_OPTIONS });
+  if (!created.ok) throw new Error(created.error);
+  let session = created.value;
+  for (let step = 0; step < 3000 && sessionResult(ludo, session) === null; step += 1) {
+    const state = currentState(session);
+    const moves = ludo.legalMoves(state);
+    const roll = moves.find((move) => move.type === "roll");
+    let entry: unknown;
+    if (roll === undefined) {
+      entry = { move: moves.at(-1) };
+    } else if (ludo.currentPlayer(state) !== 0) {
+      entry = { move: roll, outcome: 1 };
+    } else {
+      const face = [6, 5, 4, 3, 2, 1].find((candidate) => {
+        const rolled = applyEntry(ludo, session, { move: roll, outcome: candidate });
+        return (
+          rolled.ok && ludo.legalMoves(currentState(rolled.value)).some((m) => m.type !== "roll")
+        );
+      });
+      entry = { move: roll, outcome: face ?? 1 };
+    }
+    const played = applyEntry(ludo, session, entry);
+    if (!played.ok) throw new Error(`step ${String(step)}: ${played.error}`);
+    session = played.value;
+  }
+  if (sessionResult(ludo, session) === null) throw new Error("the first seat never won");
+  return JSON.parse(JSON.stringify(toRecord(session))) as GameRecord;
+}
+
+test("an online Cờ vua game: resigning, waiting for Minh, claiming the win", async ({ page }) => {
+  await openOnlineChess(page, ["e2e4", "e7e5"], 0);
+  await page.getByRole("button", { name: "Đầu hàng" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await shoot(page, "22-online-chess-resign-dialog");
+});
+
+test("an online Cờ vua game, Minh gone for 2 minutes", async ({ page }) => {
+  await openOnlineChess(page, ["e2e4"], 2 * 60_000 + 13_000);
+  await expect(page.getByText(/^Minh chưa đi · 2:1\d$/u)).toBeVisible();
+  await shoot(page, "22b-online-chess-waiting");
+});
+
+test("an online Cờ vua game, Minh gone for 5 minutes", async ({ page }) => {
+  await openOnlineChess(page, ["e2e4"], 5 * 60_000 + 4000);
+  await expect(page.getByRole("button", { name: "Xử thắng" })).toBeVisible();
+  await shoot(page, "22c-online-chess-claim");
+  await page.getByRole("button", { name: "Xử thắng" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await shoot(page, "22c2-online-chess-claim-dialog");
+});
+
+test("an online Cờ vua game won as Minh left it", async ({ page }) => {
+  await openFakeRoom(page, {
+    gameId: "chess",
+    seats: [...MINH_AND_LAN],
+    record: { ...chessRecord(["e2e4"]), ending: { reason: "abandoned", player: 1 } },
+  });
+  await expect(status(page)).toHaveText("Bạn thắng!");
+  await shoot(page, "22d-online-chess-abandoned");
+});
+
+test("an online Cờ cá ngựa game, the computer playing for Minh", async ({ page }) => {
+  await openFakeRoom(
+    page,
+    {
+      gameId: "ludo",
+      seats: [
+        { kind: "human", name: "Lan", standIn: false },
+        { kind: "human", name: "Minh", standIn: true },
+        { kind: "human", name: "An", standIn: false },
+      ],
+      record: ludoRecord(3, [{ roll: 3 }, { roll: 3 }]),
+      turnIdleMs: 0,
+    },
+    2,
+  );
+  await expect(status(page)).toHaveText(/^Máy \(thay Minh\) gieo được 3/u);
+  await shoot(page, "23-online-ludo-stand-in");
+});
+
+test("an online Cờ cá ngựa game, the player to move reminded", async ({ page }) => {
+  await openFakeRoom(
+    page,
+    {
+      gameId: "ludo",
+      seats: [
+        { kind: "human", name: "Lan", standIn: false },
+        { kind: "human", name: "Minh", standIn: false },
+        { kind: "human", name: "An", standIn: false },
+      ],
+      record: ludoRecord(3, []),
+      turnIdleMs: 4 * 60_000 + 18_000,
+    },
+    0,
+  );
+  await expect(page.getByText(/^Còn 0:4\d\./u)).toBeVisible();
+  await shoot(page, "23b-online-ludo-mover-warning");
+});
+
+test("an online Cờ cá ngựa game the computer won for Lan", async ({ page }) => {
+  await openFakeRoom(page, {
+    gameId: "ludo",
+    seats: [
+      { kind: "human", name: "Lan", standIn: true },
+      { kind: "human", name: "Minh", standIn: false },
+      { kind: "human", name: "An", standIn: false },
+    ],
+    record: ludoWonByFirstSeat(),
+  });
+  await expect(status(page)).toHaveText("Máy (thay Lan) thắng!");
+  await shoot(page, "23c-online-ludo-stand-in-won");
+});
+
+test("tic-tac-toe against the AI: resigning", async ({ page }) => {
+  await startAiGame(page);
+  await play(page, [2, 2]);
+  await expect(status(page)).toHaveText(/Đến lượt bạn \(X\)$/u);
+  await page.getByRole("button", { name: "Đầu hàng" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await shoot(page, "24-ai-resign-dialog");
+  await page.getByRole("dialog").getByRole("button", { name: "Đầu hàng" }).click();
+  await expect(status(page)).toHaveText("Máy thắng!");
+  await shoot(page, "24b-ai-resigned");
+});
+
+for (const [gameId, screen, title] of [
+  ["tictactoe", "25-rules-tictactoe", "Luật chơi Tic-tac-toe"],
+  ["caro", "25b-rules-caro", "Luật chơi Cờ caro"],
+  ["ludo", "25c-rules-ludo", "Luật chơi Cờ cá ngựa"],
+  ["chess", "25d-rules-chess", "Luật chơi Cờ vua"],
+] as const) {
+  test(`the rules page of ${gameId}`, async ({ page }) => {
+    await page.goto(`/rules/${gameId}`);
+    await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
+    await shoot(page, screen);
+  });
+}
+
+test("the rules dialog of a game of Cờ caro 19×19", async ({ page }) => {
+  await page.goto("/play/caro");
+  await choose(page, "Chế độ", "Cùng máy");
+  await choose(page, "Bàn cờ", "19×19");
+  await choose(page, "Luật thắng", "Tự do");
+  await pressStart(page);
+  await play(page, [10, 10], [10, 11]);
+  await page.getByRole("button", { name: "Luật chơi" }).click();
+  const dialog = page.getByRole("dialog", { name: "Luật chơi Cờ caro" });
+  await expect(dialog.getByRole("heading", { level: 3, name: "Luật “tự do”" })).toBeVisible();
+  await shoot(page, "25e-rules-dialog-caro");
+});
+
+test("the rules of Cờ vua at 360 px", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 740 });
+  await page.goto("/rules/chess");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await shoot(page, "25f-rules-360");
+});
+
+for (const [locale, gameId, title] of [
+  ["ja", "ludo", "ルドーのルール"],
+  ["en", "caro", "How to play Gomoku"],
+] as const) {
+  test(`the rules of ${gameId} in ${locale}`, async ({ page, context, baseURL }) => {
+    await context.addCookies([{ name: "NEXT_LOCALE", value: locale, url: baseURL ?? "" }]);
+    await page.goto(`/rules/${gameId}`);
+    await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
+    await shoot(page, `25g-rules-${gameId}-${locale}`);
+  });
+}
+
+// --- Phones, the top bar, the settings menus, hover (change `polish-accessibility-and-mobile`) ----
+
+/** Whether the running project is a phone's (390 × 844). */
+const onPhone = () => test.info().project.name.startsWith("phone");
+
+/** Opens a same-device game of `gameId`, saved with `saved`, or a new one from its setup screen. */
+async function openLocalGame(page: Page, gameId: string, saved?: unknown): Promise<void> {
+  if (saved === undefined) {
+    await page.goto(`/play/${gameId}`);
+    await choose(page, "Chế độ", "Cùng máy");
+    await pressStart(page);
+  } else {
+    await page.goto(PAGE_WITHOUT_STORAGE);
+    await writeSaved(page, `${gameId}:local`, saved);
+    await page.goto(`/play/${gameId}/local`);
+  }
+  await expect(page.locator("[data-ply]").or(board(page)).first()).toBeVisible();
+}
+
+const PLAY_SCREENS = [
+  ["tictactoe", undefined],
+  ["caro", undefined],
+  ["ludo", savedLudoGame(4, [])],
+  ["chess", savedChessGame(["e2e4", "e7e5", "g1f3"])],
+] as const;
+
+for (const [gameId, saved] of PLAY_SCREENS) {
+  test(`${gameId} on a phone turned sideways, 844 × 390`, async ({ page }) => {
+    test.skip(!onPhone(), "a phone's layout");
+    await page.setViewportSize({ width: 844, height: 390 });
+    await openLocalGame(page, gameId, saved);
+    await shootScreen(page, `26-landscape-${gameId}`);
+  });
+
+  test(`${gameId} on a phone of 360 × 740`, async ({ page }) => {
+    test.skip(!onPhone(), "a phone's layout");
+    await page.setViewportSize({ width: 360, height: 740 });
+    await openLocalGame(page, gameId, saved);
+    await shootScreen(page, `28-${gameId}-360`);
+  });
+}
+
+test("Cờ cá ngựa sideways with Safari's address bar, 844 × 300", async ({ page }) => {
+  test.skip(!onPhone(), "a phone's layout");
+  await page.setViewportSize({ width: 844, height: 300 });
+  await openLocalGame(page, "ludo", savedLudoGame(4, LUDO_FOUR_CHOICES));
+  await shootScreen(page, "26b-landscape-ludo-300");
+});
+
+test("Cờ vua on a phone of 360 × 640, then scrolled to its end", async ({ page }) => {
+  test.skip(!onPhone(), "a phone's layout");
+  await page.setViewportSize({ width: 360, height: 640 });
+  await openLocalGame(page, "chess", savedChessGame(["e2e4", "e7e5", "g1f3"]));
+  await shootScreen(page, "28b-chess-360x640");
+  await page.getByRole("button", { name: "Ván mới" }).scrollIntoViewIfNeeded();
+  await shootScreen(page, "28c-chess-360x640-scrolled");
+});
+
+test("the menu's footer, and its top bar scrolled", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("contentinfo").scrollIntoViewIfNeeded();
+  await shootScreen(page, "27-menu-footer");
+  await page.evaluate(() => {
+    window.scrollTo(0, 600);
+  });
+  await shootScreen(page, "30-top-bar-scrolled-menu");
+});
+
+test("the top bar scrolled, on the setup screen and the rules", async ({ page }) => {
+  await page.goto("/play/ludo");
+  await page.evaluate(() => {
+    window.scrollTo(0, 400);
+  });
+  await shootScreen(page, "30b-top-bar-scrolled-setup");
+  await page.goto("/rules/chess");
+  await page.evaluate(() => {
+    window.scrollTo(0, 1200);
+  });
+  await shootScreen(page, "30c-top-bar-scrolled-rules");
+});
+
+test("a game's card pointed at, and reached with Tab", async ({ page }) => {
+  test.skip(onPhone(), "a device that hovers");
+  await page.goto("/");
+  const card = page
+    .getByRole("listitem")
+    .filter({ has: page.getByRole("heading", { name: "Cờ caro" }) });
+  await card.hover();
+  await page.waitForTimeout(300);
+  await shootScreen(page, "29-menu-card-hover");
+  await page.mouse.move(0, 0);
+  await card.getByRole("link", { name: "Chơi", exact: true }).focus();
+  await page.keyboard.press("Shift+Tab");
+  await page.keyboard.press("Tab");
+  await page.waitForTimeout(300);
+  await shootScreen(page, "29b-menu-card-focus");
+});
+
+test("the theme menu open, and the language menu", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /^Giao diện: / }).click();
+  await expect(page.getByRole("menu")).toBeVisible();
+  await shootScreen(page, "31-theme-menu-open");
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: /^Ngôn ngữ: / }).click();
+  await expect(page.getByRole("menu")).toBeVisible();
+  await shootScreen(page, "31b-language-menu-open");
+});
+
+for (const width of [360, 390, 1280] as const) {
+  test(`the top bar of every kind of page at ${String(width)} px`, async ({ page }) => {
+    test.skip(onPhone() === (width === 1280), "the project of that width");
+    if (width === 360) await page.setViewportSize({ width: 360, height: 740 });
+
+    await openLocalGame(page, "ludo", savedLudoGame(4, []));
+    await shootScreen(page, `32-top-bar-play-ludo-${String(width)}`);
+
+    await openFakeRoom(
+      page,
+      {
+        gameId: "chess",
+        seats: [
+          { kind: "human", name: "Minh", standIn: false },
+          { kind: "human", name: "Lan", standIn: false },
+        ],
+        record: chessRecord(["e2e4", "e7e5", "g1f3"]),
+      },
+      1,
+    );
+    await expect(board(page)).toBeVisible();
+    await shootScreen(page, `32-top-bar-play-chess-online-${String(width)}`);
+
+    await openFakeRoom(page, {
+      gameId: "ludo",
+      seats: [{ kind: "human", name: "Lan", standIn: false }, null, null],
+      record: ludoRecord(3, []),
+    });
+    await expect(page.getByRole("region", { name: "Người chơi" })).toBeVisible();
+    await shootScreen(page, `32-top-bar-room-lobby-${String(width)}`);
+
+    await page.goto("/rules/caro");
+    await shootScreen(page, `32-top-bar-rules-caro-${String(width)}`);
+
+    await page.goto("/khong-co");
+    await shootScreen(page, `32-top-bar-not-found-${String(width)}`);
+  });
+}

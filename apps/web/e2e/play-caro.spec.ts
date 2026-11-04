@@ -23,7 +23,7 @@ async function startCaro(page: Page, mode: "Cùng máy" | "Đấu với máy"): 
   await page
     .getByRole("listitem")
     .filter({ has: page.getByRole("heading", { name: "Cờ caro" }) })
-    .getByRole("link", { name: "Chơi" })
+    .getByRole("link", { name: "Chơi", exact: true })
     .click();
   await expect(page).toHaveURL(/\/play\/caro$/);
   await choose(page, "Chế độ", mode);
@@ -223,7 +223,7 @@ async function openCaroSetup(page: Page): Promise<void> {
   await page
     .getByRole("listitem")
     .filter({ has: page.getByRole("heading", { name: "Cờ caro" }) })
-    .getByRole("link", { name: "Chơi" })
+    .getByRole("link", { name: "Chơi", exact: true })
     .click();
   await expect(page).toHaveURL(/\/play\/caro$/);
 }

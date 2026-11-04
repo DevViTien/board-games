@@ -34,7 +34,14 @@ export default defineConfig({
     {
       command: "pnpm realtime",
       url: `http://localhost:${REALTIME_PORT}/healthz`,
-      env: { REALTIME_PORT: String(REALTIME_PORT), REDIS_URL: "" },
+      // A turn can be claimed abandoned after 3 s instead of 5 min: the browsers only move their
+      // clocks with `page.clock.setSystemTime` (change `add-resign-and-abandon`).
+      env: {
+        REALTIME_PORT: String(REALTIME_PORT),
+        REDIS_URL: "",
+        VERCEL_ENV: "",
+        REALTIME_ABANDON_AFTER_MS: "3000",
+      },
       reuseExistingServer: false,
     },
     // Runs against the production build; turbo builds first (test:e2e depends on build). The

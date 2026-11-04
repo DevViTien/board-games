@@ -1,0 +1,329 @@
+import { expect, type Page, test } from "@playwright/test";
+
+import { expectNoAxeViolations, reportBestPractices } from "./axe";
+import {
+  board,
+  chessRecord,
+  choose,
+  horseChoices,
+  languageButton,
+  LUDO_FOUR_CHOICES,
+  ludoRecord,
+  nameField,
+  openFakeRoom,
+  PAGE_WITHOUT_STORAGE,
+  play,
+  playChess,
+  pressStart,
+  ROOM_URL,
+  savedChessGame,
+  savedLudoGame,
+  startAiGame,
+  startLocalGame,
+  status,
+  themeButton,
+  writeSaved,
+} from "./helpers";
+
+// Spec accessibility "Không vi phạm tiếp cận tự động phát hiện được": every main screen, in both
+// themes, in both projects (desktop 1280 × 800 and the Pixel 7 phone), checked by axe-core once it
+// stands still (reduced motion). Grouped as design §1: (A) menu, setup and state screens; (B) the
+// play screens; (C) dialogs and menus open; (D) rooms and online games; (E) the rules pages.
+
+const SCHEMES = ["light", "dark"] as const;
+
+/** Opens a same-device game saved under `slot` (`<game>:local`). */
+async function openSaved(page: Page, gameId: string, saved: unknown): Promise<void> {
+  await page.goto(PAGE_WITHOUT_STORAGE);
+  await writeSaved(page, `${gameId}:local`, saved);
+  await page.goto(`/play/${gameId}/local`);
+  await expect(board(page).or(page.locator("[data-ply]")).first()).toBeVisible();
+}
+
+for (const colorScheme of SCHEMES) {
+  test.describe(`${colorScheme} theme`, () => {
+    test.use({ colorScheme, reducedMotion: "reduce" });
+
+    test.describe("(A) menu, setup and state screens", () => {
+      test("Menu ở giao diện tối: the menu with a game in progress", async ({ page }) => {
+        await startLocalGame(page);
+        await play(page, [1, 1]);
+        await page.goto("/");
+        await expect(page.getByRole("heading", { name: "Tiếp tục ván dở" })).toBeVisible();
+        await expectNoAxeViolations(page, "menu");
+      });
+
+      test("the setup screen of every game, and online", async ({ page }) => {
+        for (const gameId of ["tictactoe", "caro", "ludo", "chess"]) {
+          await page.goto(`/play/${gameId}`);
+          await expect(page.getByRole("group", { name: "Chế độ" })).toBeVisible();
+          await expectNoAxeViolations(page, `setup-${gameId}`);
+        }
+        await page.goto("/play/caro?mode=online");
+        await expect(page.getByRole("button", { name: "Tạo phòng" })).toBeVisible();
+        await expectNoAxeViolations(page, "setup-online");
+      });
+
+      test("not found, loading and joining screens", async ({ page }) => {
+        for (const [path, screen] of [
+          ["/khong-co-trang-nay", "page-not-found"],
+          ["/play/khong-co", "game-not-found"],
+          ["/play/caro/khong-co", "mode-not-found"],
+          ["/rules/khong-co", "rules-not-found"],
+        ] as const) {
+          await page.goto(path);
+          await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+          await expectNoAxeViolations(page, screen);
+        }
+        // A room whose server never answers: "joining", a state screen that is busy.
+        await page.routeWebSocket(/\/api\/realtime$/, () => {
+          // Never answered.
+        });
+        await page.goto("/room/ABC234");
+        await expect(status(page)).toHaveText("Đang vào phòng…");
+        await expectNoAxeViolations(page, "room-joining");
+      });
+
+      test("the play screen while its saved game loads", async ({ page }) => {
+        // Saved games that never answer: the play screen stays on "loading".
+        await page.addInitScript(() => {
+          Object.defineProperty(window, "indexedDB", {
+            value: { open: () => ({}) },
+            configurable: true,
+          });
+        });
+        await page.goto("/play/tictactoe/local");
+        await expect(status(page)).toHaveText("Đang tải…");
+        await expectNoAxeViolations(page, "play-loading");
+      });
+    });
+
+    test.describe("(B) play screens", () => {
+      test("every game on one device", async ({ page }) => {
+        await startLocalGame(page);
+        await play(page, [1, 1]);
+        await expectNoAxeViolations(page, "tictactoe-local");
+
+        await page.goto("/play/caro");
+        await choose(page, "Chế độ", "Cùng máy");
+        await pressStart(page);
+        await play(page, [7, 7]);
+        await expectNoAxeViolations(page, "caro-local");
+
+        await openSaved(page, "ludo", savedLudoGame(4, LUDO_FOUR_CHOICES));
+        await expect(horseChoices(page)).toHaveCount(4);
+        await expectNoAxeViolations(page, "ludo-local-choices");
+
+        await openSaved(page, "chess", savedChessGame(["e2e4", "e7e5", "g1f3"]));
+        await expectNoAxeViolations(page, "chess-local");
+      });
+
+      test("against the AI: its game, thinking, and the result of a resignation", async ({
+        page,
+      }) => {
+        await page.goto("/play/caro");
+        await choose(page, "Chế độ", "Đấu với máy");
+        await pressStart(page);
+        await play(page, [8, 8]);
+        await expect(status(page)).toHaveText(/Đến lượt bạn \(X\)$/u);
+        await expectNoAxeViolations(page, "caro-ai");
+
+        // Thinking, for as long as the scan takes: an AI seat of a room whose server (the test)
+        // never moves for it. The same turn line, chip and busy board as against the AI here (a
+        // held page clock would hold axe's own timers too).
+        await openFakeRoom(page, {
+          gameId: "chess",
+          seats: [{ kind: "human", name: "Lan", standIn: false }, { kind: "ai" }],
+          record: chessRecord(["e2e4"]),
+        });
+        await expect(status(page)).toHaveText(/Máy đang nghĩ…$/u);
+        await expectNoAxeViolations(page, "ai-thinking");
+
+        await startAiGame(page);
+        await play(page, [2, 2]);
+        await page.getByRole("button", { name: "Đầu hàng" }).click();
+        await page.getByRole("dialog").getByRole("button", { name: "Đầu hàng" }).click();
+        await expect(status(page)).toHaveText("Máy thắng!");
+        await expectNoAxeViolations(page, "tictactoe-ai-resigned");
+      });
+
+      test("the result card: a win and a draw", async ({ page }) => {
+        await startLocalGame(page);
+        // X wins along the top row.
+        await play(page, [1, 1], [2, 1], [1, 2], [2, 2], [1, 3]);
+        await expect(status(page)).toHaveText("X thắng!");
+        await expectNoAxeViolations(page, "tictactoe-won");
+
+        await page.getByRole("button", { name: "Ván mới" }).click();
+        await play(page, [1, 1], [1, 2], [1, 3], [2, 2], [2, 1], [2, 3], [3, 2], [3, 1], [3, 3]);
+        await expect(status(page)).toHaveText("Hoà!");
+        await expectNoAxeViolations(page, "tictactoe-draw");
+      });
+    });
+
+    test.describe("(C) dialogs and menus open", () => {
+      test("Màn hình chơi có hộp thoại: Ván mới, Đầu hàng, the rules, the promotion", async ({
+        page,
+      }) => {
+        await startLocalGame(page);
+        await play(page, [1, 1]);
+        await page.getByRole("button", { name: "Ván mới" }).click();
+        await expect(page.getByRole("dialog")).toBeVisible();
+        await expectNoAxeViolations(page, "dialog-new-game");
+
+        await page.goto("/play/caro");
+        await choose(page, "Chế độ", "Đấu với máy");
+        await pressStart(page);
+        await play(page, [7, 7]);
+        await expect(status(page)).toHaveText(/Đến lượt bạn \(X\)$/u);
+        await page.getByRole("button", { name: "Đầu hàng" }).click();
+        await expect(page.getByRole("dialog")).toBeVisible();
+        await expectNoAxeViolations(page, "dialog-resign");
+        await page.keyboard.press("Escape");
+
+        await page.getByRole("button", { name: "Luật chơi" }).click();
+        const rules = page.getByRole("dialog", { name: "Luật chơi Cờ caro" });
+        await expect(rules.getByRole("heading", { level: 3 }).first()).toBeVisible();
+        await expectNoAxeViolations(page, "dialog-rules");
+
+        await openSaved(
+          page,
+          "chess",
+          savedChessGame(["a2a4", "b7b5", "a4b5", "a7a6", "b5a6", "c8b7", "a6b7", "b8c6"]),
+        );
+        await playChess(page, "b7b8");
+        await expect(page.getByRole("dialog", { name: "Tốt b7 → b8" })).toBeVisible();
+        await expectNoAxeViolations(page, "dialog-promotion");
+      });
+
+      test("the theme and language menus open, on the menu and the play screen", async ({
+        page,
+      }) => {
+        await page.goto("/");
+        await themeButton(page).click();
+        await expect(page.getByRole("menu")).toBeVisible();
+        await expectNoAxeViolations(page, "menu-theme-open");
+        await page.keyboard.press("Escape");
+        await languageButton(page).click();
+        await expect(page.getByRole("menu")).toBeVisible();
+        await expectNoAxeViolations(page, "menu-language-open");
+
+        await openSaved(page, "ludo", savedLudoGame(2, []));
+        await themeButton(page).click();
+        await expect(page.getByRole("menu")).toBeVisible();
+        await expectNoAxeViolations(page, "play-theme-open");
+      });
+
+      test("the question before claiming a turn abandoned, online", async ({ page }) => {
+        await openFakeRoom(page, {
+          gameId: "chess",
+          seats: [
+            { kind: "human", name: "Lan", standIn: false },
+            { kind: "human", name: "Minh", standIn: false },
+          ],
+          record: chessRecord(["e2e4"]),
+          turnIdleMs: 5 * 60_000 + 4000,
+        });
+        await page.getByRole("button", { name: "Xử thắng" }).click();
+        await expect(page.getByRole("dialog")).toBeVisible();
+        await expectNoAxeViolations(page, "dialog-claim");
+      });
+    });
+
+    test.describe("(D) rooms and online games", () => {
+      test("Ván online: Cờ vua holding Black, and waiting for a player gone", async ({ page }) => {
+        await openFakeRoom(
+          page,
+          {
+            gameId: "chess",
+            seats: [
+              { kind: "human", name: "Minh", standIn: false },
+              { kind: "human", name: "Lan", standIn: false },
+            ],
+            record: chessRecord(["e2e4", "e7e5"]),
+            turnIdleMs: 2 * 60_000 + 13_000,
+          },
+          1,
+        );
+        await expect(page.getByRole("group", { name: "Bạn · Đen" })).toBeVisible();
+        await expect(page.getByText(/^Minh chưa đi · 2:1\d$/u)).toBeVisible();
+        await expectNoAxeViolations(page, "online-chess-black-waiting");
+      });
+
+      test("an online Cờ cá ngựa game, the computer playing for Minh", async ({ page }) => {
+        await openFakeRoom(
+          page,
+          {
+            gameId: "ludo",
+            seats: [
+              { kind: "human", name: "Lan", standIn: false },
+              { kind: "human", name: "Minh", standIn: true },
+              { kind: "human", name: "An", standIn: false },
+            ],
+            record: ludoRecord(3, [{ roll: 3 }, { roll: 3 }]),
+            turnIdleMs: 0,
+          },
+          2,
+        );
+        await expect(status(page)).toHaveText(/^Máy \(thay Minh\)/u);
+        await expectNoAxeViolations(page, "online-ludo-stand-in");
+      });
+
+      test("the lobby: asking a visitor for a name, an AI seat, a room not found", async ({
+        page,
+        browser,
+      }) => {
+        const context = await browser.newContext();
+        const host = await context.newPage();
+        await host.goto("/play/ludo");
+        await choose(host, "Chế độ", "Online");
+        await choose(host, "Số người chơi", "4 người");
+        await nameField(host).fill("Minh");
+        await host.getByRole("button", { name: "Tạo phòng" }).click();
+        await expect(host).toHaveURL(ROOM_URL);
+        await host.getByRole("button", { name: "Cho máy chơi ghế 2" }).click();
+        await expect(host.getByRole("button", { name: "Bỏ máy ở ghế 2" })).toBeVisible();
+        await expectNoAxeViolations(host, "lobby-ai-seat");
+
+        await page.goto(host.url());
+        await expect(nameField(page)).toBeFocused();
+        await expectNoAxeViolations(page, "lobby-ask-name");
+        await context.close();
+
+        await page.goto("/room/ZZZ234");
+        await expect(page.getByRole("heading", { name: "Không tìm thấy phòng" })).toBeVisible();
+        await expectNoAxeViolations(page, "room-not-found");
+      });
+    });
+
+    test.describe("(E) rules pages", () => {
+      test("the rules of every game", async ({ page }) => {
+        for (const gameId of ["tictactoe", "caro", "ludo", "chess"]) {
+          await page.goto(`/rules/${gameId}`);
+          await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+          await expectNoAxeViolations(page, `rules-${gameId}`);
+        }
+      });
+    });
+  });
+}
+
+test.describe("every best practice, once", () => {
+  test.use({ colorScheme: "light", reducedMotion: "reduce" });
+
+  test("on the main screens (desktop, light)", async ({ page, isMobile }) => {
+    test.skip(isMobile, "once, on the desktop");
+    await page.goto("/");
+    await reportBestPractices(page, "menu");
+    await page.goto("/play/ludo");
+    await reportBestPractices(page, "setup");
+    await openSaved(page, "ludo", savedLudoGame(4, LUDO_FOUR_CHOICES));
+    await reportBestPractices(page, "play-ludo");
+    await openSaved(page, "chess", savedChessGame(["e2e4"]));
+    await reportBestPractices(page, "play-chess");
+    await page.goto("/rules/chess");
+    await reportBestPractices(page, "rules-chess");
+    await page.goto("/khong-co");
+    await reportBestPractices(page, "not-found");
+  });
+});

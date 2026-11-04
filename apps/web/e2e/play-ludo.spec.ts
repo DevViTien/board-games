@@ -32,7 +32,7 @@ async function startLudo(page: Page, mode: "Cùng máy" | "Đấu với máy", p
   await page
     .getByRole("listitem")
     .filter({ has: page.getByRole("heading", { name: "Cờ cá ngựa" }) })
-    .getByRole("link", { name: "Chơi" })
+    .getByRole("link", { name: "Chơi", exact: true })
     .click();
   await expect(page).toHaveURL(/\/play\/ludo$/);
   await choose(page, "Chế độ", mode);

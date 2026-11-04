@@ -43,11 +43,19 @@ test("Màn hình bắt đầu ván Cờ vua: only the same device and online", a
   await expect(page.getByRole("group", { name: "Mức độ" })).toHaveCount(0);
 });
 
+test("Ván cùng máy: no resigning on one device, only a new game", async ({ page }) => {
+  await startChess(page);
+  await playChess(page, "e2e4", "e7e5");
+
+  await expect(button(page, "Đầu hàng")).toHaveCount(0);
+  await expect(button(page, "Ván mới")).toBeVisible();
+});
+
 test("Không có đấu với máy: /play/chess/ai is not found", async ({ page }) => {
   await page.goto("/play/chess/ai");
 
   await expect(page.getByRole("heading", { name: "Không tìm thấy trang chơi này" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Về menu" })).toBeVisible();
+  await expect(page.getByRole("main").getByRole("link", { name: "Về menu" })).toBeVisible();
 });
 
 test("Thắng bằng chiếu hết: 1. f3 e5 2. g4 Qh4# with the mouse", async ({ page }) => {

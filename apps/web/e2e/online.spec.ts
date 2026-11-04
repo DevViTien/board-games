@@ -163,7 +163,7 @@ test("tells a stranger at once that the room is full, without asking for a name"
   const khoa = await openAsStranger(browser, url);
 
   await expect(heading(khoa.page, "Phòng đã đủ người")).toBeVisible();
-  await expect(khoa.page.getByRole("link", { name: "Về menu" })).toBeVisible();
+  await expect(khoa.page.getByRole("main").getByRole("link", { name: "Về menu" })).toBeVisible();
   await expect(nameField(khoa.page)).toHaveCount(0);
 
   await Promise.all([lan.context.close(), khoa.context.close()]);
@@ -175,7 +175,7 @@ test("tells a stranger at once that a room does not exist, without asking for a 
   const visitor = await openAsStranger(browser, "/room/ZZZZZZ");
 
   await expect(heading(visitor.page, "Không tìm thấy phòng")).toBeVisible();
-  await expect(visitor.page.getByRole("link", { name: "Về menu" })).toBeVisible();
+  await expect(visitor.page.getByRole("main").getByRole("link", { name: "Về menu" })).toBeVisible();
   await expect(nameField(visitor.page)).toHaveCount(0);
 
   await visitor.context.close();

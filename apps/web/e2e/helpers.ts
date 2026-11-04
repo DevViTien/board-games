@@ -176,7 +176,7 @@ export async function openSetupFromMenu(page: Page): Promise<void> {
   await page
     .getByRole("listitem")
     .filter({ has: page.getByRole("heading", { name: "Tic-tac-toe" }) })
-    .getByRole("link", { name: "Chơi" })
+    .getByRole("link", { name: "Chơi", exact: true })
     .click();
   await expect(page).toHaveURL(/\/play\/tictactoe$/);
 }
@@ -414,7 +414,7 @@ const FAKE_ROOM_CODE = "ABC234" as RoomCode;
  */
 export async function openFakeRoom(
   page: Page,
-  room: Pick<RoomView, "gameId" | "seats" | "record">,
+  room: Pick<RoomView, "gameId" | "seats" | "record"> & Partial<Pick<RoomView, "turnIdleMs">>,
   you = 0,
 ): Promise<{ loseConnection: () => Promise<void> }> {
   let answering = true;
@@ -430,6 +430,7 @@ export async function openFakeRoom(
           revision: 1,
           gameNumber: 1,
           host: 0,
+          turnIdleMs: null,
           ...room,
         };
         send(socket, { type: "room", room: view, you });
@@ -524,4 +525,27 @@ export async function playChess(page: Page, ...moves: readonly string[]): Promis
     await chessSquare(page, move.slice(0, 2)).click();
     await chessSquare(page, move.slice(2, 4)).click();
   }
+}
+
+/** The top bar's theme button, named by the theme chosen ("Giao diện: Theo hệ thống"). */
+export const themeButton = (page: Page) =>
+  page.getByRole("banner").getByRole("button", { name: /^Giao diện: / });
+/** The top bar's language button, named by the language in use ("Ngôn ngữ: Tiếng Việt, VI"). */
+export const languageButton = (page: Page) =>
+  page.getByRole("banner").getByRole("button", { name: /^(Ngôn ngữ|Language|言語): / });
+
+/** Picks a theme from the top bar's menu, as a player does with a mouse or a finger. */
+export async function pickTheme(page: Page, name: "Sáng" | "Tối" | "Theo hệ thống") {
+  await themeButton(page).click();
+  await page.getByRole("menuitemradio", { name }).click();
+  await expect(page.getByRole("menu")).toBeHidden();
+}
+
+/** Picks a language from the top bar's menu, then waits for the page to show it. */
+export async function pickLanguage(page: Page, name: "Tiếng Việt" | "English" | "日本語") {
+  const lang = { "Tiếng Việt": "vi", English: "en", 日本語: "ja" }[name];
+  await languageButton(page).click();
+  await page.getByRole("menuitemradio", { name }).click();
+  await expect(page.locator("html")).toHaveAttribute("lang", lang);
+  await expect(languageButton(page)).not.toHaveAttribute("aria-busy");
 }

@@ -10,6 +10,9 @@ for (const address of ["/room/zz", "/room/ABCD"]) {
       page.getByRole("heading", { level: 1, name: "Không tìm thấy phòng" }),
     ).toBeVisible();
     await expect(page.getByText(/Room\.errors/)).toHaveCount(0);
-    await expect(page.getByRole("link", { name: "Về menu" })).toHaveAttribute("href", "/");
+    await expect(page.getByRole("main").getByRole("link", { name: "Về menu" })).toHaveAttribute(
+      "href",
+      "/",
+    );
   });
 }

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { MENU_HEADING } from "./helpers";
+import { languageButton, MENU_HEADING, themeButton } from "./helpers";
 
 test("home page shows the game menu", async ({ page }) => {
   await page.goto("/");
@@ -17,7 +17,7 @@ test("Thẻ Cờ caro: a card has two ways in, Play and Online", async ({ page }
   const card = page
     .getByRole("listitem")
     .filter({ has: page.getByRole("heading", { name: "Cờ caro" }) });
-  await expect(card.getByRole("link", { name: "Chơi" })).toBeVisible();
+  await expect(card.getByRole("link", { name: "Chơi", exact: true })).toBeVisible();
   await expect(card.getByRole("link", { name: "Online" })).toBeVisible();
   await expect(card.getByText("Sắp có")).toHaveCount(0);
 });
@@ -49,6 +49,23 @@ test("nothing scrolls sideways on a 360 px wide screen", async ({ page }) => {
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
   );
   expect(overflow).toBe(0);
-  await expect(page.getByRole("button", { name: "日本語" })).toBeInViewport();
-  await expect(page.getByRole("radio", { name: "Theo hệ thống" })).toBeAttached();
+  await expect(themeButton(page)).toBeInViewport({ ratio: 1 });
+  await expect(languageButton(page)).toBeInViewport({ ratio: 1 });
+});
+
+test("Mở danh sách giấy phép: the menu's footer opens the third-party licences", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const licences = page
+    .getByRole("contentinfo")
+    .getByRole("link", { name: "Giấy phép bên thứ ba" });
+  // A target of 24 px or more (WCAG 2.5.8).
+  expect((await licences.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(24);
+
+  await licences.click();
+
+  await expect(page).toHaveURL(/\/third-party-licenses\.txt$/u);
+  await expect(page.locator("body")).toContainText("chess.js");
+  await expect(page.locator("body")).toContainText("staunty");
 });

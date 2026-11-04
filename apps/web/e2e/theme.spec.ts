@@ -1,14 +1,13 @@
 import { expect, type Page, test } from "@playwright/test";
 
+import { pickTheme, themeButton } from "./helpers";
+
 // The page's background, which every theme sets: how a test sees which theme shows.
 const LIGHT_BG = "rgb(246, 245, 241)";
 const DARK_BG = "rgb(18, 19, 34)";
 
 const background = (page: Page) =>
   page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-
-const themeRadio = (page: Page, name: string) =>
-  page.getByRole("group", { name: "Giao diện" }).getByRole("radio", { name });
 
 /** Errors the page logs (a hydration mismatch is one) or throws, from now on. */
 function collectErrors(page: Page): string[] {
@@ -18,16 +17,6 @@ function collectErrors(page: Page): string[] {
   });
   page.on("pageerror", (error) => errors.push(error.message));
   return errors;
-}
-
-/** Picks a theme as a player does: the radios are hidden, their labels show the choice. */
-async function pickTheme(page: Page, name: string): Promise<void> {
-  await page
-    .getByRole("group", { name: "Giao diện" })
-    .locator("label")
-    .filter({ hasText: name })
-    .click();
-  await expect(themeRadio(page, name)).toBeChecked();
 }
 
 test.describe("on a light system", () => {
@@ -43,6 +32,7 @@ test.describe("on a light system", () => {
     await pickTheme(page, "Tối");
     // At once, without loading the page again.
     await expect.poll(() => background(page)).toBe(DARK_BG);
+    await expect(themeButton(page)).toHaveAccessibleName("Giao diện: Tối");
 
     // A new visit to another page: the HTML the server sends is already dark.
     const response = await page.request.get("/play/tictactoe");
@@ -50,10 +40,11 @@ test.describe("on a light system", () => {
     await page.goto("/play/tictactoe");
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     expect(await background(page)).toBe(DARK_BG);
+    await expect(themeButton(page)).toHaveAccessibleName("Giao diện: Tối");
     expect(errors).toEqual([]);
   });
 
-  test("a remembered dark theme renders the menu dark and its switcher on Tối, without a hydration error", async ({
+  test("a remembered dark theme renders the menu dark and its button on Tối, without a hydration error", async ({
     page,
     context,
     baseURL,
@@ -64,21 +55,29 @@ test.describe("on a light system", () => {
     await page.goto("/");
 
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-    await expect(themeRadio(page, "Tối")).toBeChecked();
+    await expect(themeButton(page)).toHaveAccessibleName("Giao diện: Tối");
     expect(await background(page)).toBe(DARK_BG);
     // Let hydration finish and report.
     await page.waitForLoadState("networkidle");
     expect(errors).toEqual([]);
   });
 
-  test("Chọn bằng bàn phím: the arrow keys step through the themes", async ({ page }) => {
+  test("Chọn bằng bàn phím: Tab to the button, Enter, ↓ and Enter choose the next theme", async ({
+    page,
+  }) => {
     await page.goto("/");
-    await themeRadio(page, "Theo hệ thống").focus();
+    await themeButton(page).focus();
 
-    await page.keyboard.press("ArrowLeft");
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("menuitemradio", { name: "Theo hệ thống" })).toBeFocused();
+    await page.keyboard.press("ArrowDown");
+    await expect(page.getByRole("menuitemradio", { name: "Sáng" })).toBeFocused();
+    await page.keyboard.press("Enter");
 
-    await expect(themeRadio(page, "Tối")).toBeChecked();
-    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+    await expect(page.getByRole("menu")).toBeHidden();
+    await expect(themeButton(page)).toBeFocused();
+    await expect(themeButton(page)).toHaveAccessibleName("Giao diện: Sáng");
   });
 });
 
@@ -110,7 +109,7 @@ test.describe("on a dark system", () => {
 
     await expect(page.locator("html")).not.toHaveAttribute("data-theme");
     expect(await background(page)).toBe(DARK_BG);
-    await expect(themeRadio(page, "Theo hệ thống")).toBeChecked();
+    await expect(themeButton(page)).toHaveAccessibleName("Giao diện: Theo hệ thống");
     await page.waitForLoadState("networkidle");
     expect(errors).toEqual([]);
   });

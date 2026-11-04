@@ -322,7 +322,7 @@ test("loads the game again from the error page when its code failed to load", as
   await choose(page, "Chế độ", "Cùng máy");
   await pressStart(page);
   await expect(page.getByRole("heading", { name: "Không tải được game" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Về menu" })).toBeVisible();
+  await expect(page.getByRole("main").getByRole("link", { name: "Về menu" })).toBeVisible();
   expect(failedLoads).toBeGreaterThan(0);
 
   // Back online: retrying renders the route again in place, without reloading the page.
@@ -343,7 +343,7 @@ test("shows a not-found page with a way back for an unknown game", async ({ page
 
   expect(response?.status()).toBe(404);
   await expect(page.getByRole("heading", { name: "Không tìm thấy game" })).toBeVisible();
-  await page.getByRole("link", { name: "Về menu" }).click();
+  await page.getByRole("main").getByRole("link", { name: "Về menu" }).click();
   await expect(page.getByRole("heading", { level: 1, name: MENU_HEADING })).toBeVisible();
 });
 
@@ -355,7 +355,7 @@ for (const address of ["/play/khong-co-game-nay/local", "/play/tictactoe/khong-c
     await expect(
       page.getByRole("heading", { name: "Không tìm thấy trang chơi này" }),
     ).toBeVisible();
-    await page.getByRole("link", { name: "Về menu" }).click();
+    await page.getByRole("main").getByRole("link", { name: "Về menu" }).click();
     await expect(page.getByRole("heading", { level: 1, name: MENU_HEADING })).toBeVisible();
   });
 }
@@ -365,6 +365,6 @@ test("shows a translated not-found page with a way back for any unknown URL", as
 
   expect(response?.status()).toBe(404);
   await expect(page.getByRole("heading", { name: "Không tìm thấy trang" })).toBeVisible();
-  await page.getByRole("link", { name: "Về menu" }).click();
+  await page.getByRole("main").getByRole("link", { name: "Về menu" }).click();
   await expect(page.getByRole("heading", { level: 1, name: MENU_HEADING })).toBeVisible();
 });

@@ -16,3 +16,17 @@ export async function shoot(page: Page, screen: string): Promise<void> {
     caret: "hide",
   });
 }
+
+/**
+ * Saves what the screen shows now, not the whole page: a sticky bar after scrolling, a menu open,
+ * what is above the fold of a small phone.
+ */
+export async function shootScreen(page: Page, screen: string): Promise<void> {
+  await page.evaluate(() => document.fonts.ready);
+  await page.screenshot({
+    path: path.join(test.info().project.outputDir, `${screen}.png`),
+    fullPage: false,
+    animations: "disabled",
+    caret: "hide",
+  });
+}

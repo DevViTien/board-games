@@ -141,8 +141,8 @@ test.describe("Cờ cá ngựa for four on a laptop of 1280 × 800, four horses 
     const room = await openFakeRoom(page, {
       gameId: "ludo",
       seats: [
-        { kind: "human", name: "Lan" },
-        { kind: "human", name: "Minh" },
+        { kind: "human", name: "Lan", standIn: false },
+        { kind: "human", name: "Minh", standIn: false },
         { kind: "ai" },
         { kind: "ai" },
       ],

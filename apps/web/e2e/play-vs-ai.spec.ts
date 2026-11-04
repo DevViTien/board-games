@@ -276,3 +276,28 @@ test("plays a whole game against the AI to its end", async ({ page }) => {
   // A finished game is not kept.
   await expect.poll(() => readSavedGame(page, SLOT.ai)).toBeNull();
 });
+
+test("Đầu hàng khi đấu với máy: the computer wins, and the game is no longer in progress", async ({
+  page,
+}) => {
+  await startAiGame(page);
+  await playAndWaitForAi(page, "X");
+  await expect.poll(() => savedMoveCount(page, SLOT.ai)).toBe(2);
+
+  await page.getByRole("button", { name: "Đầu hàng" }).click();
+  const question = page.getByRole("dialog");
+  await expect(question).toContainText("Máy sẽ thắng ván này.");
+  await question.getByRole("button", { name: "Đầu hàng" }).click();
+
+  await expect(status(page)).toHaveText("Máy thắng!");
+  await expect(page.getByText("Bạn đã đầu hàng.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Hoàn tác" })).toHaveAttribute(
+    "aria-disabled",
+    "true",
+  );
+  await expect.poll(() => readSavedGame(page, SLOT.ai)).toBeNull();
+
+  await page.getByRole("link", { name: "Về menu" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: MENU_HEADING })).toBeVisible();
+  await expect(continueSection(page)).toHaveCount(0);
+});
