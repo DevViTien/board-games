@@ -4,7 +4,7 @@ import { AI_LEVEL, type AiLevel, type OptionChoiceList } from "@board-games/engi
 import type { RegisteredGameId } from "@board-games/games";
 import { ROOM_ERROR } from "@board-games/protocol";
 import {
-  ArrowLeftIcon,
+  BookOpenIcon,
   Button,
   buttonVariants,
   Card,
@@ -20,6 +20,7 @@ import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { parsePlayerName, readIdentity, saveName } from "@/features/identity/identity";
 import { NameField } from "@/features/identity/NameField";
 import { createRoom as createRoomOnServer } from "@/features/room/create-room";
+import { AppTopBar } from "@/features/shell/AppTopBar";
 import type { ChosenOptions } from "@/lib/option-choices";
 import { resolveRealtimeUrl } from "@/lib/realtime-url";
 import { useGamesInProgress } from "@/lib/use-games-in-progress";
@@ -116,7 +117,6 @@ export function SetupScreen({
   artwork,
 }: SetupScreenProps) {
   const t = useTranslations("Setup");
-  const tPlay = useTranslations("Play");
   const tGames = useTranslations("Games");
   const tLevels = useTranslations("Levels");
   const modeLabel = useModeLabel();
@@ -224,199 +224,206 @@ export function SetupScreen({
   };
 
   return (
-    <main className="mx-auto flex max-w-xl flex-col gap-6 px-4 pt-4 pb-14 sm:pt-6">
-      <Link
-        href="/"
-        className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "-ml-2 self-start px-2")}
-      >
-        <ArrowLeftIcon aria-hidden className="size-4" />
-        {tPlay("backToMenu")}
-      </Link>
+    <>
+      {/* The way back to the menu, the theme and the language, stuck to the top. */}
+      <AppTopBar />
+      <main className="mx-auto flex max-w-xl flex-col gap-6 pt-4 px-safe-4 pb-safe-14 sm:pt-6">
+        <Card className="flex flex-col gap-6 overflow-hidden pt-0">
+          {/* The game's own colours apply inside `data-game` (games/<id>/theme.css). */}
+          <header
+            data-game={gameId}
+            className="-mx-5 flex flex-wrap items-center gap-x-4 gap-y-2 bg-game-tint px-5 py-4"
+          >
+            {artwork !== undefined && <div className="shrink-0">{artwork}</div>}
+            <h1 className="min-w-0 text-title">{tGames(`${gameId}.name`)}</h1>
+            <Link
+              href={`/rules/${gameId}`}
+              className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "ml-auto px-3")}
+            >
+              <BookOpenIcon aria-hidden className="size-4" />
+              {t("rules")}
+            </Link>
+          </header>
+          <RadioGroup
+            fill
+            legend={t("mode")}
+            options={(supportsAI ? MODES : MODES_WITHOUT_AI).map((mode) => ({
+              value: mode,
+              label: t(`modes.${mode}`),
+            }))}
+            value={choice.mode}
+            onChange={(mode) => {
+              update({ mode });
+            }}
+          />
+          {/* Before the AI's groups: the number of players decides how many seats the AI takes. It
+            applies to every mode, and is kept when the mode changes. */}
+          {playerChoice && (
+            <RadioGroup
+              fill
+              legend={t("players")}
+              options={Array.from({ length: maxPlayers - minPlayers + 1 }, (_, index) => {
+                const count = minPlayers + index;
+                return { value: String(count), label: t("playerCount", { count }) };
+              })}
+              value={String(choice.playerCount)}
+              onChange={(picked) => {
+                update({ playerCount: Number(picked) });
+              }}
+            />
+          )}
+          {choice.mode === "ai" && (
+            <>
+              <RadioGroup
+                fill
+                legend={t("level")}
+                options={LEVELS.map((level) => ({ value: level, label: tLevels(level) }))}
+                value={choice.level}
+                onChange={(level) => {
+                  update({ level });
+                }}
+              />
+              <RadioGroup
+                fill
+                legend={t("first")}
+                options={FIRST_PLAYERS.map((first) => ({
+                  value: first,
+                  label: t(`firsts.${first}`),
+                }))}
+                value={choice.first}
+                onChange={(first) => {
+                  update({ first });
+                }}
+              />
+            </>
+          )}
+          {/* The rules apply to every mode, and are kept when the mode changes. */}
+          {optionChoices.map(({ name: option, values }) => (
+            <RadioGroup
+              fill
+              key={option}
+              legend={optionLabels.field(gameId, option)}
+              options={values.map((value) => ({
+                value: String(value),
+                label: optionLabels.value(gameId, option, value),
+              }))}
+              value={String(choice.options[option])}
+              onChange={(picked) => {
+                // Radio values are text: back to the game's own value (a number for a board size).
+                const value = values.find((candidate) => String(candidate) === picked);
+                if (value === undefined) return;
+                setChoice((current) => ({
+                  ...current,
+                  options: { ...current.options, [option]: value },
+                }));
+              }}
+            />
+          ))}
+          {online && (
+            <NameField
+              ref={nameInput}
+              value={name}
+              onChange={setName}
+              // Remembered as soon as it is valid, so a room the player is in shows the new name
+              // the next time they open it.
+              onCommit={saveName}
+              showError={nameTried}
+            />
+          )}
+          {online ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                className="max-sm:w-full"
+                aria-disabled={creating}
+                onClick={() => void createOnlineRoom()}
+              >
+                {t("createRoom")}
+              </Button>
+              {/* Always there while online, so the progress is announced when it appears. */}
+              <p role="status" className="text-small text-fg-muted">
+                {creating ? t("creating") : null}
+              </p>
+            </div>
+          ) : (
+            // Not pressable until the games in progress are known, so none is dropped unasked.
+            <Button
+              className="max-sm:w-full sm:self-start"
+              aria-disabled={saved.status === "loading"}
+              onClick={requestStart}
+            >
+              {t("start")}
+            </Button>
+          )}
+          {online && createProblem === "failed" && (
+            <p role="alert" className="text-small text-danger">
+              {t("createFailed")}
+            </p>
+          )}
+          {online && createProblem === "outdated" && (
+            <div role="alert" className="flex flex-col items-start gap-3">
+              <p className="text-small text-danger">{t("createOutdated")}</p>
+              <Button variant="secondary" onClick={reloadPage}>
+                {t("reload")}
+              </Button>
+            </div>
+          )}
+        </Card>
 
-      <Card className="flex flex-col gap-6 overflow-hidden pt-0">
-        {/* The game's own colours apply inside `data-game` (games/<id>/theme.css). */}
-        <header data-game={gameId} className="-mx-5 flex items-center gap-4 bg-game-tint px-5 py-4">
-          {artwork !== undefined && <div className="shrink-0">{artwork}</div>}
-          <h1 className="text-title">{tGames(`${gameId}.name`)}</h1>
-        </header>
-        <RadioGroup
-          fill
-          legend={t("mode")}
-          options={(supportsAI ? MODES : MODES_WITHOUT_AI).map((mode) => ({
-            value: mode,
-            label: t(`modes.${mode}`),
-          }))}
-          value={choice.mode}
-          onChange={(mode) => {
-            update({ mode });
+        {/* Below the choices: it appears once the saved games are read, and must not push the
+          choices or "Start" away from under the player's finger. */}
+        {ownGames.length > 0 && (
+          <section aria-labelledby={savedHeadingId} className="flex flex-col gap-3">
+            <h2 id={savedHeadingId} className="text-heading">
+              {t("inProgress.title")}
+            </h2>
+            <ul className="flex flex-col gap-2">
+              {ownGames.map((game) => {
+                const mode = modeLabel(seatsOf(game.settings));
+                const rules = optionLabels.summary(
+                  gameId,
+                  optionChoices,
+                  game.options,
+                  defaultOptions,
+                );
+                const label =
+                  rules === null ? mode : t("inProgress.itemWithRules", { mode, rules });
+                return (
+                  <li key={game.mode}>
+                    <Card className="flex items-center justify-between gap-4 py-3">
+                      <span>{label}</span>
+                      {/* Named with the mode, so two "Continue" links never sound the same. */}
+                      <Link
+                        href={`/play/${gameId}/${game.mode}`}
+                        aria-label={t("inProgress.continueLabel", { mode: label })}
+                        className={buttonVariants({ variant: "secondary", size: "sm" })}
+                      >
+                        {t("inProgress.continue")}
+                      </Link>
+                    </Card>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
+
+        <ConfirmDialog
+          open={confirming}
+          title={t("confirm.title")}
+          description={
+            saved.status === "failed" ? t("confirm.descriptionUnknown") : t("confirm.description")
+          }
+          confirmLabel={t("confirm.confirm")}
+          cancelLabel={t("confirm.cancel")}
+          onConfirm={() => {
+            setConfirming(false);
+            begin();
+          }}
+          onCancel={() => {
+            setConfirming(false);
           }}
         />
-        {/* Before the AI's groups: the number of players decides how many seats the AI takes. It
-            applies to every mode, and is kept when the mode changes. */}
-        {playerChoice && (
-          <RadioGroup
-            fill
-            legend={t("players")}
-            options={Array.from({ length: maxPlayers - minPlayers + 1 }, (_, index) => {
-              const count = minPlayers + index;
-              return { value: String(count), label: t("playerCount", { count }) };
-            })}
-            value={String(choice.playerCount)}
-            onChange={(picked) => {
-              update({ playerCount: Number(picked) });
-            }}
-          />
-        )}
-        {choice.mode === "ai" && (
-          <>
-            <RadioGroup
-              fill
-              legend={t("level")}
-              options={LEVELS.map((level) => ({ value: level, label: tLevels(level) }))}
-              value={choice.level}
-              onChange={(level) => {
-                update({ level });
-              }}
-            />
-            <RadioGroup
-              fill
-              legend={t("first")}
-              options={FIRST_PLAYERS.map((first) => ({
-                value: first,
-                label: t(`firsts.${first}`),
-              }))}
-              value={choice.first}
-              onChange={(first) => {
-                update({ first });
-              }}
-            />
-          </>
-        )}
-        {/* The rules apply to every mode, and are kept when the mode changes. */}
-        {optionChoices.map(({ name: option, values }) => (
-          <RadioGroup
-            fill
-            key={option}
-            legend={optionLabels.field(gameId, option)}
-            options={values.map((value) => ({
-              value: String(value),
-              label: optionLabels.value(gameId, option, value),
-            }))}
-            value={String(choice.options[option])}
-            onChange={(picked) => {
-              // Radio values are text: back to the game's own value (a number for a board size).
-              const value = values.find((candidate) => String(candidate) === picked);
-              if (value === undefined) return;
-              setChoice((current) => ({
-                ...current,
-                options: { ...current.options, [option]: value },
-              }));
-            }}
-          />
-        ))}
-        {online && (
-          <NameField
-            ref={nameInput}
-            value={name}
-            onChange={setName}
-            // Remembered as soon as it is valid, so a room the player is in shows the new name
-            // the next time they open it.
-            onCommit={saveName}
-            showError={nameTried}
-          />
-        )}
-        {online ? (
-          <div className="flex flex-wrap items-center gap-3">
-            <Button
-              className="max-sm:w-full"
-              aria-disabled={creating}
-              onClick={() => void createOnlineRoom()}
-            >
-              {t("createRoom")}
-            </Button>
-            {/* Always there while online, so the progress is announced when it appears. */}
-            <p role="status" className="text-small text-fg-muted">
-              {creating ? t("creating") : null}
-            </p>
-          </div>
-        ) : (
-          // Not pressable until the games in progress are known, so none is dropped unasked.
-          <Button
-            className="max-sm:w-full sm:self-start"
-            aria-disabled={saved.status === "loading"}
-            onClick={requestStart}
-          >
-            {t("start")}
-          </Button>
-        )}
-        {online && createProblem === "failed" && (
-          <p role="alert" className="text-small text-danger">
-            {t("createFailed")}
-          </p>
-        )}
-        {online && createProblem === "outdated" && (
-          <div role="alert" className="flex flex-col items-start gap-3">
-            <p className="text-small text-danger">{t("createOutdated")}</p>
-            <Button variant="secondary" onClick={reloadPage}>
-              {t("reload")}
-            </Button>
-          </div>
-        )}
-      </Card>
-
-      {/* Below the choices: it appears once the saved games are read, and must not push the
-          choices or "Start" away from under the player's finger. */}
-      {ownGames.length > 0 && (
-        <section aria-labelledby={savedHeadingId} className="flex flex-col gap-3">
-          <h2 id={savedHeadingId} className="text-heading">
-            {t("inProgress.title")}
-          </h2>
-          <ul className="flex flex-col gap-2">
-            {ownGames.map((game) => {
-              const mode = modeLabel(seatsOf(game.settings));
-              const rules = optionLabels.summary(
-                gameId,
-                optionChoices,
-                game.options,
-                defaultOptions,
-              );
-              const label = rules === null ? mode : t("inProgress.itemWithRules", { mode, rules });
-              return (
-                <li key={game.mode}>
-                  <Card className="flex items-center justify-between gap-4 py-3">
-                    <span>{label}</span>
-                    {/* Named with the mode, so two "Continue" links never sound the same. */}
-                    <Link
-                      href={`/play/${gameId}/${game.mode}`}
-                      aria-label={t("inProgress.continueLabel", { mode: label })}
-                      className={buttonVariants({ variant: "secondary", size: "sm" })}
-                    >
-                      {t("inProgress.continue")}
-                    </Link>
-                  </Card>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
-
-      <ConfirmDialog
-        open={confirming}
-        title={t("confirm.title")}
-        description={
-          saved.status === "failed" ? t("confirm.descriptionUnknown") : t("confirm.description")
-        }
-        confirmLabel={t("confirm.confirm")}
-        cancelLabel={t("confirm.cancel")}
-        onConfirm={() => {
-          setConfirming(false);
-          begin();
-        }}
-        onCancel={() => {
-          setConfirming(false);
-        }}
-      />
-    </main>
+      </main>
+    </>
   );
 }

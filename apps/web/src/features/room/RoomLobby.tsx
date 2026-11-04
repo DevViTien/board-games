@@ -3,14 +3,14 @@
 import type { OptionChoiceList, PlayerIndex } from "@board-games/engine";
 import type { RegisteredGameId } from "@board-games/games";
 import type { RoomView } from "@board-games/protocol";
-import { Badge, Button, buttonVariants, Card, Input } from "@board-games/ui";
-import Link from "next/link";
+import { Badge, Button, Card, Input } from "@board-games/ui";
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { parsePlayerName } from "@/features/identity/identity";
 import { NameField } from "@/features/identity/NameField";
 import { ConnectionNotice } from "@/features/play/ConnectionNotice";
+import { AppTopBar } from "@/features/shell/AppTopBar";
 import { useOptionLabels } from "@/lib/use-option-labels";
 import { CONNECTION_STATUS, type ConnectionStatus } from "@/transport/types";
 
@@ -164,126 +164,125 @@ export function RoomLobby({
   }
 
   return (
-    <main className="mx-auto flex max-w-xl flex-col gap-6 px-4 py-8">
-      <header className="flex flex-wrap items-center justify-between gap-4">
+    <>
+      {/* The way back to the menu (no name needed), the theme and the language. */}
+      <AppTopBar />
+      <main className="mx-auto flex max-w-xl flex-col gap-6 pt-8 px-safe-4 pb-safe-8">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight">{tGames(`${gameId}.name`)}</h1>
-          <Badge className="text-sm">{tPlay("online")}</Badge>
+          <h1 className="text-title">{tGames(`${gameId}.name`)}</h1>
+          <Badge>{tPlay("online")}</Badge>
         </div>
-        <Link href="/" className={buttonVariants({ variant: "ghost" })}>
-          {tPlay("backToMenu")}
-        </Link>
-      </header>
 
-      {/* Nothing below would jump much: no space kept while the connection is fine. */}
-      <ConnectionNotice status={status} onResume={onResume} reserveSpace={false} />
+        {/* Nothing below would jump much: no space kept while the connection is fine. */}
+        <ConnectionNotice status={status} onResume={onResume} reserveSpace={false} />
 
-      <Card className="flex flex-col gap-4 p-6">
-        {rules !== null && <p className="font-semibold">{t("rules", { rules })}</p>}
-        <dl className="flex flex-col gap-1">
-          <dt className="text-sm font-semibold text-fg-muted">{t("code")}</dt>
-          <dd className="font-mono text-2xl font-semibold tracking-widest">{room.code}</dd>
-        </dl>
-        <div className="flex flex-col gap-2">
-          <label htmlFor={linkId} className="text-sm font-semibold text-fg-muted">
-            {t("inviteLink")}
-          </label>
-          <Input
-            ref={link}
-            id={linkId}
-            value={inviteUrl}
-            readOnly
-            onFocus={(event) => {
-              event.target.select();
-            }}
-          />
-          <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" onClick={() => void copyLink()}>
-              {t("copy")}
-            </Button>
-            {canShare && (
-              <Button variant="secondary" onClick={() => void shareLink()}>
-                {t("share")}
+        <Card className="flex flex-col gap-4 p-6">
+          {rules !== null && <p className="font-semibold">{t("rules", { rules })}</p>}
+          <dl className="flex flex-col gap-1">
+            <dt className="text-sm font-semibold text-fg-muted">{t("code")}</dt>
+            <dd className="font-mono text-2xl font-semibold tracking-widest">{room.code}</dd>
+          </dl>
+          <div className="flex flex-col gap-2">
+            <label htmlFor={linkId} className="text-sm font-semibold text-fg-muted">
+              {t("inviteLink")}
+            </label>
+            <Input
+              ref={link}
+              id={linkId}
+              value={inviteUrl}
+              readOnly
+              onFocus={(event) => {
+                event.target.select();
+              }}
+            />
+            <div className="flex flex-wrap gap-2">
+              <Button variant="secondary" onClick={() => void copyLink()}>
+                {t("copy")}
               </Button>
-            )}
+              {canShare && (
+                <Button variant="secondary" onClick={() => void shareLink()}>
+                  {t("share")}
+                </Button>
+              )}
+            </div>
+            <p aria-live="polite" className="text-sm text-fg-muted">
+              {copy === "copied" ? t("copied") : copy === "failed" ? t("copyFailed") : null}
+            </p>
           </div>
-          <p aria-live="polite" className="text-sm text-fg-muted">
-            {copy === "copied" ? t("copied") : copy === "failed" ? t("copyFailed") : null}
-          </p>
-        </div>
-      </Card>
+        </Card>
 
-      <section aria-labelledby={playersId} className="flex flex-col gap-3">
-        <h2 id={playersId} className="text-lg font-semibold">
-          {t("players")}
-        </h2>
-        <ol className="flex flex-col gap-2">
-          {room.seats.map((seat, index) => (
-            // Seats are fixed places: the index is their identity.
-            <li key={index}>
-              <Card className="flex flex-wrap items-center justify-between gap-2 py-3">
-                <span className="flex flex-wrap items-center gap-2">
-                  {seat === null ? (
-                    <span className="text-fg-muted">{t("emptySeat")}</span>
-                  ) : seat.kind === "ai" ? (
-                    <span>{t("aiSeat")}</span>
-                  ) : index === you ? (
-                    <span className="font-semibold">{t("you", { name: seat.name })}</span>
-                  ) : (
-                    <span>{seat.name}</span>
-                  )}
-                  {index === room.host && <Badge>{t("host")}</Badge>}
-                </span>
-                {/* One button in the same place either way, so the focus stays on it once the
+        <section aria-labelledby={playersId} className="flex flex-col gap-3">
+          <h2 id={playersId} className="text-lg font-semibold">
+            {t("players")}
+          </h2>
+          <ol className="flex flex-col gap-2">
+            {room.seats.map((seat, index) => (
+              // Seats are fixed places: the index is their identity.
+              <li key={index}>
+                <Card className="flex flex-wrap items-center justify-between gap-2 py-3">
+                  <span className="flex flex-wrap items-center gap-2">
+                    {seat === null ? (
+                      <span className="text-fg-muted">{t("emptySeat")}</span>
+                    ) : seat.kind === "ai" ? (
+                      <span>{t("aiSeat")}</span>
+                    ) : index === you ? (
+                      <span className="font-semibold">{t("you", { name: seat.name })}</span>
+                    ) : (
+                      <span>{seat.name}</span>
+                    )}
+                    {index === room.host && <Badge>{t("host")}</Badge>}
+                  </span>
+                  {/* One button in the same place either way, so the focus stays on it once the
                     seat changes. */}
-                {managesAiSeats && (seat === null || seat.kind === "ai") && (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    aria-disabled={awaitingAiSeat}
-                    aria-label={
-                      seat !== null
-                        ? t("removeAiLabel", { seat: index + 1 })
-                        : emptySeats === 1
-                          ? t("addAiAndStartLabel", { seat: index + 1 })
-                          : t("addAiLabel", { seat: index + 1 })
-                    }
-                    onClick={() => {
-                      toggleAiSeat(index, seat === null);
-                    }}
-                  >
-                    {seat === null ? t("addAi") : t("removeAi")}
-                  </Button>
-                )}
-              </Card>
-            </li>
-          ))}
-        </ol>
-      </section>
+                  {managesAiSeats && (seat === null || seat.kind === "ai") && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      aria-disabled={awaitingAiSeat}
+                      aria-label={
+                        seat !== null
+                          ? t("removeAiLabel", { seat: index + 1 })
+                          : emptySeats === 1
+                            ? t("addAiAndStartLabel", { seat: index + 1 })
+                            : t("addAiLabel", { seat: index + 1 })
+                      }
+                      onClick={() => {
+                        toggleAiSeat(index, seat === null);
+                      }}
+                    >
+                      {seat === null ? t("addAi") : t("removeAi")}
+                    </Button>
+                  )}
+                </Card>
+              </li>
+            ))}
+          </ol>
+        </section>
 
-      {you === null && hasEmptySeat ? (
-        <form
-          className="flex flex-col gap-4"
-          noValidate
-          onSubmit={(event) => {
-            event.preventDefault();
-            sit();
-          }}
-        >
-          <NameField
-            ref={nameInput}
-            value={draft}
-            onChange={setDraft}
-            showError={tried}
-            hint={asksName ? t("nameHint") : undefined}
-          />
-          <Button type="submit" className="self-start" aria-disabled={sitting}>
-            {t("sit")}
-          </Button>
-        </form>
-      ) : (
-        <p className="text-fg-muted">{t("waitingForFriends")}</p>
-      )}
-    </main>
+        {you === null && hasEmptySeat ? (
+          <form
+            className="flex flex-col gap-4"
+            noValidate
+            onSubmit={(event) => {
+              event.preventDefault();
+              sit();
+            }}
+          >
+            <NameField
+              ref={nameInput}
+              value={draft}
+              onChange={setDraft}
+              showError={tried}
+              hint={asksName ? t("nameHint") : undefined}
+            />
+            <Button type="submit" className="self-start" aria-disabled={sitting}>
+              {t("sit")}
+            </Button>
+          </form>
+        ) : (
+          <p className="text-fg-muted">{t("waitingForFriends")}</p>
+        )}
+      </main>
+    </>
   );
 }

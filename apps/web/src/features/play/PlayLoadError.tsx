@@ -1,8 +1,10 @@
 "use client";
 
-import { Button, buttonVariants, StateScreen } from "@board-games/ui";
+import { Button, buttonVariants } from "@board-games/ui";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+
+import { AppStateScreen } from "@/features/shell/AppStateScreen";
 
 import { forgetFailedGameEntryLoads } from "./game-entry-loads";
 
@@ -21,7 +23,7 @@ export function PlayLoadError({ retry }: PlayLoadErrorProps) {
   const t = useTranslations("Play");
 
   return (
-    <StateScreen
+    <AppStateScreen
       title={t("loadError.title")}
       description={t("loadError.description")}
       tone="warning"
@@ -37,6 +39,6 @@ export function PlayLoadError({ retry }: PlayLoadErrorProps) {
       <Link href="/" className={buttonVariants({ variant: "secondary" })}>
         {t("backToMenu")}
       </Link>
-    </StateScreen>
+    </AppStateScreen>
   );
 }

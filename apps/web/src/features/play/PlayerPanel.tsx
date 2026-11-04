@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { useId } from "react";
 
 import type { GameUI } from "@/games/types";
-import type { SeatView } from "@/transport/types";
+import { type SeatView, standInName } from "@/transport/types";
 
 interface PlayerPanelProps<State> {
   readonly ui: Pick<GameUI<State, never>, "usePlayerLabel" | "useSeatSummary" | "SeatMark">;
@@ -104,7 +104,15 @@ function useSeatRows<State>({
     // Who plays the seat, in words: kept on a narrow tile unless it is "this device".
     let kind: string | null = null;
     let kindOnNarrow = true;
-    if (seat.kind === "ai") {
+    const standIn = standInName(seat);
+    if (standIn !== null) {
+      // A person's seat the server's AI plays for them: still theirs, under their name.
+      name =
+        player === viewer
+          ? t("you", { player: label })
+          : t("named", { name: standIn, player: label });
+      kind = t("standIn");
+    } else if (seat.kind === "ai") {
       name = t("ai", { player: label });
       // Online, the room's AI plays at a level nobody chose: not told.
       if (!online) kind = t("aiLevel", { level: tLevels(seat.level) });
@@ -128,12 +136,7 @@ function useSeatRows<State>({
     let badge: SeatBadge = null;
     if (result === null && player === currentPlayer) badge = "turn";
     else if (result?.kind === "win" && result.winners.includes(player)) badge = "winner";
-    const connection =
-      online && seat.kind === "human" && player === viewer
-        ? connectionLost
-          ? "lost"
-          : "connected"
-        : null;
+    const connection = online && player === viewer ? (connectionLost ? "lost" : "connected") : null;
     return {
       player,
       label,

@@ -88,6 +88,15 @@ describe("SetupScreen", () => {
     expect(screen.getByRole("link", { name: "Về menu" })).toHaveAttribute("href", "/");
   });
 
+  it("Từ màn hình bắt đầu ván: a link opens the game's rules", async () => {
+    await renderSetup();
+
+    expect(screen.getByRole("link", { name: "Luật chơi" })).toHaveAttribute(
+      "href",
+      "/rules/tictactoe",
+    );
+  });
+
   it("starts a game against the AI at Hard, the AI moving first", async () => {
     await renderSetup();
 

@@ -63,6 +63,8 @@ function tictactoeSnapshot(
     inProgress: false,
     supportsUndo: true,
     canStartNewGame: true,
+    resign: null,
+    turn: null,
     connection: null,
     options: {},
     ...overrides,
@@ -75,6 +77,8 @@ const ONLINE = {
   seats: [{ kind: "human" }, { kind: "remote", name: "Minh" }],
   supportsUndo: false,
   canStartNewGame: false,
+  resign: null,
+  turn: null,
   connection: "online",
 } as const;
 

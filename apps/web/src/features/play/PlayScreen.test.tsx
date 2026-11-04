@@ -90,6 +90,8 @@ function fakeTransport(
     inProgress: false,
     supportsUndo: true,
     canStartNewGame: true,
+    resign: null,
+    turn: null,
     connection: null,
     options: {},
     ...overrides,
@@ -101,6 +103,8 @@ function fakeTransport(
     requestUndo: vi.fn(),
     requestRedo: vi.fn(),
     requestNewGame: vi.fn(),
+    resign: vi.fn(),
+    claimAbandoned: vi.fn(),
     dispose: vi.fn(),
   };
 }
@@ -623,6 +627,8 @@ function onlineSnapshot(
     waitingFor: result === null && currentPlayer !== viewer ? "opponent" : null,
     supportsUndo: false,
     canStartNewGame: result !== null,
+    resign: null,
+    turn: null,
     connection: "online",
     ...overrides,
   };
@@ -897,6 +903,8 @@ function caroAfterAiMove(
     inProgress: true,
     supportsUndo: true,
     canStartNewGame: true,
+    resign: null,
+    turn: null,
     connection: null,
     options,
     ...overrides,
@@ -908,6 +916,8 @@ function caroAfterAiMove(
     requestUndo: vi.fn(),
     requestRedo: vi.fn(),
     requestNewGame: vi.fn(),
+    resign: vi.fn(),
+    claimAbandoned: vi.fn(),
     dispose: vi.fn(),
   };
 }
@@ -956,7 +966,10 @@ describe("Bố cục màn hình chơi", () => {
     expect(screen.getByRole("link", { name: "Về menu" })).toHaveAttribute("href", "/");
     expect(status()).toHaveTextContent("Đến lượt X");
     for (const name of ["Hoàn tác", "Làm lại", "Ván mới"]) expect(button(name)).toBeInTheDocument();
-    expect(screen.getByRole("main")).toHaveAttribute("data-game", "tictactoe");
+    expect(screen.getByRole("main").closest("[data-game]")).toHaveAttribute(
+      "data-game",
+      "tictactoe",
+    );
   });
 
   it("keeps one order for every width: turn, board, the game's controls, the game's buttons", () => {
@@ -972,7 +985,7 @@ describe("Bố cục màn hình chơi", () => {
     expect(before(turn, board)).toBe(true);
     expect(before(board, hint)).toBe(true);
     expect(before(hint, undo)).toBe(true);
-    expect(screen.getByRole("main")).toHaveAttribute("data-game", "caro");
+    expect(screen.getByRole("main").closest("[data-game]")).toHaveAttribute("data-game", "caro");
   });
 
   it("puts the connection line first, before the turn, online", () => {
@@ -985,6 +998,8 @@ describe("Bố cục màn hình chơi", () => {
           viewer: 0,
           supportsUndo: false,
           canStartNewGame: false,
+          resign: null,
+          turn: null,
         })}
         ui={ui}
       />,
@@ -999,11 +1014,11 @@ describe("Bố cục màn hình chơi", () => {
 
 describe("PlayScreen rules", () => {
   const CARO_CHOICES = listOptionChoices(caro);
-  /** The game's name with the chips of its mode and rules beside it (below it on a phone). */
+  /** The chips of the game's mode and rules, at the top of the page (beside the board from 1024 px). */
   const header = () => {
-    const title = screen.getByRole("heading", { level: 1 }).parentElement;
-    if (title === null) throw new Error("no title");
-    return title;
+    const chips = screen.getByRole("main").querySelector<HTMLElement>("[data-chips]");
+    if (chips === null) throw new Error("no chips");
+    return chips;
   };
 
   function renderCaro(overrides: Partial<CaroSnapshot>) {
@@ -1049,6 +1064,8 @@ describe("PlayScreen rules", () => {
     renderCaro({ options: { size: 17, rule: "free" } });
 
     expect(within(header()).queryByText(/×/)).not.toBeInTheDocument();
+    // The top bar keeps one row: no chips there.
+    expect(within(screen.getByRole("banner")).queryByText(/Với máy/)).not.toBeInTheDocument();
   });
 
   it("shows nothing new for Tic-tac-toe, which has no rule options", () => {
@@ -1061,8 +1078,8 @@ describe("PlayScreen rules", () => {
       />,
     );
 
-    expect(within(header()).getByRole("heading")).toHaveTextContent("Tic-tac-toe");
-    expect(header().children).toHaveLength(1);
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Tic-tac-toe");
+    expect(screen.getByRole("main").querySelector("[data-chips]")).toBeNull();
   });
 });
 

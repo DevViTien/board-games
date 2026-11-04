@@ -1,12 +1,18 @@
 "use client";
 
-import type { GameResult, OptionChoiceList, PlayerIndex } from "@board-games/engine";
+import {
+  ENDING_REASON,
+  type GameResult,
+  type OptionChoiceList,
+  type PlayerIndex,
+} from "@board-games/engine";
 import type { RegisteredGameId } from "@board-games/games";
-import { ArrowLeftIcon, Badge, Button, buttonVariants, cn, ConfirmDialog } from "@board-games/ui";
-import Link from "next/link";
+import { Badge, BookOpenIcon, Button, cn, ConfirmDialog, Dialog, FlagIcon } from "@board-games/ui";
 import { useFormatter, useTranslations } from "next-intl";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useId, useRef, useState } from "react";
 
+import { LazyRules } from "@/features/rules/LazyRules";
+import { AppTopBar } from "@/features/shell/AppTopBar";
 import type { BoardLayout, GameUI } from "@/games/types";
 import { useModeLabel } from "@/lib/use-mode-label";
 import { useOptionLabels } from "@/lib/use-option-labels";
@@ -15,9 +21,12 @@ import {
   CONNECTION_STATUS,
   type ReadySnapshot,
   type SeatView,
+  standInName,
   type Transport,
+  type TurnClock,
 } from "@/transport/types";
 
+import { AbandonNotice } from "./AbandonNotice";
 import { Confetti } from "./Confetti";
 import { ConnectionNotice } from "./ConnectionNotice";
 import { PlayerPanel, SeatBar } from "./PlayerPanel";
@@ -26,6 +35,7 @@ import { ResultCard } from "./ResultCard";
 import { isAiThinking, unavailableReasons } from "./unavailable-reason";
 import { useLostForAWhile } from "./use-lost-for-a-while";
 import { useTransportSnapshot } from "./use-transport";
+import { TURN_LEVEL, useTurnThresholds } from "./use-turn-thresholds";
 
 export interface PlayScreenProps<State, Move, Outcome> {
   readonly gameId: RegisteredGameId;
@@ -43,6 +53,11 @@ export interface PlayScreenProps<State, Move, Outcome> {
    * the lobby, whose focused "Join game" button is gone.
    */
   readonly focusTitle?: boolean | undefined;
+  /**
+   * What the rules dialog shows in place of the game's rules (`LazyRules`, loaded when the dialog
+   * first opens): a stand-in for tests.
+   */
+  readonly rules?: ReactNode;
 }
 
 function noop(): void {
@@ -55,16 +70,41 @@ function noResultDetail(): () => null {
   return () => null;
 }
 
-/** Whether a person at this device is among the winners: every person here on a shared device. */
+/**
+ * Whether a person at this device is among the winners: every person here on a shared device. A
+ * seat the AI won while standing in for the person here is not their win.
+ */
 function wonHere(
   result: GameResult | null,
   viewer: PlayerIndex | null,
   seats: readonly SeatView[],
 ): boolean {
   if (result?.kind !== "win") return false;
-  return result.winners.some((winner) =>
-    viewer === null ? seats[winner]?.kind === "human" : winner === viewer,
+  return result.winners.some(
+    (winner) => (viewer === null || winner === viewer) && seats[winner]?.kind === "human",
   );
+}
+
+/** Whether a game ended by a resignation or a turn abandoned, not by its rules. */
+function endedOutsideRules(result: GameResult | null): boolean {
+  return result?.reason === ENDING_REASON.Resigned || result?.reason === ENDING_REASON.Abandoned;
+}
+
+/**
+ * Which turn a turn clock is about: the game, its position and the player to move. Not its start,
+ * which may be reckoned again a few ms off (a reconnection) for the very same turn.
+ */
+function turnKey(turn: TurnClock | null): string | null {
+  return turn === null
+    ? null
+    : [turn.gameNumber, turn.moveIndex, turn.player].map(String).join(":");
+}
+
+/** Where the focus goes once a question about resigning or a turn abandoned has closed. */
+interface FocusAfterDialog {
+  readonly target: "title" | "opener";
+  /** Raised for every request, so the same target twice moves the focus twice. */
+  readonly seq: number;
 }
 
 /**
@@ -100,6 +140,7 @@ export function PlayScreen<State, Move, Outcome>({
   optionChoices = NO_OPTION_CHOICES,
   onResume = noop,
   focusTitle = false,
+  rules,
 }: PlayScreenProps<State, Move, Outcome>) {
   const t = useTranslations("Play");
   const tGames = useTranslations("Games");
@@ -122,12 +163,30 @@ export function PlayScreen<State, Move, Outcome>({
   // The confetti on screen, keyed by the move that won, or `null`.
   const [celebration, setCelebration] = useState<number | null>(null);
   const [reasonShown, setReasonShown] = useState<ReasonShown>(null);
+  const [confirmingResign, setConfirmingResign] = useState(false);
+  // The turn (`turnKey`) the question about a player gone is about: it closes once that turn is
+  // over, never because its start was reckoned again a few ms off.
+  const [confirmingClaim, setConfirmingClaim] = useState<string | null>(null);
+  // The turn the server refused a claim on (too early): told until that turn is over or becomes
+  // claimable.
+  const [claimRefusedFor, setClaimRefusedFor] = useState<string | null>(null);
+  const [focusAfterDialog, setFocusAfterDialog] = useState<FocusAfterDialog | null>(null);
+  // Whether the rules dialog is open, and whether it was ever opened: its content is rendered from
+  // the first opening on (a room loads the rules then), and kept, so it opens at once again.
+  const [rulesOpen, setRulesOpen] = useState(false);
+  const [rulesOpened, setRulesOpened] = useState(false);
+  // The button that opened the question, to give the focus back to when it is cancelled.
+  const opener = useRef<HTMLElement | null>(null);
+  const turnLevel = useTurnThresholds(
+    snapshot.status === "ready" ? (snapshot.turn?.startedAt ?? null) : null,
+  );
   const reducedMotion = usePrefersReducedMotion();
   const connectionLost = useLostForAWhile(snapshot.status === "ready" ? snapshot.connection : null);
   const useResultDetail = ui.useResultDetail ?? noResultDetail;
   const resultDetail = useResultDetail();
   const undoReasonId = useId();
   const redoReasonId = useId();
+  const resignReasonId = useId();
   // Set by the result card's "New game": its button goes with the card, so the focus moves to the
   // "New game" of the game's buttons once it is back, instead of falling to the page. Online, where
   // no such button exists while the game is on, it moves to the game's title.
@@ -156,13 +215,27 @@ export function PlayScreen<State, Move, Outcome>({
   const endCelebration = useCallback(() => {
     setCelebration(null);
   }, []);
+  // After the dialog has closed (the dialog's own effect runs first and gives the focus back to
+  // what had it), to the button that opened it, or to the title when that is gone or the game
+  // moved on.
+  useEffect(() => {
+    if (focusAfterDialog === null) return;
+    const button = opener.current;
+    if (focusAfterDialog.target === "opener" && button?.isConnected === true) button.focus();
+    else title.current?.focus();
+  }, [focusAfterDialog]);
 
-  // The transport tells only refusals worth a word (online: the rules refused the move).
+  // The transport tells only refusals worth a word (online: the rules refused the move, or a turn
+  // claimed abandoned too early).
   useEffect(
     () =>
       transport.subscribe((event) => {
-        if (event.type !== "rejected") return;
         const current = transport.getSnapshot();
+        if (event.type === "claim-refused") {
+          setClaimRefusedFor(current.status === "ready" ? turnKey(current.turn) : null);
+          return;
+        }
+        if (event.type !== "rejected") return;
         setRefusedAt(current.status === "ready" ? current.moveCount : null);
       }),
     [transport],
@@ -178,13 +251,37 @@ export function PlayScreen<State, Move, Outcome>({
   // longer applies. Adjusted during render, so the dialog never shows it for a finished game.
   if (confirmingNewGame && !snapshot.inProgress) setConfirmingNewGame(false);
 
-  const aiSeatCount = snapshot.seats.filter((seat) => seat.kind === "ai").length;
+  // The questions about leaving close as soon as they no longer apply (the game ended, the player
+  // gone moved), the focus then going to the title: the button that opened them may be gone.
+  const requestTitleFocus = () => {
+    setFocusAfterDialog((previous) => ({ target: "title", seq: (previous?.seq ?? 0) + 1 }));
+  };
+  if (confirmingResign && snapshot.resign === null) {
+    setConfirmingResign(false);
+    requestTitleFocus();
+  }
+  const { turn } = snapshot;
+  const currentTurn = turnKey(turn);
+  if (confirmingClaim !== null && (turn?.claim == null || currentTurn !== confirmingClaim)) {
+    setConfirmingClaim(null);
+    requestTitleFocus();
+  }
+  if (claimRefusedFor !== null && currentTurn !== claimRefusedFor) setClaimRefusedFor(null);
+  // Why resigning or claiming cannot be done now: the connection, lost or paused for inactivity
+  // (then "Continue" on the connection line brings it back).
+  const unavailableReason =
+    snapshot.connection === CONNECTION_STATUS.Idle ? t("locked.idle") : t("locked.reconnecting");
+
+  // A seat the AI plays for a person who left is told by their name, not counted among AI seats.
+  const aiSeatCount = snapshot.seats.filter(
+    (seat) => seat.kind === "ai" && standInName(seat) === null,
+  ).length;
   const hasAiSeat = aiSeatCount > 0;
   // Several AIs are told apart by their seats' names; a single one is simply "the computer".
   const severalAis = aiSeatCount > 1;
   // Online whoever else plays: a room of one person and three AIs has no remote seat.
   const online = snapshot.connection !== null;
-  const rules = optionLabels.summary(gameId, optionChoices, snapshot.options);
+  const optionSummary = optionLabels.summary(gameId, optionChoices, snapshot.options);
 
   function describeStatus({
     state,
@@ -205,6 +302,14 @@ export function PlayScreen<State, Move, Outcome>({
       const seat = seats[player];
       return seat?.kind === "remote" && seat.name !== null ? seat.name : t("opponent");
     };
+    // A winner by name: a seat the AI won for a person who left as "the computer (for Lan)".
+    const winnerName = (player: PlayerIndex) => {
+      const standIn = standInName(seats[player]);
+      if (standIn !== null) return t("standInName", { name: standIn });
+      const seat = seats[player];
+      if (seat?.kind === "ai") return t("aiSeatTitle", { player: label(player) });
+      return seat?.kind === "remote" ? nameOf(player) : label(player);
+    };
     // One person here: told as "you", "the computer" and the online opponent's name.
     if (viewer !== null) {
       // A new online game swaps sides for the one who did not ask for it: say which side is theirs.
@@ -224,6 +329,39 @@ export function PlayScreen<State, Move, Outcome>({
         lastEntry === null || lastMover === null
           ? null
           : { by: lastMover, seat: seats[lastMover], move: moveLabel(lastEntry.move, state) };
+      // Online, a seat the AI plays for a person who left: its moves are told as the AI's with the
+      // person's name, and its turn as the AI's for them, this player's own seat included.
+      const standInMover = moved === null ? null : standInName(moved.seat);
+      const standInToMove = result === null ? standInName(seats[currentPlayer]) : null;
+      if (result === null && (standInMover !== null || standInToMove !== null)) {
+        let then: string;
+        if (standInToMove !== null) {
+          then =
+            currentPlayer === viewer
+              ? t("standInThinkingForYou")
+              : t("standInThinking", { name: standInToMove });
+        } else if (currentPlayer === viewer) {
+          then = t("yourTurn", { player: label(viewer) });
+        } else if (seats[currentPlayer]?.kind === "ai") {
+          then = severalAis
+            ? t("aiSeatThinking", { player: label(currentPlayer) })
+            : t("aiThinking");
+        } else {
+          then = t("waitingFor", { name: nameOf(currentPlayer) });
+        }
+        if (moved === null) return then;
+        let movedText: string | null = null;
+        if (standInMover !== null) {
+          movedText = t("aiStandInMoved", { name: standInMover, move: moved.move });
+        } else if (moved.seat?.kind === "ai") {
+          movedText = severalAis
+            ? t("aiSeatMoved", { mover: label(moved.by), move: moved.move })
+            : t("aiMoved", { move: moved.move });
+        } else if (moved.seat?.kind === "remote") {
+          movedText = t("opponentMoved", { name: nameOf(moved.by), move: moved.move });
+        }
+        return movedText === null ? then : t("movedThen", { moved: movedText, then });
+      }
       if (result === null && currentPlayer === viewer) {
         if (moved?.seat?.kind === "ai") {
           return severalAis
@@ -285,12 +423,29 @@ export function PlayScreen<State, Move, Outcome>({
         }
         return t("waitingFor", { name: nameOf(currentPlayer) });
       }
+      if (
+        result?.kind === "win" &&
+        result.winners.some((winner) => standInName(seats[winner]) !== null)
+      ) {
+        // The AI standing in for someone won: said so on every screen, theirs included.
+        const [only] = result.winners;
+        const standIn = result.winners.length === 1 ? standInName(seats[only ?? -1]) : null;
+        return standIn !== null
+          ? t("standInWins", { name: standIn })
+          : t("winner", {
+              player: format.list(result.winners.map(winnerName), { type: "conjunction" }),
+              count: result.winners.length,
+            });
+      }
       if (result?.kind === "win" && result.winners.includes(viewer)) return t("youWin");
       if (
         result?.kind === "win" &&
         result.winners.every((winner) => seats[winner]?.kind === "ai")
       ) {
-        return severalAis ? t("aiSeatWins", { player: labels(result.winners) }) : t("aiWins");
+        // The player resigned to the AI: the computer wins, however many AI seats there are.
+        return severalAis && result.reason !== ENDING_REASON.Resigned
+          ? t("aiSeatWins", { player: labels(result.winners) })
+          : t("aiWins");
       }
       if (
         result?.kind === "win" &&
@@ -308,22 +463,76 @@ export function PlayScreen<State, Move, Outcome>({
     return t("winner", { player: labels(result.winners), count: result.winners.length });
   }
 
+  // Who the game waits for, by name.
+  function waitingName(player: PlayerIndex): string {
+    const seat = ready.seats[player];
+    const label = playerLabel(player, ready.state);
+    const standIn = standInName(seat);
+    if (standIn !== null) return t("standInName", { name: standIn });
+    if (seat?.kind === "ai") return severalAis ? t("aiSeatName", { player: label }) : t("aiName");
+    if (seat?.kind === "remote") return seat.name ?? t("opponent");
+    return label;
+  }
+  const ready = snapshot;
+
+  /**
+   * Online, at 5 minutes, the turn line of the players waiting says they may claim the turn: in
+   * words on screen, as the claim button appears. The seconds tick in the notice under it, never
+   * in the live region.
+   */
+  function describeClaimReady(): string | null {
+    if (turn === null || turn.player === ready.viewer || turn.claim === null) return null;
+    if (turnLevel !== TURN_LEVEL.Claimable) return null;
+    const name = waitingName(turn.player);
+    if (turn.claim === "stand-in") return t("abandon.readyStandIn", { name });
+    return turn.claim === "end" ? t("abandon.readyEnd", { name }) : t("abandon.readyWin", { name });
+  }
+
+  /**
+   * Online, at 4 minutes, the turn line of the player to move gains a sentence for screen readers
+   * only, said once: the reminder under it shows the seconds left.
+   */
+  function describeMoverWarning(): string | null {
+    if (turn?.player !== ready.viewer) return null;
+    if (turnLevel !== TURN_LEVEL.Warn && turnLevel !== TURN_LEVEL.Claimable) return null;
+    return ready.resign?.outcome === "stand-in"
+      ? t("abandon.turnWarnStandIn")
+      : t("abandon.turnWarnWin");
+  }
+
+  /** Why the game ended, when not by its rules: who resigned, or who was gone too long. */
+  function describeEnding(result: GameResult): string | null {
+    if (result.kind !== "win" || !endedOutsideRules(result)) return null;
+    const leaver = ready.seats.findIndex((_, seat) => !result.winners.includes(seat));
+    if (leaver === -1) return null;
+    const resigned = result.reason === ENDING_REASON.Resigned;
+    if (leaver === ready.viewer) {
+      return resigned ? t("ending.youResigned") : t("ending.youAbandoned");
+    }
+    const name = waitingName(leaver);
+    return resigned
+      ? t("ending.opponentResigned", { name })
+      : t("ending.opponentAbandoned", { name });
+  }
+
   // Two moves in a row may be told in the same words (the AI rolls a 6 that cannot move, twice):
   // the second gets an invisible mark, so the live region changes and is read again.
-  const announcement = describeStatus(snapshot);
+  const announcement = describeClaimReady() ?? describeStatus(snapshot);
+  const moverWarning = describeMoverWarning();
+  const spoken = moverWarning === null ? announcement : `${announcement} ${moverWarning}`;
   // A move of a person here (a roll, which the board's hint reads out) never makes the same words
   // be said again: the invisible mark stays as it was, so the live region does not change.
   const movedHere =
     snapshot.lastMover !== null && snapshot.seats[snapshot.lastMover]?.kind === "human";
-  if (said?.moveCount !== snapshot.moveCount || said.text !== announcement) {
-    const same = said?.text === announcement;
+  if (said?.moveCount !== snapshot.moveCount || said.text !== spoken) {
+    const same = said?.text === spoken;
     setSaid({
       moveCount: snapshot.moveCount,
-      text: announcement,
+      text: spoken,
       repeated: same && (movedHere ? said.repeated : !said.repeated),
     });
   }
-  const repeated = said?.repeated === true && said.text === announcement;
+  const repeated = said?.repeated === true && said.text === spoken;
 
   const finished = snapshot.result !== null;
   // Adjusted during render: a game that ends while on screen, won by a person here, celebrates once
@@ -343,8 +552,8 @@ export function PlayScreen<State, Move, Outcome>({
   const celebrating = wonHere(snapshot.result, snapshot.viewer, snapshot.seats);
   // The card offers a new game itself; the game's buttons keep only undo and redo meanwhile.
   const newGameInButtons = snapshot.canStartNewGame && !finished;
-  const hasButtons = snapshot.supportsUndo || newGameInButtons;
-  const ready = snapshot;
+  const { resign } = snapshot;
+  const hasButtons = snapshot.supportsUndo || newGameInButtons || resign !== null;
 
   function startNewGame() {
     // Only a game where a person here has a move in effect is worth asking about: not one where
@@ -353,20 +562,12 @@ export function PlayScreen<State, Move, Outcome>({
     else transport.requestNewGame();
   }
 
-  // Who the game waits for, by name.
-  function waitingName(player: PlayerIndex): string {
-    const seat = ready.seats[player];
-    const label = playerLabel(player, ready.state);
-    if (seat?.kind === "ai") return severalAis ? t("aiSeatName", { player: label }) : t("aiName");
-    if (seat?.kind === "remote") return seat.name ?? t("opponent");
-    return label;
-  }
   // Why the board is locked while the game is on, for a board's own controls to say it: the
   // connection, someone else to play, or a move on its way to the server.
   let lockedReason: string | null = null;
   if (!snapshot.canMove && !finished) {
     if (snapshot.connection !== null && snapshot.connection !== CONNECTION_STATUS.Online) {
-      lockedReason = t("locked.reconnecting");
+      lockedReason = unavailableReason;
     } else if (snapshot.waitingFor !== null) {
       lockedReason = t("locked.waiting", { player: waitingName(snapshot.currentPlayer) });
     } else {
@@ -383,7 +584,8 @@ export function PlayScreen<State, Move, Outcome>({
       <ConnectionNotice
         status={snapshot.connection}
         onResume={onResume}
-        className="my-0 lg:my-1.5 lg:justify-start lg:[grid-area:notice]"
+        // Below 1024 px it takes back half of the column's gaps: one small line, close to the chips.
+        className="-my-2 lg:my-1.5 lg:justify-start lg:[grid-area:notice] short-landscape:my-1 short-landscape:justify-start short-landscape:[grid-area:notice]"
       >
         {refused && (
           <p role="alert" className="text-small text-danger">
@@ -397,11 +599,37 @@ export function PlayScreen<State, Move, Outcome>({
       announcement={
         <>
           {announcement}
+          {moverWarning !== null && <span className="sr-only"> {moverWarning}</span>}
           {repeated && REPEAT_MARK}
         </>
       }
       variant={celebrating ? "won" : finished ? "over" : "turn"}
-      detail={snapshot.result === null ? null : resultDetail(snapshot.result, snapshot.state)}
+      detail={
+        snapshot.result === null
+          ? null
+          : // The engine's own reasons first: the game's rules know nothing of resigning.
+            (describeEnding(snapshot.result) ??
+            (endedOutsideRules(snapshot.result)
+              ? null
+              : resultDetail(snapshot.result, snapshot.state)))
+      }
+      notice={
+        turn === null ? null : (
+          <AbandonNotice
+            turn={turn}
+            level={turnLevel}
+            viewer={snapshot.viewer}
+            name={waitingName(turn.player)}
+            resign={resign}
+            refused={claimRefusedFor !== null}
+            unavailableReason={unavailableReason}
+            onClaim={(event) => {
+              opener.current = event.currentTarget;
+              setConfirmingClaim(turnKey(turn));
+            }}
+          />
+        )
+      }
       action={
         snapshot.canStartNewGame ? (
           <Button
@@ -415,7 +643,7 @@ export function PlayScreen<State, Move, Outcome>({
           </Button>
         ) : null
       }
-      className="lg:my-1.5 lg:[grid-area:status]"
+      className="lg:my-1.5 lg:[grid-area:status] short-landscape:my-1 short-landscape:[grid-area:status]"
     />
   );
   // The seats as the players' panel and the bars around a board (`BoardParts.seatOrder`) show them.
@@ -432,7 +660,12 @@ export function PlayScreen<State, Move, Outcome>({
         : snapshot.connection === CONNECTION_STATUS.Idle || connectionLost,
     thinking,
   } as const;
-  const players = <PlayerPanel {...seatProps} className="lg:my-1.5 lg:[grid-area:players]" />;
+  const players = (
+    <PlayerPanel
+      {...seatProps}
+      className="lg:my-1.5 lg:[grid-area:players] short-landscape:my-1 short-landscape:[grid-area:players]"
+    />
+  );
   // Why undo or redo cannot be pressed: read with the button, shown in words while the button has
   // the focus or was just pressed.
   // Shown as a note under the buttons, over the space below them, so the column never moves.
@@ -445,7 +678,7 @@ export function PlayScreen<State, Move, Outcome>({
         id={id}
         className={
           shown
-            ? "absolute inset-x-0 top-full z-10 mt-1.5 text-center text-small text-fg-muted lg:text-left"
+            ? "absolute inset-x-0 top-full z-10 mt-1.5 text-center text-small text-fg-muted lg:text-left short-landscape:text-left"
             : "sr-only"
         }
       >
@@ -467,7 +700,10 @@ export function PlayScreen<State, Move, Outcome>({
   // `aria-disabled`, not `disabled`: undoing the last move with the keyboard would otherwise
   // disable the focused button and drop focus to the page body.
   const gameButtons = hasButtons ? (
-    <div className="relative flex flex-wrap justify-center gap-2 lg:my-1.5 lg:justify-start lg:[grid-area:buttons]">
+    // Below 1024 px a compact row (44 px high, narrower padding), one line at 360 px when it fits:
+    // undo, redo and a new game do; "Đầu hàng" against the AI goes to a second line, after "Ván
+    // mới" in the first.
+    <div className="relative flex flex-wrap justify-center gap-2 lg:my-1.5 lg:justify-start lg:[grid-area:buttons] short-landscape:my-1 short-landscape:justify-start short-landscape:[grid-area:buttons] max-lg:[&>button]:h-11 max-lg:[&>button]:px-3">
       {snapshot.supportsUndo && (
         <>
           <Button
@@ -497,111 +733,211 @@ export function PlayScreen<State, Move, Outcome>({
           {t("newGame")}
         </Button>
       )}
+      {/* Last, apart from the game's own controls: final, so it always asks first. */}
+      {resign !== null && (
+        <Button
+          variant="secondary"
+          aria-disabled={!resign.available}
+          aria-describedby={resign.available ? undefined : resignReasonId}
+          onClick={(event) => {
+            if (!resign.available) return;
+            opener.current = event.currentTarget;
+            setConfirmingResign(true);
+          }}
+        >
+          <FlagIcon aria-hidden className="size-4" />
+          {t("resign")}
+        </Button>
+      )}
+      {resign?.available === false && (
+        <p id={resignReasonId} className="sr-only">
+          {unavailableReason}
+        </p>
+      )}
       {snapshot.supportsUndo && reasonText("undo", undoReasonId)}
       {snapshot.supportsUndo && reasonText("redo", redoReasonId)}
     </div>
   ) : null;
+
+  /** What resigning will do, in the question asked first. */
+  function resignQuestion(): string {
+    if (resign?.outcome === "stand-in") return t("confirmResign.descriptionStandIn");
+    const others = ready.seats.flatMap((_, seat) => (seat === ready.viewer ? [] : [seat]));
+    // Every other seat played by the AI (against the computer): the computer wins.
+    if (others.every((seat) => ready.seats[seat]?.kind === "ai")) {
+      return t("confirmResign.descriptionAi");
+    }
+    return t("confirmResign.descriptionWin", {
+      name: format.list(others.map(waitingName), { type: "conjunction" }),
+    });
+  }
+
+  /** The question before claiming the running turn abandoned, by what the claim does. */
+  function claimQuestion(): { title: string; description: string; confirm: string } {
+    const name = turn === null ? t("opponent") : waitingName(turn.player);
+    switch (turn?.claim) {
+      case "stand-in":
+        return {
+          title: t("confirmAbandon.titleStandIn", { name }),
+          description: t("confirmAbandon.descriptionStandIn", { name }),
+          confirm: t("abandon.claimStandIn"),
+        };
+      case "end":
+        return {
+          title: t("confirmAbandon.titleEnd", { name }),
+          description: t("confirmAbandon.descriptionEnd", { name }),
+          confirm: t("abandon.claimEnd"),
+        };
+      default:
+        return {
+          title: t("confirmAbandon.titleWin", { name }),
+          description: t("confirmAbandon.descriptionWin", { name }),
+          confirm: t("abandon.claimWin"),
+        };
+    }
+  }
+
+  const claimText = claimQuestion();
 
   const confetti =
     celebration !== null && !reducedMotion ? (
       <Confetti key={celebration} onDone={endCelebration} />
     ) : null;
 
-  // Where the board's parts go: one order in the DOM for every width (read and tabbed alike):
-  // connection, turn (or the result card), players, board, the game's controls, the game's
-  // buttons. Below 1024 px they stack in that order; from 1024 px the board takes the left of
-  // every row and the rest stacks beside it, centred on the board's height. The board gets its room
-  // as `--board-room`: the width on a phone, and on a laptop a square that leaves the column and the
-  // bar on screen. While the AI thinks, the board is busy for assistive technology.
+  // Against the AI, its level stays visible, also after a reload; online, the AI seats are the
+  // server's, at a level nobody chose. Every rule option, defaults included, so both players online
+  // read the same words. At the top of the page's content (the top bar keeps one row), beside the
+  // board from 1024 px.
+  const chips =
+    hasAiSeat || online || optionSummary !== null ? (
+      <div
+        data-chips=""
+        className="flex max-w-full flex-wrap items-center justify-center gap-1.5 lg:my-1.5 lg:justify-start lg:[grid-area:chips] short-landscape:my-1 short-landscape:justify-start short-landscape:[grid-area:chips]"
+      >
+        {hasAiSeat && !online && <Badge variant="accent">{modeLabel(snapshot.seats)}</Badge>}
+        {online && <Badge variant="accent">{t("online")}</Badge>}
+        {optionSummary !== null && (
+          <Badge variant="accent" className="max-w-full whitespace-normal">
+            {optionSummary}
+          </Badge>
+        )}
+      </div>
+    ) : null;
+
+  // Where the board's parts go: one order in the DOM for every width (read and tabbed alike): the
+  // chips, connection, turn (or the result card), players, board, the game's controls, the game's
+  // buttons. Below 1024 px they stack in that order; from 1024 px, and on a phone turned sideways
+  // (`short-landscape:`, at most 512 px high), the board takes the left of every row and the rest
+  // stacks beside it, centred on the board's height (sideways, the board stays in view while a long
+  // column scrolls). The board gets its room as `--board-room`: the width on a phone, and beside the
+  // column a square that leaves the column, the top bar (`--top-bar-height`) and the page's padding
+  // on screen. While the AI thinks, the board is busy for assistive technology.
   //
   // A board that names its seats' places (`seatOrder`, Chess) gets a bar for each seat right above
-  // and right below it instead of the panel, and its room leaves the two bars on screen as well.
+  // and right below it instead of the panel, and its room leaves the two bars on screen as well;
+  // sideways the two bars go to the column, so the board keeps the screen's height.
+  const besideBoard =
+    "short-landscape:sticky short-landscape:top-[calc(var(--top-bar-height)+var(--safe-top)+0.5rem)] short-landscape:self-start short-landscape:[grid-area:board]";
   const layout: BoardLayout = ({ board, controls, seatOrder }) => (
     <div
       className={cn(
         "grid w-full grid-cols-[minmax(0,1fr)] gap-y-4 [--board-room:100%]",
-        "lg:grid-cols-[auto_minmax(20rem,24rem)] lg:grid-rows-[minmax(0,1fr)_repeat(5,auto)_minmax(0,1fr)] lg:justify-center lg:gap-x-10 lg:gap-y-0",
-        "lg:[grid-template-areas:'board_.'_'board_notice'_'board_status'_'board_players'_'board_controls'_'board_buttons'_'board_.']",
+        "lg:grid-cols-[auto_minmax(20rem,24rem)] lg:grid-rows-[minmax(0,1fr)_repeat(6,auto)_minmax(0,1fr)] lg:justify-center lg:gap-x-10 lg:gap-y-0",
+        "lg:[grid-template-areas:'board_.'_'board_chips'_'board_notice'_'board_status'_'board_players'_'board_controls'_'board_buttons'_'board_.']",
+        // The page's height less the top bar and the page's padding (3rem), a little room kept.
         seatOrder === undefined
-          ? "lg:[--board-room:min(100vw_-_34rem,100dvh_-_10rem)]"
-          : // The screen's height less the top bar and the page's padding (7.25rem, a little
-            // room kept), less the two bars (2 × 2.75rem) and their gaps (2 × 0.375rem).
-            "lg:[--board-room:min(100vw_-_34rem,100dvh_-_7.25rem_-_6.25rem)]",
+          ? "lg:[--board-room:min(100vw_-_34rem,100dvh_-_var(--top-bar-height)_-_var(--safe-top)_-_6rem)]"
+          : // Less the two bars (2 × 2.75rem) and their gaps (2 × 0.375rem) too.
+            "lg:[--board-room:min(100vw_-_34rem,100dvh_-_var(--top-bar-height)_-_var(--safe-top)_-_3.25rem_-_6.25rem)]",
+        "short-landscape:grid-cols-[auto_minmax(0,1fr)] short-landscape:grid-rows-[minmax(0,1fr)_repeat(8,auto)_minmax(0,1fr)] short-landscape:gap-x-6 short-landscape:gap-y-0",
+        "short-landscape:[grid-template-areas:'board_.'_'board_chips'_'board_notice'_'board_status'_'board_players'_'board_seat-top'_'board_seat-bottom'_'board_controls'_'board_buttons'_'board_.']",
+        // The page's height less the top bar and the page's padding (1rem); the column at least
+        // 16rem wide, the gap and the page's sides.
+        "short-landscape:[--board-room:min(100vw_-_22rem_-_var(--safe-left)_-_var(--safe-right),100dvh_-_var(--top-bar-height)_-_var(--safe-top)_-_1rem)]",
       )}
     >
+      {chips}
       {notice}
       {statusLine}
       {seatOrder === undefined && players}
       <div
         aria-busy={seatOrder === undefined ? thinking : undefined}
-        className="min-w-0 lg:self-center lg:[grid-area:board] aria-busy:[&_*]:cursor-progress"
+        className={cn(
+          "min-w-0 lg:self-center lg:[grid-area:board] aria-busy:[&_*]:cursor-progress",
+          seatOrder === undefined ? besideBoard : "short-landscape:contents",
+        )}
       >
         {seatOrder === undefined ? (
           board
         ) : (
           // As wide as the board on a laptop (`w-min`: the bars' words truncate), the page's width
           // on a phone.
-          <div className="flex flex-col gap-1.5 lg:mx-auto lg:w-min">
-            <SeatBar {...seatProps} player={seatOrder[0]} />
-            <div aria-busy={thinking} className="aria-busy:[&_*]:cursor-progress">
+          <div className="flex flex-col gap-1.5 lg:mx-auto lg:w-min short-landscape:contents">
+            <SeatBar
+              {...seatProps}
+              player={seatOrder[0]}
+              className="short-landscape:my-1 short-landscape:[grid-area:seat-top]"
+            />
+            <div
+              aria-busy={thinking}
+              className={cn("aria-busy:[&_*]:cursor-progress", besideBoard)}
+            >
               {board}
             </div>
-            <SeatBar {...seatProps} player={seatOrder[1]} />
+            <SeatBar
+              {...seatProps}
+              player={seatOrder[1]}
+              className="short-landscape:my-1 short-landscape:[grid-area:seat-bottom]"
+            />
           </div>
         )}
       </div>
       {controls !== null && controls !== undefined && (
-        <div className="min-w-0 lg:my-1.5 lg:[grid-area:controls]">{controls}</div>
+        <div className="min-w-0 lg:my-1.5 lg:[grid-area:controls] short-landscape:my-1 short-landscape:[grid-area:controls]">
+          {controls}
+        </div>
       )}
       {gameButtons}
       {confetti}
     </div>
   );
 
-  return (
-    // The game's own look (`games/<id>/theme.css`) applies from here down.
-    <main data-game={gameId} className="flex min-h-dvh flex-col bg-game-page">
-      <header className="border-b border-border">
-        <div className="mx-auto grid min-h-16 max-w-6xl grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 px-4 py-2 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:px-10">
-          <Link
-            href="/"
-            className={cn(
-              buttonVariants({ variant: "ghost" }),
-              "justify-self-start px-3 whitespace-nowrap",
-            )}
-          >
-            <ArrowLeftIcon aria-hidden className="size-5" />
-            {t("backToMenu")}
-          </Link>
-          <div className="flex min-w-0 flex-col items-center gap-x-3 gap-y-1 text-center sm:flex-row sm:flex-wrap sm:justify-center">
-            <h1
-              ref={titleRef}
-              tabIndex={focusTitle || online ? -1 : undefined}
-              className="text-heading text-balance focus:outline-none lg:text-title"
-            >
-              {tGames(`${gameId}.name`)}
-            </h1>
-            {/* Against the AI, its level stays visible, also after a reload; online, the AI seats
-                are the server's, at a level nobody chose. Every rule option, defaults included,
-                so both players online read the same words; below the name on a phone. */}
-            {hasAiSeat || online || rules !== null ? (
-              <div className="flex max-w-full flex-wrap items-center justify-center gap-1.5">
-                {hasAiSeat && !online && (
-                  <Badge variant="accent">{modeLabel(snapshot.seats)}</Badge>
-                )}
-                {online && <Badge variant="accent">{t("online")}</Badge>}
-                {rules !== null && (
-                  <Badge variant="accent" className="max-w-full whitespace-normal">
-                    {rules}
-                  </Badge>
-                )}
-              </div>
-            ) : null}
-          </div>
-        </div>
-      </header>
+  const gameName = tGames(`${gameId}.name`);
 
-      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-4 lg:justify-center lg:px-10 lg:py-6">
+  return (
+    // The game's own look (`games/<id>/theme.css`) applies from here down, the top bar included.
+    <div data-game={gameId} className="flex min-h-dvh flex-col bg-game-page">
+      <AppTopBar
+        title={
+          <h1
+            ref={titleRef}
+            // Focusable by script only: where the focus goes when what had it is gone.
+            tabIndex={-1}
+            // One line: cut short on a phone, whole for screen readers.
+            className="truncate text-heading focus:outline-none lg:text-title"
+          >
+            {gameName}
+          </h1>
+        }
+        actions={
+          // The rules, in a dialog: the game goes on (online too) while they are read. Its icon
+          // alone on a phone, named all the same.
+          <Button
+            variant="secondary"
+            size="icon"
+            className="sm:w-auto sm:px-4"
+            onClick={() => {
+              setRulesOpen(true);
+              setRulesOpened(true);
+            }}
+          >
+            <BookOpenIcon aria-hidden className="size-5" />
+            <span className="sr-only sm:not-sr-only">{t("rules")}</span>
+          </Button>
+        }
+      />
+
+      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col py-4 px-safe-4 lg:justify-center lg:py-6 lg:px-safe-10 short-landscape:justify-start short-landscape:py-2">
         <Board
           state={snapshot.state}
           legalMoves={snapshot.legalMoves}
@@ -613,7 +949,33 @@ export function PlayScreen<State, Move, Outcome>({
           layout={layout}
           lockedReason={lockedReason}
         />
-      </div>
+      </main>
+
+      {
+        <Dialog
+          open={rulesOpen}
+          title={t("rulesDialog.title", { game: gameName })}
+          closeLabel={t("rulesDialog.close")}
+          onClose={() => {
+            setRulesOpen(false);
+            // The turn line was out of reach while the dialog was open (`showModal()`): read it
+            // again, with whatever happened meanwhile, by changing its invisible mark.
+            setSaid((current) =>
+              current === null ? null : { ...current, repeated: !current.repeated },
+            );
+          }}
+        >
+          {/* A container, so the rules lay their figures out for the dialog's width. */}
+          <div className="@container flex flex-col gap-6">
+            {optionSummary !== null && (
+              <Badge variant="accent" className="self-start whitespace-normal">
+                {t("rulesDialog.inThisGame", { rules: optionSummary })}
+              </Badge>
+            )}
+            {rulesOpened && (rules ?? <LazyRules gameId={gameId} open={rulesOpen} />)}
+          </div>
+        </Dialog>
+      }
 
       <ConfirmDialog
         open={confirmingNewGame}
@@ -629,6 +991,42 @@ export function PlayScreen<State, Move, Outcome>({
           setConfirmingNewGame(false);
         }}
       />
-    </main>
+
+      <ConfirmDialog
+        open={confirmingResign}
+        title={t("confirmResign.title")}
+        description={resignQuestion()}
+        confirmLabel={t("confirmResign.confirm")}
+        cancelLabel={t("confirmResign.cancel")}
+        confirmUnavailableReason={resign?.available === false ? unavailableReason : undefined}
+        onConfirm={() => {
+          setConfirmingResign(false);
+          requestTitleFocus();
+          transport.resign();
+        }}
+        onCancel={() => {
+          setConfirmingResign(false);
+          setFocusAfterDialog((previous) => ({ target: "opener", seq: (previous?.seq ?? 0) + 1 }));
+        }}
+      />
+
+      <ConfirmDialog
+        open={confirmingClaim !== null}
+        title={claimText.title}
+        description={claimText.description}
+        confirmLabel={claimText.confirm}
+        cancelLabel={t("confirmAbandon.cancel")}
+        confirmUnavailableReason={turn?.available === false ? unavailableReason : undefined}
+        onConfirm={() => {
+          setConfirmingClaim(null);
+          requestTitleFocus();
+          transport.claimAbandoned();
+        }}
+        onCancel={() => {
+          setConfirmingClaim(null);
+          setFocusAfterDialog((previous) => ({ target: "opener", seq: (previous?.seq ?? 0) + 1 }));
+        }}
+      />
+    </div>
   );
 }

@@ -29,7 +29,8 @@ describe.each(GAME_IDS)("the play screen of %s", (gameId) => {
 
     // Once the saved game (none) is read: the play screen, not its loading state.
     expect(await screen.findByRole("button", { name: "Ván mới" })).toBeInTheDocument();
-    expect(screen.getByRole("main")).toHaveAttribute("data-game", gameId);
+    // The top bar too.
+    expect(screen.getByRole("banner").closest("[data-game]")).toHaveAttribute("data-game", gameId);
     expect(screen.getByRole("status")).toHaveTextContent(/^Đến lượt /);
     expect(screen.getByRole("button", { name: "Hoàn tác" })).toBeInTheDocument();
     // The seats: around the board for a game that places them (Chess), else the players' panel;

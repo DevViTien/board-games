@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -7,7 +7,7 @@ import { renderWithIntl } from "@/test/render-with-intl";
 import { ROOM_PROBLEM, roomProblemOf } from "./room-problem";
 import { RoomError } from "./RoomError";
 
-const menuLink = () => screen.getByRole("link", { name: "Về menu" });
+const menuLink = () => within(screen.getByRole("main")).getByRole("link", { name: "Về menu" });
 
 describe("RoomError", () => {
   it("says the room was not found, with a way back to the menu", () => {
@@ -16,7 +16,7 @@ describe("RoomError", () => {
     expect(screen.getByRole("heading", { name: "Không tìm thấy phòng" })).toBeInTheDocument();
     expect(screen.getByText(/hết hạn sau 7 ngày/)).toBeInTheDocument();
     expect(menuLink()).toHaveAttribute("href", "/");
-    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    expect(within(screen.getByRole("main")).queryByRole("button")).not.toBeInTheDocument();
   });
 
   it("says the room is full, with a way back to the menu", () => {
@@ -24,7 +24,7 @@ describe("RoomError", () => {
 
     expect(screen.getByRole("heading", { name: "Phòng đã đủ người" })).toBeInTheDocument();
     expect(menuLink()).toHaveAttribute("href", "/");
-    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    expect(within(screen.getByRole("main")).queryByRole("button")).not.toBeInTheDocument();
   });
 
   it("says the app has just been updated, and reloads the page on request", async () => {

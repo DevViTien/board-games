@@ -1,8 +1,10 @@
 "use client";
 
-import { Button, buttonVariants, StateScreen } from "@board-games/ui";
+import { Button, buttonVariants } from "@board-games/ui";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+
+import { AppStateScreen } from "@/features/shell/AppStateScreen";
 
 import { ROOM_PROBLEM, type RoomProblem } from "./room-problem";
 
@@ -36,7 +38,7 @@ export function RoomError({
   const canReload = problem === ROOM_PROBLEM.Outdated;
 
   return (
-    <StateScreen
+    <AppStateScreen
       title={t(`${problem}.title`)}
       description={t(`${problem}.description`)}
       // An app to reload is not wrong, only old; the rest are rooms that cannot be entered.
@@ -51,6 +53,6 @@ export function RoomError({
       >
         {tPlay("backToMenu")}
       </Link>
-    </StateScreen>
+    </AppStateScreen>
   );
 }

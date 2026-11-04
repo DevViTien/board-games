@@ -23,7 +23,7 @@ interface ConnectionNoticeProps {
 }
 
 /**
- * A line kept below the header of online screens, holding its space even when empty so the board
+ * A line kept above the turn of online screens, holding its space even when empty so the board
  * never moves (unless `reserveSpace` is off): "reconnecting" once the connection has been lost for
  * 1.5 s, or at once the idle pause with its "Continue" button. Announced politely to screen
  * readers. Its negative margins take back the gap of the column it sits in, so the line costs no
@@ -46,15 +46,27 @@ export function ConnectionNotice({
     <div
       className={cn(
         "-my-3 flex flex-wrap items-center justify-center gap-3",
-        reserveSpace && "min-h-10",
+        // Below 1024 px one line of small text is kept (a phone has little height to spare), and
+        // whatever shows stays on it: the words cut to one line, "Continue" a small button whose
+        // extra height overhangs the gaps around the line, so the board below never moves. From
+        // 1024 px, the height of the full-size button beside the board.
+        "max-lg:flex-nowrap max-lg:gap-2",
+        reserveSpace && "min-h-5 lg:min-h-10",
         className,
       )}
     >
-      <p aria-live="polite" className="text-sm text-fg-muted">
+      <p
+        aria-live="polite"
+        className="line-clamp-1 min-w-0 text-small text-fg-muted max-lg:leading-5 lg:line-clamp-none"
+      >
         {message}
       </p>
       {idle && (
-        <Button size="sm" onClick={onResume}>
+        <Button
+          size="sm"
+          onClick={onResume}
+          className="shrink-0 max-lg:-my-0.5 max-lg:h-6 max-lg:px-2.5 max-lg:text-caption"
+        >
           {t("resume")}
         </Button>
       )}

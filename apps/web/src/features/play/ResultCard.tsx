@@ -18,6 +18,11 @@ interface ResultCardProps {
   readonly detail: string | null;
   /** The card's one action ("New game" / "Play again"), or `null`. */
   readonly action: ReactNode;
+  /**
+   * Under the turn line while the game is on (online: a player gone for a while), outside the live
+   * region; `null` for nothing.
+   */
+  readonly notice?: ReactNode;
   readonly className?: string | undefined;
 }
 
@@ -28,7 +33,14 @@ interface ResultCardProps {
  * reader reads the result from the region it already follows, and nothing is read twice. Undoing
  * the winning move turns the card back into the turn line, again in place.
  */
-export function ResultCard({ announcement, variant, detail, action, className }: ResultCardProps) {
+export function ResultCard({
+  announcement,
+  variant,
+  detail,
+  action,
+  notice = null,
+  className,
+}: ResultCardProps) {
   const t = useTranslations("Play");
   const finished = variant !== "turn";
   return (
@@ -38,7 +50,7 @@ export function ResultCard({ announcement, variant, detail, action, className }:
         finished
           ? // A card on the page, as on the mockup: white, rounded, words first.
             "items-start gap-3 rounded-card border border-border bg-surface p-4 text-left shadow-card sm:p-5"
-          : "items-center text-center lg:items-start lg:text-left",
+          : "items-center text-center lg:items-start lg:text-left short-landscape:items-start short-landscape:text-left",
         className,
       )}
     >
@@ -57,6 +69,7 @@ export function ResultCard({ announcement, variant, detail, action, className }:
       </p>
       {finished && detail !== null && <p className="text-body text-fg-muted">{detail}</p>}
       {finished && action}
+      {!finished && notice}
     </div>
   );
 }

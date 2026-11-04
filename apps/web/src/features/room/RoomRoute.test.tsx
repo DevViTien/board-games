@@ -117,7 +117,10 @@ describe("RoomRoute", () => {
     });
 
     expect(screen.getByRole("heading", { name: "Không tìm thấy phòng" })).toHaveFocus();
-    expect(screen.getByRole("link", { name: "Về menu" })).toHaveAttribute("href", "/");
+    expect(within(screen.getByRole("main")).getByRole("link", { name: "Về menu" })).toHaveAttribute(
+      "href",
+      "/",
+    );
     expect(screen.queryByRole("textbox", { name: "Tên của bạn" })).not.toBeInTheDocument();
   });
 
@@ -128,7 +131,10 @@ describe("RoomRoute", () => {
     await enter(roomView({ seats: ["Minh", "Lan"] }), null);
 
     expect(screen.getByRole("heading", { name: "Phòng đã đủ người" })).toHaveFocus();
-    expect(screen.getByRole("link", { name: "Về menu" })).toHaveAttribute("href", "/");
+    expect(within(screen.getByRole("main")).getByRole("link", { name: "Về menu" })).toHaveAttribute(
+      "href",
+      "/",
+    );
     expect(screen.queryByRole("textbox", { name: "Tên của bạn" })).not.toBeInTheDocument();
   });
 
@@ -261,7 +267,10 @@ describe("RoomRoute", () => {
     await act(() => vi.advanceTimersByTimeAsync(1));
 
     expect(screen.getByRole("status")).toHaveTextContent("Chưa kết nối được máy chủ");
-    expect(screen.getByRole("link", { name: "Về menu" })).toHaveAttribute("href", "/");
+    expect(within(screen.getByRole("main")).getByRole("link", { name: "Về menu" })).toHaveAttribute(
+      "href",
+      "/",
+    );
     act(() => {
       sockets.last().lose();
     });
@@ -326,8 +335,8 @@ describe("RoomRoute", () => {
           {
             ...room,
             seats: [
-              { kind: "human", name: "Minh" },
-              { kind: "human", name: "Lan" },
+              { kind: "human", name: "Minh", standIn: false },
+              { kind: "human", name: "Lan", standIn: false },
             ],
             revision: 2,
           },

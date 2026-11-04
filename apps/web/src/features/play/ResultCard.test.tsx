@@ -74,6 +74,8 @@ function vsAi(cells: readonly number[]): ReadySnapshot<TicTacToeState, TicTacToe
     inProgress: result === null && cells.length > 0,
     supportsUndo: true,
     canStartNewGame: true,
+    resign: null,
+    turn: null,
     connection: null,
     options: {},
   };

@@ -2,7 +2,7 @@
 
 import { type GameDefinition, listOptionChoices, type OptionChoiceList } from "@board-games/engine";
 import { isRegisteredGameId, type RegisteredGameId } from "@board-games/games/ids";
-import { buttonVariants, StateScreen } from "@board-games/ui";
+import { buttonVariants } from "@board-games/ui";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import {
@@ -26,6 +26,7 @@ import {
 import { loadGameEntry } from "@/features/play/game-entry-loads";
 import { PlayLoading } from "@/features/play/PlayLoading";
 import { PlayScreen } from "@/features/play/PlayScreen";
+import { AppStateScreen } from "@/features/shell/AppStateScreen";
 import type { GameUI } from "@/games/types";
 import { resolveRealtimeUrl } from "@/lib/realtime-url";
 import { createOnlineTransport, type OnlineTransport } from "@/transport/online-transport";
@@ -115,13 +116,13 @@ function RoomJoining({ slow }: { readonly slow: boolean }) {
   const tPlay = useTranslations("Play");
 
   return (
-    <StateScreen title={slow ? t("slow") : t("joining")} busy>
+    <AppStateScreen title={slow ? t("slow") : t("joining")} busy>
       {slow ? (
         <Link href="/" className={buttonVariants({ variant: "secondary" })}>
           {tPlay("backToMenu")}
         </Link>
       ) : undefined}
-    </StateScreen>
+    </AppStateScreen>
   );
 }
 

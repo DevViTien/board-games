@@ -1,8 +1,9 @@
-import { StateScreen } from "@board-games/ui";
 import { useTranslations } from "next-intl";
+
+import { AppStateScreen } from "@/features/shell/AppStateScreen";
 
 /** Shown while a game's code or its saved game is loading. */
 export function PlayLoading() {
   const t = useTranslations("Play");
-  return <StateScreen title={t("loading")} busy />;
+  return <AppStateScreen title={t("loading")} busy />;
 }

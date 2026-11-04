@@ -372,7 +372,8 @@ describe("RoomLobby AI seats", () => {
     (locale) => {
       renderAiLobby({ seats: ["Lan", null, AI, null], locale });
 
-      const buttons = screen
+      // The lobby's own: the top bar's settings are theirs (named by what they show too).
+      const buttons = within(screen.getByRole("main"))
         .getAllByRole("button")
         .filter((button) => button.hasAttribute("aria-label"));
       expect(buttons).toHaveLength(3);
