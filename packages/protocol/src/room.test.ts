@@ -72,9 +72,10 @@ describe("roomViewSchema", () => {
     gameId: "tictactoe",
     revision: 3,
     gameNumber: 1,
-    seats: [{ kind: "human", name: "Lan" }, null],
+    seats: [{ kind: "human", name: "Lan", standIn: false }, null],
     host: 0,
     record: { version: 1, gameId: "tictactoe", playerCount: 2, options: {}, entries: [] },
+    turnIdleMs: null,
   };
 
   it("accepts a room", () => {
@@ -82,7 +83,11 @@ describe("roomViewSchema", () => {
   });
 
   it("accepts AI seats and a room without a host", () => {
-    const withAi = { ...view, seats: [{ kind: "human", name: "Lan" }, { kind: "ai" }], host: null };
+    const withAi = {
+      ...view,
+      seats: [{ kind: "human", name: "Lan", standIn: true }, { kind: "ai" }],
+      host: null,
+    };
 
     expect(roomViewSchema.parse(withAi)).toEqual(withAi);
   });
@@ -95,7 +100,16 @@ describe("roomViewSchema", () => {
     });
 
     expect(JSON.stringify(parsed)).not.toContain("playerId");
-    expect(parsed.seats[0]).toEqual({ kind: "human", name: "Lan" });
+    expect(parsed.seats[0]).toEqual({ kind: "human", name: "Lan", standIn: false });
+  });
+
+  it("reads a seat or a room from a server that predates resigning", () => {
+    const older: Record<string, unknown> = { ...view };
+    delete older.turnIdleMs;
+    const parsed = roomViewSchema.parse({ ...older, seats: [{ kind: "human", name: "Lan" }] });
+
+    expect(parsed.seats[0]).toEqual({ kind: "human", name: "Lan", standIn: false });
+    expect(parsed.turnIdleMs).toBeNull();
   });
 
   it("rejects a code that is not canonical", () => {

@@ -11,8 +11,8 @@ const room = {
   revision: 2,
   gameNumber: 1,
   seats: [
-    { kind: "human", name: "Lan" },
-    { kind: "human", name: "An" },
+    { kind: "human", name: "Lan", standIn: false },
+    { kind: "human", name: "An", standIn: false },
   ],
   host: 0,
   record: {
@@ -22,6 +22,7 @@ const room = {
     options: {},
     entries: [{ move: { cell: 4 } }],
   },
+  turnIdleMs: 2_000,
 };
 
 describe("parseClientMessage", () => {
@@ -121,7 +122,18 @@ describe("parseClientMessage", () => {
     ["an ai-seat without on", { type: "ai-seat", seat: 1 }],
     ["an ai-seat with an on that is not a boolean", { type: "ai-seat", seat: 1, on: "yes" }],
     ["an ai-seat with an unknown field", { type: "ai-seat", seat: 1, on: true, level: "hard" }],
-    ["an unknown type", { type: "resign" }],
+    ["an unknown type", { type: "concede" }],
+    ["a resign without a gameNumber", { type: "resign" }],
+    ["a resign with an unknown field", { type: "resign", gameNumber: 1, seat: 0 }],
+    ["a claim without a moveIndex", { type: "claim-abandoned", gameNumber: 1 }],
+    [
+      "a claim with a negative moveIndex",
+      { type: "claim-abandoned", gameNumber: 1, moveIndex: -1 },
+    ],
+    [
+      "a claim with an unknown field",
+      { type: "claim-abandoned", gameNumber: 1, moveIndex: 0, seat: 1 },
+    ],
     ["no type", {}],
   ])("rejects a message with %s", (_label, message) => {
     expect(parseClientMessage(message)).toBeNull();
@@ -134,6 +146,13 @@ describe("parseClientMessage", () => {
   it("trims and normalizes the name sent with a sit", () => {
     expect(parseClientMessage({ type: "sit", name: " An  " })).toEqual({ type: "sit", name: "An" });
   });
+
+  it.each([
+    { type: "resign", gameNumber: 2 },
+    { type: "claim-abandoned", gameNumber: 1, moveIndex: 7 },
+  ])("accepts a $type request", (message) => {
+    expect(parseClientMessage(message)).toEqual(message);
+  });
 });
 
 describe("readGreetingVersion", () => {
@@ -142,18 +161,21 @@ describe("readGreetingVersion", () => {
     expect(readGreetingVersion({ type: "create", protocol: 1 })).toBe(1);
   });
 
-  it("reads version 1 from a tab opened before AI seats, which the server answers with outdated-client", () => {
-    expect(PROTOCOL_VERSION).toBe(2);
-    expect(
-      readGreetingVersion({
-        type: "join",
-        protocol: 1,
-        code: "ABC234",
-        playerId: PLAYER_ID,
-        name: "An",
-      }),
-    ).toBe(1);
-  });
+  it.each([1, 2])(
+    "reads version %i from a tab opened before resigning, which the server answers with outdated-client",
+    (version) => {
+      expect(PROTOCOL_VERSION).toBe(3);
+      expect(
+        readGreetingVersion({
+          type: "join",
+          protocol: version,
+          code: "ABC234",
+          playerId: PLAYER_ID,
+          name: "An",
+        }),
+      ).toBe(version);
+    },
+  );
 
   it.each([{ type: "sit", name: "An" }, { type: "join" }, "join", null])(
     "has no version for %j",
@@ -177,6 +199,9 @@ describe("parseServerMessage", () => {
     { type: "rejected", request: "ai-seat", code: "game-started" },
     { type: "rejected", request: "ai-seat", code: "invalid-seat" },
     { type: "rejected", request: "ai-seat", code: "ai-not-supported" },
+    { type: "rejected", request: "claim-abandoned", code: "not-abandoned" },
+    { type: "rejected", request: "claim-abandoned", code: "stale-move" },
+    { type: "rejected", request: "resign", code: "game-over" },
     { type: "error", code: "room-not-found" },
     { type: "pong" },
   ])("accepts a valid $type message", (message) => {
@@ -205,13 +230,27 @@ describe("parseServerMessage", () => {
   it("accepts a room with an AI seat and the host's seat", () => {
     const withAi = {
       ...room,
-      seats: [{ kind: "human", name: "Lan" }, { kind: "ai" }, null],
+      seats: [{ kind: "human", name: "Lan", standIn: true }, { kind: "ai" }, null],
       host: 0,
     };
 
     expect(parseServerMessage({ type: "room", room: withAi, you: 0 })).toEqual({
       type: "room",
       room: withAi,
+      you: 0,
+    });
+  });
+
+  it("keeps the ending of a game to the app", () => {
+    const ended = {
+      ...room,
+      record: { ...room.record, ending: { reason: "resigned", player: 1 } },
+      turnIdleMs: null,
+    };
+
+    expect(parseServerMessage({ type: "room", room: ended, you: 0 })).toEqual({
+      type: "room",
+      room: ended,
       you: 0,
     });
   });

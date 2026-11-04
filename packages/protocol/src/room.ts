@@ -1,11 +1,16 @@
-import { type GameRecord, type PlayerIndex, RECORD_VERSION } from "@board-games/engine";
+import {
+  ENDING_REASON,
+  type GameRecord,
+  type PlayerIndex,
+  RECORD_VERSION,
+} from "@board-games/engine";
 import { z } from "zod";
 
 /**
  * Raised on every change that an older client cannot handle. Sent in the greeting (`create`,
  * `join`), so a tab left open across a deploy is told to reload instead of misreading messages.
  */
-export const PROTOCOL_VERSION = 2;
+export const PROTOCOL_VERSION = 3;
 
 /** Upper-case letters and digits that cannot be mistaken for one another: no 0/O, no 1/I/L. */
 export const ROOM_CODE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
@@ -54,8 +59,14 @@ export const playerNameSchema = z
     return length >= 1 && length <= PLAYER_NAME_MAX_LENGTH && !INVISIBLE_CHARACTERS.test(name);
   });
 
-/** Who holds a taken seat: a person, by the name they chose, or the AI the server plays. */
-export type SeatView = { readonly kind: "human"; readonly name: string } | { readonly kind: "ai" };
+/**
+ * Who holds a taken seat: a person, by the name they chose, or the AI the server plays. `standIn`:
+ * the person resigned or was ruled to have left, and the server's AI plays their seat until the
+ * game ends; the seat is still theirs.
+ */
+export type SeatView =
+  | { readonly kind: "human"; readonly name: string; readonly standIn: boolean }
+  | { readonly kind: "ai" };
 
 /**
  * A room as every client sees it. Holds names only: a `playerId` is the secret that claims a
@@ -74,6 +85,11 @@ export interface RoomView {
   readonly host: PlayerIndex | null;
   /** The current game. Still untrusted: the client rebuilds it with the engine's `fromRecord`. */
   readonly record: GameRecord;
+  /**
+   * How long the current turn had lasted, by the server's clock, when this copy was sent; `null`
+   * while the room waits for players or once the game has a result.
+   */
+  readonly turnIdleMs: number | null;
 }
 
 const countSchema = z.number().int().nonnegative();
@@ -81,7 +97,7 @@ const countSchema = z.number().int().nonnegative();
 export const playerIndexSchema = countSchema satisfies z.ZodType<PlayerIndex>;
 
 const seatViewSchema = z.discriminatedUnion("kind", [
-  z.object({ kind: z.literal("human"), name: z.string() }),
+  z.object({ kind: z.literal("human"), name: z.string(), standIn: z.boolean().catch(false) }),
   z.object({ kind: z.literal("ai") }),
 ]) satisfies z.ZodType<SeatView>;
 
@@ -91,6 +107,10 @@ export const gameRecordSchema = z.object({
   playerCount: z.number().int().positive(),
   options: z.unknown(),
   entries: z.array(z.object({ move: z.unknown(), outcome: z.exactOptional(z.unknown()) })),
+  /** A resignation or an abandoned game; the engine's `fromRecord` checks the seat is in the game. */
+  ending: z.exactOptional(
+    z.object({ reason: z.enum(ENDING_REASON), player: z.number().int().nonnegative() }),
+  ),
 });
 
 /** Unknown fields are dropped, so a `playerId` sent by mistake never reaches the app. */
@@ -103,4 +123,5 @@ export const roomViewSchema = z.object({
   // Loose like every server message: missing (a server that predates hosts) reads as no host.
   host: playerIndexSchema.nullable().catch(null),
   record: gameRecordSchema,
+  turnIdleMs: countSchema.nullable().catch(null),
 }) satisfies z.ZodType<RoomView>;

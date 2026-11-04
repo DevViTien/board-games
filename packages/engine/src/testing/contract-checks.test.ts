@@ -281,6 +281,18 @@ const BROKEN_GAMES: readonly BrokenGame[] = [
     config: COUNTER_CONFIG,
   },
   {
+    id: CONTRACT_CHECK.ReservedReasons,
+    what: "ends a game with a reason the engine keeps for resigning",
+    game: {
+      ...counterGame,
+      result: (state: CounterState) =>
+        state.count === COUNTER_TARGET
+          ? { kind: "win", winners: [1 - state.toMove], reason: "resigned" }
+          : null,
+    },
+    config: COUNTER_CONFIG,
+  },
+  {
     id: CONTRACT_CHECK.UniqueMoveKeys,
     what: "lists the same move twice",
     game: {

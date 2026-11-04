@@ -24,6 +24,8 @@ export function changingTransport<State, Move, Outcome = never>(
     requestUndo: vi.fn(),
     requestRedo: vi.fn(),
     requestNewGame: vi.fn(),
+    resign: vi.fn(),
+    claimAbandoned: vi.fn(),
     dispose: vi.fn(),
   };
   return {
@@ -32,6 +34,12 @@ export function changingTransport<State, Move, Outcome = never>(
       snapshot = { ...snapshot, ...overrides };
       act(() => {
         for (const listener of listeners) listener({ type: "changed" });
+      });
+    },
+    /** Tells the screen an event other than a change (a refusal). */
+    emit: (event: TransportEvent) => {
+      act(() => {
+        for (const listener of listeners) listener(event);
       });
     },
   };

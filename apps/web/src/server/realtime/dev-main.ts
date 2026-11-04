@@ -6,7 +6,11 @@ import { REALTIME_PATH, startRealtimeServer } from "./dev-server";
 
 const env = serverEnv();
 const store = openRoomStore(env.store);
-const server = await startRealtimeServer({ port: env.realtimePort, store });
+const server = await startRealtimeServer({
+  port: env.realtimePort,
+  store,
+  abandonAfterMs: env.abandonAfterMs,
+});
 
 console.info(
   `[realtime] ws://localhost:${String(server.port)}${REALTIME_PATH} ready, rooms in ${

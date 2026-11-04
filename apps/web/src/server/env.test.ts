@@ -6,7 +6,11 @@ const REDIS_URL = "rediss://default:secret@example.upstash.io:6379";
 
 describe("readServerEnv", () => {
   it("keeps rooms in memory off Vercel without REDIS_URL", () => {
-    expect(readServerEnv({})).toEqual({ store: { kind: "memory" }, realtimePort: 3001 });
+    expect(readServerEnv({})).toEqual({
+      store: { kind: "memory" },
+      realtimePort: 3001,
+      abandonAfterMs: 300_000,
+    });
     expect(readServerEnv({ REDIS_URL: "" }).store).toEqual({ kind: "memory" });
   });
 
@@ -30,6 +34,20 @@ describe("readServerEnv", () => {
     const env = vercelEnv === undefined ? { REDIS_URL } : { REDIS_URL, VERCEL_ENV: vercelEnv };
 
     expect(readServerEnv(env).store).toEqual({ kind: "redis", url: REDIS_URL, keyPrefix });
+  });
+
+  it("shortens the abandon delay only off Vercel", () => {
+    expect(readServerEnv({ REALTIME_ABANDON_AFTER_MS: "3000" }).abandonAfterMs).toBe(3_000);
+    expect(readServerEnv({ REALTIME_ABANDON_AFTER_MS: "" }).abandonAfterMs).toBe(300_000);
+    expect(
+      readServerEnv({ REALTIME_ABANDON_AFTER_MS: "3000", VERCEL_ENV: "development" })
+        .abandonAfterMs,
+    ).toBe(300_000);
+    expect(
+      readServerEnv({ REALTIME_ABANDON_AFTER_MS: "3000", VERCEL_ENV: "production", REDIS_URL })
+        .abandonAfterMs,
+    ).toBe(300_000);
+    expect(() => readServerEnv({ REALTIME_ABANDON_AFTER_MS: "soon" })).toThrow(ServerConfigError);
   });
 
   it("reads the realtime port", () => {

@@ -1,7 +1,14 @@
 import { ENGINE_ERROR, err, ok, type Result } from "./errors";
 import { isPlainObject } from "./guards";
-import { activeEntries, currentState, replayEntry, type Session, startSession } from "./session";
-import type { GameDefinition, GameId, HistoryEntry } from "./types";
+import {
+  activeEntries,
+  currentState,
+  isGameEnding,
+  replayEntry,
+  type Session,
+  startSession,
+} from "./session";
+import type { GameDefinition, GameEnding, GameId, HistoryEntry } from "./types";
 
 export const RECORD_VERSION = 1;
 
@@ -16,6 +23,8 @@ export interface GameRecord<Move = unknown, Outcome = unknown, Options = unknown
   readonly options: Options;
   /** Only the moves in effect; undone moves are not recorded. */
   readonly entries: readonly HistoryEntry<Move, Outcome>[];
+  /** The game ended outside its rules after the last entry (`concede`). */
+  readonly ending?: GameEnding;
 }
 
 export function toRecord<State, Move, Outcome, Options>(
@@ -27,6 +36,7 @@ export function toRecord<State, Move, Outcome, Options>(
     playerCount: session.playerCount,
     options: session.options,
     entries: activeEntries(session),
+    ...(session.ending === undefined ? {} : { ending: session.ending }),
   };
 }
 
@@ -80,5 +90,11 @@ function rebuild<State, Move, Outcome, Options extends object>(
     entries.push(stepped.value.entry);
     states.push(state);
   }
-  return ok({ ...started.value, states, entries, cursor: entries.length });
+  const session = { ...started.value, states, entries, cursor: entries.length };
+  if (raw.ending === undefined) return ok(session);
+  // An ending only follows a position the rules have not ended themselves.
+  if (!isGameEnding(raw.ending, session.playerCount) || game.result(state) !== null) {
+    return err(ENGINE_ERROR.CorruptRecord);
+  }
+  return ok({ ...session, ending: { reason: raw.ending.reason, player: raw.ending.player } });
 }

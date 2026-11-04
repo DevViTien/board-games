@@ -2,8 +2,11 @@ import {
   AI_LEVEL,
   type AnyGameDefinition,
   chooseMove,
+  concede,
   createSession,
   currentState,
+  ENDING_REASON,
+  type EndingReason,
   ENGINE_ERROR,
   fromRecord,
   parseGameOptions,
@@ -16,12 +19,20 @@ import {
 } from "@board-games/engine";
 import { GAMES } from "@board-games/games";
 import {
+  ABANDON_AFTER_MS,
+  ABANDON_CLAIM,
+  abandonClaim,
+  gameHasAi,
+  LEAVE_OUTCOME,
+  leaveOutcome,
+  MAX_SEATS_WITHOUT_AI,
   normalizeRoomCode,
   type RejectionCode,
   ROOM_CODE_ALPHABET,
   ROOM_CODE_LENGTH,
   ROOM_ERROR,
   type RoomCode,
+  seatPlays,
 } from "@board-games/protocol";
 
 import { cryptoRng } from "@/lib/crypto-rng";
@@ -56,9 +67,6 @@ const AI_SEAT_LEVEL = AI_LEVEL.Medium;
  */
 export const MAX_AI_MOVES_PER_WRITE = 200;
 
-/** Rooms with this many seats or fewer have no AI seats (a product decision of M6). */
-const MAX_SEATS_WITHOUT_AI = 2;
-
 /** A refused request, like the engine's `Failure`, with the room as last read when there is one. */
 interface ServiceFailure {
   readonly ok: false;
@@ -87,9 +95,11 @@ export interface RoomServiceDeps {
   readonly store: RoomStore;
   /** The server's randomness: room codes, every random outcome of a move, the AI seats' choices. */
   readonly rng: Rng;
-  /** Server time in ms, for `updatedAt` and the AI's clock. */
+  /** Server time in ms, for `updatedAt`, `turnStartedAt` and the AI's clock. */
   readonly now: () => number;
   readonly games: readonly AnyGameDefinition[];
+  /** How long a turn must last before it can be claimed abandoned; `ABANDON_AFTER_MS` by default. */
+  readonly abandonAfterMs?: number;
 }
 
 /** Every request answers with the room as written, or as it is when nothing had to change. */
@@ -133,6 +143,27 @@ export interface RoomService {
     seat: number,
     on: boolean,
   ): Promise<ServiceResult<StoredRoom>>;
+  /**
+   * The player gives up the current game: it ends with every other seat winning, or, in a room of
+   * three or more seats of a game the AI plays, the AI plays their seat until it ends
+   * (`leaveOutcome`). A seat the AI already stands in for changes nothing.
+   */
+  resign(
+    this: void,
+    code: RoomCode,
+    playerId: string,
+    gameNumber: number,
+  ): Promise<ServiceResult<StoredRoom>>;
+  /**
+   * Another seated player claims that the player to move, at `position`, has left: their turn has
+   * lasted `abandonAfterMs` by the server's clock. Then as for `resign`, for the player to move.
+   */
+  claimAbandoned(
+    this: void,
+    code: RoomCode,
+    playerId: string,
+    position: { readonly gameNumber: number; readonly moveIndex: number },
+  ): Promise<ServiceResult<StoredRoom>>;
   /** Every new state of the room, from any instance (`RoomStore.subscribe`). */
   watch(this: void, code: RoomCode, listener: RoomListener): Promise<() => void>;
 }
@@ -148,7 +179,37 @@ function seatPlayer(
   return room.players.map((current, index) => (index === seat ? taken : current));
 }
 
-const human = (player: RoomPlayer): StoredSeat => ({ kind: "human", ...player });
+/** A person's seat; a rename keeps whether the AI stands in for them. */
+const human = (player: RoomPlayer, standIn = false): StoredSeat => ({
+  kind: "human",
+  ...player,
+  standIn,
+});
+
+/** Whether the AI stands in for the person in `seat`. */
+const isStandIn = (seat: StoredSeat | null | undefined): boolean =>
+  seat?.kind === "human" && seat.standIn;
+
+/** Whether the server plays `seat`: an AI seat, or a person the AI stands in for. */
+const playedByServer = (seat: StoredSeat | null | undefined): boolean =>
+  seat?.kind === "ai" || isStandIn(seat);
+
+/** `player` in `seat`, keeping the seat's stand-in. */
+function renamedSeat(room: StoredRoom, seat: number, player: RoomPlayer): StoredSeat {
+  return human(player, isStandIn(room.players[seat]));
+}
+
+/**
+ * What a write does to the time the current turn began (design §4): a new turn begins (`restart`),
+ * the room no longer has one (`stop`: the game has a result, the room lost a player), or the
+ * turn goes on (`keep`).
+ */
+type TurnChange = "restart" | "stop" | "keep";
+
+/** Whether `session` leaves a turn running (`restart`) or has ended (`stop`). */
+function turnAfter(game: AnyGameDefinition, session: AnySession): TurnChange {
+  return sessionResult(game, session) === null ? "restart" : "stop";
+}
 
 /** Whether `player`, in `seat`, sent another name than the one the room shows. */
 function renamed(room: StoredRoom, seat: number, player: RoomPlayer): boolean {
@@ -166,7 +227,13 @@ function renamed(room: StoredRoom, seat: number, player: RoomPlayer): boolean {
  *
  * Store failures are thrown, for the caller to answer `unavailable`.
  */
-export function createRoomService({ store, rng, now, games }: RoomServiceDeps): RoomService {
+export function createRoomService({
+  store,
+  rng,
+  now,
+  games,
+  abandonAfterMs = ABANDON_AFTER_MS,
+}: RoomServiceDeps): RoomService {
   const findGame = (gameId: string) => games.find((game) => game.id === gameId);
 
   function generateCode(): RoomCode {
@@ -179,13 +246,17 @@ export function createRoomService({ store, rng, now, games }: RoomServiceDeps): 
     return normalized;
   }
 
-  /** `room` one write later. */
-  const written = (room: StoredRoom, changes: Partial<StoredRoom>): StoredRoom => ({
-    ...room,
-    ...changes,
-    revision: room.revision + 1,
-    updatedAt: now(),
-  });
+  /** `room` one write later, its turn timed as `turn` says. */
+  function written(room: StoredRoom, changes: Partial<StoredRoom>, turn: TurnChange): StoredRoom {
+    const time = now();
+    const next = { ...room, ...changes };
+    return {
+      ...next,
+      revision: room.revision + 1,
+      updatedAt: time,
+      turnStartedAt: turn === "restart" ? time : turn === "stop" ? null : next.turnStartedAt,
+    };
+  }
 
   /**
    * Reads the room and writes what `decide` makes of it; `decide` handing back the room it was
@@ -267,7 +338,8 @@ export function createRoomService({ store, rng, now, games }: RoomServiceDeps): 
     let logged = false;
     for (let played = 0; played < MAX_AI_MOVES_PER_WRITE; played += 1) {
       if (sessionResult(game, current) !== null) break;
-      if (seats[game.currentPlayer(currentState(current))]?.kind !== "ai") break;
+      // An AI seat, or a person the AI stands in for: the server moves for both alike.
+      if (!playedByServer(seats[game.currentPlayer(currentState(current))])) break;
       const chosen = aiMove(game, current);
       const byAi = "move" in chosen ? playMove(game, current, chosen.move, rng) : null;
       if (!logged && !byAi?.ok) {
@@ -285,18 +357,70 @@ export function createRoomService({ store, rng, now, games }: RoomServiceDeps): 
   }
 
   /**
-   * `room` with the moves its AI seats have to make now, or `room` itself when there are none (or
-   * its game cannot be replayed, which a person's request then reports).
+   * `room` with the moves its AI seats have to make now, the turn timed from them, or `room` itself
+   * when there are none (or its game cannot be replayed, which a person's request then reports).
    */
   function withAiMoves(room: StoredRoom): StoredRoom {
-    if (room.players.includes(null) || !room.players.some((seat) => seat?.kind === "ai")) {
-      return room;
-    }
+    if (room.players.includes(null) || !room.players.some(playedByServer)) return room;
     const game = findGame(room.gameId);
     const session = game === undefined ? undefined : fromRecord(game, room.record);
     if (game === undefined || !session?.ok) return room;
     const played = playAiSeats(room.players, game, session.value);
-    return played === session.value ? room : { ...room, record: toRecord(played) };
+    if (played === session.value) return room;
+    return {
+      ...room,
+      record: toRecord(played),
+      turnStartedAt: turnAfter(game, played) === "restart" ? now() : null,
+    };
+  }
+
+  /**
+   * The player in `seat` leaves the game, for `reason` (design §2): the game ends with every other
+   * seat winning, or the AI stands in for them and moves at once if it is their turn.
+   */
+  function leave(
+    room: StoredRoom,
+    game: AnyGameDefinition,
+    session: AnySession,
+    seat: number,
+    reason: EndingReason,
+  ): ServiceResult<StoredRoom> {
+    const taken = room.players[seat];
+    if (
+      taken?.kind === "human" &&
+      leaveOutcome(seatPlays(room.players), seat, gameHasAi(game)) === LEAVE_OUTCOME.StandIn
+    ) {
+      const players = seatPlayer(room, seat, { ...taken, standIn: true });
+      const played = playAiSeats(players, game, session);
+      const record = toRecord(played);
+      return ok(
+        written(room, { players, record }, played === session ? "keep" : turnAfter(game, played)),
+      );
+    }
+    const conceded = concede(game, session, { reason, player: seat });
+    if (!conceded.ok) return fail(conceded.error, room);
+    return ok(written(room, { record: toRecord(conceded.value) }, "stop"));
+  }
+
+  /** The game a seated player acts on with `resign` or `claim-abandoned`, checked in order (design §5). */
+  function gameToLeave(
+    room: StoredRoom,
+    playerId: string,
+    position: { gameNumber: number; moveIndex?: number },
+  ) {
+    const current = seatedGame(room, playerId);
+    if (!current.ok) return current;
+    if (room.players.includes(null)) return fail(ROOM_ERROR.WaitingForPlayers, room);
+    if (
+      position.gameNumber !== room.gameNumber ||
+      (position.moveIndex !== undefined && position.moveIndex !== room.record.entries.length)
+    ) {
+      return fail(ROOM_ERROR.StaleMove, room);
+    }
+    if (sessionResult(current.game, current.session) !== null) {
+      return fail(ENGINE_ERROR.GameOver, room);
+    }
+    return current;
   }
 
   return {
@@ -324,6 +448,7 @@ export function createRoomService({ store, rng, now, games }: RoomServiceDeps): 
           players: Array.from({ length: seats }, (_, seat) => (seat === 0 ? human(player) : null)),
           record: toRecord(session.value),
           updatedAt: now(),
+          turnStartedAt: null,
         };
         if ((await store.create(room)) === "created") return ok(room);
       }
@@ -341,12 +466,20 @@ export function createRoomService({ store, rng, now, games }: RoomServiceDeps): 
         const player = name === null ? null : { playerId, name };
         const rename = player !== null && renamed(room, seat, player);
         if (!rename && played === room) return ok(room);
-        // A seated player coming back under a new name: everyone sees the new one.
+        // A seated player coming back under a new name: everyone sees the new one. Neither a
+        // rename nor coming back restarts the turn; AI moves played here do.
         return ok(
-          written(room, {
-            players: rename ? seatPlayer(room, seat, human(player)) : room.players,
-            record: played.record,
-          }),
+          written(
+            room,
+            {
+              players: rename
+                ? seatPlayer(room, seat, renamedSeat(room, seat, player))
+                : room.players,
+              record: played.record,
+              turnStartedAt: played.turnStartedAt,
+            },
+            "keep",
+          ),
         );
       }),
 
@@ -356,13 +489,22 @@ export function createRoomService({ store, rng, now, games }: RoomServiceDeps): 
         if (held !== null) {
           // Already seated: same seat, under the name sent with this sit.
           return renamed(room, held, player)
-            ? ok(written(room, { players: seatPlayer(room, held, human(player)) }))
+            ? ok(
+                written(
+                  room,
+                  { players: seatPlayer(room, held, renamedSeat(room, held, player)) },
+                  "keep",
+                ),
+              )
             : ok(room);
         }
         // An AI seat is a taken seat: nobody sits in one.
         const seat = room.players.indexOf(null);
         if (seat === -1) return fail(ROOM_ERROR.RoomFull, room);
-        return ok(withAiMoves(written(room, { players: seatPlayer(room, seat, human(player)) })));
+        const players = seatPlayer(room, seat, human(player));
+        // The last empty seat taken: the first turn begins now.
+        const turn = players.includes(null) ? "keep" : "restart";
+        return ok(withAiMoves(written(room, { players }, turn)));
       }),
 
     move: (code, playerId, { gameNumber, moveIndex }, move) =>
@@ -375,16 +517,17 @@ export function createRoomService({ store, rng, now, games }: RoomServiceDeps): 
           return fail(ROOM_ERROR.StaleMove, room);
         }
         if (sessionResult(game, session) !== null) return fail(ENGINE_ERROR.GameOver, room);
-        // An AI seat's turn is nobody else's: no person moves for it.
-        if (game.currentPlayer(currentState(session)) !== seat) {
+        // An AI seat's turn is nobody else's: no person moves for it, nor for a seat the AI
+        // stands in for, their own included.
+        if (game.currentPlayer(currentState(session)) !== seat || isStandIn(room.players[seat])) {
           return fail(ROOM_ERROR.NotYourTurn, room);
         }
         // The rules check the move; any random outcome is drawn here, from the server's rng.
         const played = playMove(game, session, move, rng);
         if (!played.ok) return fail(played.error, room);
         // The AI seats to move next answer in this very write.
-        const record = toRecord(playAiSeats(room.players, game, played.value));
-        return ok(written(room, { record }));
+        const after = playAiSeats(room.players, game, played.value);
+        return ok(written(room, { record: toRecord(after) }, turnAfter(game, after)));
       }),
 
     rematch: (code, playerId, gameNumber) =>
@@ -399,18 +542,21 @@ export function createRoomService({ store, rng, now, games }: RoomServiceDeps): 
           options: session.options,
         });
         if (!fresh.ok) return fail(ROOM_ERROR.Unavailable, room);
-        // Everyone moves one seat on (the last seat to the first), so who starts alternates.
+        // Everyone moves one seat on (the last seat to the first), so who starts alternates, and
+        // plays their own seat again: a stand-in lasts one game.
         const count = room.players.length;
-        const players = room.players.map(
-          (_, seat) => room.players[(seat + count - 1) % count] ?? null,
-        );
+        const players = room.players.map((_, seat) => {
+          const moved = room.players[(seat + count - 1) % count] ?? null;
+          return moved?.kind === "human" ? { ...moved, standIn: false } : moved;
+        });
         // An AI seat moved into the first seat opens the new game in this very write.
+        const opened = playAiSeats(players, game, fresh.value);
         return ok(
-          written(room, {
-            players,
-            gameNumber: room.gameNumber + 1,
-            record: toRecord(playAiSeats(players, game, fresh.value)),
-          }),
+          written(
+            room,
+            { players, gameNumber: room.gameNumber + 1, record: toRecord(opened) },
+            turnAfter(game, opened),
+          ),
         );
       }),
 
@@ -421,11 +567,7 @@ export function createRoomService({ store, rng, now, games }: RoomServiceDeps): 
         const game = findGame(room.gameId);
         if (game === undefined) return fail(ROOM_ERROR.Unavailable, room);
         // AI seats are for rooms of three or four (Cờ cá ngựa): a two-seat room is played by two people.
-        if (
-          !game.meta.supportsAI ||
-          game.evaluate === undefined ||
-          room.players.length <= MAX_SEATS_WITHOUT_AI
-        ) {
+        if (!gameHasAi(game) || room.players.length <= MAX_SEATS_WITHOUT_AI) {
           return fail(ENGINE_ERROR.AiNotSupported, room);
         }
         if (room.record.entries.length > 0) return fail(ROOM_ERROR.GameStarted, room);
@@ -439,15 +581,48 @@ export function createRoomService({ store, rng, now, games }: RoomServiceDeps): 
           return fail(ROOM_ERROR.NotAiSeat, room);
         }
         const players = seatPlayer(room, seat, on ? { kind: "ai" } : null);
-        // The last empty seat taken by the AI starts the game, and any AI to move plays at once.
-        return ok(withAiMoves(written(room, { players })));
+        // The last empty seat taken by the AI starts the game, and any AI to move plays at once;
+        // a seat emptied again leaves the room waiting, without a turn.
+        const turn = players.includes(null) ? "stop" : "restart";
+        return ok(withAiMoves(written(room, { players }, turn)));
+      }),
+
+    resign: (code, playerId, gameNumber) =>
+      writeWithRetry(code, MOVE_ATTEMPTS, (room) => {
+        const current = gameToLeave(room, playerId, { gameNumber });
+        if (!current.ok) return current;
+        // Already left to the AI (a second click, another tab): nothing to write, nothing wrong.
+        if (isStandIn(room.players[current.seat])) return ok(room);
+        return leave(room, current.game, current.session, current.seat, ENDING_REASON.Resigned);
+      }),
+
+    claimAbandoned: (code, playerId, position) =>
+      writeWithRetry(code, MOVE_ATTEMPTS, (room) => {
+        const current = gameToLeave(room, playerId, position);
+        if (!current.ok) return current;
+        const { seat, game, session } = current;
+        const toMove = game.currentPlayer(currentState(session));
+        const claim = abandonClaim(
+          {
+            seats: seatPlays(room.players),
+            toMove,
+            claimer: seat,
+            turnIdleMs: room.turnStartedAt === null ? null : now() - room.turnStartedAt,
+          },
+          abandonAfterMs,
+        );
+        if (claim !== ABANDON_CLAIM.Ok) return fail(ROOM_ERROR.NotAbandoned, room);
+        return leave(room, game, session, toMove, ENDING_REASON.Abandoned);
       }),
 
     watch: (code, listener) => store.subscribe(code, listener),
   };
 }
 
-/** The service as the realtime endpoints run it: real randomness, the clock, every game. */
-export function createDefaultRoomService(store: RoomStore): RoomService {
-  return createRoomService({ store, rng: cryptoRng, now: Date.now, games: GAMES });
+/**
+ * The service as the realtime endpoints run it: real randomness, the clock, every game, and the
+ * abandon delay of the environment (`ServerEnv.abandonAfterMs`).
+ */
+export function createDefaultRoomService(store: RoomStore, abandonAfterMs: number): RoomService {
+  return createRoomService({ store, rng: cryptoRng, now: Date.now, games: GAMES, abandonAfterMs });
 }

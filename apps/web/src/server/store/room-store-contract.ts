@@ -40,7 +40,10 @@ export function testRoom(overrides: Partial<StoredRoom> = {}): StoredRoom {
     revision: 1,
     gameNumber: 1,
     hostId: "player-one-0123456789",
-    players: [{ kind: "human", playerId: "player-one-0123456789", name: "Lan" }, null],
+    players: [
+      { kind: "human", playerId: "player-one-0123456789", name: "Lan", standIn: false },
+      null,
+    ],
     record: {
       version: RECORD_VERSION,
       gameId: "tictactoe",
@@ -49,6 +52,7 @@ export function testRoom(overrides: Partial<StoredRoom> = {}): StoredRoom {
       entries: [],
     },
     updatedAt: 1_000,
+    turnStartedAt: null,
     ...overrides,
   };
 }
@@ -227,7 +231,7 @@ export function describeRoomStore(
 
     it.each([
       ["broken JSON", "{"],
-      ["another format", JSON.stringify({ ...testRoom(), format: 3 })],
+      ["another format", JSON.stringify({ ...testRoom(), format: STORED_ROOM_FORMAT + 1 })],
       ["a record that is not one", JSON.stringify({ ...testRoom(), record: "moves" })],
     ])("reads %s as no room", async (_label, json) => {
       const code = randomRoomCode();
@@ -242,7 +246,7 @@ export function describeRoomStore(
       const room = testRoom({
         gameId: "ludo",
         revision: 4,
-        players: [{ kind: "ai" }, { kind: "human", ...lan }, { kind: "ai" }],
+        players: [{ kind: "ai" }, { kind: "human", ...lan, standIn: false }, { kind: "ai" }],
         record: {
           version: RECORD_VERSION,
           gameId: "ludo",
@@ -264,7 +268,7 @@ export function describeRoomStore(
       expect(joined.ok).toBe(true);
       if (!joined.ok) return;
       expect(seatOf(joined.value, lan.playerId)).toBe(1);
-      expect(joined.value.players[1]).toEqual({ kind: "human", ...lan });
+      expect(joined.value.players[1]).toEqual({ kind: "human", ...lan, standIn: false });
       expect(joined.value.record.entries.length).toBeGreaterThan(0);
       expect(joined.value.revision).toBe(5);
       expect(await store.get(room.code)).toEqual(joined.value);
@@ -311,8 +315,8 @@ export function describeRoomStore(
         format: STORED_ROOM_FORMAT,
         hostId: null,
         players: [
-          { kind: "human", ...lan },
-          { kind: "human", ...an },
+          { kind: "human", ...lan, standIn: false },
+          { kind: "human", ...an, standIn: false },
         ],
         record: { entries: [{ move: { cell: 4 } }, { move: { cell: 0 } }] },
       });

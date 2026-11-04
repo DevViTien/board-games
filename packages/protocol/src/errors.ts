@@ -30,6 +30,11 @@ export const ROOM_ERROR = {
   GameStarted: "game-started",
   /** A seat number the room does not have. Not `invalid-message`, which makes clients reconnect. */
   InvalidSeat: "invalid-seat",
+  /**
+   * A claim that the player to move left: their turn has not lasted `ABANDON_AFTER_MS`, it is the
+   * claimer's own turn, or no person plays the seat to move.
+   */
+  NotAbandoned: "not-abandoned",
   TooManyMessages: "too-many-messages",
   /** The room store failed or did not answer in time; worth retrying. */
   Unavailable: "unavailable",

@@ -1,5 +1,5 @@
 import type { GameRecord, PlayerIndex } from "@board-games/engine";
-import type { RoomCode, RoomView, ServerMessage } from "@board-games/protocol";
+import type { RoomCode, RoomView, SeatView, ServerMessage } from "@board-games/protocol";
 
 import type { ConnectionEnvironment, EnvironmentEvent } from "@/transport/room-connection";
 import type { ClientSocket, OpenSocket, SocketHandlers } from "@/transport/socket";
@@ -115,12 +115,15 @@ export const AI = { kind: "ai" } as const;
 interface RoomOptions {
   readonly revision?: number;
   readonly gameNumber?: number;
-  readonly seats?: readonly (string | typeof AI | null)[];
+  /** A person by name, or a seat as the server sends it (an AI seat, a stand-in). */
+  readonly seats?: readonly (string | SeatView | null)[];
   /** The host's seat; the first by default. */
   readonly host?: PlayerIndex | null;
   /** Tic-tac-toe cells played, X first. */
   readonly cells?: readonly number[];
   readonly record?: GameRecord;
+  /** How long the turn has lasted when the room is sent; none by default. */
+  readonly turnIdleMs?: number | null;
 }
 
 /** A room as the server sends it: Tic-tac-toe, or the game of `record`. */
@@ -131,6 +134,7 @@ export function roomView({
   host = 0,
   cells = [],
   record,
+  turnIdleMs = null,
 }: RoomOptions = {}): RoomView {
   return {
     code: ROOM_CODE,
@@ -138,7 +142,9 @@ export function roomView({
     revision,
     gameNumber,
     seats: seats.map((seat) =>
-      seat === null || typeof seat === "object" ? seat : { kind: "human", name: seat },
+      seat === null || typeof seat === "object"
+        ? seat
+        : { kind: "human", name: seat, standIn: false },
     ),
     host,
     record: record ?? {
@@ -148,6 +154,7 @@ export function roomView({
       options: {},
       entries: cells.map((cell) => ({ move: { cell } })),
     },
+    turnIdleMs,
   };
 }
 

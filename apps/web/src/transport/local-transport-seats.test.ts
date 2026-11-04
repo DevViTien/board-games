@@ -724,3 +724,107 @@ describe("createLocalTransport against the AI: saving", () => {
     );
   });
 });
+
+describe("createLocalTransport against the AI: resigning", () => {
+  it("Đầu hàng giữa ván: ends the game at once, every AI seat winning, with no undo or redo", async () => {
+    const transport = vsAi({ ai: firstCellAi() });
+    await ready(transport);
+    transport.submit({ cell: 4 });
+    await aiMoves();
+    expect(readySnapshot(transport).resign).toEqual({ outcome: "loss", available: true });
+
+    transport.resign();
+
+    const snapshot = readySnapshot(transport);
+    expect(snapshot.result).toEqual({ kind: "win", winners: [1], reason: "resigned" });
+    expect(snapshot.canUndo).toBe(false);
+    expect(snapshot.canRedo).toBe(false);
+    expect(snapshot.canMove).toBe(false);
+    expect(snapshot.resign).toBeNull();
+    expect(snapshot.turn).toBeNull();
+  });
+
+  it("Đầu hàng khi máy đang nghĩ: drops the move the AI is choosing", async () => {
+    const { ai: slow, calls } = manualAi();
+    const transport = vsAi({ ai: slow });
+    await ready(transport);
+    transport.submit({ cell: 4 });
+
+    transport.resign();
+    calls[0]?.resolve({ cell: 0 });
+    await vi.advanceTimersByTimeAsync(1000);
+
+    const snapshot = readySnapshot(transport);
+    expect(snapshot.result?.reason).toBe("resigned");
+    expect(snapshot.state.board.filter((cell) => cell !== null)).toHaveLength(1);
+  });
+
+  it("Ván đã đầu hàng không còn là ván dở: clears its slot", async () => {
+    const store = createMemoryStore();
+    const transport = vsAi({ store, ai: firstCellAi() });
+    await ready(transport);
+    transport.submit({ cell: 4 });
+    await aiMoves();
+    expect(store.entries.get("tictactoe:ai")?.inProgress).toBe(true);
+
+    transport.resign();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(store.entries.has("tictactoe:ai")).toBe(false);
+    expect(await store.listInProgress()).toEqual([]);
+  });
+
+  it("saves the ending when the slot cannot be cleared, and a reload drops that game", async () => {
+    const store = createMemoryStore();
+    const transport = vsAi({ store, ai: firstCellAi() });
+    await ready(transport);
+    transport.submit({ cell: 4 });
+    await aiMoves();
+    vi.spyOn(store, "clear").mockRejectedValueOnce(new Error("blocked"));
+
+    transport.resign();
+    await vi.advanceTimersByTimeAsync(0);
+
+    const saved = store.entries.get("tictactoe:ai");
+    expect(saved?.inProgress).toBe(false);
+    expect(saved?.record).toMatchObject({ ending: { reason: "resigned", player: 0 } });
+    transport.dispose();
+
+    const reloaded = vsAi({ store, ai: firstCellAi() });
+    const snapshot = await ready(reloaded);
+    expect(snapshot.moveCount).toBe(0);
+    expect(snapshot.result).toBeNull();
+  });
+
+  it("starts a new game after resigning", async () => {
+    const transport = vsAi({ ai: firstCellAi() });
+    await ready(transport);
+    transport.resign();
+
+    transport.requestNewGame();
+
+    const snapshot = readySnapshot(transport);
+    expect(snapshot.result).toBeNull();
+    expect(snapshot.moveCount).toBe(0);
+  });
+});
+
+describe("createLocalTransport on one device: no resigning", () => {
+  it("offers no resign, and ignores one", async () => {
+    const transport = createLocalTransport({
+      definition: tictactoe,
+      store: createMemoryStore(),
+      rng: createRng(1),
+    });
+    await ready(transport);
+    transport.submit({ cell: 4 });
+
+    transport.resign();
+    transport.claimAbandoned();
+
+    const snapshot = readySnapshot(transport);
+    expect(snapshot.resign).toBeNull();
+    expect(snapshot.turn).toBeNull();
+    expect(snapshot.result).toBeNull();
+  });
+});

@@ -70,6 +70,17 @@ const clientMessageSchema = z.discriminatedUnion("type", [
     move: z.unknown(),
   }),
   z.strictObject({ type: z.literal("rematch"), gameNumber: gameNumberSchema }),
+  /** The sender gives up the current game: it ends, or the AI plays their seat (`leaveOutcome`). */
+  z.strictObject({ type: z.literal("resign"), gameNumber: gameNumberSchema }),
+  /**
+   * The player to move has let their turn run past `ABANDON_AFTER_MS`; `moveIndex` is the position
+   * of that turn, as for `move`, so a claim that crosses their move is stale.
+   */
+  z.strictObject({
+    type: z.literal("claim-abandoned"),
+    gameNumber: gameNumberSchema,
+    moveIndex: z.number().int().nonnegative(),
+  }),
   /**
    * The host marks an empty seat as played by the server's AI (`on`), or empties an AI seat again.
    * Any whole number, negative too: a seat the room does not have is refused with `invalid-seat`, not as a broken
@@ -86,7 +97,14 @@ const clientMessageSchema = z.discriminatedUnion("type", [
 export type ClientMessage = z.output<typeof clientMessageSchema>;
 
 /** The requests a `rejected` answers; `null` for a message that could not be read at all. */
-const REJECTABLE_REQUESTS = ["sit", "move", "rematch", "ai-seat"] as const;
+const REJECTABLE_REQUESTS = [
+  "sit",
+  "move",
+  "rematch",
+  "ai-seat",
+  "resign",
+  "claim-abandoned",
+] as const;
 export type RejectableRequest = (typeof REJECTABLE_REQUESTS)[number];
 
 const rejectionCodeSchema = z.union([z.enum(ROOM_ERROR), z.enum(ENGINE_ERROR)]);

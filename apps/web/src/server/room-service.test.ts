@@ -66,7 +66,7 @@ const AN: RoomPlayer = { playerId: "an-0123456789abcdefgh", name: "An" };
 const BINH: RoomPlayer = { playerId: "binh-0123456789abcdef", name: "Bình" };
 
 /** A person in a seat, as the room stores them. */
-const human = (player: RoomPlayer): StoredSeat => ({ kind: "human", ...player });
+const human = (player: RoomPlayer): StoredSeat => ({ kind: "human", ...player, standIn: false });
 
 /** An rng that answers `nextInt` from `draws`, then with `min`. */
 function scriptedRng(draws: number[] = []): Rng & { readonly draws: number[] } {
@@ -505,7 +505,7 @@ describe("move", () => {
     );
 
     expect(room.record.entries).toEqual([{ move: { cell: 4 } }]);
-    expect(room.players[1]).toEqual({ kind: "human", ...AN, name: "An Nguyễn" });
+    expect(room.players[1]).toEqual({ kind: "human", ...AN, name: "An Nguyễn", standIn: false });
   });
 
   it("refuses a move from a player without a seat", async () => {
@@ -685,11 +685,11 @@ describe("toRoomView", () => {
   it("holds the names of both seated players but no playerId", async () => {
     const { store, code } = await tictactoeRoom();
 
-    const view = toRoomView(await stored(store, code));
+    const view = toRoomView(await stored(store, code), 0);
 
     expect(view.seats).toEqual([
-      { kind: "human", name: "Lan" },
-      { kind: "human", name: "An" },
+      { kind: "human", name: "Lan", standIn: false },
+      { kind: "human", name: "An", standIn: false },
     ]);
     const json = JSON.stringify(view);
     expect(json).not.toContain(LAN.playerId);

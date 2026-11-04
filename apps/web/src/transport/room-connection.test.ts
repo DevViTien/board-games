@@ -630,3 +630,106 @@ describe("room connection: page and network", () => {
     expect(sockets.all).toHaveLength(1);
   });
 });
+
+describe("room connection: the turn's clock", () => {
+  it("sets the turn's start from when the room arrived, less the server's duration", () => {
+    vi.setSystemTime(1_000_000);
+    connect();
+    enter(roomView({ seats: ["Minh", "Lan"], turnIdleMs: 30_000 }));
+
+    expect(connection.getSnapshot().turnClock).toEqual({
+      startedAt: 970_000,
+      gameNumber: 1,
+      moveIndex: 0,
+    });
+  });
+
+  it("Giờ của thiết bị sai: counts from the server's duration whatever this device's time", () => {
+    // Ten minutes ahead of the server: only the duration it sent counts.
+    vi.setSystemTime(1_000_000 + 10 * 60_000);
+    connect();
+    enter(roomView({ seats: ["Minh", "Lan"], turnIdleMs: 60_000 }));
+
+    const { turnClock } = connection.getSnapshot();
+    expect(Date.now() - (turnClock?.startedAt ?? 0)).toBe(60_000);
+  });
+
+  it("has no clock for a room without a turn running", () => {
+    connect();
+    enter(roomView({ turnIdleMs: null }));
+
+    expect(connection.getSnapshot().turnClock).toBeNull();
+  });
+
+  it("takes the same room again only to set the clock right, keeping the room itself", () => {
+    vi.setSystemTime(1_000_000);
+    connect();
+    const room = roomView({ seats: ["Minh", "Lan"], revision: 4, turnIdleMs: 10_000 });
+    const socket = enter(room);
+    const kept = connection.getSnapshot().room;
+
+    vi.setSystemTime(1_005_000);
+    socket.receive(roomMessage({ ...room, turnIdleMs: 290_000 }, 0));
+
+    expect(connection.getSnapshot().room).toBe(kept);
+    expect(connection.getSnapshot().turnClock).toMatchObject({ startedAt: 1_005_000 - 290_000 });
+  });
+
+  it("ignores an older room, its clock included", () => {
+    vi.setSystemTime(1_000_000);
+    connect();
+    const socket = enter(roomView({ seats: ["Minh", "Lan"], revision: 4, turnIdleMs: 10_000 }));
+
+    socket.receive(
+      roomMessage(roomView({ seats: ["Minh", "Lan"], revision: 3, turnIdleMs: 0 }), 0),
+    );
+
+    expect(connection.getSnapshot().turnClock).toMatchObject({ startedAt: 990_000 });
+  });
+
+  it("keeps the same clock for the same turn reckoned again a few ms off (a reconnection)", () => {
+    vi.setSystemTime(1_000_000);
+    connect();
+    const room = roomView({ seats: ["Minh", "Lan"], cells: [4], revision: 4, turnIdleMs: 60_000 });
+    const socket = enter(room);
+    const kept = connection.getSnapshot().turnClock;
+
+    vi.setSystemTime(1_300_000);
+    socket.lose();
+    enter({ ...room, turnIdleMs: 360_040 });
+
+    expect(connection.getSnapshot().turnClock).toBe(kept);
+  });
+
+  it("starts a new clock for another turn, even at the same moment", () => {
+    vi.setSystemTime(1_000_000);
+    connect();
+    const socket = enter(roomView({ seats: ["Minh", "Lan"], revision: 4, turnIdleMs: 0 }));
+    const first = connection.getSnapshot().turnClock;
+
+    socket.receive(
+      roomMessage(roomView({ seats: ["Minh", "Lan"], cells: [4], revision: 5, turnIdleMs: 0 }), 0),
+    );
+
+    expect(connection.getSnapshot().turnClock).not.toBe(first);
+    expect(connection.getSnapshot().turnClock).toMatchObject({ moveIndex: 1 });
+  });
+
+  it("sends a resign and a claim, and stays connected when they are refused", async () => {
+    connect();
+    const socket = enter(roomView({ seats: ["Minh", "Lan"], turnIdleMs: 0 }));
+    const rejected = vi.fn();
+    connection.onRejected(rejected);
+
+    expect(connection.send({ type: "resign", gameNumber: 1 })).toBe(true);
+    expect(connection.send({ type: "claim-abandoned", gameNumber: 1, moveIndex: 0 })).toBe(true);
+    socket.receive({ type: "rejected", request: "claim-abandoned", code: "not-abandoned" });
+    await wait(1000);
+
+    expect(socket.sent).toContainEqual({ type: "resign", gameNumber: 1 });
+    expect(socket.sent).toContainEqual({ type: "claim-abandoned", gameNumber: 1, moveIndex: 0 });
+    expect(rejected).toHaveBeenCalledWith({ request: "claim-abandoned", code: "not-abandoned" });
+    expect(sockets.all).toHaveLength(1);
+    expect(status()).toBe("online");
+  });
+});

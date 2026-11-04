@@ -148,7 +148,7 @@ describe("the host", () => {
 
     const forAn = expectOk(await service.sit(code, AN));
 
-    expect(toRoomView(forAn).host).toBe(0);
+    expect(toRoomView(forAn, 0).host).toBe(0);
     expect(forAn.hostId).toBe(LAN.playerId);
   });
 
@@ -175,7 +175,7 @@ describe("the host", () => {
 
     const next = expectOk(await context.service.rematch(context.code, AN.playerId, 1));
 
-    expect(toRoomView(next).host).toBe(1);
+    expect(toRoomView(next, 0).host).toBe(1);
   });
 });
 
@@ -185,8 +185,8 @@ describe("marking AI seats", () => {
 
     const marked = expectOk(await service.setAiSeat(code, LAN.playerId, 2, true));
 
-    expect(toRoomView(marked).seats).toEqual([
-      { kind: "human", name: "Lan" },
+    expect(toRoomView(marked, 0).seats).toEqual([
+      { kind: "human", name: "Lan", standIn: false },
       null,
       { kind: "ai" },
       null,
@@ -218,9 +218,9 @@ describe("marking AI seats", () => {
     const seated = expectOk(await service.sit(code, AN));
 
     expect(seated.players).toEqual([
-      { kind: "human", ...LAN },
+      { kind: "human", ...LAN, standIn: false },
       { kind: "ai" },
-      { kind: "human", ...AN },
+      { kind: "human", ...AN, standIn: false },
     ]);
   });
 
@@ -237,7 +237,7 @@ describe("marking AI seats", () => {
 
     const unmarked = expectOk(await service.setAiSeat(code, LAN.playerId, 2, false));
 
-    expect(unmarked.players).toEqual([{ kind: "human", ...LAN }, null, null, null]);
+    expect(unmarked.players).toEqual([{ kind: "human", ...LAN, standIn: false }, null, null, null]);
   });
 
   it("Đánh dấu lại ghế máy: writes nothing when the seat is already an AI seat", async () => {
@@ -464,7 +464,11 @@ describe("the server plays the AI seats", () => {
 
     const next = expectOk(await context.service.rematch(context.code, LAN.playerId, 1));
 
-    expect(next.players).toEqual([{ kind: "ai" }, { kind: "human", ...LAN }, { kind: "ai" }]);
+    expect(next.players).toEqual([
+      { kind: "ai" },
+      { kind: "human", ...LAN, standIn: false },
+      { kind: "ai" },
+    ]);
     expect(next.record.entries).toHaveLength(1);
     expect(replay(raceGame, next).toMove).toBe(1);
   });
@@ -478,9 +482,10 @@ describe("the server plays the AI seats", () => {
       revision: 5,
       gameNumber: 2,
       hostId: LAN.playerId,
-      players: [{ kind: "ai" }, { kind: "human", ...LAN }, { kind: "ai" }],
+      players: [{ kind: "ai" }, { kind: "human", ...LAN, standIn: false }, { kind: "ai" }],
       record: { version: RECORD_VERSION, gameId: "race", playerCount: 3, options: {}, entries: [] },
       updatedAt: 1_000,
+      turnStartedAt: 1_000,
     };
     await context.store.create(stuck);
     return stuck;
@@ -506,7 +511,7 @@ describe("the server plays the AI seats", () => {
     const joined = expectOk(await context.service.join(CODE, LAN.playerId, null));
 
     expect(joined.record.entries).toHaveLength(1);
-    expect(joined.players[1]).toEqual({ kind: "human", ...LAN });
+    expect(joined.players[1]).toEqual({ kind: "human", ...LAN, standIn: false });
     expect(await stored(context.store, CODE)).toEqual(joined);
   });
 
@@ -544,7 +549,7 @@ describe("the server plays the AI seats", () => {
     );
 
     expect(after.record.entries).toHaveLength(3);
-    expect(after.players[0]).toEqual({ kind: "human", ...LAN, name: "Lan Anh" });
+    expect(after.players[0]).toEqual({ kind: "human", ...LAN, name: "Lan Anh", standIn: false });
     expect(await stored(context.store, context.code)).toEqual(after);
   });
 

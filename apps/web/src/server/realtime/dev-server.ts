@@ -1,7 +1,7 @@
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 
-import { MAX_MESSAGE_BYTES } from "@board-games/protocol";
+import { ABANDON_AFTER_MS, MAX_MESSAGE_BYTES } from "@board-games/protocol";
 import { WebSocketServer } from "ws";
 
 import { createDefaultRoomService } from "../room-service";
@@ -16,6 +16,8 @@ export interface RealtimeServerOptions {
   readonly port: number;
   readonly store: RoomStore;
   readonly limits?: Partial<ConnectionLimits>;
+  /** `ABANDON_AFTER_MS` when absent; shorter in E2E (`REALTIME_ABANDON_AFTER_MS`). */
+  readonly abandonAfterMs?: number;
 }
 
 export interface RealtimeServer {
@@ -32,8 +34,9 @@ export async function startRealtimeServer({
   port,
   store,
   limits,
+  abandonAfterMs = ABANDON_AFTER_MS,
 }: RealtimeServerOptions): Promise<RealtimeServer> {
-  const service = createDefaultRoomService(store);
+  const service = createDefaultRoomService(store, abandonAfterMs);
   const sockets = new WebSocketServer({ noServer: true, maxPayload: MAX_MESSAGE_BYTES });
   const server = createServer((request, response) => {
     const healthy = request.url === "/healthz";

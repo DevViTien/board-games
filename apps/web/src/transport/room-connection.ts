@@ -22,10 +22,27 @@ interface RoomConnectionSnapshot {
   readonly failure: RejectionCode | null;
   /** Not once in the room after 10 seconds: the page says the server cannot be reached. */
   readonly slow: boolean;
+  /**
+   * When the room's current turn began, by this device's clock: the time a room was received less
+   * how long the server said the turn had lasted (`turnIdleMs`), so a device whose clock is wrong
+   * still counts right. `null` when the room has no turn running.
+   */
+  readonly turnClock: TurnStart | null;
+}
+
+/** When a turn began by this device's clock, and which turn it is: the game and its position. */
+interface TurnStart {
+  readonly startedAt: number;
+  readonly gameNumber: number;
+  /** Moves the game had when the turn began. */
+  readonly moveIndex: number;
 }
 
 /** What a player in a room asks the server for. */
-type RoomRequest = Extract<ClientMessage, { type: "sit" | "move" | "rematch" | "ai-seat" }>;
+type RoomRequest = Extract<
+  ClientMessage,
+  { type: "sit" | "move" | "rematch" | "ai-seat" | "resign" | "claim-abandoned" }
+>;
 
 interface RoomRejection {
   readonly request: RejectableRequest | null;
@@ -89,6 +106,12 @@ const SILENCE_LIMIT_MS = 45_000;
 const PAUSE_AFTER_HIDDEN_MS = 60_000;
 const IDLE_AFTER_MS = 10 * 60_000;
 const SLOW_AFTER_MS = 10_000;
+/**
+ * The same turn reckoned again (a reconnection, a room sent again) within this much of the start
+ * already known keeps it: the difference is only the network's delay, and a new start would make
+ * the screen count the turn afresh.
+ */
+const TURN_DRIFT_KEPT_MS = 2000;
 /** A seat asked for and no room showing it after this long: the connection is renewed. */
 const SIT_ANSWER_LIMIT_MS = 8000;
 
@@ -186,6 +209,7 @@ export function createRoomConnection({
     you: null,
     failure: null,
     slow: false,
+    turnClock: null,
   };
   const listeners = new Set<() => void>();
   const rejectionListeners = new Set<(rejection: RoomRejection) => void>();
@@ -218,7 +242,8 @@ export function createRoomConnection({
       next.room === snapshot.room &&
       next.you === snapshot.you &&
       next.failure === snapshot.failure &&
-      next.slow === snapshot.slow
+      next.slow === snapshot.slow &&
+      next.turnClock === snapshot.turnClock
     ) {
       return;
     }
@@ -342,23 +367,47 @@ export function createRoomConnection({
     idleTimer.start(IDLE_AFTER_MS, goIdle);
   }
 
+  /** The start of `room`'s turn, the one already known when it is the same turn and close enough. */
+  function turnStartOf(room: RoomView, receivedAt: number): TurnStart | null {
+    if (room.turnIdleMs === null) return null;
+    const next: TurnStart = {
+      startedAt: receivedAt - room.turnIdleMs,
+      gameNumber: room.gameNumber,
+      moveIndex: room.record.entries.length,
+    };
+    const known = snapshot.turnClock;
+    return known !== null &&
+      known.gameNumber === next.gameNumber &&
+      known.moveIndex === next.moveIndex &&
+      Math.abs(known.startedAt - next.startedAt) < TURN_DRIFT_KEPT_MS
+      ? known
+      : next;
+  }
+
   function acceptRoom(room: RoomView, you: PlayerIndex | null): void {
     const previous = snapshot.room;
     const greeted = awaitingRoom;
+    // Read on arrival, once: reckoning it again later would make the clock jump.
+    const turnClock = turnStartOf(room, environment.now());
     if (greeted) {
       awaitingRoom = false;
       everOnline = true;
       stableTimer.start(STABLE_AFTER_MS, () => {
         retries = 0;
       });
-      update({ status: CONNECTION_STATUS.Online, room, you, slow: false });
+      update({ status: CONNECTION_STATUS.Online, room, you, slow: false, turnClock });
       startHeartbeat();
       // The same room again after a reconnection (Vercel's cut every ~5 minutes) is nothing new:
       // counting it would keep a forgotten tab from ever going idle.
       if (previous?.revision !== room.revision) markActivity();
     } else {
-      if (previous !== null && room.revision <= previous.revision) return;
-      update({ room, you });
+      if (previous !== null && room.revision < previous.revision) return;
+      if (previous !== null && room.revision === previous.revision) {
+        // The same room sent again (before a refused claim): only the turn's clock is new.
+        update({ turnClock });
+        return;
+      }
+      update({ room, you, turnClock });
       markActivity();
     }
     if (you !== null) sitTimer.clear();

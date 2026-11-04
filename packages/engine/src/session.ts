@@ -1,3 +1,4 @@
+import { ENDING_REASON } from "./constants";
 import { ENGINE_ERROR, err, ok, type Result } from "./errors";
 import { isPlainObject } from "./guards";
 import { moveKeyOf, stableStringify } from "./move-key";
@@ -5,6 +6,7 @@ import { parseGameOptions } from "./options";
 import { checkOutcomeWeights } from "./outcome-weights";
 import type {
   GameDefinition,
+  GameEnding,
   GameId,
   GameResult,
   HistoryEntry,
@@ -29,6 +31,11 @@ export interface Session<State = unknown, Move = unknown, Outcome = unknown, Opt
   readonly entries: readonly HistoryEntry<Move, Outcome>[];
   /** How many entries are in effect. */
   readonly cursor: number;
+  /**
+   * The game ended outside its rules after the last entry (`concede`). It ends the game only once
+   * every entry is shown (`cursor === entries.length`); nothing can be played or undone after it.
+   */
+  readonly ending?: GameEnding;
 }
 
 export interface SessionInit<Options> {
@@ -100,7 +107,10 @@ export function lastEntry<Move, Outcome>(
   return session.entries[session.cursor - 1] ?? null;
 }
 
-/** The result of the current state; the caller pairs the session with its own game. */
+/**
+ * The result of the current state; the caller pairs the session with its own game. A game ended by
+ * `concede` is won by every other seat, once the session shows every entry.
+ */
 export function sessionResult<
   State,
   Move,
@@ -110,7 +120,55 @@ export function sessionResult<
   game: GameDefinition<State, Move, Outcome, Options>,
   session: Session<State, Move, Outcome, Options>,
 ): GameResult | null {
+  const { ending } = session;
+  if (ending !== undefined && session.cursor === session.entries.length) {
+    const winners = Array.from({ length: session.playerCount }, (_, seat) => seat).filter(
+      (seat) => seat !== ending.player,
+    );
+    return { kind: "win", winners, reason: ending.reason };
+  }
   return game.result(currentState(session));
+}
+
+/** Whether `raw` (data from outside) is an ending a game of `playerCount` seats can have. */
+export function isGameEnding(raw: unknown, playerCount: number): raw is GameEnding {
+  if (!isPlainObject(raw)) return false;
+  const { reason, player } = raw;
+  return (
+    Object.values<unknown>(ENDING_REASON).includes(reason) &&
+    typeof player === "number" &&
+    Number.isInteger(player) &&
+    player >= 0 &&
+    player < playerCount
+  );
+}
+
+/**
+ * Ends an unfinished game outside its rules: `ending.player` resigns or abandons it and every other
+ * seat wins. Undone moves are dropped first, as for a new move; no move is added. A game that has a
+ * result already is `game-over`; a seat outside the game is `illegal-move`. Never throws.
+ */
+export function concede<
+  State,
+  Move,
+  Outcome = never,
+  Options extends object = Record<string, never>,
+>(
+  game: GameDefinition<State, Move, Outcome, Options>,
+  session: Session<State, Move, Outcome, Options>,
+  ending: GameEnding,
+): Result<Session<State, Move, Outcome, Options>> {
+  if (session.gameId !== game.id) return err(ENGINE_ERROR.GameMismatch);
+  if (session.ending !== undefined || game.result(currentState(session)) !== null) {
+    return err(ENGINE_ERROR.GameOver);
+  }
+  if (!isGameEnding(ending, session.playerCount)) return err(ENGINE_ERROR.IllegalMove);
+  return ok({
+    ...session,
+    entries: activeEntries(session),
+    states: session.states.slice(0, session.cursor + 1),
+    ending: { reason: ending.reason, player: ending.player },
+  });
 }
 
 /** Plays `move` (untrusted, e.g. from the network); a random move's outcome is drawn from `rng`. */
@@ -126,6 +184,7 @@ export function playMove<
   rng: Rng,
 ): Result<Session<State, Move, Outcome, Options>> {
   if (session.gameId !== game.id) return err(ENGINE_ERROR.GameMismatch);
+  if (session.ending !== undefined) return err(ENGINE_ERROR.GameOver);
   const stepped = step(game, currentState(session), move, (legalMove, choices) =>
     choices.length === 0
       ? { move: legalMove }
@@ -150,6 +209,7 @@ export function applyEntry<
   rawEntry: unknown,
 ): Result<Session<State, Move, Outcome, Options>> {
   if (session.gameId !== game.id) return err(ENGINE_ERROR.GameMismatch);
+  if (session.ending !== undefined) return err(ENGINE_ERROR.GameOver);
   try {
     const stepped = replayEntry(game, currentState(session), rawEntry);
     return stepped.ok ? ok(appendEntry(session, stepped.value)) : stepped;
@@ -158,20 +218,23 @@ export function applyEntry<
   }
 }
 
+/** A game ended by `concede` can be neither undone nor redone. */
 export function canUndo(session: Session): boolean {
-  return session.cursor > 0;
+  return session.ending === undefined && session.cursor > 0;
 }
 
 export function canRedo(session: Session): boolean {
-  return session.cursor < session.entries.length;
+  return session.ending === undefined && session.cursor < session.entries.length;
 }
 
 export function undo<S extends Session>(session: S): Result<S> {
+  if (session.ending !== undefined) return err(ENGINE_ERROR.GameOver);
   if (!canUndo(session)) return err(ENGINE_ERROR.NothingToUndo);
   return ok({ ...session, cursor: session.cursor - 1 });
 }
 
 export function redo<S extends Session>(session: S): Result<S> {
+  if (session.ending !== undefined) return err(ENGINE_ERROR.GameOver);
   if (!canRedo(session)) return err(ENGINE_ERROR.NothingToRedo);
   return ok({ ...session, cursor: session.cursor + 1 });
 }

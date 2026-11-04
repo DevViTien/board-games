@@ -1,3 +1,4 @@
+import { ABANDON_AFTER_MS } from "@board-games/protocol";
 import { z } from "zod";
 
 /** Where the realtime server listens on a developer's machine (`pnpm dev`, E2E). */
@@ -15,6 +16,8 @@ const envSchema = z.object({
   VERCEL: optional(z.string()),
   VERCEL_ENV: optional(z.string()),
   REALTIME_PORT: optional(z.coerce.number().int().min(1).max(65_535)),
+  /** A shorter abandon delay for the local realtime server (E2E); never read on Vercel. */
+  REALTIME_ABANDON_AFTER_MS: optional(z.coerce.number().int().min(1)),
 });
 
 export class ServerConfigError extends Error {
@@ -28,6 +31,8 @@ export type RoomStoreConfig =
 export interface ServerEnv {
   readonly store: RoomStoreConfig;
   readonly realtimePort: number;
+  /** How long a turn lasts before another player can claim it abandoned. */
+  readonly abandonAfterMs: number;
 }
 
 /**
@@ -48,7 +53,7 @@ export function readServerEnv(env: Readonly<Record<string, string | undefined>>)
   if (!parsed.success) {
     throw new ServerConfigError(`Invalid server environment: ${z.prettifyError(parsed.error)}`);
   }
-  const { REDIS_URL, VERCEL, VERCEL_ENV, REALTIME_PORT } = parsed.data;
+  const { REDIS_URL, VERCEL, VERCEL_ENV, REALTIME_PORT, REALTIME_ABANDON_AFTER_MS } = parsed.data;
   if (REDIS_URL === undefined && VERCEL === "1") {
     throw new ServerConfigError("REDIS_URL is missing: online rooms need Redis on Vercel");
   }
@@ -58,6 +63,9 @@ export function readServerEnv(env: Readonly<Record<string, string | undefined>>)
         ? { kind: "memory" }
         : { kind: "redis", url: REDIS_URL, keyPrefix: keyPrefixOf(VERCEL_ENV) },
     realtimePort: REALTIME_PORT ?? DEFAULT_REALTIME_PORT,
+    // Only a developer's machine may shorten it: a deployment always waits the full five minutes.
+    abandonAfterMs:
+      VERCEL_ENV === undefined ? (REALTIME_ABANDON_AFTER_MS ?? ABANDON_AFTER_MS) : ABANDON_AFTER_MS,
   };
 }
 

@@ -9,7 +9,19 @@ import {
   type Session,
   sessionResult,
 } from "@board-games/engine";
-import type { RejectionCode, RoomView } from "@board-games/protocol";
+import {
+  ABANDON_CLAIM,
+  abandonClaim,
+  gameHasAi,
+  LEAVE_OUTCOME,
+  leaveOutcome,
+  type RejectionCode,
+  ROOM_ERROR,
+  type RoomView,
+  SEAT_PLAY,
+  type SeatPlay,
+  seatPlays,
+} from "@board-games/protocol";
 
 import { AI_MIN_DELAY_MS, AI_RESULT_DELAY_MS, AI_SETTLE_DELAY_MS } from "./ai-timing";
 import type { RoomConnection } from "./room-connection";
@@ -17,9 +29,11 @@ import {
   CONNECTION_STATUS,
   type ConnectionStatus,
   type PlaySnapshot,
+  type ResignOption,
   type SeatView,
   type Transport,
   type TransportEvent,
+  type TurnClock,
 } from "./types";
 
 /** A move or a new game sent and not yet answered for this long: the connection is renewed. */
@@ -191,9 +205,66 @@ export function createOnlineTransport<
     index: number,
     you: PlayerIndex | null,
   ): SeatView {
+    // Played by the server like an AI seat, under the name of its person: mine too.
+    if (seat?.kind === "human" && seat.standIn) {
+      return { kind: "ai", level: AI_LEVEL.Medium, standInFor: seat.name };
+    }
     if (index === you) return HUMAN;
     if (seat?.kind === "ai") return AI_SEAT;
     return { kind: "remote" as const, name: seat?.kind === "human" ? seat.name : null };
+  }
+
+  /** Whether the server can play a seat of this game for a person who left. */
+  const hasAi = gameHasAi(definition);
+
+  function resignOption(
+    plays: readonly SeatPlay[],
+    you: PlayerIndex | null,
+    open: boolean,
+    online: boolean,
+  ): ResignOption | null {
+    if (!open || you === null || plays[you] !== SEAT_PLAY.Self) return null;
+    const outcome = leaveOutcome(plays, you, hasAi) === LEAVE_OUTCOME.StandIn ? "stand-in" : "loss";
+    return { outcome, available: online };
+  }
+
+  function turnClock(
+    plays: readonly SeatPlay[],
+    toMove: PlayerIndex,
+    you: PlayerIndex | null,
+    online: boolean,
+    position: { readonly gameNumber: number; readonly moveIndex: number },
+  ): TurnClock | null {
+    const clock = connection.getSnapshot().turnClock;
+    // Only the clock of the turn on screen: the connection may already hold a newer room.
+    if (
+      clock?.gameNumber !== position.gameNumber ||
+      clock.moveIndex !== position.moveIndex ||
+      plays[toMove] !== SEAT_PLAY.Self
+    ) {
+      return null;
+    }
+    // Whether this player could claim the turn once it is old enough; the server decides when.
+    const claimable =
+      abandonClaim({
+        seats: plays,
+        toMove,
+        claimer: you,
+        turnIdleMs: Number.POSITIVE_INFINITY,
+      }) === ABANDON_CLAIM.Ok;
+    let claim: TurnClock["claim"] = null;
+    if (claimable && you !== null) {
+      if (leaveOutcome(plays, toMove, hasAi) === LEAVE_OUTCOME.StandIn) claim = "stand-in";
+      else claim = plays[you] === SEAT_PLAY.Self ? "win" : "end";
+    }
+    return {
+      player: toMove,
+      gameNumber: clock.gameNumber,
+      moveIndex: clock.moveIndex,
+      startedAt: clock.startedAt,
+      claim,
+      available: online,
+    };
   }
 
   function show(
@@ -212,6 +283,10 @@ export function createOnlineTransport<
     const seats: SeatView[] = view.seats.map((seat, index) => seatView(seat, index, you));
     const everyoneSeated = view.seats.every((seat) => seat !== null);
     const toMove = seats[currentPlayer]?.kind;
+    const plays = seatPlays(view.seats);
+    const online = status === CONNECTION_STATUS.Online;
+    // Neither while the game on screen, or the whole game received, has a result.
+    const open = everyoneSeated && result === null && sessionResult(definition, whole) === null;
     snapshot = {
       status: "ready",
       state,
@@ -229,6 +304,7 @@ export function createOnlineTransport<
         !revealing &&
         result === null &&
         currentPlayer === you &&
+        plays[currentPlayer] === SEAT_PLAY.Self &&
         pending === null,
       viewer: you,
       seats,
@@ -241,6 +317,15 @@ export function createOnlineTransport<
       connection: status,
       // As the server's record has them, checked again by `fromRecord`.
       options: current.options,
+      resign: resignOption(plays, you, open, online),
+      // The turn whose clock the server sent: only once every move received is on screen.
+      turn:
+        open && !revealing
+          ? turnClock(plays, currentPlayer, you, online, {
+              gameNumber: view.gameNumber,
+              moveIndex: whole.cursor,
+            })
+          : null,
     };
   }
 
@@ -336,6 +421,13 @@ export function createOnlineTransport<
     connection.onRejected(({ request, code }) => {
       // The lobby's business: a refused seat or AI seat says nothing of a move in flight.
       if (request === "sit" || request === "ai-seat") return;
+      // Nor does a refused resign or claim; the room sent before it already shows why, and only
+      // a claim made too early is worth saying so.
+      if (request === "resign" || request === "claim-abandoned") {
+        refresh();
+        if (code === ROOM_ERROR.NotAbandoned) emit({ type: "claim-refused" });
+        return;
+      }
       settle();
       refresh();
       if (isRuleRefusal(code)) emit({ type: "rejected", code });
@@ -372,6 +464,22 @@ export function createOnlineTransport<
       // The game is over and gets no more moves: only the next game's number answers.
       waitForAnswer({ gameNumber: room.gameNumber, moveIndex: session.cursor });
       refresh();
+    },
+    resign: () => {
+      if (disposed || room === null || snapshot.status !== "ready") return;
+      if (snapshot.resign?.available !== true) return;
+      connection.send({ type: "resign", gameNumber: room.gameNumber });
+    },
+    claimAbandoned: () => {
+      if (disposed || room === null || session === null || snapshot.status !== "ready") return;
+      const { turn } = snapshot;
+      if (turn?.claim == null || !turn.available) return;
+      // The turn as fully shown (`turn` is null while moves are being shown): its position.
+      connection.send({
+        type: "claim-abandoned",
+        gameNumber: room.gameNumber,
+        moveIndex: session.cursor,
+      });
     },
     // An online game has no undo: the opponent would have to agree (later, with draw offers).
     requestUndo: () => undefined,

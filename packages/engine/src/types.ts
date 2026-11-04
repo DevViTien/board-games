@@ -1,4 +1,4 @@
-import type { GameCategory } from "./constants";
+import type { EndingReason, GameCategory } from "./constants";
 
 /** Kebab-case game identifier. `packages/games` narrows it to the ids it registers. */
 export type GameId = string;
@@ -17,6 +17,15 @@ export interface GameMeta {
 export type GameResult =
   | { readonly kind: "win"; readonly winners: readonly PlayerIndex[]; readonly reason?: string }
   | { readonly kind: "draw"; readonly reason?: string };
+
+/**
+ * A game ended outside its rules: `player` resigned or abandoned it, and every other seat wins with
+ * `reason`. Plain data, kept in the session and in its record.
+ */
+export interface GameEnding {
+  readonly reason: EndingReason;
+  readonly player: PlayerIndex;
+}
 
 /** One possible random outcome of a move; `weight` is a positive integer. */
 export interface WeightedOutcome<Outcome> {

@@ -32,9 +32,19 @@ export type SeatController =
 /**
  * Who plays a seat, as the play screen shows it: a seat on this device, or a player elsewhere
  * (online), named, or `null` while the seat is empty. Never saved: an online game lives on the
- * server, so `remote` never enters `ModeSettings`.
+ * server, so `remote` never enters `ModeSettings`. Online, a seat whose person resigned or was
+ * ruled to have left is played by the server's AI and keeps their name (`standInFor`), this
+ * player's own seat included.
  */
-export type SeatView = SeatController | { readonly kind: "remote"; readonly name: string | null };
+export type SeatView =
+  | SeatController
+  | { readonly kind: "ai"; readonly level: AiLevel; readonly standInFor: string }
+  | { readonly kind: "remote"; readonly name: string | null };
+
+/** The name of the person the AI stands in for in `seat`, or `null` for any other seat. */
+export function standInName(seat: SeatView | undefined): string | null {
+  return seat !== undefined && "standInFor" in seat ? seat.standInFor : null;
+}
 
 /** Where an online room's connection stands, as the play screen and the lobby show it. */
 export const CONNECTION_STATUS = {
@@ -137,6 +147,46 @@ export interface ReadySnapshot<State, Move, Outcome = never> {
   readonly connection: ConnectionStatus | null;
   /** The rule options the game is played with, as the rules checked them. */
   readonly options: unknown;
+  /**
+   * Whether the player at this device can resign now, and what follows: they lose (`loss`), or the
+   * server's AI plays their seat to the end (`stand-in`). `null` when there is no resigning: on one
+   * device, once the game has a result, while the room waits for players, for a seat the AI
+   * already plays.
+   */
+  readonly resign: ResignOption | null;
+  /**
+   * The turn running online while a person plays the seat to move: whose, since when by this
+   * device's clock (from the server's duration, never its own idea of the time), and what a claim
+   * that they left would do. `null` on one device, while moves are being shown, once the game has
+   * a result, and while the AI plays the seat to move.
+   */
+  readonly turn: TurnClock | null;
+}
+
+export interface ResignOption {
+  readonly outcome: "loss" | "stand-in";
+  /** False while not connected: the button stays, with the reason. */
+  readonly available: boolean;
+}
+
+export interface TurnClock {
+  readonly player: PlayerIndex;
+  /** Which turn: the game of the room and how many moves it had when the turn began. */
+  readonly gameNumber: number;
+  readonly moveIndex: number;
+  /**
+   * `Date.now()` of this device when the turn began. Reckoned again it may move by a few ms (or by
+   * the server's correction): the turn itself is `gameNumber` + `moveIndex` + `player`.
+   */
+  readonly startedAt: number;
+  /**
+   * What claiming this turn abandoned does for the player here: they win (`win`), the game ends
+   * without them playing on (`end`: the AI already plays their own seat), or the AI takes the seat
+   * (`stand-in`). `null` when they cannot claim it: their own turn, no seat.
+   */
+  readonly claim: "win" | "end" | "stand-in" | null;
+  /** False while not connected. */
+  readonly available: boolean;
 }
 
 export type PlaySnapshot<State, Move, Outcome = never> =
@@ -145,7 +195,9 @@ export type PlaySnapshot<State, Move, Outcome = never> =
 export type TransportEvent =
   | { readonly type: "changed" }
   /** The rules (`illegal-move`…) or, online, the server (`not-your-turn`…) refused a request. */
-  | { readonly type: "rejected"; readonly code: RejectionCode };
+  | { readonly type: "rejected"; readonly code: RejectionCode }
+  /** The server found the turn claimed abandoned not long enough yet (`not-abandoned`). */
+  | { readonly type: "claim-refused" };
 
 /**
  * The only owner of a game session. The play screen reads snapshots and sends requests, so it
@@ -161,6 +213,10 @@ export interface Transport<State, Move, Outcome = never> {
   requestUndo(this: void): void;
   requestRedo(this: void): void;
   requestNewGame(this: void): void;
+  /** Gives up the game, when `ReadySnapshot.resign` is available. */
+  resign(this: void): void;
+  /** Claims the running turn abandoned (`ReadySnapshot.turn`); the server decides. Online only. */
+  claimAbandoned(this: void): void;
   dispose(this: void): void;
 }
 

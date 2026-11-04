@@ -6,7 +6,7 @@ import {
   type RoomCode,
   type ServerMessage,
 } from "@board-games/protocol";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createMemoryRoomStore, type MemoryRoomStore } from "../store/memory";
 import type { ConnectionLimits } from "./connection";
@@ -32,8 +32,17 @@ afterEach(async () => {
   await Promise.all(servers.splice(0).map((server) => server.close()));
 });
 
-async function start(limits: Partial<ConnectionLimits> = {}, store = createMemoryRoomStore()) {
-  const server = await startRealtimeServer({ port: 0, store, limits });
+async function start(
+  limits: Partial<ConnectionLimits> = {},
+  store = createMemoryRoomStore(),
+  abandonAfterMs?: number,
+) {
+  const server = await startRealtimeServer({
+    port: 0,
+    store,
+    limits,
+    ...(abandonAfterMs === undefined ? {} : { abandonAfterMs }),
+  });
   servers.push(server);
   const connect = (options?: Parameters<typeof openClient>[1]) => {
     const client = openClient(server.port, options);
@@ -88,7 +97,9 @@ async function move(mover: TestClient, other: TestClient, moveIndex: number, cel
   mover.send({ type: "move", gameNumber: 1, moveIndex, move: { cell } });
   const mine = expectType(await mover.next(), "room");
   const theirs = expectType(await other.next(), "room");
-  expect(theirs.room).toEqual(mine.room);
+  // Sent a few ms apart: the turn's duration may differ.
+  expect(theirs.room).toEqual({ ...mine.room, turnIdleMs: theirs.room.turnIdleMs });
+  expect(theirs.room.turnIdleMs === null).toBe(mine.room.turnIdleMs === null);
   return mine.room;
 }
 
@@ -202,8 +213,8 @@ describe("greeting", () => {
     const seated = expectType(await client.next(), "room");
     expect(seated.you).toBe(1);
     expect(seated.room.seats).toEqual([
-      { kind: "human", name: "Lan" },
-      { kind: "human", name: "An" },
+      { kind: "human", name: "Lan", standIn: false },
+      { kind: "human", name: "An", standIn: false },
     ]);
   });
 
@@ -229,7 +240,7 @@ describe("greeting", () => {
 
     const first = expectType(await client.next(), "room");
     expect(first.you).toBe(1);
-    expect(first.room.seats[1]).toEqual({ kind: "human", name: "An" });
+    expect(first.room.seats[1]).toEqual({ kind: "human", name: "An", standIn: false });
   });
 
   it("still serves a greeting with a name, as sent by tabs opened before this change", async () => {
@@ -240,7 +251,7 @@ describe("greeting", () => {
     const { first } = await join(context, code, { ...AN, name: "An Nguyễn" });
 
     expect(first.you).toBe(1);
-    expect(first.room.seats[1]).toEqual({ kind: "human", name: "An Nguyễn" });
+    expect(first.room.seats[1]).toEqual({ kind: "human", name: "An Nguyễn", standIn: false });
   });
 
   it("finds a room from its code typed in lower case with a space", async () => {
@@ -294,6 +305,15 @@ describe("greeting", () => {
 });
 
 describe("playing", () => {
+  // Rooms sent to two players a few ms apart are compared whole: stop the clock their
+  // `turnIdleMs` is reckoned with (timers and sockets keep running).
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"], now: 1_000_000 });
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("plays a whole game, everyone receiving each new room with a higher revision", async () => {
     const context = await start();
     const { code, lan, an, revision } = await startGame(context);
@@ -373,12 +393,13 @@ describe("playing", () => {
     const seated = expectType(await an.client.next(), "room");
     expect(seated.you).toBe(1);
     expect(seated.room.seats).toEqual([
-      { kind: "human", name: "Lan" },
-      { kind: "human", name: "An Nguyễn" },
+      { kind: "human", name: "Lan", standIn: false },
+      { kind: "human", name: "An Nguyễn", standIn: false },
     ]);
     expect(expectType(await lan.client.next(), "room").room.seats[1]).toEqual({
       kind: "human",
       name: "An Nguyễn",
+      standIn: false,
     });
   });
 
@@ -447,8 +468,8 @@ describe("playing", () => {
     expect(forAn.you).toBe(0);
     expect(forLan.you).toBe(1);
     expect(forLan.room.seats).toEqual([
-      { kind: "human", name: "An" },
-      { kind: "human", name: "Lan" },
+      { kind: "human", name: "An", standIn: false },
+      { kind: "human", name: "Lan", standIn: false },
     ]);
   });
 
@@ -460,6 +481,59 @@ describe("playing", () => {
     for (const message of [...lan.received, ...an.received]) {
       expect(JSON.stringify(message)).not.toMatch(/playerId|0123456789/u);
     }
+  });
+});
+
+describe("resigning and abandoning", () => {
+  it("ends the game for both players when one resigns", async () => {
+    const context = await start();
+    const { lan, an } = await startGame(context);
+
+    lan.send({ type: "resign", gameNumber: 1 });
+
+    const mine = expectType(await lan.next(), "room");
+    const theirs = expectType(await an.next(), "room");
+    expect(mine.room.record.ending).toEqual({ reason: "resigned", player: 0 });
+    expect(theirs.room.record.ending).toEqual({ reason: "resigned", player: 0 });
+    expect(theirs.room.turnIdleMs).toBeNull();
+  });
+
+  it("Chưa đủ 5 phút: refuses an early claim after the room, its turn reckoned anew, and stays connected", async () => {
+    const context = await start({}, createMemoryRoomStore(), 60_000);
+    const { lan, an } = await startGame(context);
+    const room = await move(lan, an, 0, 4);
+    await new Promise((resolve) => setTimeout(resolve, 30));
+
+    lan.send({ type: "claim-abandoned", gameNumber: 1, moveIndex: 1 });
+
+    const again = expectType(await lan.next(), "room");
+    expect(again.room.revision).toBe(room.revision);
+    expect(again.room.turnIdleMs).toBeGreaterThanOrEqual(25);
+    expect(await lan.next()).toEqual({
+      type: "rejected",
+      request: "claim-abandoned",
+      code: "not-abandoned",
+    });
+    lan.send({ type: "ping" });
+    expect(await lan.next()).toEqual({ type: "pong" });
+  });
+
+  it("Xử thắng: ends the game when the turn has lasted long enough", async () => {
+    const context = await start({}, createMemoryRoomStore(), 20);
+    const { lan, an } = await startGame(context);
+    await move(lan, an, 0, 4);
+    await new Promise((resolve) => setTimeout(resolve, 40));
+
+    lan.send({ type: "claim-abandoned", gameNumber: 1, moveIndex: 1 });
+
+    expect(expectType(await lan.next(), "room").room.record.ending).toEqual({
+      reason: "abandoned",
+      player: 1,
+    });
+    expect(expectType(await an.next(), "room").room.record.ending).toEqual({
+      reason: "abandoned",
+      player: 1,
+    });
   });
 });
 
@@ -628,7 +702,11 @@ describe("AI seats", () => {
     lan.send({ type: "ai-seat", seat: 2, on: true });
 
     const marked = expectType(await lan.next(), "room");
-    expect(marked.room.seats).toEqual([{ kind: "human", name: "Lan" }, null, { kind: "ai" }]);
+    expect(marked.room.seats).toEqual([
+      { kind: "human", name: "Lan", standIn: false },
+      null,
+      { kind: "ai" },
+    ]);
     expect(marked.room.host).toBe(0);
   });
 

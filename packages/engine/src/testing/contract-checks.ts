@@ -1,3 +1,4 @@
+import { ENDING_REASON } from "../constants";
 import { moveKeyOf, stableStringify } from "../move-key";
 import { listOptionChoices, type OptionChoiceList } from "../option-choices";
 import { parseGameOptions } from "../options";
@@ -31,6 +32,7 @@ export const CONTRACT_CHECK = {
   ResultMatchesMoves: "result-matches-moves",
   UniqueMoveKeys: "unique-move-keys",
   PlayersInRange: "players-in-range",
+  ReservedReasons: "reserved-reasons",
   ValidOutcomes: "valid-outcomes",
   PlainData: "plain-data",
   RecordRoundTrip: "record-round-trip",
@@ -413,6 +415,21 @@ export const CONTRACT_CHECKS: readonly ContractCheck[] = [
         }),
         () => undefined,
       );
+    },
+  },
+  {
+    id: CONTRACT_CHECK.ReservedReasons,
+    title: "a result's reason is never one the engine uses for resigning or abandoning",
+    run: (game, config) => {
+      const reserved: readonly unknown[] = Object.values(ENDING_REASON);
+      forEachPlayedGame(CONTRACT_CHECK.ReservedReasons, game, config, {
+        onState: (state) => {
+          const reason = game.result(state)?.reason;
+          if (reserved.includes(reason)) {
+            fail(`the rules end a game with "${String(reason)}", a reason of the engine`);
+          }
+        },
+      });
     },
   },
   {

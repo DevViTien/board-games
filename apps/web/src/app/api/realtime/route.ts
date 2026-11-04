@@ -25,7 +25,7 @@ export async function GET(request: Request): Promise<Response> {
     console.error("[realtime] server misconfigured", error);
     return new Response(null, { status: 503 });
   }
-  const service = createDefaultRoomService(openRoomStore(env.store));
+  const service = createDefaultRoomService(openRoomStore(env.store), env.abandonAfterMs);
 
   // An object rather than a `let`: TypeScript would take a boolean that only the callback below
   // sets for still `false` in the `catch`.

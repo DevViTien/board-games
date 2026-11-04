@@ -1,5 +1,19 @@
 export { type RejectionCode, ROOM_ERROR, type RoomErrorCode } from "./errors";
 export {
+  ABANDON_AFTER_MS,
+  ABANDON_CLAIM,
+  type AbandonClaim,
+  abandonClaim,
+  gameHasAi,
+  LEAVE_OUTCOME,
+  type LeaveOutcome,
+  leaveOutcome,
+  MAX_SEATS_WITHOUT_AI,
+  SEAT_PLAY,
+  type SeatPlay,
+  seatPlays,
+} from "./leaving";
+export {
   type ClientMessage,
   CLOSE_CODE,
   MAX_MESSAGE_BYTES,

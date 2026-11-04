@@ -51,6 +51,9 @@ const NORMAL_CLOSURE = 1000;
 const POLICY_VIOLATION = 1008;
 const INTERNAL_ERROR = 1011;
 
+/** Requests whose refusal always comes after the room, even one already sent. */
+const LEAVE_REQUESTS: ReadonlySet<RejectableRequest> = new Set(["resign", "claim-abandoned"]);
+
 /** A message that is not JSON, or a binary frame. */
 const UNREADABLE = Symbol("unreadable");
 
@@ -221,7 +224,8 @@ export function attachConnection(socket: WebSocket, deps: ConnectionDeps): void 
     if (newest === undefined || (newer === undefined && !force)) return;
     lastSent = newest;
     roomsSent += 1;
-    send({ type: "room", room: toRoomView(newest), you: seatOf(newest, playerId) });
+    // How long the turn has lasted is reckoned now, for this send, by the server's clock.
+    send({ type: "room", room: toRoomView(newest, Date.now()), you: seatOf(newest, playerId) });
     resetIdleTimer();
   }
 
@@ -344,6 +348,8 @@ export function attachConnection(socket: WebSocket, deps: ConnectionDeps): void 
       case "move":
       case "rematch":
       case "ai-seat":
+      case "resign":
+      case "claim-abandoned":
         await request(room, message);
         return;
       default:
@@ -374,8 +380,12 @@ export function attachConnection(socket: WebSocket, deps: ConnectionDeps): void 
       refuse(ROOM_ERROR.RoomNotFound);
       return;
     }
-    // The room as it is now first, so the client can catch up before it handles the refusal.
-    if (result.room !== undefined) deliver(result.room, playerId);
+    // The room as it is now first, so the client can catch up before it handles the refusal. A
+    // refused resign or claim gets it even unchanged: its `turnIdleMs`, reckoned anew, sets the
+    // client's clock right (a claim sent too early).
+    if (result.room !== undefined) {
+      deliver(result.room, playerId, { force: LEAVE_REQUESTS.has(message.type) });
+    }
     send({ type: "rejected", request: message.type, code: result.error });
   }
 
@@ -398,6 +408,13 @@ export function attachConnection(socket: WebSocket, deps: ConnectionDeps): void 
         return service.rematch(code, playerId, message.gameNumber);
       case "ai-seat":
         return service.setAiSeat(code, playerId, message.seat, message.on);
+      case "resign":
+        return service.resign(code, playerId, message.gameNumber);
+      case "claim-abandoned":
+        return service.claimAbandoned(code, playerId, {
+          gameNumber: message.gameNumber,
+          moveIndex: message.moveIndex,
+        });
     }
   }
 }

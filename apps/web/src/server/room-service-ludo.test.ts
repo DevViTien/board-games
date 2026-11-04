@@ -15,7 +15,7 @@ const AN: RoomPlayer = { playerId: "an-0123456789abcdefgh", name: "An" };
 const BINH: RoomPlayer = { playerId: "binh-0123456789abcdef", name: "Bình" };
 
 /** A person in a seat, as the room stores them. */
-const human = (player: RoomPlayer): StoredSeat => ({ kind: "human", ...player });
+const human = (player: RoomPlayer): StoredSeat => ({ kind: "human", ...player, standIn: false });
 const CODE = "ABC234";
 
 /** Draws the room code first, then answers like a seeded generator (or from `draws`). */

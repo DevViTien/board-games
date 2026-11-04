@@ -2,8 +2,10 @@ import {
   type AiLevel,
   canRedo,
   canUndo,
+  concede,
   createSession,
   currentState,
+  ENDING_REASON,
   fromRecord,
   type GameDefinition,
   type HistoryEntry,
@@ -258,6 +260,9 @@ export function createLocalTransport<
       supportsUndo: true,
       canStartNewGame: true,
       connection: null,
+      // Against the AI only: on one device, "New game" drops a game.
+      resign: mode === "ai" && result === null ? { outcome: "loss", available: true } : null,
+      turn: null,
     };
     emit({ type: "changed" });
     // A listener may already have changed the game, and started the AI's turn for that one.
@@ -352,7 +357,12 @@ export function createLocalTransport<
     try {
       const saved =
         sessionResult(definition, next) !== null
-          ? store.clear(slot)
+          ? store.clear(slot).catch(() => {
+              // A resigned game left in storage as it was before would come back on the next
+              // visit: overwrite it with the ending, which `restore` drops like any finished game.
+              if (next.ending === undefined) return;
+              return store.save(slot, { settings, record: toRecord(next), inProgress: false });
+            })
           : store.save(slot, {
               settings,
               record: toRecord(next),
@@ -514,6 +524,17 @@ export function createLocalTransport<
       }
       commit(next);
     },
+    // Against the AI: the player gives up, every AI seat wins, and the move the AI may be choosing
+    // is dropped (`show` cancels its turn).
+    resign: () => {
+      if (disposed || session === null || mode !== "ai") return;
+      const player = seats.findIndex((controller) => controller.kind === "human");
+      if (player === -1) return;
+      const ended = concede(definition, session, { reason: ENDING_REASON.Resigned, player });
+      if (ended.ok) commit(ended.value);
+    },
+    // Nobody can leave a game on one device.
+    claimAbandoned: () => undefined,
     // A disposed transport is dead: a late click from an unmounted screen (or React's development
     // double mount) must neither change the game nor write over what the live transport saves,
     // and a move the AI is still choosing is dropped.
