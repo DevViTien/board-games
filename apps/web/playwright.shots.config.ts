@@ -25,6 +25,10 @@ export default defineConfig({
     baseURL: `http://localhost:${PORT}`,
     locale: "vi-VN",
     trace: "retain-on-failure",
+
+    // Ludo's 3D die draws with WebGL: headless Chromium falls back to SwiftShader, which recent
+    // versions only allow with this flag (`e2e/ludo-throw.spec.ts` checks the 3D throw ran).
+    launchOptions: { args: ["--enable-unsafe-swiftshader"] },
   },
   // One folder per project, holding its PNGs: `.ui-shots/<viewport>-<scheme>/<screen>.png`.
   // Playwright empties the folders of the projects it runs before each run.

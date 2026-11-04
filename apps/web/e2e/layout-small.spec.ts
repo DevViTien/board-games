@@ -229,15 +229,17 @@ test.describe("a phone turned sideways, 844 × 390", () => {
     expect(await scrollsSideways(page)).toBe(false);
   });
 
-  test("Cờ cá ngựa xoay ngang, four horses to choose: the board stays while the column scrolls", async ({
+  test("Cờ cá ngựa xoay ngang, four horses to choose: every horse to choose on the board, on screen", async ({
     page,
   }) => {
     await openLocal(page, "ludo", savedLudoGame(4, LUDO_FOUR_CHOICES));
     await expect(horseChoices(page)).toHaveCount(4);
 
-    await horseChoices(page).last().scrollIntoViewIfNeeded();
-    await expect(horseChoices(page).last()).toBeInViewport({ ratio: 1 });
+    // The choices are the horses themselves: on the board, with it, no list to scroll to.
     await expect(anyBoard(page)).toBeInViewport({ ratio: 1 });
+    for (const choice of await horseChoices(page).all()) {
+      await expect(choice).toBeInViewport({ ratio: 1 });
+    }
   });
 
   for (const gameId of ["tictactoe", "caro"] as const) {

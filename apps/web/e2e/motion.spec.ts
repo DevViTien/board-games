@@ -1,6 +1,13 @@
 import { expect, type Page, test } from "@playwright/test";
 
-import { startLocalGame } from "./helpers";
+import {
+  horseChoices,
+  LUDO_FOUR_CHOICES,
+  PAGE_WITHOUT_STORAGE,
+  savedLudoGame,
+  startLocalGame,
+  writeSaved,
+} from "./helpers";
 
 // Design §10 of `polish-accessibility-and-mobile`: a game's card lifts when pointed at or reached
 // with Tab, without pushing anything around; nothing moves when motion is reduced; nothing stays
@@ -74,6 +81,42 @@ test.describe("with a mouse", () => {
           () => document.getAnimations().filter((a) => a.playState === "running").length,
         ),
       ).toBe(0);
+    });
+  });
+});
+
+test.describe("Cờ cá ngựa's horses to choose", () => {
+  async function openChoices(page: Page) {
+    await page.goto(PAGE_WITHOUT_STORAGE);
+    await writeSaved(page, "ludo:local", savedLudoGame(4, LUDO_FOUR_CHOICES));
+    await page.goto("/play/ludo/local");
+    await expect(horseChoices(page)).toHaveCount(4);
+  }
+  const bobbing = (page: Page) =>
+    page.evaluate(
+      () =>
+        document
+          .getAnimations()
+          .filter(
+            (animation) =>
+              animation.playState === "running" &&
+              animation instanceof CSSAnimation &&
+              animation.animationName === "piece-bob",
+          ).length,
+    );
+
+  test("bob on their squares", async ({ page }) => {
+    await openChoices(page);
+    expect(await bobbing(page)).toBe(4);
+  });
+
+  test.describe("when motion is reduced", () => {
+    test.use({ reducedMotion: "reduce" });
+
+    test("stand still, still ringed", async ({ page }) => {
+      await openChoices(page);
+      expect(await bobbing(page)).toBe(0);
+      await expect(page.locator("[data-ring]")).toHaveCount(4);
     });
   });
 });

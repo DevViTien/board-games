@@ -16,6 +16,9 @@ export default defineConfig({
     // The UI language follows the browser's, so pin it; tests override it with test.use().
     locale: "vi-VN",
     trace: "on-first-retry",
+    // Ludo's 3D die draws with WebGL: headless Chromium falls back to SwiftShader, which recent
+    // versions only allow with this flag (`e2e/ludo-throw.spec.ts` checks the 3D throw ran).
+    launchOptions: { args: ["--enable-unsafe-swiftshader"] },
   },
   projects: [
     // The laptop the design is checked at (redesign-game-boards): board, turn and buttons fit

@@ -13,7 +13,11 @@ import {
   rollButton,
   ROOM_URL,
   status,
+  tapHorse,
 } from "./helpers";
+
+// The 2D die, which shows each roll at once: the throw of the 3D die is `ludo-throw.spec.ts`'s.
+test.use({ reducedMotion: "reduce" });
 
 // Cờ cá ngựa rooms for three or four, with seats the host gives to the computer: the server plays
 // them (change `add-room-ai-seats`). Real dice decide the game, so these tests only check what
@@ -51,7 +55,7 @@ async function playOnlineTurn(page: Page): Promise<void> {
     const face = await lastRolledFace(page);
     if ((await horseChoices(page).count()) > 0) {
       const rolled = await ludoPly(page);
-      await horseChoices(page).first().click();
+      await tapHorse(page, horseChoices(page).first());
       await expect.poll(() => ludoPly(page)).toBeGreaterThan(rolled);
     }
     if (face !== 6) return;

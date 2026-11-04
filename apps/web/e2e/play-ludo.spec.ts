@@ -3,6 +3,7 @@ import { type Browser, expect, type Page, test } from "@playwright/test";
 import {
   choose,
   die,
+  expectHorseChoices,
   horseChoices,
   horsePositions,
   lastRoll,
@@ -13,6 +14,7 @@ import {
   rollButton,
   savedLudoGame,
   status,
+  tapHorse,
   writeSaved,
 } from "./helpers";
 
@@ -25,6 +27,9 @@ const COLOURS = {
   4: ["Đỏ", "Xanh dương", "Vàng", "Xanh lá"],
 } as const;
 type Players = keyof typeof COLOURS;
+
+// The 2D die, which shows each roll at once: the throw of the 3D die is `ludo-throw.spec.ts`'s.
+test.use({ reducedMotion: "reduce" });
 
 /** From the menu's Cờ cá ngựa card, through the setup screen, to a new game for `players`. */
 async function startLudo(page: Page, mode: "Cùng máy" | "Đấu với máy", players: Players) {
@@ -131,8 +136,8 @@ test("jumps to the next gate on a 1 with the way clear, as the only choice for t
   await page.goto("/play/ludo/local");
 
   await expect(horsePositions(page).first()).toHaveText("Đỏ, ngựa 1: ô 5");
-  await expect(horseChoices(page)).toHaveText(["Ngựa 1: tới ô 14"]);
-  await horseChoices(page).first().click();
+  await expectHorseChoices(page, ["Ngựa 1: tới ô 14"]);
+  await tapHorse(page, horseChoices(page).first());
 
   await expect(horsePositions(page).first()).toHaveText("Đỏ, ngựa 1: ô 14 (vừa đi)");
   await expect(status(page)).toHaveText("Đến lượt Vàng");
@@ -163,23 +168,27 @@ test.describe("on a phone 360 px wide, with reduced motion", () => {
     );
     await page.goto("/play/ludo/local");
 
-    await expect(horseChoices(page)).toHaveText([
+    await expectHorseChoices(page, [
       "Ngựa 1: tới ô 10",
       "Ngựa 2: ra chuồng",
       "Ngựa 3: ra chuồng",
       "Ngựa 4: ra chuồng",
     ]);
     expect(await scrollsSideways(page)).toBe(false);
-    for (const control of [rollButton(page), ...(await horseChoices(page).all())]) {
-      const box = await control.boundingBox();
+    // The roll button as before; each horse to choose, a target of at least 24 × 24 px.
+    const roll = await rollButton(page).boundingBox();
+    expect(roll?.height ?? 0).toBeGreaterThanOrEqual(44);
+    expect((roll?.x ?? Infinity) + (roll?.width ?? 0)).toBeLessThanOrEqual(360);
+    for (const choice of await horseChoices(page).all()) {
+      const box = await choice.boundingBox();
       expect(box).not.toBeNull();
-      expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+      expect(box?.height ?? 0).toBeGreaterThanOrEqual(24);
+      expect(box?.width ?? 0).toBeGreaterThanOrEqual(24);
+      expect(box?.x ?? -1).toBeGreaterThanOrEqual(0);
       expect((box?.x ?? Infinity) + (box?.width ?? 0)).toBeLessThanOrEqual(360);
     }
 
-    const second = horseChoices(page).nth(1);
-    if (hasTouch) await second.tap();
-    else await second.click();
+    await tapHorse(page, horseChoices(page).nth(1), hasTouch);
 
     await expect(horsePositions(page).nth(1)).toHaveText("Đỏ, ngựa 2: ô 1 (vừa đi)");
     // A 6: Red rolls again.

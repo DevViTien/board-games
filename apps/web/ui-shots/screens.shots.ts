@@ -497,13 +497,65 @@ test("Cờ cá ngựa before the first roll", async ({ page }) => {
   await expect(page.getByRole("img", { name: "Xúc xắc: Đỏ sắp gieo" })).toBeVisible();
   await shoot(page, "13-ludo-first-roll");
 
-  // A roll (random: with no horse out, any number but 6 loses the turn): the die tumbling in Red's
-  // frame, then at rest waiting for the next player, the roll before beside it.
+  // A roll (random: with no horse out, any number but 6 loses the turn), once its throw is over:
+  // the die at rest, waiting for the next player, the roll before beside it.
   await rollButton(page).click();
-  await shoot(page, "13b-ludo-rolling");
+  await expect(page.locator('[data-throw="3d"]')).toHaveCount(0, { timeout: 5000 });
   await expect(page.locator("[data-ludo-hint]")).toHaveText(/gieo được [1-6]/);
   await page.waitForTimeout(600);
   await shoot(page, "13c-ludo-after-roll");
+});
+
+test("Cờ cá ngựa: the throw of the 3D die, held, flying, at rest", async ({ page }) => {
+  // Time stands still between the shots (`page.clock`): the die is where the throw has it.
+  await page.clock.install();
+  await page.goto(PAGE_WITHOUT_STORAGE);
+  await writeSaved(page, "ludo:local", savedLudoGame(4, []));
+  await page.goto("/play/ludo/local");
+  await expect(rollButton(page)).toBeVisible();
+  // The 3D die loads while the page is idle.
+  await expect(async () => {
+    await page.clock.runFor(500);
+    await expect(rollButton(page)).toHaveAttribute("data-dice", "3d", { timeout: 200 });
+  }).toPass({ timeout: 20_000 });
+  await page.clock.runFor(2000);
+
+  const overlay = page.locator('[data-throw="3d"]');
+  const box = await rollButton(page).boundingBox();
+  await page.mouse.move((box?.x ?? 0) + (box?.width ?? 0) / 2, (box?.y ?? 0) + 20);
+  await page.mouse.down();
+  await page.clock.runFor(900);
+  await expect(overlay).toHaveAttribute("data-phase", "hold");
+  await shootScreen(page, "13d-ludo-holding");
+
+  await page.mouse.up();
+  await page.clock.runFor(450);
+  await expect(overlay).toHaveAttribute("data-phase", "fly");
+  await shootScreen(page, "13e-ludo-flying");
+
+  await expect(async () => {
+    await page.clock.runFor(100);
+    await expect(overlay).toHaveAttribute("data-phase", "rest", { timeout: 100 });
+  }).toPass({ timeout: 10_000 });
+  await shootScreen(page, "13f-ludo-result");
+});
+
+test("Cờ cá ngựa: a horse to choose previewed, its square and the horse it would kick", async ({
+  page,
+}) => {
+  await page.goto(PAGE_WITHOUT_STORAGE);
+  await writeSaved(page, "ludo:local", savedLudoGame(4, LUDO_FOUR_CHOICES));
+  await page.goto("/play/ludo/local");
+  await expect(horseChoices(page)).toHaveCount(4);
+  // From the keyboard on every device: the first horse to choose, focused, previewed.
+  await horseChoices(page).first().focus();
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("ArrowLeft");
+  await expect(page.locator("[data-target]")).toHaveCount(1);
+  await shoot(page, "09e-ludo-preview");
+
+  await page.setViewportSize({ width: 360, height: 780 });
+  await shoot(page, "09f-ludo-preview-360");
 });
 
 /** Opens a same-device Cờ vua game saved with `moves` (UCI). */

@@ -10,6 +10,7 @@ import {
   type Browser,
   type BrowserContext,
   expect,
+  type Locator,
   type Page,
   type WebSocketRoute,
 } from "@playwright/test";
@@ -268,8 +269,33 @@ export function savedLudoGame(playerCount: 2 | 3 | 4, steps: readonly LudoStep[]
 }
 
 export const rollButton = (page: Page) => page.getByRole("button", { name: "Gieo xúc xắc" });
+/**
+ * The horses that may move: see-through buttons laid over them, for the keyboard and screen
+ * readers. A touch or a click goes through them to the board (`tapHorse`).
+ */
 export const horseChoices = (page: Page) =>
   page.getByRole("group", { name: "Chọn ngựa" }).getByRole("button");
+
+/** The horses that may move, by what they are read as ("Ngựa 1: ra chuồng"), in order. */
+export async function expectHorseChoices(page: Page, names: readonly string[]): Promise<void> {
+  await expect(horseChoices(page)).toHaveCount(names.length);
+  for (const [index, name] of names.entries()) {
+    await expect(horseChoices(page).nth(index)).toHaveAccessibleName(name);
+  }
+}
+
+/**
+ * Touches (or clicks) the horse a choice is laid over, at the centre of its figure, as a finger
+ * would: the board takes the horse nearest the touch.
+ */
+export async function tapHorse(page: Page, choice: Locator, touch = false): Promise<void> {
+  const box = await choice.boundingBox();
+  if (box === null) throw new Error("The horse is not on screen");
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  if (touch) await page.touchscreen.tap(x, y);
+  else await page.mouse.click(x, y);
+}
 export const die = (page: Page) => page.getByRole("img", { name: /^Xúc xắc/ });
 /** The roll before, shown beside the die once it waits for the next roll. */
 export const lastRoll = (page: Page) => page.locator("[data-ludo-last-roll]");
