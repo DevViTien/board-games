@@ -7,6 +7,7 @@ import {
   toRecord,
 } from "@board-games/engine";
 import { ludo, LUDO_DEFAULT_OPTIONS } from "@board-games/games";
+import type { ChatBody } from "@board-games/protocol";
 import { expect, type Page, test } from "@playwright/test";
 
 import {
@@ -992,5 +993,179 @@ for (const width of [360, 390, 1280] as const) {
 
     await page.goto("/khong-co");
     await shootScreen(page, `32-top-bar-not-found-${String(width)}`);
+  });
+}
+
+// --- Chat in a room (change `add-room-chat`) -------------------------------------------------------
+
+const SAY_LONG =
+  "Bạn ơi đi nhanh lên, mình sắp phải đi đón con rồi nên ván này cố xong sớm nha, nhờ bạn đó, cảm ơn nhiều lắm";
+
+const CHAT_MESSAGES: readonly ChatBody[] = [
+  { kind: "preset", preset: "hello" },
+  { kind: "text", text: SAY_LONG },
+  { kind: "reaction", reaction: "like" },
+  { kind: "text", text: "Khai cuộc này mình mới học" },
+  { kind: "text", text: "Xem ở https://example.com/khai-cuoc-italia nè" },
+  { kind: "preset", preset: "nice-move" },
+];
+
+/** A room with an opponent: Cờ vua seen by Black, or Cờ cá ngựa for three. */
+function openChatRoom(page: Page, gameId: "chess" | "ludo") {
+  return gameId === "chess"
+    ? openFakeRoom(
+        page,
+        {
+          gameId: "chess",
+          seats: [
+            { kind: "human", name: "Minh", standIn: false },
+            { kind: "human", name: "Lan", standIn: false },
+          ],
+          record: chessRecord(["e2e4", "e7e5", "g1f3"]),
+        },
+        1,
+      )
+    : openFakeRoom(page, {
+        gameId: "ludo",
+        seats: [
+          { kind: "human", name: "Lan", standIn: false },
+          { kind: "human", name: "Minh", standIn: false },
+          { kind: "ai" },
+          { kind: "ai" },
+        ],
+        record: ludoRecord(4, LUDO_FOUR_CHOICES),
+      });
+}
+
+const CHAT_SIZES = [
+  { suffix: "", viewport: null },
+  { suffix: "-360", viewport: { width: 360, height: 740 } },
+  { suffix: "-land", viewport: { width: 844, height: 390 } },
+] as const;
+
+for (const { suffix, viewport } of CHAT_SIZES) {
+  test(`the chat of a game, in every state${suffix}`, async ({ page }) => {
+    test.skip(viewport !== null && !onPhone(), "a phone's sizes");
+    if (viewport !== null) await page.setViewportSize(viewport);
+
+    const room = await openChatRoom(page, "chess");
+    await expect(board(page)).toBeVisible();
+    await shootScreen(page, `40-chat-chess-button${suffix}`);
+
+    // Sent while the chat is closed: a bubble, then the count alone.
+    room.receive({ kind: "text", text: "Chào, ván này mình cầm Trắng nhé" });
+    room.receive({ kind: "text", text: SAY_LONG });
+    await expect(page.locator("[data-chat-bubble]")).toBeVisible();
+    await shootScreen(page, `40a-chat-chess-bubble${suffix}`);
+    await expect(page.locator("[data-chat-bubble]")).toBeHidden({ timeout: 6000 });
+    await shootScreen(page, `40b-chat-chess-count${suffix}`);
+
+    // Open: every kind of message, and what can be sent.
+    room.receive(...CHAT_MESSAGES);
+    await page.locator("[data-chat-button]").click();
+    await expect(page.getByRole("log")).toBeVisible();
+    await page.getByRole("textbox", { name: "Viết tin nhắn" }).fill("Chào Minh");
+    await page.getByRole("textbox", { name: "Viết tin nhắn" }).press("Enter");
+    await page.getByRole("button", { name: "Gửi Tuyệt" }).click();
+    await expect(page.getByRole("img", { name: "Tuyệt" })).toBeVisible();
+    await shootScreen(page, `40c-chat-chess-open${suffix}`);
+
+    // Nothing sent back: the message is told as not sent.
+    room.setChatAnswers(false);
+    await page.getByRole("button", { name: "Chơi hay đấy" }).click();
+    await expect(page.locator("#room-chat").getByRole("alert")).toBeVisible({ timeout: 10_000 });
+    await shootScreen(page, `40d-chat-chess-failed${suffix}`);
+
+    // Muted: no bubble, no count, and the panel says so.
+    await page.getByRole("switch", { name: "Tắt chat" }).click();
+    await expect(page.getByText(/Chat đang tắt:/u)).toBeVisible();
+    await shootScreen(page, `40e-chat-chess-muted${suffix}`);
+    await page.getByRole("button", { name: "Đóng chat" }).click();
+    await shootScreen(page, `40f-chat-chess-muted-closed${suffix}`);
+  });
+
+  test(`the chat of Cờ cá ngựa, and the lobby${suffix}`, async ({ page }) => {
+    test.skip(viewport !== null && !onPhone(), "a phone's sizes");
+    if (viewport !== null) await page.setViewportSize(viewport);
+
+    const room = await openChatRoom(page, "ludo");
+    await expect(horseChoices(page)).toHaveCount(4);
+    room.receive(...CHAT_MESSAGES);
+    await page.getByRole("button", { name: /^Chat \d+/u }).focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("log")).toBeVisible();
+    await shootScreen(page, `41-chat-ludo-open${suffix}`);
+    await page.keyboard.press("Escape");
+    room.receive({ kind: "reaction", reaction: "fire" });
+    await expect(page.locator("[data-chat-reaction]")).toBeVisible();
+    // Its animation at its fullest: between 18 % and 75 % of 1800 ms.
+    await page.waitForTimeout(600);
+    await shootScreen(page, `41a-chat-ludo-reaction${suffix}`, { moving: true });
+
+    const lobby = await openFakeRoom(page, {
+      gameId: "ludo",
+      seats: [
+        { kind: "human", name: "Lan", standIn: false },
+        { kind: "human", name: "Minh", standIn: false },
+        null,
+      ],
+      record: ludoRecord(3, []),
+    });
+    await expect(page.getByRole("region", { name: "Người chơi" })).toBeVisible();
+    lobby.receive(...CHAT_MESSAGES);
+    await page.getByRole("button", { name: /^Chat/u }).click();
+    await expect(page.getByRole("log")).toBeVisible();
+    await shootScreen(page, `41b-chat-lobby-open${suffix}`);
+  });
+
+  test(`the chat in the lobby, where a laptop has no room beside it${suffix}`, async ({ page }) => {
+    test.skip(viewport !== null || onPhone(), "a laptop");
+    await page.setViewportSize({ width: 1024, height: 768 });
+    const lobby = await openFakeRoom(page, {
+      gameId: "ludo",
+      seats: [
+        { kind: "human", name: "Lan", standIn: false },
+        { kind: "human", name: "Minh", standIn: false },
+        null,
+      ],
+      record: ludoRecord(3, []),
+    });
+    await expect(page.getByRole("region", { name: "Người chơi" })).toBeVisible();
+    lobby.receive(...CHAT_MESSAGES);
+    await page.getByRole("button", { name: /^Chat/u }).click();
+    await expect(page.getByRole("log")).toBeVisible();
+    await shootScreen(page, "41c-chat-lobby-1024");
+  });
+
+  test(`the chat once a game is over${suffix}`, async ({ page }) => {
+    test.skip(viewport !== null && !onPhone(), "a phone's sizes");
+    if (viewport !== null) await page.setViewportSize(viewport);
+
+    const room = await openFakeRoom(page, {
+      gameId: "chess",
+      seats: [
+        { kind: "human", name: "Lan", standIn: false },
+        { kind: "human", name: "Minh", standIn: false },
+      ],
+      record: { ...chessRecord(["e2e4", "e7e5"]), ending: { reason: "resigned", player: 1 } },
+    });
+    await expect(page.getByRole("button", { name: "Chơi lại" }).first()).toBeVisible();
+    room.receive({ kind: "preset", preset: "good-game" }, { kind: "text", text: "Ván nữa nha" });
+    await shootScreen(page, `42-chat-over-bubble${suffix}`);
+    await page.getByRole("button", { name: /^Chat \d+/u }).click();
+    await expect(page.getByRole("log")).toBeVisible();
+    await shootScreen(page, `42a-chat-over-open${suffix}`);
+  });
+
+  test(`the tab when the chat's button is off the screen${suffix}`, async ({ page }) => {
+    test.skip(viewport?.height !== 740 || !onPhone(), "the phone where it is off the screen");
+    await page.setViewportSize(viewport ?? { width: 360, height: 740 });
+
+    const room = await openChatRoom(page, "ludo");
+    await expect(horseChoices(page)).toHaveCount(4);
+    room.receive({ kind: "text", text: "Ngựa mình sắp về đích rồi" });
+    await expect(page.locator("[data-chat-bubble]")).toBeHidden({ timeout: 8000 });
+    await expect(page.locator("[data-chat-peek]")).toBeVisible();
+    await shootScreen(page, `43-chat-peek${suffix}`);
   });
 }

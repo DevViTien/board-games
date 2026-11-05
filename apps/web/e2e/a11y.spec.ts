@@ -18,6 +18,8 @@ import {
   ROOM_URL,
   savedChessGame,
   savedLudoGame,
+  savedMoveCount,
+  SLOT,
   startAiGame,
   startLocalGame,
   status,
@@ -48,6 +50,8 @@ for (const colorScheme of SCHEMES) {
       test("Menu ở giao diện tối: the menu with a game in progress", async ({ page }) => {
         await startLocalGame(page);
         await play(page, [1, 1]);
+        // The save is not awaited by the move: leaving at once could abort it.
+        await expect.poll(() => savedMoveCount(page, SLOT.local)).toBe(1);
         await page.goto("/");
         await expect(page.getByRole("heading", { name: "Tiếp tục ván dở" })).toBeVisible();
         await expectNoAxeViolations(page, "menu");
@@ -248,6 +252,101 @@ for (const colorScheme of SCHEMES) {
         await expect(page.getByRole("group", { name: "Bạn · Đen" })).toBeVisible();
         await expect(page.getByText(/^Minh chưa đi · 2:1\d$/u)).toBeVisible();
         await expectNoAxeViolations(page, "online-chess-black-waiting");
+      });
+
+      test("the chat: open with every kind of message, a bubble, not sent, muted", async ({
+        page,
+      }) => {
+        const room = await openFakeRoom(
+          page,
+          {
+            gameId: "chess",
+            seats: [
+              { kind: "human", name: "Minh", standIn: false },
+              { kind: "human", name: "Lan", standIn: false },
+            ],
+            record: chessRecord(["e2e4", "e7e5"]),
+          },
+          1,
+        );
+        await expect(page.getByRole("button", { name: "Chat" })).toBeAttached();
+
+        room.receive({ kind: "text", text: "Chào, ván này mình cầm Trắng nhé" });
+        await expect(page.locator("[data-chat-bubble]")).toBeVisible();
+        await expectNoAxeViolations(page, "chat-bubble");
+
+        room.receive(
+          { kind: "preset", preset: "nice-move" },
+          { kind: "reaction", reaction: "like" },
+        );
+        await page.locator("[data-chat-bubble]").click();
+        await expect(page.getByRole("log")).toBeVisible();
+        await page.getByRole("textbox", { name: "Viết tin nhắn" }).fill("Chào Minh");
+        await page.getByRole("textbox", { name: "Viết tin nhắn" }).press("Enter");
+        await expect(page.getByRole("log").getByText("Chào Minh")).toBeVisible();
+        await page.getByRole("button", { name: "Chơi hay đấy" }).click();
+        await expect(page.getByRole("log").getByText("Chơi hay đấy")).toHaveCount(2);
+        await expectNoAxeViolations(page, "chat-open");
+
+        room.setChatAnswers(false);
+        await page.getByRole("button", { name: "Cảm ơn" }).click();
+        await expect(page.locator("#room-chat").getByRole("alert")).toBeVisible({
+          timeout: 10_000,
+        });
+        await expectNoAxeViolations(page, "chat-not-sent");
+
+        await page.getByRole("switch", { name: "Tắt chat" }).click();
+        await expect(page.getByText(/Chat đang tắt:/u)).toBeVisible();
+        await expectNoAxeViolations(page, "chat-muted");
+
+        await page.getByRole("button", { name: "Đóng chat" }).click();
+        await expect(page.getByRole("button", { name: "Chat đã tắt" })).toBeVisible();
+        await expectNoAxeViolations(page, "chat-muted-closed");
+
+        await room.loseConnection();
+        await page.getByRole("button", { name: "Chat đã tắt" }).click();
+        await expect(page.getByText(/Mất kết nối, chưa gửi được/u)).toBeVisible();
+        await expectNoAxeViolations(page, "chat-offline");
+      });
+
+      test("the chat in the lobby", async ({ page }) => {
+        const lobby = await openFakeRoom(page, {
+          gameId: "ludo",
+          seats: [
+            { kind: "human", name: "Lan", standIn: false },
+            { kind: "human", name: "Minh", standIn: false },
+            null,
+          ],
+          record: ludoRecord(3, []),
+        });
+        await expect(page.getByRole("button", { name: "Chat" })).toBeVisible();
+        lobby.receive({ kind: "text", text: "Chờ thêm một bạn nữa là đủ" });
+        await page.getByRole("button", { name: /^Chat 1/u }).click();
+        await expect(page.getByRole("log")).toBeVisible();
+        await expectNoAxeViolations(page, "chat-lobby");
+      });
+
+      test("the chat over a Cờ cá ngựa game", async ({ page }) => {
+        const room = await openFakeRoom(page, {
+          gameId: "ludo",
+          seats: [
+            { kind: "human", name: "Lan", standIn: false },
+            { kind: "human", name: "Minh", standIn: false },
+            { kind: "ai" },
+            { kind: "ai" },
+          ],
+          record: ludoRecord(4, []),
+        });
+        await expect(page.getByRole("button", { name: "Chat" })).toBeAttached();
+        room.receive({ kind: "reaction", reaction: "fire" });
+        await expect(page.locator("[data-chat-reaction]")).toBeVisible();
+        await expectNoAxeViolations(page, "chat-reaction");
+        await expect(
+          page.locator("[data-chat-peek]").or(page.locator("[data-chat-button]")).first(),
+        ).toBeVisible();
+        await page.getByRole("button", { name: /^Chat 1/u }).click();
+        await expect(page.getByRole("log")).toBeVisible();
+        await expectNoAxeViolations(page, "chat-ludo-open");
       });
 
       test("an online Cờ cá ngựa game, the computer playing for Minh", async ({ page }) => {

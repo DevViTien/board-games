@@ -19,14 +19,19 @@ export async function shoot(page: Page, screen: string): Promise<void> {
 
 /**
  * Saves what the screen shows now, not the whole page: a sticky bar after scrolling, a menu open,
- * what is above the fold of a small phone.
+ * what is above the fold of a small phone. `moving`: as it is mid-animation, for what an animation
+ * takes away again when finished (a reaction floating up).
  */
-export async function shootScreen(page: Page, screen: string): Promise<void> {
+export async function shootScreen(
+  page: Page,
+  screen: string,
+  { moving = false } = {},
+): Promise<void> {
   await page.evaluate(() => document.fonts.ready);
   await page.screenshot({
     path: path.join(test.info().project.outputDir, `${screen}.png`),
     fullPage: false,
-    animations: "disabled",
+    animations: moving ? "allow" : "disabled",
     caret: "hide",
   });
 }

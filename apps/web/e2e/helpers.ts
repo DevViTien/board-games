@@ -1,6 +1,7 @@
 import { applyEntry, createSession, type GameRecord, toRecord } from "@board-games/engine";
 import { chess, type ChessMove, ludo, LUDO_DEFAULT_OPTIONS } from "@board-games/games";
 import {
+  type ChatBody,
   CLOSE_CODE,
   type RoomCode,
   type RoomView,
@@ -436,30 +437,55 @@ const FAKE_ROOM_CODE = "ABC234" as RoomCode;
  * Opens a room whose server is the test: it answers the greeting with `room` (a game with every seat
  * taken, so the game shows at once) seen from seat `you`, and answers pings. `loseConnection` drops
  * the socket and leaves the client's reconnections unanswered, as when the network is gone. The
- * browser already remembers a name (Lan), so no name is asked for.
+ * browser already remembers a name (Lan), so no name is asked for. A chat message the page sends is
+ * written at once, unless `chatAnswers` is off; `receive` brings new messages from other people.
  */
 export async function openFakeRoom(
   page: Page,
-  room: Pick<RoomView, "gameId" | "seats" | "record"> & Partial<Pick<RoomView, "turnIdleMs">>,
+  room: Pick<RoomView, "gameId" | "seats" | "record"> &
+    Partial<Pick<RoomView, "turnIdleMs" | "chat">>,
   you = 0,
-): Promise<{ loseConnection: () => Promise<void> }> {
+): Promise<{
+  loseConnection: () => Promise<void>;
+  receive: (...messages: readonly ChatBody[]) => void;
+  /** Whether a chat message is answered; `false`, as a server that lost it. */
+  setChatAnswers: (answers: boolean) => void;
+  /** The room as it is now: send it again with new fields (a new game, a player gone). */
+  update: (changes: Partial<RoomView>) => void;
+}> {
   let answering = true;
+  let chatAnswers = true;
   const sockets: WebSocketRoute[] = [];
+  let current: RoomView = {
+    code: FAKE_ROOM_CODE,
+    revision: 1,
+    gameNumber: 1,
+    host: 0,
+    turnIdleMs: null,
+    chat: [],
+    ...room,
+  };
+  const broadcast = () => {
+    for (const socket of sockets) send(socket, { type: "room", room: current, you });
+  };
+  const write = (body: ChatBody, sender: { id: string; name: string; mine: boolean }) => {
+    const revision = current.revision + 1;
+    current = {
+      ...current,
+      revision,
+      chat: [...current.chat, { seq: revision, body, ...sender }].slice(-30),
+    };
+    broadcast();
+  };
   await page.routeWebSocket(/\/api\/realtime$/, (socket) => {
     sockets.push(socket);
     socket.onMessage((message) => {
       if (!answering) return;
-      const data = JSON.parse(String(message)) as { type?: string };
+      const data = JSON.parse(String(message)) as { type?: string; id?: string; body?: ChatBody };
       if (data.type === "join") {
-        const view: RoomView = {
-          code: FAKE_ROOM_CODE,
-          revision: 1,
-          gameNumber: 1,
-          host: 0,
-          turnIdleMs: null,
-          ...room,
-        };
-        send(socket, { type: "room", room: view, you });
+        send(socket, { type: "room", room: current, you });
+      } else if (data.type === "chat" && chatAnswers && data.body !== undefined) {
+        write(data.body, { id: data.id ?? "", name: "Lan", mine: true });
       } else if (data.type === "ping") {
         send(socket, { type: "pong" });
       }
@@ -480,6 +506,18 @@ export async function openFakeRoom(
       await Promise.all(
         sockets.map((socket) => socket.close({ code: CLOSE_CODE.GreetingTimeout })),
       );
+    },
+    receive: (...messages) => {
+      for (const body of messages) {
+        write(body, { id: `other-${String(current.revision)}-chat`, name: "Minh", mine: false });
+      }
+    },
+    setChatAnswers: (answers) => {
+      chatAnswers = answers;
+    },
+    update: (changes) => {
+      current = { ...current, revision: current.revision + 1, ...changes };
+      broadcast();
     },
   };
 }
