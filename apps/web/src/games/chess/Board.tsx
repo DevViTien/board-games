@@ -573,30 +573,33 @@ export function ChessBoard({
     </div>
   );
 
+  // No room kept on a phone, where height is short: the words (wrapping next to each other) push the
+  // buttons below down a line while a piece is chosen, never the board. Two reserved lines beside
+  // the board.
+  const notes = (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 lg:flex-col lg:items-start lg:gap-1">
+      {/* The board's one live region: what the selection is, in words (also on screen). */}
+      <p aria-live="polite" className="text-small text-fg-muted lg:min-h-5">
+        {hint}
+      </p>
+      {/* Read out on a shared device, whose turn line never tells the move just played; with
+            one player here, the opponent's move is told by the turn line, "check" included. */}
+      <p
+        aria-live={viewer === null ? "polite" : "off"}
+        className="flex flex-wrap items-center gap-x-2 text-small font-semibold lg:min-h-7"
+      >
+        {checked !== null && result === null && (
+          <>
+            <Badge variant="danger">{t("check.badge")}</Badge>{" "}
+            <span>{t("check.line", { player: playerLabel(seatOfColour(checked)) })}</span>
+          </>
+        )}
+      </p>
+    </div>
+  );
+
   const controls = (
     <div className="flex flex-col gap-2 lg:gap-3">
-      {/* No room kept on a phone, where height is short: the words (wrapping next to each other)
-          push the buttons below down a line while a piece is chosen, never the board. Two reserved
-          lines beside the board. */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 lg:flex-col lg:items-start lg:gap-1">
-        {/* The board's one live region: what the selection is, in words (also on screen). */}
-        <p aria-live="polite" className="text-small text-fg-muted lg:min-h-5">
-          {hint}
-        </p>
-        {/* Read out on a shared device, whose turn line never tells the move just played; with
-            one player here, the opponent's move is told by the turn line, "check" included. */}
-        <p
-          aria-live={viewer === null ? "polite" : "off"}
-          className="flex flex-wrap items-center gap-x-2 text-small font-semibold lg:min-h-7"
-        >
-          {checked !== null && result === null && (
-            <>
-              <Badge variant="danger">{t("check.badge")}</Badge>{" "}
-              <span>{t("check.line", { player: playerLabel(seatOfColour(checked)) })}</span>
-            </>
-          )}
-        </p>
-      </div>
       {claimReason !== null && (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <Button
@@ -634,6 +637,7 @@ export function ChessBoard({
   return layout({
     board: boardPart,
     controls,
+    notes,
     seatOrder: bottom === CHESS_COLOR.White ? [1, 0] : [0, 1],
   });
 }

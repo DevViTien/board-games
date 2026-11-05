@@ -14,6 +14,12 @@ interface BoardParts {
    * and right below the board instead of its players' panel. Without it, the panel as before.
    */
   readonly seatOrder?: readonly [top: PlayerIndex, bottom: PlayerIndex] | undefined;
+  /**
+   * The board's words about the position (what is selected, a check), above its controls. Apart
+   * from them because something over the column may have to show them elsewhere: online, the chat's
+   * panel covers them, and says them at its head. Their height, if kept, stays kept meanwhile.
+   */
+  readonly notes?: ReactNode;
 }
 
 /**
@@ -28,8 +34,8 @@ interface BoardParts {
 export type BoardLayout = (parts: BoardParts) => ReactNode;
 
 /** The board, then its controls below it: a board shown on its own (tests). */
-export const defaultBoardLayout: BoardLayout = ({ board, controls }) =>
-  createElement(Fragment, null, board, controls);
+export const defaultBoardLayout: BoardLayout = ({ board, notes, controls }) =>
+  createElement(Fragment, null, board, notes, controls);
 
 /** What every board receives. A board only displays and reports moves; the engine checks them. */
 export interface BoardProps<State, Move, Outcome = never> {

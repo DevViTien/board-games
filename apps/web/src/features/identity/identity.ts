@@ -2,6 +2,7 @@ import { playerIdSchema, playerNameSchema } from "@board-games/protocol";
 import { z } from "zod";
 
 import { IDENTITY_KEY, ROOM_IDENTITY_KEY_PREFIX } from "@/config/storage-keys";
+import { randomId } from "@/lib/random-id";
 
 /** Who the player is online, without an account: a name of their choice and a random id. */
 export interface Identity {
@@ -51,24 +52,13 @@ export function readIdentity(): Identity | null {
   return parsed.success ? parsed.data : null;
 }
 
-/** 16 random bytes in hex, where `crypto.randomUUID` is missing (a page over plain `http://`). */
-function randomHexId(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(16));
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
-function newPlayerId(): string {
-  // Only in a secure context: a phone opening the dev server by its LAN address has no `randomUUID`.
-  return typeof crypto.randomUUID === "function" ? crypto.randomUUID() : randomHexId();
-}
-
 /**
  * A player id for a visitor who has not chosen a name yet: a new one each time, remembered nowhere.
  * The room page greets with it (change `ask-name-in-lobby`) and remembers it, with the name, only
  * once the player chooses one in the lobby (`saveName`).
  */
 export function guestPlayerId(): string {
-  return newPlayerId();
+  return randomId();
 }
 
 /**
@@ -86,7 +76,7 @@ export function saveName(name: string, sessionPlayerId?: string): Identity {
   if (sessionPlayerId !== undefined && remembered !== undefined && remembered !== sessionPlayerId) {
     return { playerId: sessionPlayerId, name };
   }
-  const identity: Identity = { playerId: sessionPlayerId ?? remembered ?? newPlayerId(), name };
+  const identity: Identity = { playerId: sessionPlayerId ?? remembered ?? randomId(), name };
   inMemory = identity;
   try {
     window.localStorage.setItem(IDENTITY_KEY, JSON.stringify(identity));

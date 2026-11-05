@@ -13,6 +13,12 @@ export const IDENTITY_KEY = "board-games:identity";
 // reload greets with the id that holds the seat even when another tab remembered another one.
 export const ROOM_IDENTITY_KEY_PREFIX = "board-games:room-identity:";
 
+// localStorage: whether the player muted the chat, for every room of this browser.
+export const CHAT_MUTED_KEY = "board-games:chat-muted";
+
+// sessionStorage: the last chat message read, by its `seq`, one entry per room ("<prefix><code>").
+export const CHAT_READ_KEY_PREFIX = "board-games:chat-read:";
+
 // Cookie: the theme the player picked ("light" or "dark"; none follows the system). A cookie, not
 // localStorage, so the server renders the page in that theme from the first paint.
 export const THEME_COOKIE = "theme";

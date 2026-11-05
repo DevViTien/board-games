@@ -448,7 +448,65 @@ html {
   /* A line drawn from one end to the other: an SVG stroke with `pathLength="1"` and
      `stroke-dasharray: 1`; at rest (reduced motion) it shows whole. Within AI_MIN_DELAY_MS. */
   --animate-draw-line: draw-line 300ms ease-out;
+  /* A chat bubble coming down under the top bar, or, as `chat-panel`, the chat opening. */
+  --animate-chat-bubble: chat-bubble 180ms var(--ease-standard) both;
+  --animate-chat-panel: chat-panel 200ms var(--ease-standard) both;
+  /* Without motion: a plain fade, whatever appears. */
+  --animate-chat-fade: chat-fade 120ms linear both;
+  /* A reaction floating up over the page, gone after REACTION_MS (features/chat), or only fading. */
+  --animate-chat-reaction: chat-reaction 1800ms ease-out both;
+  --animate-chat-reaction-still: chat-reaction-still 1800ms linear both;
 
+  @keyframes chat-bubble {
+    from {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+  }
+  @keyframes chat-panel {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+  @keyframes chat-fade {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes chat-reaction {
+    0% {
+      opacity: 0;
+      transform: translateY(14px) scale(0.7);
+    }
+    18% {
+      opacity: 1;
+      transform: translateY(0) scale(1.08);
+    }
+    30% {
+      transform: translateY(-2px) scale(1);
+    }
+    75% {
+      opacity: 1;
+      transform: translateY(-8px);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-14px);
+    }
+  }
+  @keyframes chat-reaction-still {
+    0% {
+      opacity: 0;
+    }
+    15%,
+    80% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
   @keyframes dice-roll {
     0% {
       transform: rotate(-200deg) scale(0.6);

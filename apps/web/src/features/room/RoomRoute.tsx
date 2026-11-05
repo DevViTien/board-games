@@ -1,11 +1,20 @@
 "use client";
 
-import { type GameDefinition, listOptionChoices, type OptionChoiceList } from "@board-games/engine";
+import {
+  type GameDefinition,
+  listOptionChoices,
+  type OptionChoiceList,
+  type PlayerIndex,
+} from "@board-games/engine";
 import { isRegisteredGameId, type RegisteredGameId } from "@board-games/games/ids";
+import type { RejectionCode, RoomView } from "@board-games/protocol";
 import { buttonVariants } from "@board-games/ui";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import {
+  type ComponentType,
+  memo,
+  type ReactNode,
   Suspense,
   use,
   useCallback,
@@ -16,6 +25,11 @@ import {
   useSyncExternalStore,
 } from "react";
 
+import { ChatButton } from "@/features/chat/ChatButton";
+import { ChatLayer } from "@/features/chat/ChatLayer";
+import { ChatNotes } from "@/features/chat/ChatNotes";
+import { ChatPlaySlot } from "@/features/chat/ChatPlaySlot";
+import { type ChatSlotContext, chatVisible, useRoomChat } from "@/features/chat/use-room-chat";
 import {
   guestPlayerId,
   pinRoomIdentity,
@@ -36,7 +50,7 @@ import {
   type RoomConnection,
 } from "@/transport/room-connection";
 import type { OpenSocket } from "@/transport/socket";
-import { CONNECTION_STATUS } from "@/transport/types";
+import { CONNECTION_STATUS, type ConnectionStatus } from "@/transport/types";
 
 import { ROOM_PROBLEM, roomProblemOf } from "./room-problem";
 import { RoomError } from "./RoomError";
@@ -220,13 +234,71 @@ interface RoomContentProps {
   readonly onRetry: () => void;
 }
 
+/** What the page around the game reads of a connection: no chat, which renders by itself. */
+interface ContentView {
+  readonly status: ConnectionStatus;
+  /** The room as of its last change this page shows: its chat and revision may be older. */
+  readonly room: RoomView | null;
+  readonly you: PlayerIndex | null;
+  readonly failure: RejectionCode | null;
+  readonly slow: boolean;
+}
+
+/** All of a room the page around the game shows. Its moves count only by number: no long JSON. */
+function contentKey(room: RoomView | null): string {
+  if (room === null) return "";
+  const { code, gameId, gameNumber, seats, host, record } = room;
+  return JSON.stringify([
+    code,
+    gameId,
+    gameNumber,
+    seats,
+    host,
+    record.options,
+    record.entries.length,
+  ]);
+}
+
+/**
+ * The connection as `RoomContent` needs it: the same object until something it shows changes, so a
+ * chat message, which brings a new room every time, does not render the page, or the game below it.
+ */
+function contentViewOf(connection: RoomConnection): () => ContentView {
+  let view: ContentView | null = null;
+  let key = "";
+  return () => {
+    const { status, room, you, failure, slow } = connection.getSnapshot();
+    const nextKey = contentKey(room);
+    if (
+      view?.status !== status ||
+      view.you !== you ||
+      view.failure !== failure ||
+      view.slow !== slow ||
+      key !== nextKey
+    ) {
+      view = { status, room, you, failure, slow };
+      key = nextKey;
+    }
+    return view;
+  };
+}
+
 function RoomContent({ connection, name, onSit, onBroken, onRetry }: RoomContentProps) {
-  const snapshot = useSyncExternalStore(
-    connection.subscribe,
-    connection.getSnapshot,
-    connection.getSnapshot,
+  const readView = useMemo(() => contentViewOf(connection), [connection]);
+  const view = useSyncExternalStore(connection.subscribe, readView, readView);
+  const { status, room, you } = view;
+  // Above the lobby and the game, so its state survives one replacing the other. Knows nothing of
+  // the game: a message changes neither this component nor the game below.
+  const chat = useRoomChat(connection);
+  const ChatSlot = useCallback(
+    (context: ChatSlotContext) => <ChatPlaySlot chat={chat} {...context} />,
+    [chat],
   );
-  const { status, room, you } = snapshot;
+  const renderChatNotes = useCallback(
+    (notes: ReactNode) => <ChatNotes chat={chat}>{notes}</ChatNotes>,
+    [chat],
+  );
+  const hasChat = chatVisible(room, you);
   const unknownGame = room !== null && !isRegisteredGameId(room.gameId);
   // The lobby names the room's rules, and offers AI seats, from the game's code, loaded meanwhile
   // for the game itself.
@@ -252,15 +324,16 @@ function RoomContent({ connection, name, onSit, onBroken, onRetry }: RoomContent
 
   // Gave up: the room is gone, every seat is taken by others, or this app is older than the server.
   if (status === CONNECTION_STATUS.Failed) {
-    return <RoomError problem={roomProblemOf(snapshot.failure)} onRetry={onRetry} focusTitle />;
+    return <RoomError problem={roomProblemOf(view.failure)} onRetry={onRetry} focusTitle />;
   }
-  if (room === null) return <RoomJoining slow={snapshot.slow} />;
+  if (room === null) return <RoomJoining slow={view.slow} />;
   if (!isRegisteredGameId(room.gameId)) {
     return <RoomError problem={ROOM_PROBLEM.Broken} onRetry={onRetry} focusTitle />;
   }
+  let screen: ReactNode;
   if (you === null || room.seats.some((seat) => seat === null)) {
     if (!wasInLobby) setWasInLobby(true);
-    return (
+    screen = (
       <RoomLobby
         gameId={room.gameId}
         room={room}
@@ -273,19 +346,29 @@ function RoomContent({ connection, name, onSit, onBroken, onRetry }: RoomContent
         onAiSeat={(seat, on) => connection.send({ type: "ai-seat", seat, on })}
         aiSeatRefusals={aiSeatRefusals}
         onResume={connection.resume}
+        chat={hasChat ? <ChatButton chat={chat} className="ml-auto h-11 px-3" /> : undefined}
       />
+    );
+  } else {
+    screen = (
+      <Suspense fallback={<PlayLoading />}>
+        <RoomGame
+          gameId={room.gameId}
+          connection={connection}
+          focusTitle={wasInLobby}
+          onBroken={onBroken}
+          onRetry={onRetry}
+          chat={hasChat ? ChatSlot : undefined}
+          chatNotes={hasChat ? renderChatNotes : undefined}
+        />
+      </Suspense>
     );
   }
   return (
-    <Suspense fallback={<PlayLoading />}>
-      <RoomGame
-        gameId={room.gameId}
-        connection={connection}
-        focusTitle={wasInLobby}
-        onBroken={onBroken}
-        onRetry={onRetry}
-      />
-    </Suspense>
+    <>
+      {screen}
+      <ChatLayer chat={chat} />
+    </>
   );
 }
 
@@ -296,15 +379,20 @@ interface RoomGameProps {
   readonly focusTitle: boolean;
   readonly onBroken: () => void;
   readonly onRetry: () => void;
+  readonly chat: ComponentType<ChatSlotContext> | undefined;
+  readonly chatNotes: ((notes: ReactNode) => ReactNode) | undefined;
 }
 
-/** Loads the game's code (a failed load goes to the route's error page), then plays it online. */
-function RoomGame({ gameId, ...rest }: RoomGameProps) {
+/**
+ * Loads the game's code (a failed load goes to the route's error page), then plays it online. Kept
+ * from rendering again with the page around it: only the transport tells the game something changed.
+ */
+const RoomGame = memo(function RoomGame({ gameId, ...rest }: RoomGameProps) {
   const entry = use(loadGameEntry(gameId));
   return entry.open((definition, ui) => (
     <OnlineGame gameId={entry.id} definition={definition} ui={ui} {...rest} />
   ));
-}
+});
 
 interface OnlineGameProps<State, Move, Outcome, Options extends object> extends RoomGameProps {
   readonly definition: GameDefinition<State, Move, Outcome, Options>;
@@ -350,6 +438,8 @@ interface OnlineGameScreenProps<State, Move, Outcome> {
   readonly onResume: () => void;
   readonly onBroken: () => void;
   readonly onRetry: () => void;
+  readonly chat: ComponentType<ChatSlotContext> | undefined;
+  readonly chatNotes: ((notes: ReactNode) => ReactNode) | undefined;
 }
 
 /** The play screen, or the error page once the room cannot be rebuilt into a game. */
@@ -362,6 +452,8 @@ function OnlineGameScreen<State, Move, Outcome>({
   onResume,
   onBroken,
   onRetry,
+  chat,
+  chatNotes,
 }: OnlineGameScreenProps<State, Move, Outcome>) {
   const broken = useSyncExternalStore(transport.subscribe, transport.isBroken, transport.isBroken);
 
@@ -378,6 +470,8 @@ function OnlineGameScreen<State, Move, Outcome>({
       optionChoices={optionChoices}
       onResume={onResume}
       focusTitle={focusTitle}
+      chat={chat}
+      chatNotes={chatNotes}
     />
   );
 }

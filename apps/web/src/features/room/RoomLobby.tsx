@@ -5,7 +5,7 @@ import type { RegisteredGameId } from "@board-games/games";
 import type { RoomView } from "@board-games/protocol";
 import { Badge, Button, Card, Input } from "@board-games/ui";
 import { useTranslations } from "next-intl";
-import { useEffect, useId, useRef, useState } from "react";
+import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 
 import { parsePlayerName } from "@/features/identity/identity";
 import { NameField } from "@/features/identity/NameField";
@@ -46,6 +46,8 @@ interface RoomLobbyProps {
    */
   readonly aiSeatRefusals?: number;
   readonly onResume: () => void;
+  /** The room's chat button, on the title row, when the player has someone to talk to. */
+  readonly chat?: ReactNode;
 }
 
 /**
@@ -82,6 +84,7 @@ export function RoomLobby({
   onAiSeat = cannotSend,
   aiSeatRefusals = 0,
   onResume,
+  chat,
 }: RoomLobbyProps) {
   const t = useTranslations("Room");
   const optionLabels = useOptionLabels();
@@ -171,6 +174,7 @@ export function RoomLobby({
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-title">{tGames(`${gameId}.name`)}</h1>
           <Badge>{tPlay("online")}</Badge>
+          {chat}
         </div>
 
         {/* Nothing below would jump much: no space kept while the connection is fine. */}

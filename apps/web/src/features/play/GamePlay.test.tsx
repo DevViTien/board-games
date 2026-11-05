@@ -58,6 +58,22 @@ describe("GamePlay", () => {
     });
   });
 
+  it("Chơi cùng máy: has no chat, on this device or against the AI", async () => {
+    const store = createMemoryStore();
+    const { unmount } = renderWithIntl(
+      <GamePlay gameId="tictactoe" mode="local" definition={tictactoe} ui={ui} store={store} />,
+    );
+    expect(await screen.findByRole("group", { name: "Bàn cờ" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Chat/u })).not.toBeInTheDocument();
+    unmount();
+
+    renderWithIntl(
+      <GamePlay gameId="tictactoe" mode="ai" definition={tictactoe} ui={ui} store={store} />,
+    );
+    expect(await screen.findByRole("group", { name: "Bàn cờ" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Chat/u })).not.toBeInTheDocument();
+  });
+
   it("opened straight with no saved game, starts at Medium with the player to move", async () => {
     const store = createMemoryStore();
     renderWithIntl(

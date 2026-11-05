@@ -9,8 +9,17 @@ import {
 import type { RegisteredGameId } from "@board-games/games";
 import { Badge, BookOpenIcon, Button, cn, ConfirmDialog, Dialog, FlagIcon } from "@board-games/ui";
 import { useFormatter, useTranslations } from "next-intl";
-import { type ReactNode, useCallback, useEffect, useId, useRef, useState } from "react";
+import {
+  type ComponentType,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react";
 
+import type { ChatSlotContext } from "@/features/chat/use-room-chat";
 import { LazyRules } from "@/features/rules/LazyRules";
 import { AppTopBar } from "@/features/shell/AppTopBar";
 import type { BoardLayout, GameUI } from "@/games/types";
@@ -59,6 +68,14 @@ export interface PlayScreenProps<State, Move, Outcome> {
    * first opens): a stand-in for tests.
    */
   readonly rules?: ReactNode;
+  /**
+   * The room's chat, placed where the game's buttons are: online with someone to talk to. Told what
+   * it may cover or wait for. Keep its identity stable (`useCallback`): a game does not render again
+   * for a message.
+   */
+  readonly chat?: ComponentType<ChatSlotContext> | undefined;
+  /** Puts a board's words about the position (`BoardParts.notes`) where the chat can follow them. */
+  readonly chatNotes?: ((notes: ReactNode) => ReactNode) | undefined;
 }
 
 function noop(): void {
@@ -142,6 +159,8 @@ export function PlayScreen<State, Move, Outcome>({
   onResume = noop,
   focusTitle = false,
   rules,
+  chat: ChatSlot,
+  chatNotes,
 }: PlayScreenProps<State, Move, Outcome>) {
   const t = useTranslations("Play");
   const tGames = useTranslations("Games");
@@ -204,12 +223,30 @@ export function PlayScreen<State, Move, Outcome>({
     focusNewGame.current = false;
     button.focus();
   }, []);
+  // For the chat's panel, which may cover the buttons they stand for: the same functions from one
+  // render to the next, so rendering again tells the chat nothing new.
+  const claimedTurn = turnKey(snapshot.status === "ready" ? snapshot.turn : null);
+  const claimFromChat = useCallback(
+    (button: HTMLElement) => {
+      opener.current = button;
+      setConfirmingClaim(claimedTurn);
+    },
+    [claimedTurn],
+  );
+  // Online, where nothing is asked first: only a finished game can start a new one.
+  const rematchFromChat = useCallback(() => {
+    focusTitleOnNewGame.current = true;
+    transport.requestNewGame();
+  }, [transport]);
   const { Board } = ui;
   const title = useRef<HTMLHeadingElement | null>(null);
   const titleRef = useCallback(
     (heading: HTMLHeadingElement | null) => {
       title.current = heading;
-      if (focusTitle) heading?.focus();
+      // Not away from a layer above the page (the chat, still being typed in).
+      if (focusTitle && document.activeElement?.closest("[data-keeps-focus]") == null) {
+        heading?.focus();
+      }
     },
     [focusTitle],
   );
@@ -570,7 +607,9 @@ export function PlayScreen<State, Move, Outcome>({
   // The card offers a new game itself; the game's buttons keep only undo and redo meanwhile.
   const newGameInButtons = snapshot.canStartNewGame && !finished;
   const { resign } = snapshot;
-  const hasButtons = snapshot.supportsUndo || newGameInButtons || resign !== null;
+  // The chat stays once the game has a result or the player resigned: when people say "gg".
+  const hasButtons =
+    snapshot.supportsUndo || newGameInButtons || resign !== null || ChatSlot !== undefined;
 
   function startNewGame() {
     // Only a game where a person here has a move in effect is worth asking about: not one where
@@ -682,6 +721,8 @@ export function PlayScreen<State, Move, Outcome>({
       className="lg:my-1.5 lg:[grid-area:players] short-landscape:my-1 short-landscape:[grid-area:players]"
     />
   );
+  const claimText = claimQuestion();
+
   // Why undo or redo cannot be pressed: read with the button, shown in words while the button has
   // the focus or was just pressed.
   // Shown as a note under the buttons, over the space below them, so the column never moves.
@@ -720,6 +761,24 @@ export function PlayScreen<State, Move, Outcome>({
     // undo, redo and a new game do; "Đầu hàng" against the AI goes to a second line, after "Ván
     // mới" in the first.
     <div className="relative flex flex-wrap justify-center gap-2 lg:my-1.5 lg:justify-start lg:[grid-area:buttons] short-landscape:my-1 short-landscape:justify-start short-landscape:[grid-area:buttons] max-lg:[&>button]:h-11 max-lg:[&>button]:px-3">
+      {ChatSlot !== undefined && (
+        <ChatSlot
+          held={held}
+          turnLine={announcement}
+          over={finished}
+          claimLabel={
+            turn?.claim != null &&
+            turn.player !== snapshot.viewer &&
+            turnLevel === TURN_LEVEL.Claimable
+              ? claimText.confirm
+              : null
+          }
+          claimAvailable={turn?.available === true}
+          onClaim={claimFromChat}
+          rematchLabel={snapshot.canStartNewGame && online ? t("rematch") : null}
+          onRematch={rematchFromChat}
+        />
+      )}
       {snapshot.supportsUndo && (
         <>
           <Button
@@ -813,8 +872,6 @@ export function PlayScreen<State, Move, Outcome>({
     }
   }
 
-  const claimText = claimQuestion();
-
   const confetti =
     celebration !== null && !reducedMotion ? (
       <Confetti key={celebration} onDone={endCelebration} />
@@ -854,19 +911,19 @@ export function PlayScreen<State, Move, Outcome>({
   // sideways the two bars go to the column, so the board keeps the screen's height.
   const besideBoard =
     "short-landscape:sticky short-landscape:top-[calc(var(--top-bar-height)+var(--safe-top)+0.5rem)] short-landscape:self-start short-landscape:[grid-area:board]";
-  const layout: BoardLayout = ({ board, controls, seatOrder }) => (
+  const layout: BoardLayout = ({ board, controls, seatOrder, notes }) => (
     <div
       className={cn(
         "grid w-full grid-cols-[minmax(0,1fr)] gap-y-4 [--board-room:100%]",
-        "lg:grid-cols-[auto_minmax(20rem,24rem)] lg:grid-rows-[minmax(0,1fr)_repeat(6,auto)_minmax(0,1fr)] lg:justify-center lg:gap-x-10 lg:gap-y-0",
-        "lg:[grid-template-areas:'board_.'_'board_chips'_'board_notice'_'board_status'_'board_players'_'board_controls'_'board_buttons'_'board_.']",
+        "lg:grid-cols-[auto_minmax(20rem,24rem)] lg:grid-rows-[minmax(0,1fr)_repeat(7,auto)_minmax(0,1fr)] lg:justify-center lg:gap-x-10 lg:gap-y-0",
+        "lg:[grid-template-areas:'board_.'_'board_chips'_'board_notice'_'board_status'_'board_players'_'board_notes'_'board_controls'_'board_buttons'_'board_.']",
         // The page's height less the top bar and the page's padding (3rem), a little room kept.
         seatOrder === undefined
           ? "lg:[--board-room:min(100vw_-_34rem,100dvh_-_var(--top-bar-height)_-_var(--safe-top)_-_6rem)]"
           : // Less the two bars (2 × 2.75rem) and their gaps (2 × 0.375rem) too.
             "lg:[--board-room:min(100vw_-_34rem,100dvh_-_var(--top-bar-height)_-_var(--safe-top)_-_3.25rem_-_6.25rem)]",
-        "short-landscape:grid-cols-[auto_minmax(0,1fr)] short-landscape:grid-rows-[minmax(0,1fr)_repeat(8,auto)_minmax(0,1fr)] short-landscape:gap-x-6 short-landscape:gap-y-0",
-        "short-landscape:[grid-template-areas:'board_.'_'board_chips'_'board_notice'_'board_status'_'board_players'_'board_seat-top'_'board_seat-bottom'_'board_controls'_'board_buttons'_'board_.']",
+        "short-landscape:grid-cols-[auto_minmax(0,1fr)] short-landscape:grid-rows-[minmax(0,1fr)_repeat(9,auto)_minmax(0,1fr)] short-landscape:gap-x-6 short-landscape:gap-y-0",
+        "short-landscape:[grid-template-areas:'board_.'_'board_chips'_'board_notice'_'board_status'_'board_players'_'board_seat-top'_'board_seat-bottom'_'board_notes'_'board_controls'_'board_buttons'_'board_.']",
         // The page's height less the top bar and the page's padding (1rem); the column at least
         // 16rem wide, the gap and the page's sides.
         "short-landscape:[--board-room:min(100vw_-_22rem_-_var(--safe-left)_-_var(--safe-right),100dvh_-_var(--top-bar-height)_-_var(--safe-top)_-_1rem)]",
@@ -875,6 +932,21 @@ export function PlayScreen<State, Move, Outcome>({
       {/* While a board holds the screen (Ludo's throw), everything but the board's own controls is
           inert: nothing behind the throw can be reached by Tab or a click. The wrappers have no
           box of their own (`contents`), so the grid places what they hold as before. */}
+      {/* Where the chat's panel goes beside the board: the column above the controls, or under the
+          result card to leave "Chơi lại" in view. A grid item with no height of its own, measured by
+          the chat floating over it. */}
+      {ChatSlot !== undefined && (
+        <div
+          aria-hidden
+          data-chat-dock=""
+          className={cn(
+            "hidden lg:block lg:[contain:size] short-landscape:[grid-column:2] short-landscape:[grid-row:1/2] short-landscape:block short-landscape:[contain:size]",
+            finished
+              ? "lg:[grid-column:2] lg:[grid-row:5/-1]"
+              : "lg:[grid-column:2] lg:[grid-row:1/7]",
+          )}
+        />
+      )}
       <div className="contents" inert={held || undefined}>
         {chips}
         {notice}
@@ -884,6 +956,7 @@ export function PlayScreen<State, Move, Outcome>({
       <div
         inert={held || undefined}
         aria-busy={seatOrder === undefined ? thinking : undefined}
+        data-play-board=""
         className={cn(
           "min-w-0 lg:self-center lg:[grid-area:board] aria-busy:[&_*]:cursor-progress",
           seatOrder === undefined ? besideBoard : "short-landscape:contents",
@@ -914,6 +987,12 @@ export function PlayScreen<State, Move, Outcome>({
           </div>
         )}
       </div>
+      {/* Below 1024 px it takes back half of the column's gap: close to the controls it is about. */}
+      {notes !== undefined && (
+        <div className="-mb-2 min-w-0 lg:my-1.5 lg:[grid-area:notes] short-landscape:my-1 short-landscape:[grid-area:notes]">
+          {chatNotes === undefined ? notes : chatNotes(notes)}
+        </div>
+      )}
       {controls !== null && controls !== undefined && (
         <div className="min-w-0 lg:my-1.5 lg:[grid-area:controls] short-landscape:my-1 short-landscape:[grid-area:controls]">
           {controls}

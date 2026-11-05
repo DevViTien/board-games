@@ -37,6 +37,8 @@ export async function generateMetadata(): Promise<Metadata> {
       template: `%s · ${SITE.name}`,
     },
     description: t("tagline"),
+    // iOS would turn numbers into links, and what players type is plain text.
+    formatDetection: { telephone: false },
   };
 }
 
