@@ -55,6 +55,7 @@ Không biến nào là bắt buộc ở máy. Không ghi giá trị bí mật v�
 Lưu ý:
 
 - Email tác giả của commit phải thuộc tài khoản Vercel, nếu không deploy Hobby bị **Blocked** (ví dụ dùng email noreply của GitHub: `git config --local user.email <id>+<tên>@users.noreply.github.com`).
+- Dữ liệu chat: tin người chơi gõ nằm trong dữ liệu phòng trên Upstash, mỗi phòng giữ 30 tin gần nhất và bị xoá cùng phòng (7 ngày sau lần ghi cuối). Server không ghi nội dung tin vào log, không có tài khoản, không lọc từ. Mỗi tin tốn khoảng 6 lệnh Redis.
 - Hạn mức cần theo dõi: Vercel Hobby (bộ nhớ 360 GB-giờ, CPU 4 giờ, 1 triệu lần gọi mỗi tháng; WebSocket giữ instance sống nên **GB-giờ** là hạn mức dễ chạm nhất) và Upstash Free (500 nghìn lệnh mỗi tháng). Kết nối WebSocket bị Vercel cắt mỗi ~5 phút là bình thường: app tự nối lại, không mất ván.
 
 ## Lệnh

@@ -126,7 +126,7 @@ Cách làm đề xuất: MVP dùng **cột "phổ biến"** làm luật mặc đ
 - Chủ phòng chọn biến thể luật (cờ cá ngựa, xem 3.4).
 - Đồng hồ thời gian cho mỗi bên (tuỳ chọn), xử thua khi hết giờ.
 - Đề nghị hoà, xin đi lại (đối thủ phải đồng ý).
-- Chat nhanh bằng emoji/câu có sẵn.
+- Chat trong phòng: gõ tự do, câu có sẵn, emoji (quyết định 16, mục 9).
 
 **v2: cho nhóm bạn**
 - Xem người khác chơi (spectator).
@@ -258,7 +258,7 @@ Nguyên tắc chung:
 - **Client không hiển thị trước** nước đi của mình (đã chốt ở M4, change `add-online-play`): nước đi chỉ hiện khi server đã ghi và gửi trạng thái mới; trong lúc chờ, bàn khoá để không gửi thêm nước nào. Lý do: độ trễ đo được với function ở `sin1` chỉ ~70 ms, không cảm nhận được; hiện trước thì phải xử lý quay lui khi bị từ chối; và với game có xúc xắc, client không biết trước kết quả. Nếu dùng thật thấy chậm thì thêm sau, chỉ trong transport online. Server vẫn là nơi duy nhất quyết định một nước có được ghi hay không.
 - **Ván = danh sách nước đi**: kết nối lại chỉ cần tải danh sách nước đi rồi phát lại; dùng luôn cho replay.
 - **Game có xúc xắc** (cờ cá ngựa): server tung xúc xắc và ghi kết quả vào lịch sử, client không tự tung.
-- **Thông điệp** gọn: `join`, `move`, `state`, `roll`, `offer-draw`, `resign`, `clock`, `chat-preset`, `presence`.
+- **Thông điệp** gọn: `join`, `move`, `state`, `roll`, `offer-draw`, `resign`, `clock`, `chat`, `presence`.
 - **Danh tính người chơi**: lần đầu vào app, trình duyệt tạo một `playerId` ngẫu nhiên và lưu cùng tên tạm trong `localStorage`. Vào phòng thì gửi `playerId` này để server nhận ra đúng ghế khi kết nối lại.
 - **Đổi máy hoặc xoá dữ liệu trình duyệt** thì mất `playerId` → mở lại link phòng sẽ thấy ghế cũ ở trạng thái "mất kết nối", bấm "Đây là tôi" để nhận lại ghế. Với nhóm bạn tin nhau thì cách này đủ dùng.
 - **Phòng tự xoá** sau một thời gian không hoạt động (TTL trên Redis, ví dụ 7 ngày) để gói Redis miễn phí không bị đầy.
@@ -313,7 +313,7 @@ Vì `Board` là component React nên nằm ở `apps/web`, còn `GameDefinition`
 |---|---|---|
 | **0. Khung** | Monorepo, Next.js trên Vercel Hobby, `core` dùng chung, `GameDefinition` + `Transport`, session, menu, design token, tên tạm; Tic-tac-toe chạy được cả 3 chế độ, online qua WebSocket + Redis, có thử ngắt kết nối và nối lại | Kiến trúc online trên Vercel được kiểm chứng ngay từ đầu |
 | **1. MVP** | **Cờ caro** (cùng máy, AI, online), **Cờ cá ngựa** 2–4 người với luật phổ biến (cùng máy, AI, online), **Cờ vua** (cùng máy, online); phòng online qua link + kết nối lại; autosave, luật chơi, responsive, sáng/tối | Bản đầu tiên gửi cho bạn bè, đồng nghiệp chơi |
-| **2. v1** | Chọn biến thể luật cá ngựa; Cờ tướng, Ô ăn quan, Reversi, Cờ gánh, Cờ đam, Cờ cối xay, Ô vuông; đồng hồ, đề nghị hoà, QR, chat nhanh; PWA, thống kê, replay | Kho game đầy đủ |
+| **2. v1** | Chọn biến thể luật cá ngựa; Cờ tướng, Ô ăn quan, Reversi, Cờ gánh, Cờ đam, Cờ cối xay, Ô vuông; đồng hồ, đề nghị hoà, QR, chat trong phòng (đã có); PWA, thống kê, replay | Kho game đầy đủ |
 | **3. v2** | Phòng cố định của nhóm, bảng thành tích nhóm, spectator; theme (gỗ, tre, giấy dó); Cờ vây; game tự thiết kế đầu tiên | Thành "sân chơi" quen thuộc của nhóm |
 | **4. Sau đó** | AI cờ vua, puzzle hằng ngày, tutorial tương tác, giải đấu trong nhóm | |
 
@@ -348,3 +348,4 @@ Vì `Board` là component React nên nằm ở `apps/web`, còn `GameDefinition`
 | 13 | Bỏ ván online | **5 phút** cho mọi game: người còn lại bấm nút (không hẹn giờ phía server); phòng 2 ghế → kết thúc ván (người kia thắng), phòng Cờ cá ngựa từ 3 ghế → máy chơi thay tới hết ván, ghế trả lại ở "Chơi lại" (04/11/2026, change `add-resign-and-abandon`) |
 | 14 | Đầu hàng | **Online và khi đấu với máy**, có hộp thoại xác nhận; cùng máy dùng "Ván mới". Cùng quy tắc với bỏ ván: phòng 2 ghế kết thúc ván, phòng Cờ cá ngựa từ 3 ghế cho máy chơi thay (04/11/2026) |
 | 15 | Giấy phép mã nguồn | **Không có giấy phép** (giữ mọi quyền, không có file `LICENSE`); phần mềm và hình của bên thứ ba giữ giấy phép riêng, liệt kê ở `apps/web/public/third-party-licenses.txt` (chốt 04/11/2026, `polish-accessibility-and-mobile`) |
+| 16 | Chat trong phòng online | **Gõ tự do + câu có sẵn + emoji** cho mọi game, chỉ người có ghế đọc và gửi; **giữ 30 tin gần nhất theo phòng** (nằm trong dữ liệu phòng trên Redis, xoá cùng phòng); **không lọc từ** (nhóm bạn qua link riêng, có nút "Tắt chat" lưu theo trình duyệt) (chốt 05/11/2026, `add-room-chat`) |

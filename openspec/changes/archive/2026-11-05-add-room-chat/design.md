@@ -37,7 +37,7 @@ Xem proposal.md (Why). Hiện trạng liên quan:
 | Code             | dùng lại ghi có kiểm phiên bản, kênh, nối lại, TTL                                  | API kho mới (redis, memory, fake, bộ hợp đồng), kênh thứ hai, kiểm trùng và giới hạn trong Lua | ít, nhưng cần xử lý mất tin |
 | Nhược            | mỗi bản phòng nặng thêm; xung đột với nước đi (mục 3)                               | hai nguồn dữ liệu, TTL lệch nhau                                                               | không đáng tin              |
 
-Dung lượng: trung bình khoảng 5 KB thêm cho 30 tin; tệ nhất khoảng 33 KB mỗi bản phòng. Chấp nhận được cho nhóm nhỏ. Hạn mức 500 nghìn lệnh mỗi tháng đủ cho khoảng 70 nghìn tin; kẻ phá cố tình có thể đốt khoảng 55 lệnh mỗi 10 giây, không tệ hơn việc spam đổi tên `sit` đang có (design `add-online-rooms` đã chấp nhận).
+Dung lượng (đo trên JSON phòng): khoảng 7 KB thêm cho 30 tin thường, 5,5 KB cho 30 câu có sẵn, tệ nhất 29,5 KB mỗi bản phòng (30 tin × 200 emoji 4 byte). Chấp nhận được cho nhóm nhỏ. Hạn mức 500 nghìn lệnh mỗi tháng đủ cho khoảng 70 nghìn tin; kẻ phá cố tình có thể đốt khoảng 55 lệnh mỗi 10 giây, không tệ hơn việc spam đổi tên `sit` đang có (design `add-online-rooms` đã chấp nhận).
 
 Hệ quả phải xử lý: mục 3 (xung đột), mục 5 (phát lại và vẽ lại), mục 2 (lưu bền, không lộ).
 
@@ -66,14 +66,14 @@ Tên lưu theo tin (tên lúc gửi), không tra theo ghế, vì ghế xoay sau 
 ### 3. `room-service.chat` và xung đột
 
 ```
-chat(code, playerId, { id, body }) → writeWithRetry(code, CHAT_ATTEMPTS = 3, room => …)
+chat(code, playerId, { id, body }) → writeWithRetry(code, CHAT_ATTEMPTS = 12, room => …)
 ```
 
 Theo thứ tự trong `decide`: chưa có ghế → `not-seated`; đã có tin cùng `playerId` + `id` → trả chính `room` (không ghi, `connection` gửi lại phòng bằng `force`, client được xác nhận); nội dung sai → `invalid-chat`; đã có ≥ 5 tin của `playerId` trong 10 giây → `chat-too-fast`; còn lại ghi `written(room, { chat: [...room.chat, entry].slice(-30) }, "keep")`. Không gọi `withAiMoves`, không đụng `turnStartedAt`.
 
 Giới hạn tính từ `room.chat` nên đúng trên mọi instance và mọi tab. 30 tin đủ dài cho cửa sổ 10 giây: phòng tối đa 4 người, tối đa 20 tin trong cửa sổ.
 
-**Gộp lại khi xung đột chỉ do chat** (trong `writeWithRetry`, dùng cho mọi yêu cầu): khi `update` trả `conflict`, đọc lại phòng. Nếu phòng mới chỉ khác phòng đã đọc ở `chat`, `revision`, `updatedAt` (so `JSON.stringify` các trường còn lại), thì giữ nguyên quyết định đã có, chỉ đổi `chat` và `revision` theo phòng mới rồi ghi lại, **không gọi lại `decide`** và **không tính vào `attempts`**, tối đa 10 lần (bị chặn sẵn bởi `storeTimeoutMs`). Với nước đi tốn thời gian (phát lại Cờ vua, chuỗi nước máy), toàn bộ phần đắt chỉ chạy một lần, và cửa sổ gộp chỉ còn một vòng đọc → ghi (khoảng 30 ms). Tin chat tự nó không gộp: `decide` của nó rẻ và cần đọc lại danh sách để cắt 30 tin. Nước đi ở `MOVE_ATTEMPTS` 2 vẫn như cũ cho xung đột thật.
+**Gộp lại khi xung đột chỉ do chat** (trong `writeWithRetry`, dùng cho mọi yêu cầu): khi `update` trả `conflict`, đọc lại phòng. Nếu phòng mới chỉ khác phòng đã đọc ở `chat`, `revision`, `updatedAt` (so `JSON.stringify` các trường còn lại), thì giữ nguyên quyết định đã có, chỉ đổi `chat` và `revision` theo phòng mới rồi ghi lại, **không gọi lại `decide`** và **không tính vào `attempts`**, tối đa 10 lần rồi mới quyết định lại. `storeTimeoutMs` không chặn được vòng lặp này: `limited()` của `connection` chỉ ngừng chờ, không huỷ; số lần gộp và số lần thử mới là giới hạn. Với nước đi tốn thời gian (phát lại Cờ vua, chuỗi nước máy), toàn bộ phần đắt chỉ chạy một lần, và cửa sổ gộp chỉ còn một vòng đọc → ghi (khoảng 30 ms). Tin chat tự nó không gộp: `decide` của nó rẻ và cần đọc lại danh sách để cắt 30 tin. Thay vào đó, giữa các lần thử nó chờ ngẫu nhiên 5–30 ms và dừng ở hạn 3 giây thật. Nước đi ở `MOVE_ATTEMPTS` 2 vẫn như cũ cho xung đột thật.
 
 **Đã cân nhắc**: chỉ tăng `MOVE_ATTEMPTS` (mỗi lần thử lại phát lại ván, vẫn thua được chat); nước đi không retry; giới hạn trong bộ nhớ từng kết nối (sai khi có hai tab, mất khi nối lại).
 
@@ -132,11 +132,35 @@ Theo `mockup/index.html` (15 khung, sáng/tối, đủ trạng thái; ảnh chí
 
 Mockup xác nhận không cần màu mới (tương phản chữ thấp nhất đo được 5,12:1, sáng và tối): tin của mình dùng `--accent`, tin người khác `--surface` + `--border`, bong bóng `--surface` + bóng sẵn có. Thêm `--animate-chat-bubble` trong `@theme` (≤ 200 ms, có nhánh `motion-reduce`).
 
+## Khác thiết kế
+
+Những chỗ code khác các mục trên hay khác mockup, ghi lại khi làm và sau hai lượt duyệt code:
+
+- **`CHAT_ATTEMPTS` là 12, không phải 3** (mục 3). Đo với service thật, bốn người gửi năm tin cùng một nước đi, trên kho trong bộ nhớ không trễ: 3 lần bị từ chối 6 tin, 4 lần từ chối 1, từ 5 lần trở lên không từ chối. Nhưng mỗi lần gọi kho thật mất khoảng 30 ms: thêm trễ 15–30 ms mỗi lệnh gọi thì 8 lần vẫn từ chối 0–1 tin mỗi loạt, 12 lần không từ chối trong 10 loạt. Có thêm chờ ngẫu nhiên 5–30 ms giữa các lần và hạn 3 giây thật. Chưa đo trên Upstash thật; tin thua hết lượt thì người chơi được báo và gửi lại cùng `id`.
+- **Lớp chat nằm ở `RoomContent`, nút nằm ở chỗ cắm** (mục 7). Chỗ cắm ở `PlayScreen` là một component (`ComponentType`, ổn định qua `useCallback`) thay vì render prop gọi trực tiếp, nhận giá trị thuần và hàm ổn định, nên `PlayScreen` vẽ lại không báo gì mới cho store. `ChatLayer` (panel, bong bóng, emoji, thẻ, vùng đọc tin) gắn phía trên nhánh sảnh chờ / màn hình chơi, nên ô nhập là cùng một phần tử DOM khi ván thay sảnh chờ. Ngữ cảnh gồm `held`, thêm dòng lượt, "Xử thắng", "Chơi lại" (mục 8 cần chép vào bảng).
+- **Bảng Cờ vua trên máy tính cao 336 px ở 1280 × 800, không phải 322 px** (mục 8). `BoardParts` thêm `notes` tuỳ chọn: lời của bàn về thế cờ, một hàng riêng trong lưới trên điều khiển. Bảng phủ tới hết hàng này; `ChatNotes` đưa lời đó vào đầu bảng, chỗ cũ giữ khoảng cách nhưng `invisible` để vùng đọc không đọc hai lần. Code chat không biết game nào; game không có `notes` thì hàng cao 0. Bàn Cờ vua đổi để truyền `notes`, luật không đổi. Danh sách tin khoảng 143 px khi đang chiếu. Ở 1024 × 600 bảng giữ tối thiểu 240 px và danh sách còn 47 px khi đang chiếu; vẫn không che nút nào. Cờ cá ngựa 381 px.
+- **Sảnh chờ dưới 1264 px dùng tấm trượt** (mục 8 chỉ nói bảng bên cạnh, mockup chỉ vẽ 1280): dưới ngưỡng đó bảng 320 px che danh sách người chơi và chính nút chat. 1264 = cột 576 px ở giữa + bảng 320 px + lề 24 px.
+- **Bong bóng, emoji nổi và thẻ "Chat · số" không hiện khi sẽ chồng lên bàn** (mục 8 coi vùng dưới thanh trên là luôn trống, nhưng trang cuộn được): bong bóng tắt hẳn, kể cả khi đang hiện mà trang cuộn tới; emoji và thẻ ẩn; số chưa đọc ở nút vẫn còn.
+- **Màu tin theo mục 10, không theo mockup**: tin của mình `--accent`, tin người khác `--surface` + `--border`; mockup dùng `--accent-soft` và `--surface-muted`. Không có góc nhọn đầu tin như mockup: chỉ dùng bán kính token.
+- **Không có dấu quân cạnh tên trong tin và bong bóng** như mockup: dấu quân là của từng game và theo ghế, trong khi tin lưu tên lúc gửi và ghế xoay sau mỗi "Chơi lại".
+- **Thêm icon ngoài `MessageCircle`** (mục 7): `MessageCircleOff`, `Send`, `Zap`, `CircleAlert`, `RotateCw`, `Clock`, `WifiOff`, đều qua `icons.ts`, từ thư viện đã có; mockup đã vẽ chúng.
+- **Thêm animation ngoài `--animate-chat-bubble`** (mục 10): `--animate-chat-panel`, `--animate-chat-fade`, `--animate-chat-reaction`, `--animate-chat-reaction-still`. Không có token màu mới. Đóng chat không có hiệu ứng: panel rời DOM ngay (mục 9 yêu cầu `role="log"` chỉ có khi mở).
+- **Tên đọc được của nút lấy từ nội dung, không dùng `aria-label`**: "Chat 2 tin chưa đọc", "Chat đã tắt", "Chat Chưa gửi được", "Mở Chat 1 tin chưa đọc", bong bóng "Mở chat. Lan 1 tin chưa đọc Chào". Luật axe `label-content-name-mismatch` đòi chữ trên nút nằm trong tên.
+- **`sanitizeChatText` chặt hơn mục 2**: bỏ hẳn mọi `Default_Ignorable_Code_Point` (trừ U+200D giữa hai emoji, U+FE0E, U+FE0F), `Noncharacter_Code_Point`, U+FFFC, nên U+3164, U+FFA0, U+115F, U+1160 bị bỏ cả khi đứng cạnh chữ, không chỉ không được tính là nhìn thấy; tab thành khoảng trắng như ngắt dòng; chuỗi chỉ có dấu kết hợp tính là không nhìn thấy; cờ tag tối đa 6 ký tự tag kể cả ký tự kết thúc, chỉ chữ thường và số.
+- **Ô nhập không có `maxLength` và không `readOnly`** như mockup: `maxLength` cắt im lặng khi dán, `readOnly` làm mất phím đang gõ lúc nối lại, trái "chữ đang gõ MUST NOT mất". Chỉ việc gửi bị khoá. Quá 200 code point (đếm trên chuỗi đã làm sạch) thì có dòng báo, nút gửi `aria-disabled`, chữ giữ nguyên.
+- **Cửa sổ chống spam phía client tính từ lúc gửi và lúc thấy tin tới trực tiếp, cộng 500 ms** (mục 6): `room.chat` phía client không có giờ gửi, nên tin `mine` trong bản phòng đầu tiên và bản phòng sau khi nối lại không được đếm, vì không biết cũ bao lâu. Tải lại trang rồi gửi tiếp có thể chạm giới hạn của server: khi đó có `chat-too-fast`, kết nối vẫn mở.
+- **Tin đang chờ mất cùng socket được báo ngay sau lời chào** (mục 6 chỉ nói quá 8 giây): bản phòng đầu tiên không có tin đó nghĩa là nó chưa tới; `connection.reconnect()` lúc 8 giây chỉ còn cho kết nối nửa chết. Tin có ghi muộn thì xác nhận vẫn xoá lỗi như mục 6.
+- **Thẻ "Chat · số" cao 44 px, không phải 36 px** của mockup, theo vùng chạm ở mục 9.
+- **"Đang gửi" đọc qua `aria-live` riêng**, không phải `role="status"` như mockup: mục 9 không dùng `role="status"`, và đó là vai trò của dòng lượt.
+
 ## Risks / Trade-offs
 
 - [Bàn phím ảo che ô nhập, bàn nhảy trên iOS] → `visualViewport` + test giả lập; Playwright không có bàn phím ảo thật nên nằm trong danh sách thử thiết bị của người dùng, cùng bộ gõ tiếng Việt và tiếng Nhật trên điện thoại.
 - [Lọc ký tự vô hình không bao giờ đủ] → danh sách chặn có test, thêm khi gặp; bị sót chỉ là một tin trống trong nhóm bạn.
-- [Phòng nặng thêm tới 33 KB khi chat toàn ký tự 4 byte] → giới hạn 30 tin × 200 ký tự; chấp nhận với nhóm nhỏ.
+- [Phòng nặng thêm tới 29,5 KB khi chat toàn ký tự 4 byte] → giới hạn 30 tin × 200 ký tự; chấp nhận với nhóm nhỏ.
+- [Gửi lại cùng `id` sau khi tin đã bị đẩy khỏi 30 tin sẽ ghi trùng] → cần 30 tin mới chen vào giữa lần gửi và lần gửi lại, rất hiếm; không đáng lưu thêm dữ liệu để chặn.
+- [Esc chỉ đóng chat khi tiêu điểm đang trong bảng] → đúng spec: Esc ở nơi khác còn thuộc về màn hình đó (giữ để gieo, hộp thoại).
+- [Client mới gặp server cũ lúc đang deploy sẽ nhận `invalid-message` khi gửi tin và nối lại] → hiếm, tự hết khi tải lại; ván không ảnh hưởng.
 - [Nội dung người dùng gõ nằm trên Upstash tới 7 ngày sau lần ghi cuối] → không log, không tài khoản, xoá cùng phòng; ghi vào README.
 - [Không lọc từ] → nhóm bạn qua link riêng, có "Tắt chat".
 - [Mạo danh bằng cách đặt tên giống người khác] → tên tạm vốn không xác thực; chấp nhận như quyết định danh tính ở idea.md.
