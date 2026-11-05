@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chat trong phòng</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="shell">
+  <aside class="panel" aria-label="Bảng điều khiển mockup">
+    <h1 class="panel-title">Chat trong phòng</h1>
+    <p class="panel-sub">Mockup tương tác. Ô bên phải là màn hình app, mọi thứ ở đây chỉ để thử.</p>
+
+    <fieldset><legend>Khung</legend><div id="frames" class="radio-list"></div></fieldset>
+
+    <fieldset><legend>Giao diện</legend>
+      <div class="radio-row">
+        <label><input type="radio" name="theme" value="light" checked> Sáng</label>
+        <label><input type="radio" name="theme" value="dark"> Tối</label>
+      </div>
+      <label class="check"><input type="checkbox" id="reduced"> Giảm chuyển động</label>
+    </fieldset>
+
+    <fieldset><legend>Chat</legend>
+      <div class="panel-actions">
+        <button type="button" class="pbtn" id="pToggle">Mở chat</button>
+        <button type="button" class="pbtn" id="pIncoming">Giả lập tin đến</button>
+        <button type="button" class="pbtn" id="pEmoji">Giả lập emoji</button>
+      </div>
+      <label class="check"><input type="checkbox" id="kb"> Bàn phím ảo</label>
+      <div class="panel-actions" id="scrollBtns">
+        <button type="button" class="pbtn" id="pTop">Cuộn lên đầu</button>
+        <button type="button" class="pbtn" id="pBottom">Cuộn xuống cuối</button>
+      </div>
+    </fieldset>
+
+    <fieldset><legend>Trạng thái</legend>
+      <label class="check"><input type="checkbox" data-state="sending"> Đang gửi</label>
+      <label class="check"><input type="checkbox" data-state="failed"> Gửi lỗi (tin tự gõ)</label>
+      <label class="check"><input type="checkbox" data-state="failedQuick"> Gửi lỗi (câu có sẵn)</label>
+      <label class="check"><input type="checkbox" data-state="tooFast"> Gửi quá nhanh</label>
+      <label class="check"><input type="checkbox" data-state="disconnected"> Mất kết nối</label>
+      <label class="check"><input type="checkbox" data-state="idle"> Tạm ngắt (chờ “Tiếp tục”)</label>
+      <label class="check"><input type="checkbox" data-state="claim"> Đối thủ vắng (nút xử thắng)</label>
+      <label class="check"><input type="checkbox" data-state="throwing"> Cú tung xúc xắc (lớp z-35)</label>
+      <label class="check"><input type="checkbox" data-state="muted"> Tắt chat</label>
+      <label class="check"><input type="checkbox" data-state="empty"> Chưa có tin</label>
+      <label class="check"><input type="checkbox" data-state="thirty"> 30 tin nhắn</label>
+    </fieldset>
+
+    <fieldset id="dockSet"><legend>Máy tính: chỗ đặt panel</legend>
+      <div class="radio-list">
+        <label><input type="radio" name="dock" value="over" checked> Trên điều khiển (đề xuất)</label>
+        <label><input type="radio" name="dock" value="under"> Dưới điều khiển</label>
+      </div>
+    </fieldset>
+
+    <section class="notes" aria-label="Ghi chú và số đo">
+      <h2>Ghi chú khung này</h2>
+      <div id="notes"></div>
+      <h2>Số đo trực tiếp</h2>
+      <dl id="measure" class="measure"></dl>
+    </section>
+  </aside>
+
+  <div class="stage" id="stage">
+    <div class="device-wrap" id="deviceWrap">
+      <div class="device" id="device"><div class="screen" id="screen"></div></div>
+    </div>
+  </div>
+</div>
+<dialog id="resignDialog" class="dialog" aria-labelledby="resignTitle">
+  <h2 id="resignTitle">Đầu hàng ván này?</h2>
+  <p>Máy sẽ chơi thay bạn tới hết ván. Bạn vẫn ở trong phòng để xem và chơi ván sau.</p>
+  <form method="dialog" class="dialog-actions"><button class="btn btn-secondary btn-sm" value="cancel">Chơi tiếp</button><button class="btn btn-secondary btn-sm" value="ok">Đầu hàng</button></form>
+</dialog>
+<script src="js/mock.js"></script>
+</body>
+</html>
