@@ -76,6 +76,15 @@ describe("roomViewSchema", () => {
     host: 0,
     record: { version: 1, gameId: "tictactoe", playerCount: 2, options: {}, entries: [] },
     turnIdleMs: null,
+    chat: [],
+  };
+
+  const message = {
+    seq: 4,
+    id: "chat-0123",
+    name: "Lan",
+    mine: true,
+    body: { kind: "text", text: "chào" },
   };
 
   it("accepts a room", () => {
@@ -110,6 +119,39 @@ describe("roomViewSchema", () => {
 
     expect(parsed.seats[0]).toEqual({ kind: "human", name: "Lan", standIn: false });
     expect(parsed.turnIdleMs).toBeNull();
+  });
+
+  it("reads a room from a server that predates chat as one with no message", () => {
+    const older: Record<string, unknown> = { ...view };
+    delete older.chat;
+
+    expect(roomViewSchema.parse(older).chat).toEqual([]);
+    expect(roomViewSchema.parse({ ...older, chat: "broken" }).chat).toEqual([]);
+  });
+
+  it("keeps the messages it can read, and leaves out the others one by one", () => {
+    const parsed = roomViewSchema.parse({
+      ...view,
+      chat: [
+        message,
+        { ...message, seq: 5, body: { kind: "sticker", sticker: "cat" } },
+        { ...message, seq: 6, body: { kind: "preset", preset: "from-a-later-version" } },
+        "not a message",
+        { ...message, seq: 7, mine: "yes" },
+        { ...message, seq: 8, body: { kind: "reaction", reaction: "like" } },
+      ],
+    });
+
+    expect(parsed.chat.map(({ seq }) => seq)).toEqual([4, 8]);
+  });
+
+  it("keeps no playerId from a message", () => {
+    const parsed = roomViewSchema.parse({
+      ...view,
+      chat: [{ ...message, playerId: "secret-secret-secret" }],
+    });
+
+    expect(JSON.stringify(parsed)).not.toContain("playerId");
   });
 
   it("rejects a code that is not canonical", () => {

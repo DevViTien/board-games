@@ -23,6 +23,7 @@ const room = {
     entries: [{ move: { cell: 4 } }],
   },
   turnIdleMs: 2_000,
+  chat: [],
 };
 
 describe("parseClientMessage", () => {
@@ -143,6 +144,37 @@ describe("parseClientMessage", () => {
     expect(parseClientMessage(raw)).toBeNull();
   });
 
+  it.each([
+    { type: "chat", id: "chat-0123", body: { kind: "text", text: "chào" } },
+    { type: "chat", id: "chat-0123", body: { kind: "preset", preset: "hello" } },
+    { type: "chat", id: "chat-0123", body: { kind: "reaction", reaction: "like" } },
+    // The room service refuses these with `invalid-chat`: `invalid-message` would reconnect.
+    { type: "chat", id: "chat-0123", body: { kind: "text", text: "x".repeat(20_000) } },
+    { type: "chat", id: "chat-0123", body: { kind: "preset", preset: "not-a-preset" } },
+    { type: "chat", id: "chat-0123", body: { kind: "reaction", reaction: "" } },
+  ])("takes a chat message for the service to judge: %j", (message) => {
+    expect(parseClientMessage(message)).toEqual(message);
+  });
+
+  it.each([
+    ["no id", { type: "chat", body: { kind: "text", text: "a" } }],
+    ["an id too short", { type: "chat", id: "short", body: { kind: "text", text: "a" } }],
+    ["an id with a space", { type: "chat", id: "two words", body: { kind: "text", text: "a" } }],
+    ["an id too long", { type: "chat", id: "x".repeat(65), body: { kind: "text", text: "a" } }],
+    ["no body", { type: "chat", id: "chat-0123" }],
+    ["an unknown kind", { type: "chat", id: "chat-0123", body: { kind: "sticker" } }],
+    [
+      "a text that is no string",
+      { type: "chat", id: "chat-0123", body: { kind: "text", text: 1 } },
+    ],
+    [
+      "an unknown field",
+      { type: "chat", id: "chat-0123", body: { kind: "text", text: "a" }, seat: 0 },
+    ],
+  ])("rejects a chat message with %s", (_label, message) => {
+    expect(parseClientMessage(message)).toBeNull();
+  });
+
   it("trims and normalizes the name sent with a sit", () => {
     expect(parseClientMessage({ type: "sit", name: " An  " })).toEqual({ type: "sit", name: "An" });
   });
@@ -202,6 +234,9 @@ describe("parseServerMessage", () => {
     { type: "rejected", request: "claim-abandoned", code: "not-abandoned" },
     { type: "rejected", request: "claim-abandoned", code: "stale-move" },
     { type: "rejected", request: "resign", code: "game-over" },
+    { type: "rejected", request: "chat", code: "invalid-chat", id: "chat-0123" },
+    { type: "rejected", request: "chat", code: "chat-too-fast", id: "chat-0123" },
+    { type: "rejected", request: "chat", code: "unavailable" },
     { type: "error", code: "room-not-found" },
     { type: "pong" },
   ])("accepts a valid $type message", (message) => {
@@ -210,7 +245,7 @@ describe("parseServerMessage", () => {
 
   it("accepts a message carrying a field added by a newer server", () => {
     expect(parseServerMessage({ type: "pong", serverTime: 1 })).toEqual({ type: "pong" });
-    expect(parseServerMessage({ type: "room", room: { ...room, chat: [] }, you: 0 })).toEqual({
+    expect(parseServerMessage({ type: "room", room: { ...room, later: [] }, you: 0 })).toEqual({
       type: "room",
       room,
       you: 0,

@@ -1,3 +1,21 @@
+export {
+  CHAT_KEPT,
+  CHAT_LIMIT,
+  CHAT_PRESETS,
+  CHAT_REACTIONS,
+  CHAT_TEXT_MAX_LENGTH,
+  CHAT_WINDOW_MS,
+  type ChatBody,
+  type ChatBodyInput,
+  chatBodySchema,
+  type ChatMessageView,
+  type ChatPreset,
+  type ChatReaction,
+  cleanChatText,
+  looseListSchema,
+  parseChatBody,
+  sanitizeChatText,
+} from "./chat";
 export { type RejectionCode, ROOM_ERROR, type RoomErrorCode } from "./errors";
 export {
   ABANDON_AFTER_MS,

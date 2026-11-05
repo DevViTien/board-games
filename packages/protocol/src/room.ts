@@ -6,8 +6,11 @@ import {
 } from "@board-games/engine";
 import { z } from "zod";
 
+import { chatMessagesSchema, type ChatMessageView } from "./chat";
+
 /**
- * Raised on every change that an older client cannot handle. Sent in the greeting (`create`,
+ * Raised on a change that an older client cannot handle, not on every change: server messages are
+ * read loosely, so an older client simply drops a new field (`RoomView.chat`). Sent in the greeting (`create`,
  * `join`), so a tab left open across a deploy is told to reload instead of misreading messages.
  */
 export const PROTOCOL_VERSION = 3;
@@ -69,8 +72,9 @@ export type SeatView =
   | { readonly kind: "ai" };
 
 /**
- * A room as every client sees it. Holds names only: a `playerId` is the secret that claims a
- * seat, so it never leaves the server.
+ * A room as one client sees it: the same for everyone but for its chat, which only people with a
+ * seat receive, each told which messages are theirs. Holds names only: a `playerId` is the secret
+ * that claims a seat, so it never leaves the server.
  */
 export interface RoomView {
   readonly code: RoomCode;
@@ -90,6 +94,8 @@ export interface RoomView {
    * while the room waits for players or once the game has a result.
    */
   readonly turnIdleMs: number | null;
+  /** The room's latest messages, oldest first; empty for a client without a seat. */
+  readonly chat: readonly ChatMessageView[];
 }
 
 const countSchema = z.number().int().nonnegative();
@@ -124,4 +130,5 @@ export const roomViewSchema = z.object({
   host: playerIndexSchema.nullable().catch(null),
   record: gameRecordSchema,
   turnIdleMs: countSchema.nullable().catch(null),
+  chat: chatMessagesSchema,
 }) satisfies z.ZodType<RoomView>;

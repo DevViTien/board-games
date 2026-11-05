@@ -35,6 +35,10 @@ export const ROOM_ERROR = {
    * claimer's own turn, or no person plays the seat to move.
    */
   NotAbandoned: "not-abandoned",
+  /** A chat message empty once cleaned, too long, or naming no preset or reaction of the app. */
+  InvalidChat: "invalid-chat",
+  /** More chat messages from one player than the room lets through; the connection stays. */
+  ChatTooFast: "chat-too-fast",
   TooManyMessages: "too-many-messages",
   /** The room store failed or did not answer in time; worth retrying. */
   Unavailable: "unavailable",

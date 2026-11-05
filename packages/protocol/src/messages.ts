@@ -1,6 +1,7 @@
 import { ENGINE_ERROR, type PlayerIndex } from "@board-games/engine";
 import { z } from "zod";
 
+import { chatBodyInputSchema, chatIdSchema } from "./chat";
 import { type RejectionCode, ROOM_ERROR } from "./errors";
 import {
   playerIndexSchema,
@@ -91,6 +92,8 @@ const clientMessageSchema = z.discriminatedUnion("type", [
     seat: z.number().int(),
     on: z.boolean(),
   }),
+  /** A chat message; `id` makes sending it again harmless. */
+  z.strictObject({ type: z.literal("chat"), id: chatIdSchema, body: chatBodyInputSchema }),
   z.strictObject({ type: z.literal("ping") }),
 ]);
 
@@ -104,6 +107,7 @@ const REJECTABLE_REQUESTS = [
   "ai-seat",
   "resign",
   "claim-abandoned",
+  "chat",
 ] as const;
 export type RejectableRequest = (typeof REJECTABLE_REQUESTS)[number];
 
@@ -117,6 +121,8 @@ export type ServerMessage =
       readonly type: "rejected";
       readonly request: RejectableRequest | null;
       readonly code: RejectionCode;
+      /** Which message, for a `chat`: the client may have sent another since. */
+      readonly id?: string;
     }
   /** A failed greeting or a fatal error; the server closes the connection right after. */
   | { readonly type: "error"; readonly code: RejectionCode }
@@ -130,6 +136,7 @@ const serverMessageSchema = z.discriminatedUnion("type", [
     type: z.literal("rejected"),
     request: z.enum(REJECTABLE_REQUESTS).nullable(),
     code: rejectionCodeSchema,
+    id: z.exactOptional(z.string()),
   }),
   z.object({ type: z.literal("error"), code: rejectionCodeSchema }),
   z.object({ type: z.literal("pong") }),
