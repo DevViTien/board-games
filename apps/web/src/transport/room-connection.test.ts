@@ -175,6 +175,63 @@ describe("room connection: joining", () => {
     expect(status()).toBe("online");
   });
 
+  it("sends a chat message, and passes on its refusal with its id", () => {
+    connect();
+    const socket = enter();
+    const rejected = vi.fn();
+    connection.onRejected(rejected);
+    const chat = {
+      type: "chat",
+      id: "chat-0123",
+      body: { kind: "text", text: "chào" },
+    } as const;
+
+    expect(connection.send(chat)).toBe(true);
+    expect(socket.sent.at(-1)).toEqual(chat);
+
+    socket.receive({ type: "rejected", request: "chat", code: "invalid-chat", id: "chat-0123" });
+    expect(rejected).toHaveBeenCalledWith({
+      request: "chat",
+      code: "invalid-chat",
+      id: "chat-0123",
+    });
+  });
+
+  it.each(["unavailable", "invalid-message", "too-many-messages", "chat-too-fast"] as const)(
+    "does not reconnect when a chat message is refused with %s",
+    async (code) => {
+      connect();
+      const socket = enter();
+
+      socket.receive({ type: "rejected", request: "chat", code, id: "chat-0123" });
+      await wait(60_000);
+
+      expect(status()).toBe("online");
+      expect(socket.closedByClient).toBe(false);
+      expect(sockets.all).toHaveLength(1);
+    },
+  );
+
+  it("still reconnects when a move is refused with unavailable", () => {
+    connect();
+    const socket = enter();
+
+    socket.receive({ type: "rejected", request: "move", code: "unavailable" });
+
+    expect(socket.closedByClient).toBe(true);
+  });
+
+  it("counts a chat message as the room changing: the page does not go idle", async () => {
+    connect();
+    const socket = enter(roomView({ revision: 1 }));
+    await wait(9 * 60_000);
+
+    socket.receive(roomMessage(roomView({ revision: 2 }), 0));
+    await wait(9 * 60_000);
+
+    expect(status()).toBe("online");
+  });
+
   it("sends the host's request for an AI seat", () => {
     connect();
     const socket = enter();

@@ -41,12 +41,14 @@ interface TurnStart {
 /** What a player in a room asks the server for. */
 type RoomRequest = Extract<
   ClientMessage,
-  { type: "sit" | "move" | "rematch" | "ai-seat" | "resign" | "claim-abandoned" }
+  { type: "sit" | "move" | "rematch" | "ai-seat" | "resign" | "claim-abandoned" | "chat" }
 >;
 
 interface RoomRejection {
   readonly request: RejectableRequest | null;
   readonly code: RejectionCode;
+  /** Which chat message, when `request` is `chat`. */
+  readonly id?: string;
 }
 
 /** What the page tells the connection about itself. */
@@ -439,9 +441,15 @@ export function createRoomConnection({
           stop(CONNECTION_STATUS.Failed, message.code);
           return;
         }
-        const rejection = { request: message.request, code: message.code };
+        const rejection: RoomRejection = {
+          request: message.request,
+          code: message.code,
+          ...(message.id === undefined ? {} : { id: message.id }),
+        };
         for (const listener of rejectionListeners) listener(rejection);
-        if (RECONNECT_REJECTIONS.has(message.code)) {
+        // A chat message refused, for whatever reason, is that message's business: the game and
+        // the connection go on.
+        if (message.request !== "chat" && RECONNECT_REJECTIONS.has(message.code)) {
           drop();
           retryLater();
         }

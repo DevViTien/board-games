@@ -58,6 +58,17 @@ function isRuleRefusal(code: RejectionCode): boolean {
   return code !== ENGINE_ERROR.GameOver && Object.values<string>(ENGINE_ERROR).includes(code);
 }
 
+/**
+ * Whether two copies of a room hold the same game. The whole record, not its length and ending: a
+ * record corrupted at the same length must still be found out, and `ending` has no identity.
+ */
+function sameGame(one: RoomView, other: RoomView): boolean {
+  return (
+    one.gameNumber === other.gameNumber &&
+    JSON.stringify(one.record) === JSON.stringify(other.record)
+  );
+}
+
 /** Where in the room's games a request was sent: settled once that game moves on or ends. */
 interface Pending {
   readonly gameNumber: number;
@@ -134,6 +145,8 @@ export function createOnlineTransport<
   let throwPause: { gameNumber: number; shown: number; endsAt: number } | null = null;
   /** The connection's status when the room was last read: a new greeting shows the latest state. */
   let lastStatus: ConnectionStatus | null = null;
+  /** The clock of the turn when the room was last read, to tell whether a new copy changed it. */
+  let lastTurnClock = connection.getSnapshot().turnClock;
   let broken = false;
   // The place in the game a request was sent at, until the server answers it one way or another.
   // Not the room's revision: a rename or someone sitting down changes it without answering.
@@ -458,11 +471,32 @@ export function createOnlineTransport<
   function refresh(): void {
     // A broken room is not replayed again on every change of the connection.
     if (disposed || broken) return;
-    const { room: latest, you, status } = connection.getSnapshot();
+    const { room: latest, you, status, turnClock: clock } = connection.getSnapshot();
     const greeted = lastStatus !== CONNECTION_STATUS.Online && status === CONNECTION_STATUS.Online;
+    const statusChanged = lastStatus !== status;
+    const clockChanged = lastTurnClock !== clock;
     lastStatus = status;
+    lastTurnClock = clock;
     if (latest === null) return;
     if (latest !== room && latest !== queued?.room) {
+      // Only something around the game changed (a chat message, a name, a person back from a stand-in
+      // with no move yet): no replay, nothing on screen or waiting to be shown moves, and the screen
+      // is not told unless it shows what changed. The first room after a greeting always counts:
+      // it must win even if the store lost data.
+      const showing = queued?.room ?? room;
+      if (!greeted && showing !== null && sameGame(latest, showing)) {
+        const seatsChanged =
+          you !== (queued?.seat ?? seat) ||
+          JSON.stringify(latest.seats) !== JSON.stringify(showing.seats);
+        if (queued === null) {
+          room = latest;
+          seat = you;
+        } else {
+          queued = { ...queued, room: latest, seat: you };
+        }
+        if (seatsChanged || statusChanged || clockChanged) render();
+        return;
+      }
       const rebuilt = rebuild(latest);
       if (rebuilt === null) {
         broken = true;
@@ -506,8 +540,9 @@ export function createOnlineTransport<
     connection.subscribe(refresh),
     connection.onSynced(sync),
     connection.onRejected(({ request, code }) => {
-      // The lobby's business: a refused seat or AI seat says nothing of a move in flight.
-      if (request === "sit" || request === "ai-seat") return;
+      // The lobby's or the chat's business: a refused seat, AI seat or message says nothing of a
+      // move in flight.
+      if (request === "sit" || request === "ai-seat" || request === "chat") return;
       // Nor does a refused resign or claim; the room sent before it already shows why, and only
       // a claim made too early is worth saying so.
       if (request === "resign" || request === "claim-abandoned") {
