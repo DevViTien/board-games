@@ -22,11 +22,16 @@ import {
   ABANDON_AFTER_MS,
   ABANDON_CLAIM,
   abandonClaim,
+  CHAT_KEPT,
+  CHAT_LIMIT,
+  CHAT_WINDOW_MS,
+  type ChatBodyInput,
   gameHasAi,
   LEAVE_OUTCOME,
   leaveOutcome,
   MAX_SEATS_WITHOUT_AI,
   normalizeRoomCode,
+  parseChatBody,
   type RejectionCode,
   ROOM_CODE_ALPHABET,
   ROOM_CODE_LENGTH,
@@ -57,6 +62,29 @@ const JOIN_ATTEMPTS = 3;
  * the newer room (a rename in between lets a move through, a move in between makes it stale).
  */
 const MOVE_ATTEMPTS = 2;
+
+/**
+ * Reads for a chat message before giving up. Measured on the service with four people sending five
+ * messages each and a move, all at once. On a store with no delay: 3 reads refuse 6 messages, 4
+ * refuse 1, 5 and up none. Where each call takes 15–30 ms, as Redis does: 8 reads still refuse 0–1
+ * per burst, 12 none in 10 bursts. A small wait at random between reads keeps the writers from
+ * meeting again in step.
+ */
+const CHAT_ATTEMPTS = 12;
+const CHAT_RETRY_MIN_MS = 5;
+const CHAT_RETRY_MAX_MS = 30;
+/**
+ * A message still losing after this long gives up: the connection's time limit only stops waiting
+ * for the answer, and nothing else would stop this loop's writes, which nobody waits for by then.
+ */
+const CHAT_DEADLINE_MS = 3000;
+
+/**
+ * Times one decision is written again on a room that only got chat messages meanwhile, without
+ * deciding anew and without counting against the request's attempts. Past this the request reads
+ * again: with a move's two attempts that outlasts every message a room can get at once.
+ */
+const CHAT_REBASES = 10;
 
 /** The AI seats of a room play at this level; choosing it is for later (design §3). */
 const AI_SEAT_LEVEL = AI_LEVEL.Medium;
@@ -100,6 +128,8 @@ export interface RoomServiceDeps {
   readonly games: readonly AnyGameDefinition[];
   /** How long a turn must last before it can be claimed abandoned; `ABANDON_AFTER_MS` by default. */
   readonly abandonAfterMs?: number;
+  /** Waits between a chat message's tries; a real wait by default. */
+  readonly sleep?: (ms: number) => Promise<void>;
 }
 
 /** Every request answers with the room as written, or as it is when nothing had to change. */
@@ -164,6 +194,17 @@ export interface RoomService {
     playerId: string,
     position: { readonly gameNumber: number; readonly moveIndex: number },
   ): Promise<ServiceResult<StoredRoom>>;
+  /**
+   * A chat message from a seated player. The same `id` from the same player changes nothing, so a
+   * message sent again after a lost answer is not written twice. Touches neither the game nor the
+   * time its turn began, and plays no AI seat.
+   */
+  chat(
+    this: void,
+    code: RoomCode,
+    playerId: string,
+    message: { readonly id: string; readonly body: ChatBodyInput },
+  ): Promise<ServiceResult<StoredRoom>>;
   /** Every new state of the room, from any instance (`RoomStore.subscribe`). */
   watch(this: void, code: RoomCode, listener: RoomListener): Promise<() => void>;
 }
@@ -211,6 +252,11 @@ function turnAfter(game: AnyGameDefinition, session: AnySession): TurnChange {
   return sessionResult(game, session) === null ? "restart" : "stop";
 }
 
+/** All of a room but what a chat message changes, to compare two reads of it. */
+function withoutChat(room: StoredRoom): string {
+  return JSON.stringify({ ...room, chat: [], revision: 0, updatedAt: 0 });
+}
+
 /** Whether `player`, in `seat`, sent another name than the one the room shows. */
 function renamed(room: StoredRoom, seat: number, player: RoomPlayer): boolean {
   const current = room.players[seat];
@@ -233,6 +279,10 @@ export function createRoomService({
   now,
   games,
   abandonAfterMs = ABANDON_AFTER_MS,
+  sleep = (ms) =>
+    new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    }),
 }: RoomServiceDeps): RoomService {
   const findGame = (gameId: string) => games.find((game) => game.id === gameId);
 
@@ -262,22 +312,47 @@ export function createRoomService({
    * Reads the room and writes what `decide` makes of it; `decide` handing back the room it was
    * given means there is nothing to write. On a conflict the room is read again and the request
    * decided again on the newer room, up to `attempts` reads.
+   *
+   * Unless only chat messages came in between (`rebase`, design of `add-room-chat`, §3): the
+   * decision still holds, and may have been expensive (replaying a long game) or random (a roll),
+   * so it is kept and written on the newer room, taking its messages, without deciding again and
+   * without using up an attempt. A chat message does not do this for itself: it has to read the
+   * list again to cut it. Instead it waits a little between reads, and stops at a time limit.
    */
   async function writeWithRetry(
     code: RoomCode,
     attempts: number,
     decide: (room: StoredRoom) => ServiceResult<StoredRoom>,
+    { chat = false } = {},
   ): Promise<ServiceResult<StoredRoom>> {
     let latest: StoredRoom | undefined;
+    const startedAt = now();
     for (let attempt = 0; attempt < attempts; attempt += 1) {
+      if (chat && attempt > 0) {
+        if (now() - startedAt >= CHAT_DEADLINE_MS) break;
+        const range = CHAT_RETRY_MAX_MS - CHAT_RETRY_MIN_MS;
+        await sleep(CHAT_RETRY_MIN_MS + Math.round(Math.random() * range));
+      }
       const room = await store.get(code);
       if (room === null) return fail(ROOM_ERROR.RoomNotFound);
       latest = room;
       const decision = decide(room);
       if (!decision.ok || decision.value === room) return decision;
-      const outcome = await store.update(code, room.revision, decision.value);
-      if (outcome === "updated") return decision;
-      if (outcome === "missing") return fail(ROOM_ERROR.RoomNotFound);
+      let base = room;
+      let next = decision.value;
+      for (let rebases = 0; ; rebases += 1) {
+        const outcome = await store.update(code, base.revision, next);
+        if (outcome === "updated") return ok(next);
+        if (outcome === "missing") return fail(ROOM_ERROR.RoomNotFound);
+        if (chat || rebases === CHAT_REBASES) break;
+        const newer = await store.get(code);
+        if (newer === null) return fail(ROOM_ERROR.RoomNotFound);
+        latest = newer;
+        // Anything else changed: the request must be judged again on the room as it is now.
+        if (withoutChat(newer) !== withoutChat(base)) break;
+        next = { ...next, chat: newer.chat, revision: newer.revision + 1, updatedAt: now() };
+        base = newer;
+      }
     }
     return fail(ROOM_ERROR.Unavailable, latest);
   }
@@ -449,6 +524,7 @@ export function createRoomService({
           record: toRecord(session.value),
           updatedAt: now(),
           turnStartedAt: null,
+          chat: [],
         };
         if ((await store.create(room)) === "created") return ok(room);
       }
@@ -614,6 +690,39 @@ export function createRoomService({
         if (claim !== ABANDON_CLAIM.Ok) return fail(ROOM_ERROR.NotAbandoned, room);
         return leave(room, game, session, toMove, ENDING_REASON.Abandoned);
       }),
+
+    chat: (code, playerId, { id, body }) =>
+      writeWithRetry(
+        code,
+        CHAT_ATTEMPTS,
+        (room) => {
+          // Checked in this order (design §3): a duplicate is answered before the limit, so sending
+          // again what already went through is never refused.
+          const seat = seatOf(room, playerId);
+          const sender = seat === null ? null : room.players[seat];
+          if (sender?.kind !== "human") return fail(ROOM_ERROR.NotSeated, room);
+          const own = room.chat.filter((message) => message.playerId === playerId);
+          if (own.some((message) => message.id === id)) return ok(room);
+          const clean = parseChatBody(body);
+          if (clean === null) return fail(ROOM_ERROR.InvalidChat, room);
+          const at = now();
+          // Worked out from the room itself: right on every instance and for every tab. Both ways,
+          // as instances' clocks differ: a message stamped far ahead must not block its sender
+          // until then.
+          const recent = own.filter(({ at: sent }) => Math.abs(at - sent) < CHAT_WINDOW_MS);
+          if (recent.length >= CHAT_LIMIT) return fail(ROOM_ERROR.ChatTooFast, room);
+          const message = {
+            seq: room.revision + 1,
+            id,
+            playerId,
+            name: sender.name,
+            at,
+            body: clean,
+          };
+          return ok(written(room, { chat: [...room.chat, message].slice(-CHAT_KEPT) }, "keep"));
+        },
+        { chat: true },
+      ),
 
     watch: (code, listener) => store.subscribe(code, listener),
   };

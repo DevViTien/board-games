@@ -1,6 +1,8 @@
 import net from "node:net";
 import tls from "node:tls";
 
+import { createRng } from "@board-games/engine";
+import { tictactoe } from "@board-games/games";
 import type { RoomCode } from "@board-games/protocol";
 import { createClient } from "redis";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
@@ -8,6 +10,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest
 import { TimeoutError } from "@/lib/with-timeout";
 
 import type { StoredRoom } from "../room";
+import { createRoomService } from "../room-service";
 import { createFakeRedis, type FakeRedis } from "./fake-redis";
 import { createRedisRoomStore, reconnectDelay, ROOM_TTL_SECONDS, roomKey } from "./redis";
 import { describeRoomStore, nextRevision, testRoom } from "./room-store-contract";
@@ -281,6 +284,30 @@ describe.skipIf(url === undefined)("redis store", () => {
 
     await store.update(room.code, 1, nextRevision(room));
 
+    const ttl = await client.ttl(roomKey(RUN_PREFIX, room.code));
+    expect(ttl).toBeGreaterThan(ROOM_TTL_SECONDS - 60);
+    expect(ttl).toBeLessThanOrEqual(ROOM_TTL_SECONDS);
+  });
+
+  it("Tin gia hạn phòng: gives a room 7 days to live from a chat message too", async () => {
+    const store = open();
+    const service = createRoomService({
+      store,
+      rng: createRng(1),
+      now: Date.now,
+      games: [tictactoe],
+    });
+    const room = testRoom();
+    await store.create(room);
+    const client = await adminClient();
+    await client.expire(roomKey(RUN_PREFIX, room.code), 60);
+
+    const sent = await service.chat(room.code, "player-one-0123456789", {
+      id: "chat-0123",
+      body: { kind: "text", text: "chào" },
+    });
+
+    expect(sent.ok).toBe(true);
     const ttl = await client.ttl(roomKey(RUN_PREFIX, room.code));
     expect(ttl).toBeGreaterThan(ROOM_TTL_SECONDS - 60);
     expect(ttl).toBeLessThanOrEqual(ROOM_TTL_SECONDS);

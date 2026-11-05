@@ -53,6 +53,7 @@ export function testRoom(overrides: Partial<StoredRoom> = {}): StoredRoom {
     },
     updatedAt: 1_000,
     turnStartedAt: null,
+    chat: [],
     ...overrides,
   };
 }

@@ -17,6 +17,9 @@ import { type RoomPlayer, STORED_ROOM_FORMAT, type StoredRoom, toRoomView } from
 import { createRoomService, MAX_AI_MOVES_PER_WRITE, type ServiceResult } from "./room-service";
 import { createMemoryRoomStore, type MemoryRoomStore } from "./store/memory";
 
+/** Someone without a seat; these views do not depend on who asks. */
+const NOBODY = "nobody-0123456789abcd";
+
 // AI seats in online rooms (change `add-room-ai-seats`): the host marks empty seats, and the server
 // plays them in the write that hands them the turn, with its own rng, through the game's rules.
 
@@ -148,7 +151,7 @@ describe("the host", () => {
 
     const forAn = expectOk(await service.sit(code, AN));
 
-    expect(toRoomView(forAn, 0).host).toBe(0);
+    expect(toRoomView(forAn, 0, NOBODY).host).toBe(0);
     expect(forAn.hostId).toBe(LAN.playerId);
   });
 
@@ -175,7 +178,7 @@ describe("the host", () => {
 
     const next = expectOk(await context.service.rematch(context.code, AN.playerId, 1));
 
-    expect(toRoomView(next, 0).host).toBe(1);
+    expect(toRoomView(next, 0, NOBODY).host).toBe(1);
   });
 });
 
@@ -185,7 +188,7 @@ describe("marking AI seats", () => {
 
     const marked = expectOk(await service.setAiSeat(code, LAN.playerId, 2, true));
 
-    expect(toRoomView(marked, 0).seats).toEqual([
+    expect(toRoomView(marked, 0, NOBODY).seats).toEqual([
       { kind: "human", name: "Lan", standIn: false },
       null,
       { kind: "ai" },
@@ -486,6 +489,7 @@ describe("the server plays the AI seats", () => {
       record: { version: RECORD_VERSION, gameId: "race", playerCount: 3, options: {}, entries: [] },
       updatedAt: 1_000,
       turnStartedAt: 1_000,
+      chat: [],
     };
     await context.store.create(stuck);
     return stuck;

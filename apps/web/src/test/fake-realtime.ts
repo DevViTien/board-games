@@ -124,6 +124,8 @@ interface RoomOptions {
   readonly record?: GameRecord;
   /** How long the turn has lasted when the room is sent; none by default. */
   readonly turnIdleMs?: number | null;
+  /** The room's chat; none by default. */
+  readonly chat?: RoomView["chat"];
 }
 
 /** A room as the server sends it: Tic-tac-toe, or the game of `record`. */
@@ -135,6 +137,7 @@ export function roomView({
   cells = [],
   record,
   turnIdleMs = null,
+  chat = [],
 }: RoomOptions = {}): RoomView {
   return {
     code: ROOM_CODE,
@@ -155,6 +158,7 @@ export function roomView({
       entries: cells.map((cell) => ({ move: { cell } })),
     },
     turnIdleMs,
+    chat,
   };
 }
 

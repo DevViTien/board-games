@@ -225,7 +225,11 @@ export function attachConnection(socket: WebSocket, deps: ConnectionDeps): void 
     lastSent = newest;
     roomsSent += 1;
     // How long the turn has lasted is reckoned now, for this send, by the server's clock.
-    send({ type: "room", room: toRoomView(newest, Date.now()), you: seatOf(newest, playerId) });
+    send({
+      type: "room",
+      room: toRoomView(newest, Date.now(), playerId),
+      you: seatOf(newest, playerId),
+    });
     resetIdleTimer();
   }
 
@@ -350,6 +354,7 @@ export function attachConnection(socket: WebSocket, deps: ConnectionDeps): void 
       case "ai-seat":
       case "resign":
       case "claim-abandoned":
+      case "chat":
         await request(room, message);
         return;
       default:
@@ -360,12 +365,14 @@ export function attachConnection(socket: WebSocket, deps: ConnectionDeps): void 
 
   async function request({ code, playerId }: InRoom, message: RoomRequest): Promise<void> {
     const sentBefore = roomsSent;
+    // Which chat message a refusal is about. The message itself is never logged, only that it failed.
+    const about = message.type === "chat" ? { id: message.id } : {};
     let result: ServiceResult<StoredRoom>;
     try {
       result = await limited(perform(message, code, playerId));
     } catch (error) {
       console.error(`[realtime] ${message.type} failed`, error);
-      send({ type: "rejected", request: message.type, code: ROOM_ERROR.Unavailable });
+      send({ type: "rejected", request: message.type, code: ROOM_ERROR.Unavailable, ...about });
       return;
     }
     if (isClosed()) return;
@@ -386,7 +393,7 @@ export function attachConnection(socket: WebSocket, deps: ConnectionDeps): void 
     if (result.room !== undefined) {
       deliver(result.room, playerId, { force: LEAVE_REQUESTS.has(message.type) });
     }
-    send({ type: "rejected", request: message.type, code: result.error });
+    send({ type: "rejected", request: message.type, code: result.error, ...about });
   }
 
   function perform(
@@ -415,6 +422,8 @@ export function attachConnection(socket: WebSocket, deps: ConnectionDeps): void 
           gameNumber: message.gameNumber,
           moveIndex: message.moveIndex,
         });
+      case "chat":
+        return service.chat(code, playerId, { id: message.id, body: message.body });
     }
   }
 }

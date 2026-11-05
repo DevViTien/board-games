@@ -1,6 +1,9 @@
 import type { GameRecord, PlayerIndex } from "@board-games/engine";
 import {
+  type ChatBody,
+  chatBodySchema,
   gameRecordSchema,
+  looseListSchema,
   type RoomCode,
   roomCodeSchema,
   type RoomView,
@@ -8,7 +11,9 @@ import {
 import { z } from "zod";
 
 /**
- * Raised on every change to what is stored. `parseStoredRoom` still reads the formats listed in
+ * Raised on a change to what is stored that an older server could not read: a rollback then loses
+ * every room, as another format reads as no room. `chat` did not raise it: an older server drops it,
+ * and `parseStoredRoom` reads a room without it. `parseStoredRoom` still reads the formats listed in
  * its schema (a room written before a deploy keeps its game); any other format reads as no room.
  */
 export const STORED_ROOM_FORMAT = 3;
@@ -27,6 +32,21 @@ export interface RoomPlayer {
  */
 export type StoredSeat =
   ({ readonly kind: "human"; readonly standIn: boolean } & RoomPlayer) | { readonly kind: "ai" };
+
+/** A chat message as the room keeps it (design of `add-room-chat`, §2). */
+export interface StoredChatMessage {
+  /** The revision of the write that added it: rises through the room, whoever sends. */
+  readonly seq: number;
+  /** Chosen by the sender, unique among their own messages: sending it again adds nothing. */
+  readonly id: string;
+  /** For the rate limit, for telling duplicates, and for `mine`; never sent to any client. */
+  readonly playerId: string;
+  /** The sender's name when they sent it: seats rotate and names change. */
+  readonly name: string;
+  /** Server time, in ms. */
+  readonly at: number;
+  readonly body: ChatBody;
+}
 
 /** A room as the store keeps it: the only state of a room, so any instance can serve it. */
 export interface StoredRoom {
@@ -51,7 +71,25 @@ export interface StoredRoom {
    * filling up); `null` while the room waits for players or once the game has a result.
    */
   readonly turnStartedAt: number | null;
+  /** The latest messages, oldest first: outside `record`, so a game stays its list of moves. */
+  readonly chat: readonly StoredChatMessage[];
 }
+
+const storedChatMessageSchema = z.object({
+  seq: z.number().int().positive(),
+  id: z.string(),
+  playerId: z.string(),
+  name: z.string(),
+  at: z.number(),
+  body: chatBodySchema,
+}) satisfies z.ZodType<StoredChatMessage>;
+
+/**
+ * Read message by message (`looseListSchema`), so a damaged one, or one of a later version, never
+ * makes the whole room read as no room. Not a list at all reads as an empty one, like a room stored
+ * before chat: `STORED_ROOM_FORMAT` did not have to change, and a rollback keeps every room.
+ */
+const storedChatSchema = looseListSchema(storedChatMessageSchema);
 
 const roomFields = {
   code: roomCodeSchema,
@@ -78,6 +116,7 @@ const currentFormatSchema = z.object({
       .nullable(),
   ),
   turnStartedAt: z.number().nullable(),
+  chat: storedChatSchema,
 }) satisfies z.ZodType<StoredRoom>;
 
 /**
@@ -117,6 +156,7 @@ const formatTwoSchema = z
       seat?.kind === "human" ? { ...seat, standIn: false } : seat,
     ),
     turnStartedAt: legacyTurnStart(room),
+    chat: [],
   }));
 
 /**
@@ -137,6 +177,7 @@ const formatOneSchema = z
       player === null ? null : { kind: "human", ...player, standIn: false },
     ),
     turnStartedAt: legacyTurnStart(room),
+    chat: [],
   }));
 
 const storedRoomSchema = z.union([currentFormatSchema, formatTwoSchema, formatOneSchema]);
@@ -152,11 +193,12 @@ export function parseStoredRoom(json: string): StoredRoom | null {
 }
 
 /**
- * The room as clients see it at server time `now`: names, stand-ins and AI seats only, the host by
- * seat, no `playerId`, and how long the turn has lasted. Never replays the game: it runs for every
- * connection on every send, and replaying a long game of chess takes hundreds of ms.
+ * The room as the client of `viewerId` sees it at server time `now`: names, stand-ins and AI seats
+ * only, the host by seat, no `playerId`, how long the turn has lasted, and, only for someone with a
+ * seat, the chat, each message telling whether it is theirs. Never replays the game: it runs for
+ * every connection on every send, and replaying a long game of chess takes hundreds of ms.
  */
-export function toRoomView(room: StoredRoom, now: number): RoomView {
+export function toRoomView(room: StoredRoom, now: number, viewerId: string): RoomView {
   return {
     code: room.code,
     gameId: room.gameId,
@@ -172,6 +214,16 @@ export function toRoomView(room: StoredRoom, now: number): RoomView {
     record: room.record,
     // Instances' clocks may differ by a few ms: never a negative duration.
     turnIdleMs: room.turnStartedAt === null ? null : Math.max(0, now - room.turnStartedAt),
+    chat:
+      seatOf(room, viewerId) === null
+        ? []
+        : room.chat.map(({ seq, id, playerId, name, body }) => ({
+            seq,
+            id,
+            name,
+            mine: playerId === viewerId,
+            body,
+          })),
   };
 }
 

@@ -97,8 +97,12 @@ async function move(mover: TestClient, other: TestClient, moveIndex: number, cel
   mover.send({ type: "move", gameNumber: 1, moveIndex, move: { cell } });
   const mine = expectType(await mover.next(), "room");
   const theirs = expectType(await other.next(), "room");
-  // Sent a few ms apart: the turn's duration may differ.
-  expect(theirs.room).toEqual({ ...mine.room, turnIdleMs: theirs.room.turnIdleMs });
+  // Sent a few ms apart: the turn's duration may differ. Each reads their own chat.
+  expect(theirs.room).toEqual({
+    ...mine.room,
+    turnIdleMs: theirs.room.turnIdleMs,
+    chat: theirs.room.chat,
+  });
   expect(theirs.room.turnIdleMs === null).toBe(mine.room.turnIdleMs === null);
   return mine.room;
 }
@@ -665,7 +669,206 @@ describe("protection", () => {
   });
 });
 
+describe("chat", () => {
+  const chat = (id: string, text: string) => ({
+    type: "chat",
+    id,
+    body: { kind: "text", text },
+  });
+
+  it("brings a message to everyone with a seat, each told whether it is theirs", async () => {
+    const context = await start();
+    const { lan, an } = await startGame(context);
+
+    lan.send(chat("chat-0123", "chào"));
+
+    const mine = expectType(await lan.next(), "room");
+    const theirs = expectType(await an.next(), "room");
+    expect(mine.room.chat).toEqual([
+      {
+        seq: mine.room.revision,
+        id: "chat-0123",
+        name: "Lan",
+        mine: true,
+        body: { kind: "text", text: "chào" },
+      },
+    ]);
+    expect(theirs.room.chat[0]).toMatchObject({ name: "Lan", mine: false });
+  });
+
+  it("Trạng thái phòng không chứa playerId: no message carries one, as sent", async () => {
+    const context = await start();
+    const { lan, an } = await startGame(context);
+
+    lan.send(chat("chat-0123", "chào"));
+    await an.next();
+
+    const received = JSON.stringify(an.received);
+    expect(received).toContain("chào");
+    expect(received).not.toContain("playerId");
+    expect(received).not.toContain(LAN.playerId);
+    expect(received).not.toContain(AN.playerId);
+  });
+
+  it("Người chưa có ghế không thấy tin: sends no message to a connection without a seat, then all of them once seated", async () => {
+    const context = await start();
+    const code = await createRoom(context);
+    const lan = await join(context, code, LAN);
+    lan.client.send(chat("chat-0123", "chào"));
+    await lan.client.next();
+
+    const visitor = await join(context, code, AN);
+    expect(visitor.first.room.chat).toEqual([]);
+    expect(visitor.first.you).toBeNull();
+    expect(JSON.stringify(visitor.client.received)).not.toContain("chào");
+
+    visitor.client.send(sitMessage(AN));
+    const seated = expectType(await visitor.client.next(), "room");
+    expect(seated.room.chat).toHaveLength(1);
+  });
+
+  it("Người chưa có ghế gửi tin: refuses it with not-seated and the id, and the connection stays", async () => {
+    const context = await start();
+    const code = await createRoom(context);
+    const { client } = await join(context, code, AN);
+
+    client.send(chat("chat-0123", "chào"));
+
+    expect(await client.next()).toEqual({
+      type: "rejected",
+      request: "chat",
+      code: "not-seated",
+      id: "chat-0123",
+    });
+    client.send({ type: "ping" });
+    expect(await client.next()).toEqual({ type: "pong" });
+  });
+
+  it.each([
+    ["Tin quá dài", { kind: "text", text: "a".repeat(201) }],
+    ["Câu có sẵn không có trong danh sách", { kind: "preset", preset: "not-a-preset" }],
+  ])("%s: refuses it with invalid-chat, and the game plays on", async (_label, body) => {
+    const context = await start();
+    const { lan, an } = await startGame(context);
+
+    lan.send({ type: "chat", id: "chat-0123", body });
+
+    expect(await lan.next()).toEqual({
+      type: "rejected",
+      request: "chat",
+      code: "invalid-chat",
+      id: "chat-0123",
+    });
+    await move(lan, an, 0, 4);
+  });
+
+  it("Tin thứ sáu: refuses it with chat-too-fast, and the game plays on", async () => {
+    const context = await start();
+    const { lan, an } = await startGame(context);
+
+    for (let index = 0; index < 6; index += 1) lan.send(chat(`chat-${String(index)}-012`, "a"));
+    for (let index = 0; index < 5; index += 1) expectType(await lan.next(), "room");
+    for (let index = 0; index < 5; index += 1) expectType(await an.next(), "room");
+
+    expect(await lan.next()).toEqual({
+      type: "rejected",
+      request: "chat",
+      code: "chat-too-fast",
+      id: "chat-5-012",
+    });
+    await move(lan, an, 0, 4);
+  });
+
+  it("Gửi lại sau khi không có trả lời: answers a message sent again with the room, without writing", async () => {
+    const context = await start();
+    const { lan, an } = await startGame(context);
+    lan.send(chat("chat-0123", "chào"));
+    const first = expectType(await lan.next(), "room");
+    await an.next();
+
+    lan.send(chat("chat-0123", "chào"));
+
+    const again = expectType(await lan.next(), "room");
+    expect(again.room.revision).toBe(first.room.revision);
+    expect(again.room.chat).toHaveLength(1);
+  });
+
+  it("Kho không trả lời: refuses it with unavailable and keeps the connection, and the game plays on", async () => {
+    const context = await start({ storeTimeoutMs: 50 });
+    const { lan, an } = await startGame(context);
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const restore = context.store.intercept("get", () => new Promise<never>(() => undefined));
+
+    lan.send(chat("chat-0123", "chào"));
+
+    expect(await lan.next()).toEqual({
+      type: "rejected",
+      request: "chat",
+      code: "unavailable",
+      id: "chat-0123",
+    });
+    restore();
+    error.mockRestore();
+    await move(lan, an, 0, 4);
+  });
+
+  it("Kho lỗi không log nội dung: logs that it failed, but not what was written", async () => {
+    const context = await start();
+    const { lan } = await startGame(context);
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const restore = context.store.intercept("update", () => {
+      throw new Error("Redis is down");
+    });
+
+    lan.send(chat("chat-0123", "bí mật của Lan"));
+    expectType(await lan.next(), "rejected");
+
+    expect(error).toHaveBeenCalled();
+    const logged = error.mock.calls
+      .flat()
+      .map((value) => (value instanceof Error ? value.message : String(value)))
+      .join(" ");
+    expect(logged).toContain("chat failed");
+    expect(logged).not.toContain("bí mật");
+    restore();
+    error.mockRestore();
+  });
+
+  it("closes no connection for a message out of the protocol's shape but in a seat's right", async () => {
+    const context = await start();
+    const { lan, an } = await startGame(context);
+
+    lan.send({ type: "chat", id: "chat-0123", body: { kind: "text", text: "x".repeat(15_000) } });
+
+    expect(await lan.next()).toMatchObject({ type: "rejected", code: "invalid-chat" });
+    await move(lan, an, 0, 4);
+  });
+});
+
 describe("several instances", () => {
+  it("Tin chat ở hai instance: brings a message to a player connected to another instance", async () => {
+    const store = createMemoryRoomStore();
+    const first = await start({}, store);
+    const second = await start({}, store);
+    const code = await createRoom(first);
+    const lan = await join(first, code, LAN);
+    const an = await join(second, code, AN);
+    an.client.send(sitMessage(AN));
+    expectType(await an.client.next(), "room");
+    expectType(await lan.client.next(), "room");
+
+    lan.client.send({ type: "chat", id: "chat-0123", body: { kind: "preset", preset: "hello" } });
+
+    const theirs = expectType(await an.client.next(), "room");
+    expect(theirs.room.chat).toEqual([
+      expect.objectContaining({
+        name: "Lan",
+        mine: false,
+        body: { kind: "preset", preset: "hello" },
+      }),
+    ]);
+  });
+
   it("brings a move to a player connected to another instance", async () => {
     const store: MemoryRoomStore = createMemoryRoomStore();
     const first = await start({}, store);

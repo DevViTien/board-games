@@ -17,6 +17,9 @@ import { type RoomPlayer, seatOf, type StoredRoom, toRoomView } from "./room";
 import { createRoomService, type ServiceResult } from "./room-service";
 import { createMemoryRoomStore } from "./store/memory";
 
+/** Someone without a seat; these views do not depend on who asks. */
+const NOBODY = "nobody-0123456789abcd";
+
 // Resigning and abandoning in online rooms (change `add-resign-and-abandon`): the server decides
 // both, by its own clock and the time it stored when the turn began.
 
@@ -140,7 +143,7 @@ describe("Thời điểm bắt đầu lượt", () => {
   it("Chưa có lượt: a room with only its creator has no turn", async () => {
     const context = await room("tictactoe", 2, []);
 
-    const view = toRoomView(await context.current(), START + MINUTE);
+    const view = toRoomView(await context.current(), START + MINUTE, NOBODY);
 
     expect(view.turnIdleMs).toBeNull();
   });
@@ -152,7 +155,7 @@ describe("Thời điểm bắt đầu lượt", () => {
     const seated = expectOk(await context.service.sit(context.code, AN));
 
     expect(seated.turnStartedAt).toBe(START + 10 * MINUTE);
-    expect(toRoomView(seated, context.clock.now).turnIdleMs).toBe(0);
+    expect(toRoomView(seated, context.clock.now, NOBODY).turnIdleMs).toBe(0);
   });
 
   it("Thời gian của lượt: a player who comes back sees how long the turn has lasted", async () => {
@@ -162,7 +165,7 @@ describe("Thời điểm bắt đầu lượt", () => {
 
     const back = expectOk(await context.service.join(context.code, AN.playerId, "An"));
 
-    expect(toRoomView(back, context.clock.now).turnIdleMs).toBe(2 * MINUTE);
+    expect(toRoomView(back, context.clock.now, NOBODY).turnIdleMs).toBe(2 * MINUTE);
   });
 
   it("Đổi tên không tính lại lượt: a rename keeps the turn's start", async () => {
@@ -173,7 +176,7 @@ describe("Thời điểm bắt đầu lượt", () => {
     const renamed = expectOk(await context.service.join(context.code, AN.playerId, "An Nguyễn"));
 
     expect(renamed.players[1]).toMatchObject({ name: "An Nguyễn" });
-    expect(toRoomView(renamed, context.clock.now).turnIdleMs).toBe(3 * MINUTE);
+    expect(toRoomView(renamed, context.clock.now, NOBODY).turnIdleMs).toBe(3 * MINUTE);
   });
 
   it("restarts the turn on every move and on a new game, and stops it once the game has a result", async () => {
@@ -186,7 +189,7 @@ describe("Thời điểm bắt đầu lượt", () => {
 
     const won = await play(context, LAN, { cell: 2 });
     expect(won.turnStartedAt).toBeNull();
-    expect(toRoomView(won, context.clock.now).turnIdleMs).toBeNull();
+    expect(toRoomView(won, context.clock.now, NOBODY).turnIdleMs).toBeNull();
 
     context.wait(MINUTE);
     const next = expectOk(await context.service.rematch(context.code, AN.playerId, 1));
@@ -222,7 +225,7 @@ describe("Đầu hàng trong phòng", () => {
     expect(seatOf(resigned, AN.playerId)).toBe(1);
     // Lan's turn goes on.
     expect(resigned.turnStartedAt).toBe(before.turnStartedAt);
-    expect(toRoomView(resigned, context.clock.now).seats[1]).toEqual({
+    expect(toRoomView(resigned, context.clock.now, NOBODY).seats[1]).toEqual({
       kind: "human",
       name: "An",
       standIn: true,
@@ -362,7 +365,9 @@ describe("Từ chối đầu hàng và xử bỏ ván", () => {
     expect(claimed).toMatchObject({ ok: false, error: "not-abandoned" });
     if (claimed.ok || claimed.room === undefined) throw new Error("Expected the room");
     expect(claimed.room.revision).toBe(moved.revision);
-    expect(toRoomView(claimed.room, context.clock.now).turnIdleMs).toBe(4 * MINUTE + 50_000);
+    expect(toRoomView(claimed.room, context.clock.now, NOBODY).turnIdleMs).toBe(
+      4 * MINUTE + 50_000,
+    );
   });
 
   it("Tự xử mình: refuses a claim on one's own turn", async () => {

@@ -3,12 +3,21 @@ import { type GameRecord, RECORD_VERSION } from "@board-games/engine";
 import type { RoomCode } from "@board-games/protocol";
 import { describe, expect, it, vi } from "vitest";
 
-import { parseStoredRoom, seatOf, STORED_ROOM_FORMAT, type StoredRoom, toRoomView } from "./room";
+import {
+  parseStoredRoom,
+  seatOf,
+  STORED_ROOM_FORMAT,
+  type StoredChatMessage,
+  type StoredRoom,
+  toRoomView,
+} from "./room";
 
 vi.mock("@board-games/engine", { spy: true });
 
 const LAN = { playerId: "lan-0123456789abcdef", name: "Lan" };
 const AN = { playerId: "an-0123456789abcdefgh", name: "An" };
+/** Someone without a seat; most views here do not depend on who asks. */
+const NOBODY = "nobody-0123456789abcd";
 
 const record: GameRecord = {
   version: RECORD_VERSION,
@@ -34,6 +43,20 @@ function room(overrides: Partial<StoredRoom> = {}): StoredRoom {
     record,
     updatedAt: 1_000,
     turnStartedAt: 900,
+    chat: [],
+    ...overrides,
+  };
+}
+
+/** Messages of Lan and An, as stored. */
+function message(overrides: Partial<StoredChatMessage> = {}): StoredChatMessage {
+  return {
+    seq: 2,
+    id: "chat-0123",
+    playerId: LAN.playerId,
+    name: "Lan",
+    at: 950,
+    body: { kind: "text", text: "chào" },
     ...overrides,
   };
 }
@@ -58,6 +81,7 @@ describe("parseStoredRoom", () => {
     };
 
     expect(parseStoredRoom(JSON.stringify(formatTwo))).toEqual({
+      chat: [],
       ...formatTwo,
       format: 3,
       players: [
@@ -92,6 +116,7 @@ describe("parseStoredRoom", () => {
     expect(parseStoredRoom(JSON.stringify(formatOne))).toEqual({
       ...formatOne,
       format: 3,
+      chat: [],
       hostId: null,
       players: [
         { kind: "human", ...LAN, standIn: false },
@@ -125,9 +150,101 @@ describe("parseStoredRoom", () => {
   });
 });
 
+describe("the chat of a stored room", () => {
+  it("reads messages back from the JSON", () => {
+    const stored = room({ chat: [message(), message({ seq: 3, id: "chat-4567" })] });
+
+    expect(parseStoredRoom(JSON.stringify(stored))).toEqual(stored);
+  });
+
+  it("Phòng từ bản trước: reads a room of any earlier format as one with no message", () => {
+    const current: Record<string, unknown> = { ...room() };
+    delete current.chat;
+    expect(parseStoredRoom(JSON.stringify(current))?.chat).toEqual([]);
+
+    delete current.turnStartedAt;
+    const formatTwo = {
+      ...current,
+      format: 2,
+      players: [{ kind: "human", ...LAN }, { kind: "ai" }],
+    };
+    expect(parseStoredRoom(JSON.stringify(formatTwo))?.chat).toEqual([]);
+
+    const formatOne = { ...current, format: 1, players: [LAN, null] };
+    delete (formatOne as Record<string, unknown>).hostId;
+    expect(parseStoredRoom(JSON.stringify(formatOne))?.chat).toEqual([]);
+  });
+
+  it("Tin lưu hỏng: leaves out only what it cannot read, and never loses the room", () => {
+    const good = message();
+    const data = {
+      ...room(),
+      chat: [
+        good,
+        { ...good, seq: "three" },
+        "not a message",
+        null,
+        { ...good, seq: 4, body: { kind: "sticker", sticker: "cat" } },
+        { ...good, seq: 5, body: { kind: "preset", preset: "from-a-later-version" } },
+        message({ seq: 6, id: "chat-4567" }),
+      ],
+    };
+
+    const parsed = parseStoredRoom(JSON.stringify(data));
+
+    expect(parsed?.chat.map(({ seq }) => seq)).toEqual([2, 6]);
+    expect(parsed?.record).toEqual(record);
+  });
+
+  it("reads a chat that is not a list as no message", () => {
+    expect(parseStoredRoom(JSON.stringify({ ...room(), chat: "broken" }))?.chat).toEqual([]);
+    expect(parseStoredRoom(JSON.stringify({ ...room(), chat: null }))?.chat).toEqual([]);
+  });
+});
+
 describe("toRoomView", () => {
+  const withChat = room({
+    chat: [message(), message({ seq: 3, playerId: AN.playerId, name: "An" })],
+  });
+
+  it("Người chưa có ghế không thấy tin: gives someone without a seat no message", () => {
+    expect(toRoomView(withChat, 1_000, NOBODY).chat).toEqual([]);
+  });
+
+  it("Tin không có playerId: tells the name and whether it is theirs, but no playerId", () => {
+    const view = toRoomView(withChat, 1_000, LAN.playerId);
+
+    expect(view.chat).toEqual([
+      { seq: 2, id: "chat-0123", name: "Lan", mine: true, body: { kind: "text", text: "chào" } },
+      { seq: 3, id: "chat-0123", name: "An", mine: false, body: { kind: "text", text: "chào" } },
+    ]);
+    expect(JSON.stringify(view)).not.toContain("playerId");
+    expect(JSON.stringify(view)).not.toContain(LAN.playerId);
+    expect(JSON.stringify(view)).not.toContain(AN.playerId);
+  });
+
+  it("Tin của mình sau khi xoay ghế: follows the player, not the seat", () => {
+    const rotated = {
+      ...withChat,
+      players: [
+        { kind: "human", ...AN, standIn: false },
+        { kind: "ai" },
+        { kind: "human", ...LAN, standIn: false },
+      ],
+    } satisfies StoredRoom;
+
+    expect(toRoomView(rotated, 1_000, LAN.playerId).chat.map(({ mine }) => mine)).toEqual([
+      true,
+      false,
+    ]);
+  });
+
+  it("gives a stand-in's person the messages too: the seat is still theirs", () => {
+    expect(toRoomView(withChat, 1_000, AN.playerId).chat).toHaveLength(2);
+  });
+
   it("Người tạo là chủ phòng: tells the host's seat, AI seats, stand-ins and names, but no playerId", () => {
-    const view = toRoomView(room(), 1_000);
+    const view = toRoomView(room(), 1_000, NOBODY);
 
     expect(view.host).toBe(0);
     expect(view.seats).toEqual([
@@ -149,26 +266,27 @@ describe("toRoomView", () => {
         ],
       }),
       1_000,
+      NOBODY,
     );
 
     expect(view.host).toBe(1);
   });
 
   it("has no host for a room stored before hosts", () => {
-    expect(toRoomView(room({ hostId: null }), 1_000).host).toBeNull();
+    expect(toRoomView(room({ hostId: null }), 1_000, NOBODY).host).toBeNull();
   });
 
   it("Thời gian của lượt: tells how long the turn has lasted at the time it is sent", () => {
-    expect(toRoomView(room({ turnStartedAt: 10_000 }), 130_000).turnIdleMs).toBe(120_000);
+    expect(toRoomView(room({ turnStartedAt: 10_000 }), 130_000, NOBODY).turnIdleMs).toBe(120_000);
     // Another instance whose clock is a little behind: never a negative duration.
-    expect(toRoomView(room({ turnStartedAt: 10_000 }), 9_990).turnIdleMs).toBe(0);
-    expect(toRoomView(room({ turnStartedAt: null }), 130_000).turnIdleMs).toBeNull();
+    expect(toRoomView(room({ turnStartedAt: 10_000 }), 9_990, NOBODY).turnIdleMs).toBe(0);
+    expect(toRoomView(room({ turnStartedAt: null }), 130_000, NOBODY).turnIdleMs).toBeNull();
   });
 
   it("never replays the game", () => {
     vi.mocked(engine.fromRecord).mockClear();
 
-    toRoomView(room(), 5_000);
+    toRoomView(room(), 5_000, NOBODY);
 
     expect(engine.fromRecord).not.toHaveBeenCalled();
   });

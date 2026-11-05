@@ -15,6 +15,9 @@ import { type RoomPlayer, seatOf, type StoredRoom, type StoredSeat, toRoomView }
 import { createRoomService, type ServiceResult } from "./room-service";
 import { createMemoryRoomStore, type MemoryRoomStore } from "./store/memory";
 
+/** Someone without a seat; these views do not depend on who asks. */
+const NOBODY = "nobody-0123456789abcd";
+
 // --- fixtures ---------------------------------------------------------------------------------
 
 interface DiceState {
@@ -685,7 +688,7 @@ describe("toRoomView", () => {
   it("holds the names of both seated players but no playerId", async () => {
     const { store, code } = await tictactoeRoom();
 
-    const view = toRoomView(await stored(store, code), 0);
+    const view = toRoomView(await stored(store, code), 0, NOBODY);
 
     expect(view.seats).toEqual([
       { kind: "human", name: "Lan", standIn: false },
