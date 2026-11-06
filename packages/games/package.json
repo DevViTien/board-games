@@ -10,7 +10,8 @@
     "./tictactoe": "./src/tictactoe/index.ts",
     "./caro": "./src/caro/index.ts",
     "./ludo": "./src/ludo/index.ts",
-    "./chess": "./src/chess/index.ts"
+    "./chess": "./src/chess/index.ts",
+    "./fence-race": "./src/fence-race/index.ts"
   },
   "scripts": {
     "lint": "eslint .",
