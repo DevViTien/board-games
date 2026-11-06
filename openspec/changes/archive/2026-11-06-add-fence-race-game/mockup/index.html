@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cờ rào</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/theme.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="shell">
+  <aside class="panel" aria-label="Bảng điều khiển mockup">
+    <h1 class="panel-title">Cờ rào</h1>
+    <p class="panel-sub">Mockup chơi được, luật viết thật. Ô bên phải là màn hình app, bảng này chỉ để thử.</p>
+
+    <fieldset><legend>Khung</legend><div id="vps" class="radio-list"></div></fieldset>
+
+    <fieldset><legend>Giao diện</legend>
+      <div class="radio-row">
+        <label><input type="radio" name="theme" value="light" checked> Sáng</label>
+        <label><input type="radio" name="theme" value="dark"> Tối</label>
+      </div>
+      <label class="check"><input type="checkbox" id="reduced"> Giảm chuyển động</label>
+    </fieldset>
+
+    <fieldset><legend>Trạng thái</legend><div id="scenes" class="scene-list"></div></fieldset>
+
+    <fieldset><legend>Rào khi kéo</legend>
+      <div class="radio-list">
+        <label><input type="radio" name="drag" value="keep" checked> Kéo, giữ hướng (đề xuất)</label>
+        <label><input type="radio" name="drag" value="nearest"> Kéo, đổi theo đường kẻ gần nhất</label>
+        <label><input type="radio" name="drag" value="nodrag"> Bỏ kéo: chạm để dời, trang cuộn được</label>
+      </div>
+    </fieldset>
+
+    <fieldset><legend>Thử nghiệm</legend>
+      <label class="check"><input type="checkbox" id="showPath"> Luôn hiện đường ngắn nhất của mọi người</label>
+      <label class="check"><input type="checkbox" id="finger"> Vẽ ngón tay khi chạm (xem bị che gì)</label>
+      <label class="check"><input type="checkbox" id="colourNames"> Nhãn như app cùng máy (Đỏ, Xanh dương)</label>
+      <div class="panel-actions"><button type="button" class="pbtn" id="botMove">Đối thủ đi một nước</button></div>
+    </fieldset>
+
+    <section class="notes" aria-label="Ghi chú và số đo">
+      <h2>Ghi chú trạng thái này</h2>
+      <div id="notes"></div>
+      <h2>Số đo trực tiếp</h2>
+      <dl id="measure" class="measure"></dl>
+    </section>
+  </aside>
+
+  <div class="stage" id="stage">
+    <div class="device-wrap" id="deviceWrap">
+      <div class="device" id="device"><div class="screen" id="screen" data-game="fence-race"></div></div>
+    </div>
+  </div>
+</div>
+<dialog id="resignDialog" class="dialog" aria-labelledby="resignTitle">
+  <h2 id="resignTitle">Đầu hàng ván này?</h2>
+  <p>Máy sẽ chơi thay bạn tới hết ván. Bạn vẫn ở trong phòng để xem và chơi ván sau.</p>
+  <form method="dialog" class="dialog-actions"><button class="btn btn-secondary btn-sm" value="cancel">Chơi tiếp</button><button class="btn btn-secondary btn-sm" value="ok">Đầu hàng</button></form>
+</dialog>
+<script src="js/rules.js"></script>
+<script src="js/draw.js"></script>
+<script src="js/scenes.js"></script>
+<script src="js/mock.js"></script>
+</body>
+</html>

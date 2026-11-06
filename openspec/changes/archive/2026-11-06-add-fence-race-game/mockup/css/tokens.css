@@ -1,0 +1,216 @@
+/* Copied verbatim from packages/ui/src/styles.css. The game's own values are in theme.css. */
+:root {
+  color-scheme: light;
+  /* Paper, the page. */
+  --bg: #f6f5f1;
+  /* Cards, fields. */
+  --surface: #ffffff;
+  /* Sunken areas: the track of a segmented control, a row of a list. */
+  --surface-muted: #efede6;
+  /* The chosen item of a segmented control: raised above its track in both themes. */
+  --surface-raised: #ffffff;
+  /* Ink. */
+  --fg: #17182b;
+  --fg-muted: #5e6072;
+  /* Decorative edges: cards, dividers. */
+  --border: #e2e0d8;
+  /* The edge of a control (field, secondary button, choosable item): at least 3:1 against --bg,
+     --surface, --surface-muted and --surface-raised. */
+  --border-control: #7c7a72;
+  /* The main action and links; a hue no piece colour has. */
+  --accent: #5b34e6;
+  --accent-hover: #4a26cf;
+  --accent-fg: #ffffff;
+  /* The lip under a primary button (decorative). */
+  --accent-press: #3a1fa8;
+  --accent-soft: #ece7ff;
+  --accent-ink: #3a1fa8;
+  /* The focus ring, two rings: ink outside, paper inside. One of them is at least 3:1 against any
+     background, boards and piece colours included. Never the accent, nor a game's markers. */
+  --focus-ring: #17182b;
+  --focus-ring-halo: #ffffff;
+  /* Errors: a field to fix, a request that failed. */
+  --danger: #c8372d;
+  --danger-soft: #fbe4e1;
+  --danger-ink: #a42a21;
+  --success: #138a62;
+  --success-soft: #dff5ec;
+  --success-ink: #0d6b4b;
+  --warning: #a15c00;
+  --warning-soft: #fff1d6;
+  --warning-ink: #9a5500;
+  /* The second accent: celebrations, highlights. */
+  --celebration: #d9500c;
+  --celebration-soft: #ffe9db;
+  --celebration-ink: #a6430c;
+  /* Dims the page behind a modal dialog. */
+  --overlay: oklch(0.22 0.015 250 / 0.4);
+  /*
+   * Piece colours of multiplayer games, named by colour (not by seat: in a two-player Ludo game the
+   * second seat is yellow), from the folk palette (son, chàm, hoè, lục). `-line` is the colour of
+   * an edge or a frame on the game's paper (yellow needs a darker one), `-ink` the symbol or text
+   * drawn on the colour, `-hover` the colour of a roll button pointed at or pressed. Pieces also
+   * carry a symbol, never colour alone.
+   */
+  --piece-red: #c8372d;
+  --piece-blue: #2c4a8c;
+  --piece-yellow: #d99a12;
+  --piece-green: #287a4c;
+  --piece-red-line: #c8372d;
+  --piece-blue-line: #2c4a8c;
+  --piece-yellow-line: #9a6a00;
+  --piece-green-line: #287a4c;
+  --piece-red-ink: #fffdf7;
+  --piece-blue-ink: #fffdf7;
+  --piece-yellow-ink: #17182b;
+  --piece-green-ink: #fffdf7;
+  --piece-red-hover: #b02e25;
+  --piece-blue-hover: #233d75;
+  --piece-yellow-hover: #e5a92a;
+  --piece-green-hover: #21673f;
+  /* The edge of a piece, so a yellow piece shows on a light cell. */
+  --piece-edge: #5a2a10;
+  /* Shadows, used as `shadow-card`, `shadow-press`, `shadow-raised` (see @theme below). */
+  --elevation-card: 0 1px 2px rgb(23 24 43 / 0.06);
+  --elevation-raised: 0 1px 3px rgb(23 24 43 / 0.18);
+
+  /*
+   * Each game's look (design §6 of `add-design-foundation`): a game overrides these inside
+   * `[data-game="<id>"]`, from `apps/web/src/games/<id>/theme.css`. The defaults follow the shared
+   * tokens, so they need no dark values of their own.
+   */
+  /* The page around the board. */
+  --game-page: var(--bg);
+  /* Behind the game's artwork on the menu and the setup screen. */
+  --game-tint: var(--surface-muted);
+  /* The board, or its cells. */
+  --game-board: var(--surface);
+  /* Lines, and the edge of a choosable cell: at least 3:1 against --game-board. */
+  --game-line: var(--border-control);
+  /* The marks of the first and second player of a two-player game. */
+  --game-mark-1: var(--fg);
+  --game-mark-2: var(--fg-muted);
+  /* A target or hinted cell. */
+  --game-highlight: var(--accent-soft);
+  /* The marker of the last move (dashed). */
+  --game-last-move: var(--fg-muted);
+  /* The winning line. */
+  --game-win: var(--celebration);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #121322;
+    --surface: #1b1c30;
+    --surface-muted: #24253b;
+    --surface-raised: #3a3c5c;
+    --fg: #f1f0f7;
+    --fg-muted: #a9aabf;
+    --border: #2c2e47;
+    --border-control: #8a8cab;
+    --accent: #a894ff;
+    --accent-hover: #bbacff;
+    --accent-fg: #121322;
+    --accent-press: #6f5bd6;
+    --accent-soft: #2d2752;
+    --accent-ink: #d9d0ff;
+    --focus-ring: #f1f0f7;
+    --focus-ring-halo: #121322;
+    --danger: #ff8a7e;
+    --danger-soft: #3a1e1c;
+    --danger-ink: #ffb3aa;
+    --success: #4cd3a0;
+    --success-soft: #173a30;
+    --success-ink: #7fe3bd;
+    --warning: #f2b04c;
+    --warning-soft: #3a2e17;
+    --warning-ink: #ffd08a;
+    --celebration: #ff9a5c;
+    --celebration-soft: #3a2a1e;
+    --celebration-ink: #ffb98c;
+    --overlay: oklch(0.05 0 0 / 0.6);
+    --piece-red: #e0574b;
+    --piece-blue: #4f9ad6;
+    --piece-yellow: #e8b13a;
+    --piece-green: #4fb47e;
+    --piece-red-line: #e0574b;
+    --piece-blue-line: #4f9ad6;
+    --piece-yellow-line: #e8b13a;
+    --piece-green-line: #4fb47e;
+    --piece-red-ink: #1f1a12;
+    --piece-blue-ink: #1f1a12;
+    --piece-yellow-ink: #1f1a12;
+    --piece-green-ink: #1f1a12;
+    --piece-red-hover: #e86a5f;
+    --piece-blue-hover: #66a8de;
+    --piece-yellow-hover: #efc060;
+    --piece-green-hover: #66c190;
+    --piece-edge: #fbf4e4;
+    --elevation-card: 0 0 #0000;
+    --elevation-raised: 0 1px 2px rgb(0 0 0 / 0.5);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #121322;
+  --surface: #1b1c30;
+  --surface-muted: #24253b;
+  --surface-raised: #3a3c5c;
+  --fg: #f1f0f7;
+  --fg-muted: #a9aabf;
+  --border: #2c2e47;
+  --border-control: #8a8cab;
+  --accent: #a894ff;
+  --accent-hover: #bbacff;
+  --accent-fg: #121322;
+  --accent-press: #6f5bd6;
+  --accent-soft: #2d2752;
+  --accent-ink: #d9d0ff;
+  --focus-ring: #f1f0f7;
+  --focus-ring-halo: #121322;
+  --danger: #ff8a7e;
+  --danger-soft: #3a1e1c;
+  --danger-ink: #ffb3aa;
+  --success: #4cd3a0;
+  --success-soft: #173a30;
+  --success-ink: #7fe3bd;
+  --warning: #f2b04c;
+  --warning-soft: #3a2e17;
+  --warning-ink: #ffd08a;
+  --celebration: #ff9a5c;
+  --celebration-soft: #3a2a1e;
+  --celebration-ink: #ffb98c;
+  --overlay: oklch(0.05 0 0 / 0.6);
+  --piece-red: #e0574b;
+  --piece-blue: #4f9ad6;
+  --piece-yellow: #e8b13a;
+  --piece-green: #4fb47e;
+  --piece-red-line: #e0574b;
+  --piece-blue-line: #4f9ad6;
+  --piece-yellow-line: #e8b13a;
+  --piece-green-line: #4fb47e;
+  --piece-red-ink: #1f1a12;
+  --piece-blue-ink: #1f1a12;
+  --piece-yellow-ink: #1f1a12;
+  --piece-green-ink: #1f1a12;
+  --piece-red-hover: #e86a5f;
+  --piece-blue-hover: #66a8de;
+  --piece-yellow-hover: #efc060;
+  --piece-green-hover: #66c190;
+  --piece-edge: #fbf4e4;
+  --elevation-card: 0 0 #0000;
+  --elevation-raised: 0 1px 2px rgb(0 0 0 / 0.5);
+}
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --top-bar-height: 3.5rem;
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+}
+/*

@@ -78,10 +78,10 @@ Menu SHALL có ô "Vào phòng" để nhập mã phòng online. Mã đúng đị
 
 Menu SHALL hiện mọi game đã có luật trong app dưới dạng chơi được, và mọi game đã lên kế hoạch cho MVP nhưng chưa có luật dưới dạng "Sắp có". Game chơi được SHALL đứng trước game "Sắp có". Một game MUST NOT hiện hai lần: khi game dự kiến được thêm luật, thẻ "Sắp có" của nó được thay bằng thẻ chơi được.
 
-#### Scenario: Menu có bốn game chơi được
+#### Scenario: Mọi game đã có luật đều chơi được
 
 - **WHEN** người chơi mở trang chủ
-- **THEN** thẻ Tic-tac-toe, Cờ caro, Cờ cá ngựa và Cờ vua đều chơi được
+- **THEN** thẻ Tic-tac-toe, Cờ caro, Cờ cá ngựa, Cờ vua và Cờ rào đều chơi được
 - **AND** menu không còn thẻ nào có nhãn "Sắp có"
 
 #### Scenario: Game dự kiến đã có luật không bị lặp
@@ -103,6 +103,11 @@ Menu SHALL hiện mọi game đã có luật trong app dưới dạng chơi đư
 
 - **WHEN** menu hiện bằng tiếng Việt thẻ Cờ vua
 - **THEN** thẻ ghi "2 người" và "~20 phút", có hai lối vào "Chơi" và "Online", và không có nhãn "Sắp có"
+
+#### Scenario: Thẻ Cờ rào
+
+- **WHEN** menu hiện bằng tiếng Việt thẻ Cờ rào
+- **THEN** thẻ ghi "2–4 người" và "~15 phút", có hai lối vào "Chơi" và "Online", và không có nhãn "Sắp có"
 
 ### Requirement: Tuỳ chọn luật trong mục tiếp tục ván dở
 

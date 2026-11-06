@@ -563,7 +563,7 @@ Khi chờ một người ở xa tự chơi ghế của họ, từ 1 phút màn h
 
 ### Requirement: Nhắc người đến lượt
 
-Trong ván online, khi lượt của người ở thiết bị này đã kéo dài từ 4 phút, màn hình SHALL nhắc còn bao lâu trước khi người khác xử được bỏ ván (thua, hay máy chơi thay với phòng Cờ cá ngựa từ ba ghế). Lời nhắc SHALL được đọc một lần khi xuất hiện. Đi một nước SHALL làm lời nhắc biến mất.
+Trong ván online, khi lượt của người ở thiết bị này đã kéo dài từ 4 phút, màn hình SHALL nhắc còn bao lâu trước khi người khác xử được bỏ ván (thua, hay máy chơi thay với phòng từ ba ghế của game có máy). Lời nhắc SHALL được đọc một lần khi xuất hiện. Đi một nước SHALL làm lời nhắc biến mất.
 
 #### Scenario: Còn dưới một phút
 

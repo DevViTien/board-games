@@ -1,0 +1,80 @@
+/*
+ * Cờ rào's look ("đồng làng trên giấy dó": fields seen from above, drawn in ink on straw paper; by
+ * night, in moonlight). Values of the shared `--game-*` contract and its own `--fence-*`, inside
+ * `[data-game="fence-race"]` only, as `apps/web/src/games/fence-race/theme.css` will have them. The
+ * seats' colours are the shared `--piece-*`. Light here, dark in both blocks below, which stay
+ * identical.
+ */
+[data-game="fence-race"] {
+  /* The page around the board: straw paper, greyer and darker than Cờ cá ngựa's. */
+  --game-page: #ece7d6;
+  /* The paper mat under the fields; the artwork's background. */
+  --game-tint: #f5f1e1;
+  /* A field of young rice. */
+  --game-board: #e6e3ad;
+  /* A field of ripe rice. */
+  --fence-plot-2: #efd98f;
+  /* A ploughed field. */
+  --fence-plot-3: #dcc39b;
+  /* The dikes between fields: at least 3:1 against every field. */
+  --game-line: #78663c;
+  /* The rows in a field (decorative). */
+  --fence-row: #bcae79;
+  /* The mat's edge. */
+  --fence-frame: #3f3621;
+  /* A fence: ink, at least 3:1 against every field and against the dikes. */
+  --fence-wall: #1c1830;
+  /* The paper edge around a fence, a mark and a path. */
+  --fence-halo: #fbf7e8;
+  /* The fence being tried: the app's accent, a hue no piece has. */
+  --fence-preview: #5b34e6;
+  /* A fence that may not go there. */
+  --fence-bad: #a42a21;
+  /* What the bad mark's cross is drawn with. */
+  --fence-bad-ink: #ffffff;
+  /* The dot of a cell the piece can step to, the frame of a cell under the keyboard: ink. */
+  --game-highlight: #1c1830;
+  /* The dashed marker of the last move. */
+  --game-last-move: #1c1830;
+  /* The turn line says where a fence went: smaller than the other games', 16 px on a phone (two
+     lines keep a move of the opponent from pushing the board). */
+  --text-status: clamp(1rem, 0.85rem + 0.8vw, 1.625rem);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) [data-game="fence-race"] {
+    --game-page: #16150f;
+    --game-tint: #211f15;
+    --game-board: #34381f;
+    --fence-plot-2: #433a19;
+    --fence-plot-3: #3e2e20;
+    --game-line: #8d855a;
+    --fence-row: #4e4d33;
+    --fence-frame: #b9af82;
+    --fence-wall: #f7f0d8;
+    --fence-halo: #16150f;
+    --fence-preview: #a894ff;
+    --fence-bad: #ff8a7e;
+    --fence-bad-ink: #1f1a12;
+    --game-highlight: #f7f0d8;
+    --game-last-move: #f7f0d8;
+  }
+}
+
+:root[data-theme="dark"] [data-game="fence-race"] {
+  --game-page: #16150f;
+  --game-tint: #211f15;
+  --game-board: #34381f;
+  --fence-plot-2: #433a19;
+  --fence-plot-3: #3e2e20;
+  --game-line: #8d855a;
+  --fence-row: #4e4d33;
+  --fence-frame: #b9af82;
+  --fence-wall: #f7f0d8;
+  --fence-halo: #16150f;
+  --fence-preview: #a894ff;
+  --fence-bad: #ff8a7e;
+  --fence-bad-ink: #1f1a12;
+  --game-highlight: #f7f0d8;
+  --game-last-move: #f7f0d8;
+}

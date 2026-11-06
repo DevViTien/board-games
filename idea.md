@@ -59,13 +59,17 @@ Chỉ chọn **game truyền thống/dân gian/cổ điển** (luật thuộc ph
 
 ### 3.3 Game tự thiết kế (bản sắc riêng của app)
 
+Đã có:
+
+- **Cờ rào** — 2–4 người, đua quân về cổng làng ở cạnh đối diện (5 ô giữa của cạnh) và đặt rào làm người khác đi xa hơn, không được bịt kín đường của ai; mỗi người có một lần phá rào, quân không chặn nhau và được đứng chung ô. Bàn 11 × 9 khi hai người, 9 × 9 khi ba hoặc bốn người; ván luôn kết thúc nhờ giới hạn số nước.
+
 Một vài phác thảo để phát triển thêm:
 
 - **Cờ Sen** — bàn lục giác, mỗi người đặt "lá sen" để nối hai bờ hồ đối diện; đặt lá cạnh lá đối thủ thì có thể lật lá đó nếu kẹp được giữa hai lá của mình. Kết hợp ý tưởng nối đường và lật quân.
 - **Đua Thuyền Rồng** — 2–4 người, mỗi lượt chọn bài số (không xúc xắc) để tiến thuyền trên sông có xoáy nước và dòng chảy; bài đã dùng thì phải chờ một vòng mới lấy lại được.
 - **Chợ Phiên** — game đặt quân giành ô hàng trên bàn 6×6, mỗi ô cho điểm khác nhau theo cụm hàng hoá liền kề.
 
-Các game gốc làm sau khi kiến trúc ổn định (v2+), vì cần thời gian thử luật và cân bằng.
+Các game gốc làm sau khi kiến trúc ổn định (v2+), vì cần thời gian thử luật và cân bằng; Cờ rào được đưa lên làm sớm (quyết định 17 ở mục 9).
 
 ### 3.4 Luật cờ cá ngựa: các biến thể
 
@@ -345,7 +349,8 @@ Vì `Board` là component React nên nằm ở `apps/web`, còn `GameDefinition`
 | 10 | Ngôn ngữ | **Tiếng Việt (mặc định), tiếng Anh, tiếng Nhật**, có ngay từ đầu |
 | 11 | Ván dở | **Lưu theo game × chế độ chơi** (cùng máy / với máy): ván cùng máy và ván với máy của cùng một game không đè lên nhau |
 | 12 | Thứ tự mốc | **M2 (AI) trước M3** (thử nghiệm online trên Vercel) |
-| 13 | Bỏ ván online | **5 phút** cho mọi game: người còn lại bấm nút (không hẹn giờ phía server); phòng 2 ghế → kết thúc ván (người kia thắng), phòng Cờ cá ngựa từ 3 ghế → máy chơi thay tới hết ván, ghế trả lại ở "Chơi lại" (04/11/2026, change `add-resign-and-abandon`) |
-| 14 | Đầu hàng | **Online và khi đấu với máy**, có hộp thoại xác nhận; cùng máy dùng "Ván mới". Cùng quy tắc với bỏ ván: phòng 2 ghế kết thúc ván, phòng Cờ cá ngựa từ 3 ghế cho máy chơi thay (04/11/2026) |
+| 13 | Bỏ ván online | **5 phút** cho mọi game: người còn lại bấm nút (không hẹn giờ phía server); phòng 2 ghế → kết thúc ván (người kia thắng), phòng từ 3 ghế của game có máy (Cờ cá ngựa, Cờ rào) → máy chơi thay tới hết ván, ghế trả lại ở "Chơi lại" (04/11/2026, change `add-resign-and-abandon`) |
+| 14 | Đầu hàng | **Online và khi đấu với máy**, có hộp thoại xác nhận; cùng máy dùng "Ván mới". Cùng quy tắc với bỏ ván: phòng 2 ghế kết thúc ván, phòng từ 3 ghế của game có máy cho máy chơi thay (04/11/2026) |
 | 15 | Giấy phép mã nguồn | **Không có giấy phép** (giữ mọi quyền, không có file `LICENSE`); phần mềm và hình của bên thứ ba giữ giấy phép riêng, liệt kê ở `apps/web/public/third-party-licenses.txt` (chốt 04/11/2026, `polish-accessibility-and-mobile`) |
 | 16 | Chat trong phòng online | **Gõ tự do + câu có sẵn + emoji** cho mọi game, chỉ người có ghế đọc và gửi; **giữ 30 tin gần nhất theo phòng** (nằm trong dữ liệu phòng trên Redis, xoá cùng phòng); **không lọc từ** (nhóm bạn qua link riêng, có nút "Tắt chat" lưu theo trình duyệt) (chốt 05/11/2026, `add-room-chat`) |
+| 17 | Game tự thiết kế làm sớm | **Cờ rào** làm trước các game v1 theo yêu cầu người dùng, thay cho "game tự thiết kế để v2" ở quyết định 6 với riêng game này. Theo lượt, đồ hoạ 2D, 2–4 người, luật và hình riêng (cổng đích 5 ô, một lần phá rào, không nhảy và được chung ô, không tuỳ chọn luật); không dùng tên hay hình của game thương mại cùng thể loại (chốt 06/11/2026, `add-fence-race-game`) |
