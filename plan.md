@@ -102,6 +102,7 @@ board-games/
 │     │  │  │  └─ [mode]/           # chơi theo chế độ: local (cùng máy), ai (với máy)
 │     │  │  ├─ room/[code]/         # phòng online: link mời /room/<mã>, mã sai → không tìm thấy
 │     │  │  ├─ rules/[gameId]/      # trang luật chơi của một game (render ở server)
+│     │  │  ├─ tools/               # Hộp công cụ; tools/card-score/[[...path]]/: một route cho mọi màn hình của công cụ
 │     │  │  └─ api/
 │     │  │     └─ realtime/route.ts # điểm nối WebSocket trên Vercel; mọi thao tác phòng đi qua đây, không REST
 │     │  ├─ features/               # mỗi tính năng một thư mục, tự chứa
@@ -112,6 +113,7 @@ board-games/
 │     │  │  ├─ chat/                # chat trong phòng: store (use-room-chat), panel, nút, bong bóng, lớp portal
 │     │  │  ├─ identity/            # tên tạm + playerId trong localStorage, ô nhập tên (NameField)
 │     │  │  ├─ rules/               # khung trang luật (RulesPage, RulesSection, RulesFigure), mục đầu hàng/bỏ ván, LazyRules của hộp thoại
+│     │  │  ├─ toolbox/             # trang Hộp công cụ, sinh từ danh sách TOOLS
 │     │  │  └─ settings/            # ngôn ngữ, sáng/tối, âm thanh
 │     │  ├─ games/                  # phần giao diện của từng game
 │     │  │  ├─ registry.ts          # ghép luật (packages/games) với giao diện
@@ -120,6 +122,7 @@ board-games/
 │     │  │  ├─ caro/
 │     │  │  ├─ ludo/
 │     │  │  └─ chess/
+│     │  ├─ tools/                  # công cụ ngoài game: registry.ts (TOOLS) và mỗi công cụ một thư mục, không dùng engine, games, protocol, transport, server
 │     │  ├─ config/                 # constant toàn app: site.ts, routes.ts, storage-keys.ts
 │     │  ├─ i18n/                   # cấu hình ngôn ngữ, chọn ngôn ngữ, bộ nạp bản dịch
 │     │  ├─ test/                   # tiện ích test dùng chung (renderWithIntl)
@@ -466,6 +469,7 @@ Về cờ vua ở M7: quyết định **tự viết luật hay bọc `chess.js`*
 
 ### 6.3 Sau MVP (sẽ chi tiết hoá sau)
 
+- **Hộp công cụ** (ngoài các mốc, xong 07/11/2026, `add-toolbox-card-score`): Ghi điểm đánh bài, xem §10.
 - **v1**: chủ phòng chọn biến thể luật cá ngựa; Cờ tướng, Ô ăn quan, Reversi, Cờ gánh, Cờ đam, Cờ cối xay, Ô vuông; đồng hồ (QStash), đề nghị hoà, QR, chat (đã mở rộng thành chat đầy đủ, `add-room-chat`); PWA, thống kê, replay.
 - **v2**: phòng cố định của nhóm, bảng thành tích nhóm, spectator; theme (gỗ, tre, giấy dó); Cờ vây; game tự thiết kế (Cờ rào đã làm sớm, `add-fence-race-game`, xem §10).
 - **Sau đó**: AI cờ vua, puzzle, tutorial, giải đấu trong nhóm.
@@ -651,3 +655,5 @@ Qua 3 change OpenSpec theo thứ tự `add-resign-and-abandon` → `add-rules-pa
 - Còn lại của `add-room-chat`, thêm vào danh sách thử thiết bị thật ở M8: bàn phím ảo iOS Safari và Android Chrome, bộ gõ tiếng Việt và tiếng Nhật trên điện thoại, TalkBack, VoiceOver; khói online trên Production sau khi merge (hai kết nối, gửi tin, nối lại còn tin, không có `playerId` trong gói tin).
 - `add-fence-race-game` (xong và archive 06/11/2026): **Cờ rào** (`fence-race`, nhóm tự thiết kế, 2–4 người, đưa lên làm sớm từ v2): `GameDefinition` trong `packages/games/src/fence-race/` (tìm đường; `fenceRaceFenceIssue` là nguồn của lý do hiển thị khi xem trước, `legalMoves` dùng chung `fenceInTheWay` và tìm đường, có tối ưu riêng, test giữ hai bên khớp nhau), máy ba mức cả ghế máy và máy chơi thay; `Board` với ba chế độ Đi quân, Đặt rào, Phá rào, rào xem trước kéo giữ hướng, điện thoại dọc: bàn cao theo `svh` trong `theme.css` của game; xoay ngang và từ 1024 px: theo `--board-room` của `PlayScreen` (`dvh`), không sửa vì là phần dùng chung. Thêm game không sửa phần dùng chung (`engine`, `session`, `transport`, `features`, `server`, `protocol`, `ui`); số đo ở design của change.
 - Còn lại của `add-fence-race-game`, thêm vào danh sách thử thiết bị thật ở M8: kéo rào bằng ngón tay thật (có đường lui bỏ kéo ở design §5), `touch-action: pinch-zoom` và thanh địa chỉ trên Safari iOS, bàn có đổi cỡ khi thanh địa chỉ thu lại lúc cuộn ở điện thoại xoay ngang và máy từ 1024 px không (`--board-room` theo `dvh`), trình đọc màn hình thật (NVDA, VoiceOver, TalkBack) với tên ô và dòng xem trước; khói online trên Production có đặt rào, phá rào và nối lại giữa ván sau khi merge.
+- `add-toolbox-card-score` (xong và archive 07/11/2026): **Hộp công cụ** (`/tools`, sinh từ `TOOLS`) và **Ghi điểm đánh bài** (`apps/web/src/tools/card-score/`), lối vào ở đầu menu. Công cụ không phải game: không dùng `engine`, `games`, `protocol`, `transport`, `server` (ESLint chặn, có test). Logic là hàm thuần (`score-logic.ts`, `group.ts`, `summary.ts`). Mọi màn hình của công cụ nằm trong một route catch-all và chuyển bằng `pushState`, nên đã mở công cụ thì mất mạng vẫn dùng đủ (E2E `context.setOffline`). Kho IndexedDB riêng, chỉ ghi qua `update` của `idb-keyval`, nên hai tab lưu cùng lúc không mất ván (E2E trên IndexedDB thật); id ván sinh lúc mở màn hình nhập, nên bấm đúp hay lưu lại sau khi hết giờ chờ không tạo ván trùng. Bàn số riêng theo `(pointer: coarse)`, ô `inputmode="none"`, đổi được sang bàn phím của máy. Bản nháp ván mới trong `sessionStorage`. `DialogFrame` được export và sửa hai nhánh: dialog bị trình duyệt tự đóng mà cha vẫn giữ mở thì hiện lại; sự kiện `close` đến muộn của lần đóng trước không đóng dialog vừa mở lại. Không thêm token, không thêm thư viện.
+- Còn lại của `add-toolbox-card-score`, thêm vào danh sách thử thiết bị thật ở M8: bàn số và `inputmode="none"` trên iPhone và Android (E2E chỉ mô phỏng cảm ứng), đo một ván 4 người có trong khoảng 10 giây không, `navigator.share` trên iOS và Android, VoiceOver và TalkBack với bàn số và nút đổi sang bàn phím của máy, dữ liệu có bị Safari dọn sau một thời gian không dùng không.

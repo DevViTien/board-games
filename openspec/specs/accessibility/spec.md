@@ -93,7 +93,7 @@ Thẻ `theme-color` của trang SHALL theo màu nền đang hiện: nền riêng
 
 ### Requirement: Thanh trên cùng luôn thấy
 
-Mọi trang (menu, bắt đầu ván, màn hình chơi mọi game kể cả online, sảnh chờ và lỗi phòng, trang luật, các trang không tìm thấy, lỗi, đang tải) SHALL có thanh trên cùng luôn nằm ở mép trên màn hình khi cuộn, nền không trong suốt, nằm trong vùng an toàn, có lối "← Về menu" (trừ menu) và hai nút chọn giao diện, ngôn ngữ. Phần tử nhận tiêu điểm MUST NOT bị thanh che. Bố cục không cuộn của màn hình chơi SHALL vẫn đúng với thanh này.
+Mọi trang (menu, Hộp công cụ, bắt đầu ván, màn hình chơi mọi game kể cả online, sảnh chờ và lỗi phòng, trang luật, các trang không tìm thấy, lỗi, đang tải) SHALL có thanh trên cùng luôn nằm ở mép trên màn hình khi cuộn, nền không trong suốt, nằm trong vùng an toàn, có lối "← Về menu" (trừ menu; màn hình con của Hộp công cụ về màn hình cha) và hai nút chọn giao diện, ngôn ngữ. Phần tử nhận tiêu điểm MUST NOT bị thanh che. Bố cục không cuộn của màn hình chơi SHALL vẫn đúng với thanh này.
 
 #### Scenario: Cuộn trang luật
 
@@ -114,3 +114,8 @@ Mọi trang (menu, bắt đầu ván, màn hình chơi mọi game kể cả onli
 
 - **WHEN** người chơi mở một đường dẫn không có
 - **THEN** trang có thanh trên cùng với lối "← Về menu"
+
+#### Scenario: Trang con của Hộp công cụ
+
+- **WHEN** người dùng mở bảng điểm của một nhóm ở trang `/tools/card-score/<id>`
+- **THEN** thanh trên cùng có lối về danh sách nhóm, nút "Giao diện" và nút "Ngôn ngữ"

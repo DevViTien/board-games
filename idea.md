@@ -139,7 +139,11 @@ Cách làm đề xuất: MVP dùng **cột "phổ biến"** làm luật mặc đ
 
 Không làm (không cần cho nhóm nhỏ): ghép trận với người lạ, tài khoản/đăng nhập, xếp hạng Elo công khai, báo cáo/chặn người chơi.
 
-### 4.4 Ý tưởng xa hơn
+### 4.4 Hộp công cụ
+
+Ngoài các game, app có một **Hộp công cụ** (`/tools`) cho những buổi chơi ngoài đời. Công cụ đầu tiên là **Ghi điểm đánh bài**: tạo nhóm 2–8 người, sau mỗi ván một người nhập điểm, để trống một người thì app tự tính để tổng bằng 0; xem xếp hạng, lịch sử các ván, gợi ý ai chuyển cho ai bao nhiêu điểm, và chia sẻ tổng kết thành chữ. Dữ liệu chỉ nằm trên trình duyệt của máy đang nhập. Quyết định 18 ở mục 9.
+
+### 4.5 Ý tưởng xa hơn
 - Câu đố hằng ngày (puzzle caro "thắng trong 3 nước", cờ vua).
 - Chế độ hướng dẫn tương tác cho người mới.
 - Giải đấu nhỏ trong nhóm (vòng tròn, loại trực tiếp).
@@ -354,3 +358,4 @@ Vì `Board` là component React nên nằm ở `apps/web`, còn `GameDefinition`
 | 15 | Giấy phép mã nguồn | **Không có giấy phép** (giữ mọi quyền, không có file `LICENSE`); phần mềm và hình của bên thứ ba giữ giấy phép riêng, liệt kê ở `apps/web/public/third-party-licenses.txt` (chốt 04/11/2026, `polish-accessibility-and-mobile`) |
 | 16 | Chat trong phòng online | **Gõ tự do + câu có sẵn + emoji** cho mọi game, chỉ người có ghế đọc và gửi; **giữ 30 tin gần nhất theo phòng** (nằm trong dữ liệu phòng trên Redis, xoá cùng phòng); **không lọc từ** (nhóm bạn qua link riêng, có nút "Tắt chat" lưu theo trình duyệt) (chốt 05/11/2026, `add-room-chat`) |
 | 17 | Game tự thiết kế làm sớm | **Cờ rào** làm trước các game v1 theo yêu cầu người dùng, thay cho "game tự thiết kế để v2" ở quyết định 6 với riêng game này. Theo lượt, đồ hoạ 2D, 2–4 người, luật và hình riêng (cổng đích 5 ô, một lần phá rào, không nhảy và được chung ô, không tuỳ chọn luật); không dùng tên hay hình của game thương mại cùng thể loại (chốt 06/11/2026, `add-fence-race-game`) |
+| 18 | Hộp công cụ | App có thêm **Hộp công cụ** cho những buổi chơi ngoài đời, trước hết là **Ghi điểm đánh bài**. Công cụ không phải game, không đi qua server; **dữ liệu chỉ trên trình duyệt của máy đang nhập** (IndexedDB), một người ghi trên một máy, người khác xem bản tổng kết được chia sẻ. **Tổng mỗi ván luôn bằng 0**, chưa có cách tính khác. Chỉ ghi **điểm**, không quy đổi ra tiền. Đồng bộ nhiều máy và sao lưu ra file để sau nếu dùng thật thấy cần (chốt 07/11/2026, `add-toolbox-card-score`) |

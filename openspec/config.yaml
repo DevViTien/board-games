@@ -41,6 +41,10 @@ context: |
     app dịch. vi.json là bản gốc; en/ja phải đủ key và cùng tham số ICU.
   - Không tài khoản: danh tính = playerId ngẫu nhiên + tên tạm trong localStorage.
   - Không thêm dịch vụ trả phí hoặc dịch vụ ngoài mới khi chưa có quyết định ghi vào idea.md.
+  - Công cụ trong Hộp công cụ không phải game: thêm một công cụ chỉ gồm thư mục apps/web/src/tools/<id>/,
+    route dưới app/tools/, bản dịch và một dòng TOOLS (tools/registry.ts); công cụ không import trực
+    tiếp engine, games, protocol, transport, server (ESLint chặn; luật tên người chơi đi qua
+    features/identity) và không gửi dữ liệu người dùng đi đâu khi chưa có quyết định ghi vào idea.md.
 
   Quy ước: plan.md §4 (TypeScript strict, không enum mà dùng `as const`, export có tên, file
   kebab-case, component PascalCase, cn()/cva() cho style, icon chỉ qua @board-games/ui, test đặt
