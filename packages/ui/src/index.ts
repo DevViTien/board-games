@@ -3,6 +3,7 @@ export { Button, type ButtonProps, type ButtonVariants, buttonVariants } from ".
 export { Card } from "./components/Card";
 export { ConfirmDialog, type ConfirmDialogProps } from "./components/ConfirmDialog";
 export { Dialog, type DialogProps } from "./components/Dialog";
+export { DialogFrame } from "./components/DialogFrame";
 export { Input } from "./components/Input";
 export { LogoMark } from "./components/LogoMark";
 export { Menu, MenuButton, MenuRadioGroup, MenuRadioItem } from "./components/Menu";

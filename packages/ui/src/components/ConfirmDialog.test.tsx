@@ -65,7 +65,9 @@ describe("ConfirmDialog", () => {
     // the dialog directly; the parent must still learn that it is closed, or it cannot reopen it.
     const { onConfirm, onCancel } = renderDialog();
 
-    fireEvent(screen.getByRole("dialog"), new Event("close"));
+    const dialog = screen.getByRole<HTMLDialogElement>("dialog");
+    dialog.close();
+    fireEvent(dialog, new Event("close"));
 
     expect(onCancel).toHaveBeenCalledOnce();
     expect(onConfirm).not.toHaveBeenCalled();

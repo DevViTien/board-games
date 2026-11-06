@@ -47,6 +47,31 @@ function problems(path, code) {
 
 const imports = (specifier) => `import { x } from "${specifier}";\nexport const y = x;\n`;
 
+describe("a tool stays out of what games are made of", () => {
+  it.each([
+    "@/transport/types",
+    "../../transport/types",
+    "@/server/env",
+    "../../server/env",
+    "@/games/registry",
+    "../games/registry",
+    "@/ai-worker/ai-player",
+    "@board-games/engine",
+    "@board-games/games",
+    "@board-games/games/ids",
+    "@board-games/protocol",
+  ])("src/tools/card-score/x.ts may not import %s", (specifier) => {
+    expect(problems("src/tools/card-score/x.ts", imports(specifier))).not.toEqual([]);
+  });
+
+  it.each(["@board-games/ui", "@/features/shell/AppTopBar", "@/lib/random-id", "./group"])(
+    "src/tools/card-score/x.ts may import %s",
+    (specifier) => {
+      expect(problems("src/tools/card-score/x.ts", imports(specifier))).toEqual([]);
+    },
+  );
+});
+
 describe("a game's rules may only import what their page needs", () => {
   it.each([
     ["src/games/rules.ts", "./caro/Rules"],

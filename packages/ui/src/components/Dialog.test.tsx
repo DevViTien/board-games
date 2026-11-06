@@ -53,6 +53,42 @@ describe("Dialog", () => {
     expect(screen.getByRole("heading", { name: "Luật chơi Cờ caro" })).toHaveFocus();
   });
 
+  it("the browser closing it by itself: the parent is told, and one that keeps it open has it back", () => {
+    const onClose = vi.fn();
+    render(
+      <Dialog open title="Ván 1" closeLabel="Đóng" onClose={onClose}>
+        <p>Đang nhập dở.</p>
+      </Dialog>,
+    );
+    const dialog = screen.getByRole<HTMLDialogElement>("dialog");
+
+    dialog.close();
+    fireEvent(dialog, new Event("close"));
+
+    expect(onClose).toHaveBeenCalledOnce();
+    // Still open as far as the parent goes, so it is shown again.
+    expect(dialog).toHaveAttribute("open");
+  });
+
+  it("a late close event of a dialog opened again meanwhile is not reported", () => {
+    const { onClose } = renderDialog(true);
+
+    fireEvent(screen.getByRole("dialog"), new Event("close"));
+
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("a close the parent asked for is not shown again, nor reported", () => {
+    const { onClose, rerender } = renderDialog(true);
+    rerender(false);
+    const dialog = screen.getByRole<HTMLDialogElement>("dialog", { hidden: true });
+
+    fireEvent(dialog, new Event("close"));
+
+    expect(onClose).not.toHaveBeenCalled();
+    expect(dialog).not.toHaveAttribute("open");
+  });
+
   it("closes with its named close button", async () => {
     const { onClose } = renderDialog();
 
@@ -72,7 +108,9 @@ describe("Dialog", () => {
   it("tells the parent when the browser closes it without a cancel event", () => {
     const { onClose } = renderDialog();
 
-    fireEvent(screen.getByRole("dialog"), new Event("close"));
+    const dialog = screen.getByRole<HTMLDialogElement>("dialog");
+    dialog.close();
+    fireEvent(dialog, new Event("close"));
 
     expect(onClose).toHaveBeenCalledOnce();
   });

@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, type RefObject, useEffect, useRef } from "react";
+import { type ReactNode, type RefObject, useEffect, useReducer, useRef } from "react";
 
 import { cn } from "../lib/cn";
 
@@ -37,6 +37,9 @@ export function DialogFrame({
   children,
 }: DialogFrameProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  // Bumped when the browser closed the dialog by itself: if the parent keeps it open (it asks before
+  // losing what was typed), it must be shown again.
+  const [closedByBrowser, noteClosedByBrowser] = useReducer((count: number) => count + 1, 0);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -46,7 +49,7 @@ export function DialogFrame({
       initialFocus?.current?.focus();
     }
     if (!open && dialog.open) dialog.close();
-  }, [open, initialFocus]);
+  }, [open, initialFocus, closedByBrowser]);
 
   return (
     <dialog
@@ -61,8 +64,13 @@ export function DialogFrame({
       // The browser may also close the dialog by itself: Chromium's close watcher skips `cancel`
       // for a repeated Esc without user activation. Tell the parent, or `open` stays true and the
       // dialog can never be opened again. A close the parent asked for arrives with `open` false.
-      onClose={() => {
-        if (open) onDismiss();
+      // A parent that stays open after this gets its dialog shown again.
+      onClose={(event) => {
+        // `close` arrives later than the closing: a dialog opened again in between is not closed.
+        if (open && !event.currentTarget.open) {
+          onDismiss();
+          noteClosedByBrowser();
+        }
       }}
       className={cn("bg-surface text-fg shadow-raised backdrop:bg-overlay", className)}
     >

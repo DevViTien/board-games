@@ -58,6 +58,24 @@ const SERVER_IMPORTS = [
  * menu's server-side helper builds plain data from the registry.
  */
 const WEB_REGISTRY_FREE_FILES = ["src/features/**", "src/transport/**", "src/lib/**"];
+/**
+ * A tool is not a game: it plays no moves and talks to no server, so it stays out of what games are
+ * made of (design of add-toolbox-card-score).
+ */
+const WEB_TOOL_FILES = ["src/tools/**"];
+const WEB_TOOL_FORBIDDEN = ["transport", "server", "games", "ai-worker"].flatMap((folder) => [
+  `@/${folder}`,
+  `@/${folder}/**`,
+  ...["../", "../../", "../../../", "../../../../"].flatMap((up) => [
+    `${up}${folder}`,
+    `${up}${folder}/**`,
+  ]),
+]);
+const WEB_TOOL_FORBIDDEN_PACKAGES = ["engine", "games", "protocol"].flatMap((name) => [
+  `@board-games/${name}`,
+  `@board-games/${name}/**`,
+]);
+
 const WEB_REGISTRY_FREE_EXCEPTIONS = ["**/*.test.{ts,tsx}", "src/features/menu/menu-games.ts"];
 
 /**
@@ -218,6 +236,23 @@ function boundaries(layer) {
                 allowTypeImports: true,
                 message:
                   "This would put every game's rules and AI in a client bundle: import game ids from @board-games/games/ids, or pass plain data from the server.",
+              },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      files: WEB_TOOL_FILES,
+      rules: {
+        "@typescript-eslint/no-restricted-imports": [
+          "error",
+          {
+            patterns: [
+              {
+                group: [...WEB_TOOL_FORBIDDEN, ...WEB_TOOL_FORBIDDEN_PACKAGES],
+                message:
+                  "A tool does not touch what games are made of: no transport, server, games, AI or protocol.",
               },
             ],
           },
