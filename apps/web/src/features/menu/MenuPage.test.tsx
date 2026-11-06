@@ -197,14 +197,24 @@ describe("MenuPage", () => {
     expect(gameCard("Cờ vua").getByText("Sắp có")).toBeInTheDocument();
     expect(gameCard("Cờ vua").queryByRole("link")).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("heading", { name: "Cờ vua" }));
-    // Play, Online and the rules on the four playable games' cards, and nothing more.
-    expect(within(screen.getByRole("main")).getAllByRole("link")).toHaveLength(12);
+    // Play, Online and the rules on the four playable games' cards, the toolbox, and nothing more.
+    expect(within(screen.getByRole("main")).getAllByRole("link")).toHaveLength(13);
+  });
+
+  it("Mở từ menu: a link to the toolbox, above the games", () => {
+    renderWithIntl(<MenuPage />);
+
+    const toolbox = screen.getByRole("link", { name: "Hộp công cụ" });
+    expect(toolbox).toHaveAttribute("href", "/tools");
+    const firstGame = screen.getByRole("heading", { name: "Tic-tac-toe" });
+    expect(toolbox.compareDocumentPosition(firstGame)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   });
 
   it("links every game of the real menu: Play, Online and the rules on each of the five cards", () => {
     renderWithIntl(<MenuPage />);
 
-    expect(within(screen.getByRole("main")).getAllByRole("link")).toHaveLength(15);
+    // With the way to the toolbox.
+    expect(within(screen.getByRole("main")).getAllByRole("link")).toHaveLength(16);
   });
 
   it("Tên liên kết không trùng: four links to the rules, each named with its game", () => {

@@ -22,3 +22,13 @@ export const CHAT_READ_KEY_PREFIX = "board-games:chat-read:";
 // Cookie: the theme the player picked ("light" or "dark"; none follows the system). A cookie, not
 // localStorage, so the server renders the page in that theme from the first paint.
 export const THEME_COOKIE = "theme";
+
+// IndexedDB: the card score tool's groups, a database of its own (see above).
+export const CARD_SCORE_DB = "board-games-card-score";
+export const CARD_SCORE_STORE = "groups";
+
+// sessionStorage: the new round being typed, one entry per group ("<prefix><groupId>").
+export const CARD_SCORE_DRAFT_KEY_PREFIX = "board-games:card-score-draft:";
+
+// localStorage: the player changed the round screen's keypad for the device's own keyboard.
+export const CARD_SCORE_KEYBOARD_KEY = "board-games:card-score-keyboard";

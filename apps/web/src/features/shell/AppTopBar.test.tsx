@@ -44,4 +44,27 @@ describe("AppTopBar", () => {
     for (const name of SETTINGS) expect(bar.getByRole("button", { name })).toBeInTheDocument();
     expect(screen.getByRole("main")).not.toContainElement(screen.getByRole("banner"));
   });
+
+  it("a page deeper in the app has its own way back, instead of the menu's", () => {
+    renderWithIntl(<AppTopBar back={<a href="#toolbox">Hộp công cụ</a>} />);
+
+    const bar = within(screen.getByRole("banner"));
+    expect(bar.getByRole("link", { name: "Hộp công cụ" })).toHaveAttribute("href", "#toolbox");
+    expect(bar.queryByRole("link", { name: "Về menu" })).not.toBeInTheDocument();
+    for (const name of SETTINGS) expect(bar.getByRole("button", { name })).toBeInTheDocument();
+  });
+
+  it("so does a state screen of such a page", () => {
+    renderWithIntl(
+      <AppStateScreen
+        title="Không thấy nhóm"
+        tone="warning"
+        back={<a href="#groups">Các nhóm</a>}
+      />,
+    );
+
+    const bar = within(screen.getByRole("banner"));
+    expect(bar.getByRole("link", { name: "Các nhóm" })).toBeInTheDocument();
+    expect(bar.queryByRole("link", { name: "Về menu" })).not.toBeInTheDocument();
+  });
 });

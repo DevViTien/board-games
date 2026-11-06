@@ -1,4 +1,5 @@
-import { Badge, Card, cn } from "@board-games/ui";
+import { Badge, buttonVariants, Card, cn, WrenchIcon } from "@board-games/ui";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 
 import { AppTopBar } from "@/features/shell/AppTopBar";
@@ -52,6 +53,13 @@ export function MenuPage({ cards = buildMenu() }: MenuPageProps) {
           <div className="flex flex-col justify-center gap-3">
             <h1 className="text-display text-balance">{t("heroTitle")}</h1>
             <p className="text-body text-pretty text-fg-muted">{t("heroLead")}</p>
+            <Link
+              href="/tools"
+              className={cn(buttonVariants({ variant: "secondary" }), "self-start")}
+            >
+              <WrenchIcon aria-hidden className="size-5" />
+              {t("toolbox")}
+            </Link>
           </div>
           {/* Joining comes first: the games in progress appear once loaded, and must not push it
               away from under the player's finger. */}

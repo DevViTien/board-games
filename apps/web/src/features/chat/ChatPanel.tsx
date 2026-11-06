@@ -34,6 +34,7 @@ import {
   useState,
 } from "react";
 
+import { isImeKey } from "@/lib/ime-key";
 import { CONNECTION_STATUS } from "@/transport/types";
 
 import { CHAT_REACTION_EMOJI, useChatBodyText } from "./chat-content";
@@ -45,12 +46,6 @@ import { CHAT_FAILURE, type RoomChat, type RoomChatSnapshot } from "./use-room-c
 const COUNT_FROM = 160;
 /** Scrolled this close to the end still counts as reading the latest message. */
 const NEAR_END_PX = 24;
-/** An Enter or Esc that belongs to the IME (`keyCode` 229 is Safari's order of events). */
-function isImeKey(event: KeyboardEvent): boolean {
-  // eslint-disable-next-line @typescript-eslint/no-deprecated -- the only way to tell in Safari, whose compositionend comes before this keydown
-  return event.nativeEvent.isComposing || event.keyCode === 229;
-}
-
 interface ChatLineProps {
   readonly tone: "muted" | "warning" | "danger" | "info";
   readonly icon?: ReactNode;
