@@ -21,7 +21,7 @@ import {
 // của màn hình": phones held upright (360 × 740, and 360 × 640 with the browser's bars showing) and
 // turned sideways (844 × 390, 740 × 360, and 844 × 300 with Safari's address bar).
 
-const GAMES = ["tictactoe", "caro", "ludo", "chess"] as const;
+const GAMES = ["tictactoe", "caro", "ludo", "chess", "fence-race"] as const;
 
 function scrollsSideways(page: Page): Promise<boolean> {
   return page.evaluate(
@@ -38,20 +38,29 @@ async function openLocal(page: Page, gameId: (typeof GAMES)[number], saved?: unk
     await choose(page, "Chế độ", "Cùng máy");
     await pressStart(page);
   }
-  await expect(board(page).or(page.locator("[data-ply]")).first()).toBeVisible();
+  await expect(
+    board(page).or(page.locator("[data-ply]")).or(page.locator("[data-fence-race-frame]")).first(),
+  ).toBeVisible();
 }
 
 /** The two bars of Cờ vua's seats, above and below its board. */
 const seatBars = (page: Page) => page.locator("div[role=group][data-player]");
 
 /** The board of any game: a grid of cells, or Cờ cá ngựa's picture. */
-const anyBoard = (page: Page) => page.locator("[data-ply]").or(board(page)).first();
+const anyBoard = (page: Page) =>
+  page.locator("[data-ply]").or(page.locator("[data-fence-race-frame]")).or(board(page)).first();
 
 /** Every control of the screen at least 24 × 24 px (WCAG 2.5.8), Cờ caro's small cells aside. */
 async function expectTargetsAtLeast24(page: Page, scope: Locator): Promise<void> {
   const small = await scope.evaluate((root) =>
     [...root.querySelectorAll<HTMLElement>("a[href], button, input")]
       .filter((element) => element.closest("[data-game='caro'] [role='grid']") === null)
+      // A cell of Cờ rào that is no target can be smaller, as its layer is the one touched.
+      .filter(
+        (element) =>
+          element.closest("[data-fence-race-grid]") === null ||
+          element.getAttribute("aria-disabled") === "false",
+      )
       .filter((element) => element.getClientRects().length > 0 && !element.closest("[hidden]"))
       // A visually hidden radio is pressed through its label.
       .map((element) => element.closest("label") ?? element)
@@ -302,7 +311,7 @@ test.describe("a phone turned sideways, 740 × 360", () => {
     await expect(board(page)).toBeInViewport({ ratio: 1 });
   });
 
-  for (const gameId of ["tictactoe", "caro", "ludo"] as const) {
+  for (const gameId of ["tictactoe", "caro", "ludo", "fence-race"] as const) {
     test(`${gameId} xoay ngang: the whole board on screen`, async ({ page }) => {
       await openLocal(page, gameId, gameId === "ludo" ? savedLudoGame(4, []) : undefined);
       await expect(anyBoard(page)).toBeInViewport({ ratio: 1 });

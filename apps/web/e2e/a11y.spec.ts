@@ -5,6 +5,8 @@ import {
   board,
   chessRecord,
   choose,
+  fenceMode,
+  fenceRaceRecord,
   horseChoices,
   languageButton,
   LUDO_FOUR_CHOICES,
@@ -17,6 +19,7 @@ import {
   pressStart,
   ROOM_URL,
   savedChessGame,
+  savedFenceRaceGame,
   savedLudoGame,
   savedMoveCount,
   SLOT,
@@ -24,6 +27,7 @@ import {
   startLocalGame,
   status,
   themeButton,
+  tryFenceAt,
   writeSaved,
 } from "./helpers";
 
@@ -58,7 +62,7 @@ for (const colorScheme of SCHEMES) {
       });
 
       test("the setup screen of every game, and online", async ({ page }) => {
-        for (const gameId of ["tictactoe", "caro", "ludo", "chess"]) {
+        for (const gameId of ["tictactoe", "caro", "ludo", "chess", "fence-race"]) {
           await page.goto(`/play/${gameId}`);
           await expect(page.getByRole("group", { name: "Chế độ" })).toBeVisible();
           await expectNoAxeViolations(page, `setup-${gameId}`);
@@ -120,6 +124,29 @@ for (const colorScheme of SCHEMES) {
 
         await openSaved(page, "chess", savedChessGame(["e2e4", "e7e5", "g1f3"]));
         await expectNoAxeViolations(page, "chess-local");
+
+        await openSaved(page, "fence-race", savedFenceRaceGame(2, []));
+        await expectNoAxeViolations(page, "fence-race-local");
+
+        await openSaved(
+          page,
+          "fence-race",
+          savedFenceRaceGame(4, [
+            { kind: "fence", row: 4, col: 3, dir: "h" },
+            { kind: "step", row: 4, col: 1 },
+          ]),
+        );
+        await expectNoAxeViolations(page, "fence-race-local-four");
+        await fenceMode(page, "Đặt rào").click();
+        await tryFenceAt(page, { row: 2, col: 2, dir: "h" });
+        await expectNoAxeViolations(page, "fence-race-placing");
+        await page.getByRole("button", { name: "Huỷ" }).click();
+        await tryFenceAt(page, { row: 4, col: 3, dir: "h" });
+        await expectNoAxeViolations(page, "fence-race-refused");
+        await page.getByRole("button", { name: "Huỷ" }).click();
+        await fenceMode(page, "Phá rào").click();
+        await tryFenceAt(page, { row: 4, col: 3, dir: "h" });
+        await expectNoAxeViolations(page, "fence-race-breaking");
       });
 
       test("against the AI: its game, thinking, and the result of a resignation", async ({
@@ -235,6 +262,23 @@ for (const colorScheme of SCHEMES) {
     });
 
     test.describe("(D) rooms and online games", () => {
+      test("Ván online: Cờ rào, the second seat's board turned", async ({ page }) => {
+        await openFakeRoom(
+          page,
+          {
+            gameId: "fence-race",
+            seats: [
+              { kind: "human", name: "Minh", standIn: false },
+              { kind: "human", name: "Lan", standIn: false },
+            ],
+            record: fenceRaceRecord(2, [{ kind: "fence", row: 4, col: 3, dir: "h" }]),
+          },
+          1,
+        );
+        await expect(page.locator("[data-fence-race-frame]")).toBeVisible();
+        await expectNoAxeViolations(page, "online-fence-race");
+      });
+
       test("Ván online: Cờ vua holding Black, and waiting for a player gone", async ({ page }) => {
         await openFakeRoom(
           page,
@@ -397,7 +441,7 @@ for (const colorScheme of SCHEMES) {
 
     test.describe("(E) rules pages", () => {
       test("the rules of every game", async ({ page }) => {
-        for (const gameId of ["tictactoe", "caro", "ludo", "chess"]) {
+        for (const gameId of ["tictactoe", "caro", "ludo", "chess", "fence-race"]) {
           await page.goto(`/rules/${gameId}`);
           await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
           await expectNoAxeViolations(page, `rules-${gameId}`);

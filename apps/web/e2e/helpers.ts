@@ -1,5 +1,13 @@
 import { applyEntry, createSession, type GameRecord, toRecord } from "@board-games/engine";
-import { chess, type ChessMove, ludo, LUDO_DEFAULT_OPTIONS } from "@board-games/games";
+import {
+  chess,
+  type ChessMove,
+  type Fence,
+  fenceRace,
+  type FenceRaceMove,
+  ludo,
+  LUDO_DEFAULT_OPTIONS,
+} from "@board-games/games";
 import {
   type ChatBody,
   CLOSE_CODE,
@@ -430,14 +438,86 @@ function send(socket: WebSocketRoute, message: ServerMessage): void {
   socket.send(JSON.stringify(message));
 }
 
+/** A game of Cờ rào with the moves given, as a record. */
+export function fenceRaceRecord(
+  playerCount: 2 | 3 | 4,
+  moves: readonly FenceRaceMove[],
+): GameRecord {
+  const created = createSession(fenceRace, { playerCount });
+  if (!created.ok) throw new Error(created.error);
+  let session = created.value;
+  for (const [index, move] of moves.entries()) {
+    const played = applyEntry(fenceRace, session, { move });
+    if (!played.ok) throw new Error(`move ${index + 1}: ${played.error}`);
+    session = played.value;
+  }
+  return JSON.parse(JSON.stringify(toRecord(session))) as GameRecord;
+}
+
+/** A saved same-device Cờ rào game (slot "fence-race:local") with the moves given. */
+export function savedFenceRaceGame(
+  playerCount: 2 | 3 | 4,
+  moves: readonly FenceRaceMove[],
+): unknown {
+  return {
+    version: 2,
+    savedAt: "2026-11-06T08:00:00.000Z",
+    inProgress: true,
+    mode: { kind: "local" },
+    record: fenceRaceRecord(playerCount, moves),
+  };
+}
+
+export const fenceFrame = (page: Page) => page.locator("[data-fence-race-frame]");
+export const fenceLayer = (page: Page) => page.locator("[data-fence-race-layer]");
+export const fencePreview = (page: Page) => page.locator("[data-preview]");
+export const fenceCell = (page: Page, name: string) => page.locator(`[data-cell="${name}"]`);
+export const fenceMode = (page: Page, name: string) =>
+  page.getByRole("group", { name: "Chế độ" }).getByRole("button", { name: new RegExp(`^${name}`) });
+
+/**
+ * Where a touch means this fence, on screen: on its line, a little along it, so the nearest line
+ * is the fence's own. `turned`: the board is the second seat's.
+ */
+export async function fencePoint(
+  page: Page,
+  { row, col, dir }: Fence,
+  turned = false,
+): Promise<{ x: number; y: number }> {
+  const grid = await page.locator("[data-fence-race-grid]").boundingBox();
+  if (grid === null) throw new Error("no board");
+  const columns = await page.locator("[data-fence-race-grid]").evaluate((element) => {
+    return getComputedStyle(element).gridTemplateColumns.split(" ").length;
+  });
+  const cell = grid.width / columns;
+  const rows = Math.round(grid.height / cell);
+  const a = col + 1 + (dir === "h" ? 0.3 : 0);
+  const b = row + 1 + (dir === "v" ? 0.3 : 0);
+  return {
+    x: grid.x + (turned ? columns - a : a) * cell,
+    y: grid.y + (turned ? rows - b : b) * cell,
+  };
+}
+
+/** A press and a lift at the place of this fence: tries it, or chooses it to break. */
+export async function tryFenceAt(page: Page, fence: Fence, turned = false): Promise<void> {
+  const layer = fenceLayer(page);
+  await layer.scrollIntoViewIfNeeded();
+  const point = await fencePoint(page, fence, turned);
+  const box = await layer.boundingBox();
+  if (box === null) throw new Error("no layer");
+  await layer.click({ position: { x: point.x - box.x, y: point.y - box.y } });
+}
+
 /** The room code of `openFakeRoom`. */
 const FAKE_ROOM_CODE = "ABC234" as RoomCode;
 
 /**
  * Opens a room whose server is the test: it answers the greeting with `room` (a game with every seat
  * taken, so the game shows at once) seen from seat `you`, and answers pings. `loseConnection` drops
- * the socket and leaves the client's reconnections unanswered, as when the network is gone. The
- * browser already remembers a name (Lan), so no name is asked for. A chat message the page sends is
+ * the socket and leaves the client's reconnections unanswered, as when the network is gone, until
+ * `restoreConnection`. It only writes down the moves the page sends (`movesSent`). The browser
+ * already remembers a name (Lan), so no name is asked for. A chat message the page sends is
  * written at once, unless `chatAnswers` is off; `receive` brings new messages from other people.
  */
 export async function openFakeRoom(
@@ -447,6 +527,10 @@ export async function openFakeRoom(
   you = 0,
 ): Promise<{
   loseConnection: () => Promise<void>;
+  /** The network is back: the reconnection waiting, or the next one, is answered. */
+  restoreConnection: () => void;
+  /** The moves the page has sent, oldest first. */
+  movesSent: () => readonly unknown[];
   receive: (...messages: readonly ChatBody[]) => void;
   /** Whether a chat message is answered; `false`, as a server that lost it. */
   setChatAnswers: (answers: boolean) => void;
@@ -455,6 +539,7 @@ export async function openFakeRoom(
 }> {
   let answering = true;
   let chatAnswers = true;
+  const moves: unknown[] = [];
   const sockets: WebSocketRoute[] = [];
   let current: RoomView = {
     code: FAKE_ROOM_CODE,
@@ -481,9 +566,16 @@ export async function openFakeRoom(
     sockets.push(socket);
     socket.onMessage((message) => {
       if (!answering) return;
-      const data = JSON.parse(String(message)) as { type?: string; id?: string; body?: ChatBody };
+      const data = JSON.parse(String(message)) as {
+        type?: string;
+        id?: string;
+        body?: ChatBody;
+        move?: unknown;
+      };
       if (data.type === "join") {
         send(socket, { type: "room", room: current, you });
+      } else if (data.type === "move") {
+        moves.push(data.move);
       } else if (data.type === "chat" && chatAnswers && data.body !== undefined) {
         write(data.body, { id: data.id ?? "", name: "Lan", mine: true });
       } else if (data.type === "ping") {
@@ -507,6 +599,12 @@ export async function openFakeRoom(
         sockets.map((socket) => socket.close({ code: CLOSE_CODE.GreetingTimeout })),
       );
     },
+    restoreConnection: () => {
+      answering = true;
+      // A reconnection already open is still waiting for its greeting to be answered.
+      broadcast();
+    },
+    movesSent: () => moves,
     receive: (...messages) => {
       for (const body of messages) {
         write(body, { id: `other-${String(current.revision)}-chat`, name: "Minh", mine: false });

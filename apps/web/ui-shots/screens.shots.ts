@@ -6,7 +6,7 @@ import {
   sessionResult,
   toRecord,
 } from "@board-games/engine";
-import { ludo, LUDO_DEFAULT_OPTIONS } from "@board-games/games";
+import { type FenceRaceMove, ludo, LUDO_DEFAULT_OPTIONS } from "@board-games/games";
 import type { ChatBody } from "@board-games/protocol";
 import { expect, type Page, test } from "@playwright/test";
 
@@ -18,6 +18,11 @@ import {
   choose,
   continueSection,
   countMarks,
+  fenceCell,
+  fenceFrame,
+  fenceMode,
+  fencePreview,
+  fenceRaceRecord,
   horseChoices,
   longChessGame,
   LUDO_FOUR_CHOICES,
@@ -34,10 +39,12 @@ import {
   rollButton,
   ROOM_URL,
   savedChessGame,
+  savedFenceRaceGame,
   savedLudoGame,
   startAiGame,
   startLocalGame,
   status,
+  tryFenceAt,
   writeSaved,
 } from "../e2e/helpers";
 import { shoot, shootScreen } from "./shoot";
@@ -1167,5 +1174,176 @@ for (const { suffix, viewport } of CHAT_SIZES) {
     await expect(page.locator("[data-chat-bubble]")).toBeHidden({ timeout: 8000 });
     await expect(page.locator("[data-chat-peek]")).toBeVisible();
     await shootScreen(page, `43-chat-peek${suffix}`);
+  });
+}
+
+// Cờ rào: the screens of the mockup (`add-fence-race-game`), at a phone of 360 px too. The setup and
+// rules screens first, then the board in each thing it can show.
+const FENCE_STEP = (row: number, col: number): FenceRaceMove => ({ kind: "step", row, col });
+const FENCE_FENCE = (row: number, col: number, dir: "h" | "v" = "h"): FenceRaceMove => ({
+  kind: "fence",
+  row,
+  col,
+  dir,
+});
+/** The game of the mockup's scene: fences placed by both, pawns under way. */
+const FENCE_MIDDLE: readonly FenceRaceMove[] = [
+  FENCE_STEP(9, 4),
+  FENCE_FENCE(2, 3),
+  FENCE_STEP(8, 4),
+  FENCE_FENCE(6, 4),
+  FENCE_FENCE(1, 3),
+  FENCE_STEP(1, 4),
+  FENCE_STEP(8, 3),
+  FENCE_FENCE(4, 2, "v"),
+  FENCE_STEP(7, 3),
+  FENCE_STEP(1, 5),
+];
+const FENCE_FOUR: readonly FenceRaceMove[] = [
+  FENCE_STEP(7, 4),
+  FENCE_STEP(4, 1),
+  FENCE_STEP(1, 4),
+  FENCE_STEP(4, 7),
+  FENCE_FENCE(3, 3),
+  FENCE_FENCE(5, 1, "v"),
+  FENCE_STEP(2, 4),
+  FENCE_STEP(4, 6),
+];
+
+async function openFence(page: Page, players: 2 | 3 | 4, moves: readonly FenceRaceMove[]) {
+  await page.goto(PAGE_WITHOUT_STORAGE);
+  await writeSaved(page, "fence-race:local", savedFenceRaceGame(players, moves));
+  await page.goto("/play/fence-race/local");
+  await expect(fenceFrame(page)).toBeVisible();
+}
+
+test("Cờ rào: the setup screen and the rules", async ({ page }) => {
+  await page.goto("/play/fence-race");
+  await choose(page, "Số người chơi", "4 người");
+  await shoot(page, "50-setup-fence-race");
+  await page.goto("/rules/fence-race");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await shoot(page, "50a-rules-fence-race");
+});
+
+for (const [suffix, viewport] of [
+  ["", null],
+  ["-360", { width: 360, height: 740 }],
+] as const) {
+  test(`Cờ rào, two players${suffix}`, async ({ page }) => {
+    test.skip(viewport !== null && (page.viewportSize()?.width ?? 0) > 500, "a phone's size");
+    if (viewport !== null) await page.setViewportSize(viewport);
+
+    await openFence(page, 2, []);
+    await shootScreen(page, `51-fence-start${suffix}`);
+
+    await openFence(page, 2, FENCE_MIDDLE);
+    await shootScreen(page, `51a-fence-move${suffix}`);
+
+    await fenceMode(page, "Đặt rào").click();
+    await shootScreen(page, `51b-fence-place-empty${suffix}`);
+    await tryFenceAt(page, { row: 7, col: 3, dir: "h" });
+    await expect(fencePreview(page)).toHaveAttribute("data-preview", "ok");
+    await shootScreen(page, `51c-fence-place-ok${suffix}`);
+    await page.getByRole("button", { name: "Xoay" }).click();
+    await shootScreen(page, `51d-fence-place-turned${suffix}`);
+    await page.getByRole("button", { name: "Huỷ" }).click();
+    await tryFenceAt(page, { row: 6, col: 4, dir: "h" });
+    await expect(fencePreview(page)).toHaveAttribute("data-preview", "bad");
+    await shootScreen(page, `51e-fence-place-bad${suffix}`);
+    await page.getByRole("button", { name: "Huỷ" }).click();
+
+    await fenceMode(page, "Phá rào").click();
+    await tryFenceAt(page, { row: 6, col: 4, dir: "h" });
+    await expect(page.locator("[data-chosen]")).toBeVisible();
+    await shootScreen(page, `51f-fence-break${suffix}`);
+    await page.getByRole("button", { name: "Phá rào" }).click();
+    await expect(page.locator("[data-gone]")).toBeVisible();
+    await shootScreen(page, `51g-fence-just-broken${suffix}`);
+  });
+
+  test(`Cờ rào, four players${suffix}`, async ({ page }) => {
+    test.skip(viewport !== null && (page.viewportSize()?.width ?? 0) > 500, "a phone's size");
+    if (viewport !== null) await page.setViewportSize(viewport);
+
+    await openFence(page, 4, FENCE_FOUR);
+    await shootScreen(page, `52-fence-four${suffix}`);
+
+    // All four in one cell.
+    const middle: FenceRaceMove[] = [];
+    for (let step = 1; step <= 4; step += 1) {
+      middle.push(
+        FENCE_STEP(8 - step, 4),
+        FENCE_STEP(4, step),
+        FENCE_STEP(step, 4),
+        FENCE_STEP(4, 8 - step),
+      );
+    }
+    await openFence(page, 4, middle);
+    await expect(fenceCell(page, "E5")).toBeVisible();
+    await shootScreen(page, `52a-fence-four-share${suffix}`);
+
+    await openFence(page, 3, []);
+    await shootScreen(page, `52b-fence-three${suffix}`);
+  });
+
+  test(`Cờ rào, the end${suffix}`, async ({ page }) => {
+    test.skip(viewport !== null && (page.viewportSize()?.width ?? 0) > 500, "a phone's size");
+    if (viewport !== null) await page.setViewportSize(viewport);
+
+    const moves: FenceRaceMove[] = [];
+    for (let up = 1; up <= 9; up += 1) {
+      moves.push(FENCE_STEP(10 - up, 4), FENCE_STEP(0, up % 2 === 1 ? 3 : 4));
+    }
+    await openFence(page, 2, moves);
+    await fenceCell(page, "E11").click();
+    await expect(page.locator("[data-goal]")).toBeVisible();
+    await shootScreen(page, `53-fence-won${suffix}`);
+  });
+
+  test(`Cờ rào online, the second seat${suffix}`, async ({ page }) => {
+    test.skip(viewport !== null && (page.viewportSize()?.width ?? 0) > 500, "a phone's size");
+    if (viewport !== null) await page.setViewportSize(viewport);
+
+    await openFakeRoom(
+      page,
+      {
+        gameId: "fence-race",
+        seats: [
+          { kind: "human", name: "Lan", standIn: false },
+          { kind: "human", name: "Minh", standIn: false },
+        ],
+        record: fenceRaceRecord(2, FENCE_MIDDLE.slice(0, 9)),
+      },
+      1,
+    );
+    await expect(fenceFrame(page)).toBeVisible();
+    await shootScreen(page, `54-fence-online${suffix}`);
+    await fenceMode(page, "Đặt rào").click();
+    await tryFenceAt(page, { row: 7, col: 3, dir: "h" }, true);
+    await expect(fencePreview(page)).toBeVisible();
+    await shootScreen(page, `54a-fence-online-place${suffix}`);
+  });
+
+  test(`Cờ rào online, four seats${suffix}`, async ({ page }) => {
+    test.skip(viewport !== null && (page.viewportSize()?.width ?? 0) > 500, "a phone's size");
+    if (viewport !== null) await page.setViewportSize(viewport);
+
+    await openFakeRoom(
+      page,
+      {
+        gameId: "fence-race",
+        seats: [
+          { kind: "human", name: "Lan", standIn: false },
+          { kind: "human", name: "Minh", standIn: false },
+          { kind: "ai" },
+          { kind: "ai" },
+        ],
+        record: fenceRaceRecord(4, FENCE_FOUR),
+      },
+      0,
+    );
+    await expect(fenceFrame(page)).toBeVisible();
+    await shootScreen(page, `55-fence-online-four${suffix}`);
   });
 }

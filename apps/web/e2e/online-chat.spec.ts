@@ -244,8 +244,7 @@ test("Chạm liên tục vào emoji: the connection stays, the screen says to sl
   }
 
   await expect(page.locator("#room-chat").getByRole("alert")).toHaveText("Gửi chậm lại một chút");
-  const firstBurst = await log(page).getByRole("img", { name: "Thích" }).count();
-  expect(firstBurst).toBe(5);
+  await expect(log(page).getByRole("img", { name: "Thích" })).toHaveCount(5);
 
   // Enter held down in the field: repeats, with `event.repeat`, send nothing more.
   await field(page).fill("giữ phím");

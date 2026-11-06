@@ -8,7 +8,7 @@ test("home page shows the game menu", async ({ page }) => {
   await expect(page).toHaveTitle("Board Games Hub");
   await expect(page.getByRole("heading", { level: 1, name: MENU_HEADING })).toBeVisible();
   await expect(page.getByRole("banner")).toContainText("Board Games Hub");
-  await expect(page.getByRole("listitem")).toHaveCount(4);
+  await expect(page.getByRole("listitem")).toHaveCount(5);
 });
 
 test("Thẻ Cờ caro: a card has two ways in, Play and Online", async ({ page }) => {
