@@ -16,4 +16,5 @@ export const GAME_ENTRY_LOADERS = {
   caro: () => import("./caro").then((module) => module.caroEntry),
   ludo: () => import("./ludo").then((module) => module.ludoEntry),
   chess: () => import("./chess").then((module) => module.chessEntry),
+  "fence-race": () => import("./fence-race").then((module) => module.fenceRaceEntry),
 } satisfies GameEntryLoaders;

@@ -158,6 +158,9 @@ const CHESS_SQUARES = [
   "--chess-mark-dark",
 ] as const;
 
+/** The three kinds of field of Cờ rào. */
+const FENCE_RACE_FIELDS = ["--game-board", "--fence-race-plot-2", "--fence-race-plot-3"] as const;
+
 /** Pairs of one game's look (`redesign-game-boards` design §2–§4). */
 const GAME_PAIRS: Readonly<Record<string, readonly Pair[]>> = {
   // A tile that may be chosen: its edge against the lilac page and its own face.
@@ -212,6 +215,22 @@ const GAME_PAIRS: Readonly<Record<string, readonly Pair[]>> = {
     ["--fg-muted", "--chess-sheet-current", 4.5],
     // The two bodies told apart by lightness alone.
     ["--chess-piece-light", "--chess-piece-dark", 3],
+  ],
+  // Design §4 of `add-fence-race-game`, row by row: dikes and fences on each kind of field, a fence
+  // on a dike, the fence tried and the fence refused, the dots and markers, the names on the mat.
+  "fence-race": [
+    ["--fg-muted", "--game-tint", 4.5],
+    ...FENCE_RACE_FIELDS.flatMap((field): Pair[] => [
+      ["--game-line", field, 3],
+      ["--fence-race-wall", field, 3],
+      ["--fence-race-preview", field, 3],
+      ["--fence-race-bad", field, 3],
+      ["--game-highlight", field, 3],
+      ["--game-last-move", field, 3],
+    ]),
+    ["--fence-race-wall", "--game-line", 3],
+    ["--fence-race-wall", "--fence-race-halo", 3],
+    ["--fence-race-bad-ink", "--fence-race-bad", 3],
   ],
 };
 

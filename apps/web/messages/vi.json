@@ -253,6 +253,122 @@
         "fivefold-repetition": "Thế cờ lặp lại năm lần",
         "seventy-five-move": "75 nước liền không đi Tốt, không ăn quân"
       }
+    },
+    "fence-race": {
+      "name": "Cờ rào",
+      "tagline": "Đua về cổng làng phía đối diện, đặt rào chặn đường người khác",
+      "colours": {
+        "red": "Đỏ",
+        "blue": "Xanh dương",
+        "yellow": "Vàng",
+        "green": "Xanh lá"
+      },
+      "colourWords": {
+        "red": "đỏ",
+        "blue": "xanh dương",
+        "yellow": "vàng",
+        "green": "xanh lá"
+      },
+      "symbols": {
+        "red": "●",
+        "blue": "■",
+        "yellow": "▲",
+        "green": "◆"
+      },
+      "sides": {
+        "top": "trên",
+        "bottom": "dưới",
+        "left": "trái",
+        "right": "phải"
+      },
+      "you": "Bạn",
+      "goal": "Về cổng màu {colour} {symbol} ở cạnh {side} trước mọi người.",
+      "modes": {
+        "label": "Chế độ",
+        "move": "Đi quân",
+        "place": "Đặt rào",
+        "break": "Phá rào"
+      },
+      "modeSub": {
+        "steps": "{count} bước",
+        "fences": "Còn {count}",
+        "breaks": "Còn 1 lần",
+        "waiting": "Chưa tới lượt",
+        "sending": "Đang gửi",
+        "paused": "Tạm dừng"
+      },
+      "blocked": {
+        "noFences": "Đã hết rào",
+        "broke": "Đã phá rào",
+        "noFenceToBreak": "Chưa có rào",
+        "sending": "Đang gửi…"
+      },
+      "rotate": "Xoay",
+      "cancel": "Huỷ",
+      "confirmPlace": "Đặt rào",
+      "confirmBreak": "Phá rào",
+      "sending": "Đang gửi…",
+      "hints": {
+        "move": "Chạm ô có chấm để đi một ô.",
+        "place": "Chạm lên bàn, gần đường kẻ muốn chặn.",
+        "placeSub": "Kéo để dời, chạm lại đúng rào để xoay.",
+        "break": "Chạm gần rào muốn phá.",
+        "breakSub": "Mỗi người phá một lần, rào của ai cũng được.",
+        "triedSub": "Chọn việc khác cho lượt này.",
+        "lockedSub": "Tới lượt bạn mới chọn được việc.",
+        "breakKeys": "PageUp, PageDown: qua rào khác."
+      },
+      "fence": {
+        "row": "rào giữa hàng {low} và {high}, cột {left}–{right}",
+        "col": "rào giữa cột {left} và {right}, hàng {low}–{high}"
+      },
+      "fenceLine": "{fence}.",
+      "issue": {
+        "overlap": "Đè lên {fence}",
+        "cross": "Cắt ngang {fence}",
+        "seals": "Bịt kín đường của {players}",
+        "noFences": "Đã hết rào",
+        "outOfBoard": "Không đặt được"
+      },
+      "change": "{player}: {before} → {after} bước",
+      "noLonger": "Không ai phải đi xa hơn.",
+      "noShorter": "Không ai ngắn đường hơn.",
+      "move": {
+        "step": "đi tới {cell}",
+        "fence": "đặt {fence}",
+        "break": "phá {fence}"
+      },
+      "lastMove": "{player} vừa {move}.",
+      "summary": {
+        "line": "{fences} · {broke} · {steps}",
+        "fences": "{count} rào",
+        "steps": "{count} bước",
+        "canBreak": "phá",
+        "broke": "đã phá"
+      },
+      "cell": {
+        "name": "Ô {cell}",
+        "pawns": "có quân {players}",
+        "gate": "cổng đích của {players}",
+        "fences": "rào {sides}",
+        "sides": {
+          "up": "phía trên",
+          "down": "phía dưới",
+          "left": "bên trái",
+          "right": "bên phải"
+        },
+        "justArrived": "quân vừa đi tới đây",
+        "justLeft": "quân vừa rời ô này",
+        "justFenced": "rào vừa đặt {side}",
+        "justBroken": "rào vừa bị phá {side}",
+        "canStep": "đi được"
+      },
+      "result": {
+        "goal": "{player} về đích ở ô {cell} sau {moves} nước.",
+        "turnLimit": "{player} gần đích hơn khi hết {limit} nước: còn {steps} bước, {others}.",
+        "other": "{player} còn {steps}",
+        "draw": "Hết {limit} nước, {players} cùng còn {steps} bước về đích."
+      }
     }
   },
   "Modes": {
@@ -767,6 +883,63 @@
         "promotion": {
           "label": "Phong cấp: Tốt trắng đi từ e7 tới e8 và được chọn thành Hậu, Xe, Tượng hoặc Mã",
           "caption": "Tốt tới hàng cuối: chọn Hậu, Xe, Tượng hoặc Mã."
+        }
+      }
+    },
+    "fence-race": {
+      "goal": {
+        "title": "Mục tiêu",
+        "body": "Đưa quân của bạn vào <b>cổng đích</b> trước mọi người. Cổng là <b>5 ô giữa</b> của cạnh đối diện, cột hay hàng thứ 3 tới thứ 7, vẽ như một cổng làng mang màu và ký hiệu của bạn.",
+        "body2": "Các ô còn lại của cạnh đó không tính: quân tới đó phải đi tiếp dọc cạnh vào cổng."
+      },
+      "board": {
+        "title": "Bàn và số rào",
+        "two": "Hai người: bàn <b>11 hàng × 9 cột</b>, mỗi người <b>9 rào</b>.",
+        "three": "Ba người: bàn <b>9 × 9</b>, mỗi người <b>6 rào</b>.",
+        "four": "Bốn người: bàn <b>9 × 9</b>, mỗi người <b>4 rào</b>.",
+        "body": "Ai cũng có đúng một lần phá rào. Ghế đầu đi trước."
+      },
+      "turn": {
+        "title": "Mỗi lượt một việc",
+        "body": "Trong lượt của mình, bạn làm một trong ba việc: <b>đi quân</b> một ô, <b>đặt</b> một rào, hoặc <b>phá</b> một rào.",
+        "body2": "Quân đi ngang hoặc dọc, không đi xuyên rào. Quân được <b>đứng chung ô</b> và không nhảy qua nhau."
+      },
+      "place": {
+        "title": "Đặt rào",
+        "body": "Rào dài <b>hai ô</b>, nằm trên đường kẻ giữa các ô. Rào không được đè lên rào khác, dù chỉ một đoạn, và không được cắt ngang rào khác ở trung điểm."
+      },
+      "way": {
+        "title": "Luôn còn đường về đích",
+        "body": "Không được đặt rào làm <b>bất kỳ ai</b> hết đường về đích, kể cả chính bạn. Quân khác không tính là vật cản."
+      },
+      "break": {
+        "title": "Phá rào",
+        "body": "Mỗi người phá được <b>một lần</b> trong cả ván, thay cho việc đi quân hay đặt rào. Phá được rào của <b>bất kỳ ai</b>; rào bị phá không trả lại cho ai."
+      },
+      "end": {
+        "title": "Kết thúc ván",
+        "body": "Ai vào một ô của cổng đích trước thì thắng ngay, kể cả ván nhiều người. Cổng của người khác không tính. Sau <b>200 nước</b> cả ván (<b>198 nước</b> khi ba người) mà chưa ai về đích, người có đường ngắn nhất thắng; bằng nhau thì hoà."
+      },
+      "figures": {
+        "gate": {
+          "label": "Cạnh trên có cổng ở năm ô giữa. Quân ở ô ngoài cổng đi dọc cạnh một bước vào cổng",
+          "caption": "Quân ● đang ở trên cạnh nhưng ngoài cổng, nên <no>chưa thắng</no>. Đi dọc cạnh một bước vào cổng là về đích."
+        },
+        "place": {
+          "label": "Ba hình nhỏ: rào đặt đúng trên đường kẻ, rào đè lên rào khác, rào cắt ngang rào khác",
+          "caption": "Rào liền, hai đầu tròn: đặt được. Rào gãy đôi có dấu ✕: <no>không đặt được</no>.",
+          "ok": "Được",
+          "overlap": "Đè",
+          "cross": "Cắt"
+        },
+        "sealed": {
+          "label": "Quân ở góc phải chỉ còn một lối ra bên trái; rào đặt vào lối đó bị cấm vì bịt kín đường",
+          "caption": "Quân ■ chỉ còn một lối ra (chấm). Rào ✕ sẽ <no>bịt kín đường</no> của nó nên bị cấm."
+        },
+        "break": {
+          "label": "Trước khi phá rào, đường dài {before} bước; sau khi phá còn {after} bước",
+          "caption": "Phá rào có viền: đường từ <b>{before}</b> còn <b>{after}</b> bước.",
+          "steps": "{count} bước"
         }
       }
     }

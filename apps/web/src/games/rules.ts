@@ -14,4 +14,5 @@ export const GAME_RULES = {
   caro: () => import("./caro/Rules").then((module) => module.CaroRules),
   ludo: () => import("./ludo/Rules").then((module) => module.LudoRules),
   chess: () => import("./chess/Rules").then((module) => module.ChessRules),
+  "fence-race": () => import("./fence-race/Rules").then((module) => module.FenceRaceRules),
 } as const satisfies Readonly<Record<RegisteredGameId, () => Promise<GameRulesComponent>>>;

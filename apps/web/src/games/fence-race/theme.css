@@ -1,0 +1,224 @@
+/*
+ * Cờ rào's look ("đồng làng trên giấy dó": fields seen from above, drawn in ink on straw paper; by
+ * night, in moonlight), as values of the shared `--game-*` contract and its own `--fence-race-*`,
+ * inside `[data-game="fence-race"]` only; the seats' colours are the shared `--piece-*`. Light here,
+ * dark in both blocks below, which stay identical (games/theme-css.test.ts).
+ */
+[data-game="fence-race"] {
+  /* The page around the board: straw paper, greyer and darker than Cờ cá ngựa's. */
+  --game-page: #ece7d6;
+  /* The paper mat under the fields; the artwork's background. */
+  --game-tint: #f5f1e1;
+  /* A field of young rice. */
+  --game-board: #e6e3ad;
+  /* A field of ripe rice. */
+  --fence-race-plot-2: #efd98f;
+  /* A ploughed field. */
+  --fence-race-plot-3: #dcc39b;
+  /* The dikes between fields: at least 3:1 against every field. */
+  --game-line: #78663c;
+  /* The rows in a field (decorative). */
+  --fence-race-row: #bcae79;
+  /* The mat's edge. */
+  --fence-race-frame: #3f3621;
+  /* A fence: ink, at least 3:1 against every field and against the dikes. */
+  --fence-race-wall: #1c1830;
+  /* The paper edge around a fence, a mark and a way. */
+  --fence-race-halo: #fbf7e8;
+  /* The fence being tried: the app's accent, a hue no piece has. */
+  --fence-race-preview: #5b34e6;
+  /* A fence that may not go there. */
+  --fence-race-bad: #a42a21;
+  /* What the bad mark's cross is drawn with. */
+  --fence-race-bad-ink: #ffffff;
+  /* The dot of a cell the pawn can step to, the ring of the seat to move: ink. */
+  --game-highlight: #1c1830;
+  /* The dashed marker of the last move. */
+  --game-last-move: #1c1830;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) [data-game="fence-race"] {
+    --game-page: #16150f;
+    --game-tint: #211f15;
+    --game-board: #34381f;
+    --fence-race-plot-2: #433a19;
+    --fence-race-plot-3: #3e2e20;
+    --game-line: #8d855a;
+    --fence-race-row: #4e4d33;
+    --fence-race-frame: #b9af82;
+    --fence-race-wall: #f7f0d8;
+    --fence-race-halo: #16150f;
+    --fence-race-preview: #a894ff;
+    --fence-race-bad: #ff8a7e;
+    --fence-race-bad-ink: #1f1a12;
+    --game-highlight: #f7f0d8;
+    --game-last-move: #f7f0d8;
+  }
+}
+
+:root[data-theme="dark"] [data-game="fence-race"] {
+  --game-page: #16150f;
+  --game-tint: #211f15;
+  --game-board: #34381f;
+  --fence-race-plot-2: #433a19;
+  --fence-race-plot-3: #3e2e20;
+  --game-line: #8d855a;
+  --fence-race-row: #4e4d33;
+  --fence-race-frame: #b9af82;
+  --fence-race-wall: #f7f0d8;
+  --fence-race-halo: #16150f;
+  --fence-race-preview: #a894ff;
+  --fence-race-bad: #ff8a7e;
+  --fence-race-bad-ink: #1f1a12;
+  --game-highlight: #f7f0d8;
+  --game-last-move: #f7f0d8;
+}
+
+/*
+ * The turn line says where a fence went, so it is smaller than the other games': 16 px on a phone,
+ * the same in every theme, so two lines hold a move of the opponent without pushing the board.
+ * Apart from the colours above, which must have a dark value.
+ */
+[data-game="fence-race"] {
+  --text-status: clamp(1rem, 0.85rem + 0.8vw, 1.625rem);
+}
+
+/*
+ * The board's size, from the room the screen leaves it. A phone: a cell from the width, or from the
+ * height (`svh`: the bars of the browser going away while scrolling must not resize the board) left by what must stay in view (the top bar, the turn line, the players, the line under the
+ * board, the row of modes, the game's buttons), whichever is smaller, but not below a size a thumb
+ * can use: a short screen scrolls instead. Beside the column (1024 px and up, a phone sideways): from
+ * the play screen's `--board-room`.
+ */
+/* These sizes and the selectors of this file on the screen around the board follow the DOM of
+   `PlayScreen` (its rows and gaps, `data-chat-dock`, the status line, the panel); the E2E layout tests
+   (`fence-race.spec.ts`) hold them to it. */
+[data-fence-race-board] {
+  --fence-race-gutter: 1rem;
+  /* Rows of the players' panel, 43 px each and 8 px apart. */
+  --fence-race-panel: calc(
+    var(--fence-race-seats) * 2.6875rem + (var(--fence-race-seats) - 1) * 0.5rem
+  );
+  /* The turn line, in one line. */
+  --fence-race-status: 1.25rem;
+  /* The chips above the turn line, online the connection's line too. */
+  --fence-race-chips: 0rem;
+  /* Under the board: the line 36 + 12 around it, the modes 44, 12, the game's buttons 44, the page 16. */
+  --fence-race-below: 10.25rem;
+  --fence-race-above: calc(
+    var(--top-bar-height) + var(--safe-top) + 1rem + var(--fence-race-chips) +
+      var(--fence-race-status) + 1rem + var(--fence-race-panel) + 1rem
+  );
+  --fence-race-floor: 1.3125rem;
+  --fence-race-from-width: calc(
+    (100vw - 2rem - var(--safe-left) - var(--safe-right) - 2 * var(--fence-race-gutter)) /
+      var(--fence-race-columns)
+  );
+  --fence-race-from-height: calc(
+    (100svh - var(--fence-race-above) - var(--fence-race-below) - 2 * var(--fence-race-gutter)) /
+      var(--fence-race-rows)
+  );
+  --fence-race-cell: max(
+    var(--fence-race-floor),
+    min(var(--fence-race-from-width), var(--fence-race-from-height))
+  );
+  width: calc(var(--fence-race-cell) * var(--fence-race-columns) + 2 * var(--fence-race-gutter));
+  height: calc(var(--fence-race-cell) * var(--fence-race-rows) + 2 * var(--fence-race-gutter));
+}
+
+[data-fence-race-board][data-seats="2"] {
+  --fence-race-seats: 2;
+}
+
+[data-fence-race-board][data-seats="3"] {
+  --fence-race-seats: 3;
+}
+
+[data-fence-race-board][data-seats="4"] {
+  --fence-race-seats: 4;
+}
+
+/* A screen too short for everything scrolls, and the cells stay a size for a thumb. */
+@media (max-height: 43.74rem) {
+  [data-fence-race-board] {
+    --fence-race-floor: 1.5625rem;
+  }
+
+  [data-fence-race-board][data-rows="11"] {
+    --fence-race-floor: 1.625rem;
+  }
+}
+
+/* One player here (against the AI, online): the chips, and two lines for the others' moves. */
+[data-fence-race-board][data-fence-race-keep] {
+  --fence-race-status: 2.5rem;
+  --fence-race-chips: 2.625rem;
+}
+
+/* The result card takes the turn line's place; under the board only the game's buttons are left. */
+[data-fence-race-board][data-fence-race-over] {
+  --fence-race-status: 11.75rem;
+  --fence-race-below: 4.75rem;
+}
+
+[data-fence-race-board][data-fence-race-over="draw"] {
+  --fence-race-status: 14rem;
+}
+
+/* Online, the connection's line above the turn; the chat and "resign" may scroll into view. These
+   heights follow the DOM of `PlayScreen`, and the E2E layout tests hold them to it. */
+[data-game="fence-race"]:has([data-chat-dock]) [data-fence-race-board][data-fence-race-keep] {
+  --fence-race-chips: 3.875rem;
+  --fence-race-below: 6.25rem;
+  --fence-race-panel: calc(
+    var(--fence-race-seats) * 2.6875rem + (var(--fence-race-seats) - 1) * 0.5rem + 1.125rem
+  );
+}
+
+@media (min-width: 64rem) {
+  [data-fence-race-board],
+  [data-game="fence-race"]:has([data-chat-dock]) [data-fence-race-board][data-fence-race-keep] {
+    --fence-race-side: min(var(--board-room), 42.5rem);
+    --fence-race-gutter: calc(var(--fence-race-cell) * 0.46);
+    --fence-race-cell: calc(var(--fence-race-side) / (var(--fence-race-rows) + 0.92));
+  }
+}
+
+@media (orientation: landscape) and (max-height: 32rem) {
+  [data-fence-race-board],
+  [data-game="fence-race"]:has([data-chat-dock]) [data-fence-race-board][data-fence-race-keep] {
+    --fence-race-gutter: 0.875rem;
+    --fence-race-cell: calc(
+      (var(--board-room) - 2 * var(--fence-race-gutter)) / var(--fence-race-rows)
+    );
+  }
+}
+
+/*
+ * A move of the opponent must not push the board. Below 1024 px and on a phone upright only: beside
+ * the board the column may move, the board does not. Online, the player's row can wrap (the turn
+ * chip, "connected", the summary), so the panel keeps that room too. The selectors follow the DOM of
+ * `PlayScreen`, and the E2E layout tests hold them to it.
+ */
+@media (max-width: 63.99rem) and (orientation: portrait) {
+  [data-game="fence-race"]:has([data-fence-race-keep]) p[role="status"] {
+    min-height: 2.5em;
+  }
+
+  [data-game="fence-race"]:has([data-fence-race-keep]):has([data-chat-dock])
+    ul:has(> li[data-player]) {
+    align-content: start;
+    min-height: 7rem;
+  }
+
+  [data-game="fence-race"]:has([data-fence-race-keep]):has([data-chat-dock])
+    ul:has(> li[data-player="2"]) {
+    min-height: 10.1875rem;
+  }
+
+  [data-game="fence-race"]:has([data-fence-race-keep]):has([data-chat-dock])
+    ul:has(> li[data-player="3"]) {
+    min-height: 13.375rem;
+  }
+}

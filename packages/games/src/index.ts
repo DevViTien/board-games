@@ -2,6 +2,7 @@ import type { AnyGameDefinition } from "@board-games/engine";
 
 import { caro } from "./caro";
 import { chess } from "./chess";
+import { fenceRace } from "./fence-race";
 import type { RegisteredGameId } from "./ids";
 import { ludo } from "./ludo";
 import { tictactoe } from "./tictactoe";
@@ -16,6 +17,7 @@ export const GAMES = [
   caro,
   ludo,
   chess,
+  fenceRace,
 ] as const satisfies readonly (AnyGameDefinition & {
   readonly id: RegisteredGameId;
 })[];
@@ -26,6 +28,7 @@ export function findGame(id: string): AnyGameDefinition | undefined {
 
 export * from "./caro";
 export * from "./chess";
+export * from "./fence-race";
 export { GAME_IDS, isRegisteredGameId, type RegisteredGameId } from "./ids";
 export * from "./ludo";
 export * from "./tictactoe";

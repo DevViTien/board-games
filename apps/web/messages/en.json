@@ -253,6 +253,122 @@
         "fivefold-repetition": "The position occurred five times",
         "seventy-five-move": "75 moves without a pawn move or a capture"
       }
+    },
+    "fence-race": {
+      "name": "Fence Race",
+      "tagline": "Race to the village gate on the far side, and fence the others off",
+      "colours": {
+        "red": "Red",
+        "blue": "Blue",
+        "yellow": "Yellow",
+        "green": "Green"
+      },
+      "colourWords": {
+        "red": "red",
+        "blue": "blue",
+        "yellow": "yellow",
+        "green": "green"
+      },
+      "symbols": {
+        "red": "●",
+        "blue": "■",
+        "yellow": "▲",
+        "green": "◆"
+      },
+      "sides": {
+        "top": "top",
+        "bottom": "bottom",
+        "left": "left",
+        "right": "right"
+      },
+      "you": "You",
+      "goal": "Reach the {colour} {symbol} gate on the {side} edge before anyone else.",
+      "modes": {
+        "label": "Mode",
+        "move": "Move",
+        "place": "Fence",
+        "break": "Break"
+      },
+      "modeSub": {
+        "steps": "{count, plural, one {# step} other {# steps}}",
+        "fences": "{count} left",
+        "breaks": "1 left",
+        "waiting": "Not your turn",
+        "sending": "Sending",
+        "paused": "Paused"
+      },
+      "blocked": {
+        "noFences": "No fences left",
+        "broke": "Already used",
+        "noFenceToBreak": "No fences yet",
+        "sending": "Sending…"
+      },
+      "rotate": "Turn",
+      "cancel": "Cancel",
+      "confirmPlace": "Place fence",
+      "confirmBreak": "Break fence",
+      "sending": "Sending…",
+      "hints": {
+        "move": "Tap a dotted cell to move one cell.",
+        "place": "Tap the board near the line to block.",
+        "placeSub": "Drag to shift it, tap it again to turn it.",
+        "break": "Tap near the fence to break.",
+        "breakSub": "Once a game, anyone's fence.",
+        "triedSub": "Pick something else this turn.",
+        "lockedSub": "You can choose when it is your turn.",
+        "breakKeys": "PageUp, PageDown: go to another fence."
+      },
+      "fence": {
+        "row": "a fence between rows {low} and {high}, {left}–{right}",
+        "col": "a fence between {left} and {right}, rows {low}–{high}"
+      },
+      "fenceLine": "{fence}.",
+      "issue": {
+        "overlap": "On top of {fence}",
+        "cross": "Crosses {fence}",
+        "seals": "Seals off {players}",
+        "noFences": "No fences left",
+        "outOfBoard": "Cannot go there"
+      },
+      "change": "{player}: {before} → {after, plural, one {# step} other {# steps}}",
+      "noLonger": "Nobody has further to go.",
+      "noShorter": "Nobody gets a shorter way.",
+      "move": {
+        "step": "moved to {cell}",
+        "fence": "placed {fence}",
+        "break": "broke {fence}"
+      },
+      "lastMove": "{player} {move}.",
+      "summary": {
+        "line": "{fences} · {broke} · {steps}",
+        "fences": "{count, plural, one {# fence} other {# fences}}",
+        "steps": "{count, plural, one {# step} other {# steps}}",
+        "canBreak": "break",
+        "broke": "broke"
+      },
+      "cell": {
+        "name": "Cell {cell}",
+        "pawns": "pawn of {players}",
+        "gate": "gate of {players}",
+        "fences": "fence {sides}",
+        "sides": {
+          "up": "above",
+          "down": "below",
+          "left": "on the left",
+          "right": "on the right"
+        },
+        "justArrived": "a pawn just moved here",
+        "justLeft": "a pawn just left",
+        "justFenced": "fence just placed {side}",
+        "justBroken": "fence just broken {side}",
+        "canStep": "you can move here"
+      },
+      "result": {
+        "goal": "{player} reached the gate at {cell} after {moves} moves.",
+        "turnLimit": "{player} was nearest when the {limit} moves ran out: {steps, plural, one {# step} other {# steps}} left, {others}.",
+        "other": "{player} {steps}",
+        "draw": "The {limit} moves ran out with {players} level, {steps, plural, one {# step} other {# steps}} away."
+      }
     }
   },
   "Modes": {
@@ -767,6 +883,63 @@
         "promotion": {
           "label": "Promotion: a white pawn moves from e7 to e8 and becomes a queen, rook, bishop or knight, as chosen",
           "caption": "A pawn on the last row: choose a queen, rook, bishop or knight."
+        }
+      }
+    },
+    "fence-race": {
+      "goal": {
+        "title": "Goal",
+        "body": "Get your pawn into its <b>gate</b> before anyone else. The gate is the <b>5 middle cells</b> of the opposite edge, the third to the seventh column or row, drawn as a village gate in your colour and symbol.",
+        "body2": "The other cells of that edge do not count: a pawn there has to walk along the edge into the gate."
+      },
+      "board": {
+        "title": "Board and fences",
+        "two": "Two players: a board of <b>11 rows × 9 columns</b>, <b>9 fences</b> each.",
+        "three": "Three players: a <b>9 × 9</b> board, <b>6 fences</b> each.",
+        "four": "Four players: a <b>9 × 9</b> board, <b>4 fences</b> each.",
+        "body": "Everyone has exactly one break. The first seat starts."
+      },
+      "turn": {
+        "title": "One thing each turn",
+        "body": "On your turn, do one of three things: <b>move</b> your pawn one cell, <b>place</b> a fence, or <b>break</b> a fence.",
+        "body2": "A pawn moves along a row or a column, never through a fence. Pawns may <b>share a cell</b> and do not jump over each other."
+      },
+      "place": {
+        "title": "Placing a fence",
+        "body": "A fence is <b>two cells</b> long and lies on a line between cells. It may not overlap another fence, even in part, nor cross one at its middle."
+      },
+      "way": {
+        "title": "A way to the gate, always",
+        "body": "A fence may not leave <b>anyone</b> without a way to their gate, yourself included. Other pawns do not count as obstacles."
+      },
+      "break": {
+        "title": "Breaking a fence",
+        "body": "Everyone may break <b>once</b> a game, instead of moving or placing. You may break <b>anyone's</b> fence; a broken fence goes back to nobody."
+      },
+      "end": {
+        "title": "End of the game",
+        "body": "The first to step into a cell of their gate wins at once, with any number of players. Another player's gate does not count. After <b>200 moves</b> in all (<b>198 moves</b> with three players) with nobody home, the shortest way wins; level ways draw."
+      },
+      "figures": {
+        "gate": {
+          "label": "The top edge has a gate over its five middle cells. A pawn just outside it takes one step along the edge into it",
+          "caption": "The ● pawn is on the edge but outside the gate, so it has <no>not won yet</no>. One step along the edge into the gate wins."
+        },
+        "place": {
+          "label": "Three small pictures: a fence on a line, a fence overlapping another, a fence crossing another",
+          "caption": "A whole fence with round ends can go there. A fence broken in two with a ✕ <no>cannot</no>.",
+          "ok": "Allowed",
+          "overlap": "Overlap",
+          "cross": "Cross"
+        },
+        "sealed": {
+          "label": "A pawn in the right corner has one way out, to the left; a fence on that way is forbidden as it would seal the pawn in",
+          "caption": "The ■ pawn has one way out (the dots). The ✕ fence would <no>seal it in</no>, so it is forbidden."
+        },
+        "break": {
+          "label": "Before breaking the fence the way is {before} steps; after it, {after} steps",
+          "caption": "Breaking the ringed fence takes the way from <b>{before}</b> to <b>{after}</b> steps.",
+          "steps": "{count} steps"
         }
       }
     }

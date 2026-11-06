@@ -4,6 +4,7 @@ import { AI_GAMES, findAiGame } from "./ai";
 import {
   caro,
   chess,
+  fenceRace,
   findGame,
   GAME_IDS,
   GAMES,
@@ -22,6 +23,8 @@ describe("game registry", () => {
     expect(isRegisteredGameId("ludo")).toBe(true);
     expect(findGame("chess")).toBe(chess);
     expect(isRegisteredGameId("chess")).toBe(true);
+    expect(findGame("fence-race")).toBe(fenceRace);
+    expect(isRegisteredGameId("fence-race")).toBe(true);
   });
 
   it("returns undefined for an unknown id", () => {
@@ -43,7 +46,9 @@ describe("game registry", () => {
   });
 
   it("types RegisteredGameId as the union of literal ids", () => {
-    expectTypeOf<RegisteredGameId>().toEqualTypeOf<"tictactoe" | "caro" | "ludo" | "chess">();
+    expectTypeOf<RegisteredGameId>().toEqualTypeOf<
+      "tictactoe" | "caro" | "ludo" | "chess" | "fence-race"
+    >();
     // Forgetting `as const satisfies` on a game would widen this union to string.
     expectTypeOf<string>().not.toExtend<RegisteredGameId>();
   });

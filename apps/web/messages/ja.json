@@ -253,6 +253,122 @@
         "fivefold-repetition": "同じ局面が5回現れました",
         "seventy-five-move": "75手の間ポーンの移動も駒取りもありません"
       }
+    },
+    "fence-race": {
+      "name": "フェンスレース",
+      "tagline": "向こう側の村の門へ競走し、柵で相手の道をふさごう",
+      "colours": {
+        "red": "赤",
+        "blue": "青",
+        "yellow": "黄",
+        "green": "緑"
+      },
+      "colourWords": {
+        "red": "赤",
+        "blue": "青",
+        "yellow": "黄",
+        "green": "緑"
+      },
+      "symbols": {
+        "red": "●",
+        "blue": "■",
+        "yellow": "▲",
+        "green": "◆"
+      },
+      "sides": {
+        "top": "上",
+        "bottom": "下",
+        "left": "左",
+        "right": "右"
+      },
+      "you": "あなた",
+      "goal": "{side}の辺にある{colour}{symbol}の門へ、誰よりも早く着きましょう。",
+      "modes": {
+        "label": "モード",
+        "move": "移動",
+        "place": "柵を置く",
+        "break": "柵を壊す"
+      },
+      "modeSub": {
+        "steps": "{count}歩",
+        "fences": "残り{count}",
+        "breaks": "残り1回",
+        "waiting": "相手の番",
+        "sending": "送信中",
+        "paused": "一時停止"
+      },
+      "blocked": {
+        "noFences": "柵がありません",
+        "broke": "使用済み",
+        "noFenceToBreak": "柵がまだありません",
+        "sending": "送信中…"
+      },
+      "rotate": "回転",
+      "cancel": "取消",
+      "confirmPlace": "柵を置く",
+      "confirmBreak": "柵を壊す",
+      "sending": "送信中…",
+      "hints": {
+        "move": "点のあるマスをタップして1マス進みます。",
+        "place": "ふさぎたい線の近くをタップします。",
+        "placeSub": "ドラッグで移動、もう一度タップで回転。",
+        "break": "壊したい柵の近くをタップします。",
+        "breakSub": "1人1回、誰の柵でも壊せます。",
+        "triedSub": "この番は別のことを選びましょう。",
+        "lockedSub": "自分の番になると選べます。",
+        "breakKeys": "PageUp、PageDown: 別の柵へ。"
+      },
+      "fence": {
+        "row": "{low}行と{high}行の間、{left}–{right}列の柵",
+        "col": "{left}列と{right}列の間、{low}–{high}行の柵"
+      },
+      "fenceLine": "{fence}。",
+      "issue": {
+        "overlap": "{fence}に重なります",
+        "cross": "{fence}と交差します",
+        "seals": "{players}の道をふさぎます",
+        "noFences": "柵がありません",
+        "outOfBoard": "置けません"
+      },
+      "change": "{player}: {before} → {after}歩",
+      "noLonger": "誰の道も長くなりません。",
+      "noShorter": "誰の道も短くなりません。",
+      "move": {
+        "step": "{cell}へ移動",
+        "fence": "{fence}を設置",
+        "break": "{fence}を破壊"
+      },
+      "lastMove": "{player}: {move}。",
+      "summary": {
+        "line": "{fences} · {broke} · {steps}",
+        "fences": "柵{count}",
+        "steps": "{count}歩",
+        "canBreak": "破壊可",
+        "broke": "破壊済み"
+      },
+      "cell": {
+        "name": "マス{cell}",
+        "pawns": "{players}の駒",
+        "gate": "{players}の門",
+        "fences": "{sides}に柵",
+        "sides": {
+          "up": "上",
+          "down": "下",
+          "left": "左",
+          "right": "右"
+        },
+        "justArrived": "駒がここへ移動した",
+        "justLeft": "駒がここから離れた",
+        "justFenced": "{side}に柵が置かれた",
+        "justBroken": "{side}の柵が壊された",
+        "canStep": "ここへ移動できます"
+      },
+      "result": {
+        "goal": "{player}が{moves}手で{cell}の門に着きました。",
+        "turnLimit": "{limit}手が終わり、{player}がいちばん近くにいました: 残り{steps}歩、{others}。",
+        "other": "{player}は{steps}歩",
+        "draw": "{limit}手が終わり、{players}が同じ残り{steps}歩でした。"
+      }
     }
   },
   "Modes": {
@@ -767,6 +883,63 @@
         "promotion": {
           "label": "プロモーション：白のポーンがe7からe8へ進み、クイーン・ルーク・ビショップ・ナイトのどれかになる",
           "caption": "最後の段に着いたポーン：クイーン・ルーク・ビショップ・ナイトから選ぶ。"
+        }
+      }
+    },
+    "fence-race": {
+      "goal": {
+        "title": "目的",
+        "body": "誰よりも早く自分の駒を<b>門</b>に入れましょう。門は向かい側の辺の<b>中央5マス</b>(3番目から7番目の列または行)で、あなたの色と記号の村の門として描かれています。",
+        "body2": "その辺のほかのマスは数えません。そこに着いた駒は辺に沿って門まで進みます。"
+      },
+      "board": {
+        "title": "盤と柵の数",
+        "two": "2人: <b>11行×9列</b>の盤、1人<b>9本</b>の柵。",
+        "three": "3人: <b>9×9</b>の盤、1人<b>6本</b>の柵。",
+        "four": "4人: <b>9×9</b>の盤、1人<b>4本</b>の柵。",
+        "body": "全員が1回だけ柵を壊せます。最初の席から始めます。"
+      },
+      "turn": {
+        "title": "1手に1つ",
+        "body": "自分の番には3つのうち1つを行います: 駒を1マス<b>動かす</b>、柵を<b>置く</b>、柵を<b>壊す</b>。",
+        "body2": "駒は縦か横に進み、柵を通り抜けられません。駒は<b>同じマスに立て</b>、互いを飛び越えません。"
+      },
+      "place": {
+        "title": "柵を置く",
+        "body": "柵の長さは<b>2マス分</b>で、マスの間の線の上に置きます。一部でも他の柵と重ねたり、他の柵の中点で交差させたりできません。"
+      },
+      "way": {
+        "title": "門への道は必ず残す",
+        "body": "<b>誰か</b>の門への道がなくなる柵は置けません。自分も同じです。他の駒は障害物に数えません。"
+      },
+      "break": {
+        "title": "柵を壊す",
+        "body": "1人<b>1回</b>だけ、移動や設置の代わりに柵を壊せます。<b>誰の</b>柵でも壊せます。壊した柵は誰にも戻りません。"
+      },
+      "end": {
+        "title": "ゲームの終わり",
+        "body": "門のマスに最初に入った人がすぐに勝ちます。人数が多くても同じです。他の人の門は数えません。全体で<b>200手</b>(3人なら<b>198手</b>)を過ぎても誰も着かなければ、道がいちばん短い人の勝ち、同じなら引き分けです。"
+      },
+      "figures": {
+        "gate": {
+          "label": "上の辺の中央5マスに門があります。門のすぐ外の駒は、辺に沿って1歩で門に入ります",
+          "caption": "●の駒は辺の上にいますが門の外なので<no>まだ勝ちではありません</no>。辺に沿って1歩で門に入れば到着です。"
+        },
+        "place": {
+          "label": "3つの小さな図: 線の上に正しく置いた柵、他の柵に重なる柵、他の柵と交差する柵",
+          "caption": "両端が丸い一本の柵は置けます。✕のある二つに割れた柵は<no>置けません</no>。",
+          "ok": "可",
+          "overlap": "重なり",
+          "cross": "交差"
+        },
+        "sealed": {
+          "label": "右隅の駒の出口は左の1つだけです。そこに置く柵は道をふさぐので禁止です",
+          "caption": "■の駒の出口は1つ(点線)だけです。✕の柵はその道を<no>ふさぐ</no>ので禁止です。"
+        },
+        "break": {
+          "label": "柵を壊す前の道は{before}歩、壊した後は{after}歩です",
+          "caption": "枠のついた柵を壊すと、道は<b>{before}</b>歩から<b>{after}</b>歩になります。",
+          "steps": "{count}歩"
         }
       }
     }

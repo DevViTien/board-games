@@ -1,6 +1,7 @@
 import type { AnyGameDefinition } from "@board-games/engine";
 
 import { caro } from "./caro";
+import { fenceRace } from "./fence-race";
 import type { RegisteredGameId } from "./ids";
 import { ludo } from "./ludo";
 import { tictactoe } from "./tictactoe";
@@ -11,7 +12,12 @@ import { tictactoe } from "./tictactoe";
  * its bundle. A game with an AI adds one entry here; `index.test.ts` checks this lists exactly the
  * games of `GAMES` whose `meta.supportsAI` is true, in the same order.
  */
-export const AI_GAMES = [tictactoe, caro, ludo] as const satisfies readonly (AnyGameDefinition & {
+export const AI_GAMES = [
+  tictactoe,
+  caro,
+  ludo,
+  fenceRace,
+] as const satisfies readonly (AnyGameDefinition & {
   readonly id: RegisteredGameId;
 })[];
 
