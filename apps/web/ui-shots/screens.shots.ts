@@ -12,12 +12,15 @@ import { expect, type Page, test } from "@playwright/test";
 
 import {
   board,
+  CARD_SCORE_LONG_NAMES,
   cell,
   chessRecord,
   chessSquare,
   choose,
   continueSection,
   countMarks,
+  createCardGroup,
+  enterRound,
   fenceCell,
   fenceFrame,
   fenceMode,
@@ -1347,3 +1350,110 @@ for (const [suffix, viewport] of [
     await shootScreen(page, `55-fence-online-four${suffix}`);
   });
 }
+
+// ── The toolbox and the card score tool ──
+
+const CARD_ROUNDS: readonly (readonly string[])[] = [
+  ["30", "-10", "-5"],
+  ["-20", "40", "-10"],
+  ["50", "-5", "-15"],
+];
+
+async function playedCardGroup(page: Page): Promise<void> {
+  await createCardGroup(page, ["Lan", "Minh", "Hùng", "Tú"], "Team Dev");
+  for (const values of CARD_ROUNDS) {
+    await enterRound(page, values);
+    await page.getByRole("button", { name: "Lưu ván" }).click();
+    await expect(page.getByRole("dialog")).toBeHidden();
+  }
+}
+
+test("toolbox and an empty list", async ({ page }) => {
+  await page.goto("/tools");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await shoot(page, "60-toolbox");
+  await page.goto("/tools/card-score");
+  await expect(page.getByRole("heading", { name: "Chưa có nhóm nào" })).toBeVisible();
+  await shoot(page, "61-card-score-empty");
+});
+
+test("card score: the form, with a name taken", async ({ page }) => {
+  await page.goto("/tools/card-score/new");
+  await page.getByRole("textbox", { name: "Người chơi 1" }).fill("Lan");
+  await page.getByRole("textbox", { name: "Người chơi 2" }).fill("lan");
+  await page.getByRole("button", { name: "Tạo nhóm" }).click();
+  await expect(page.getByText("Tên này đã có trong nhóm.")).toBeVisible();
+  await shoot(page, "62-card-score-form");
+});
+
+test("card score: the board", async ({ page }) => {
+  await playedCardGroup(page);
+  await expect(page.getByRole("status").getByText("Đã lưu ván 3.")).toBeVisible();
+  await shoot(page, "63-card-score-board");
+  await shootScreen(page, "63a-card-score-board-screen");
+  await page.getByRole("banner").getByRole("link", { name: "Các nhóm" }).click();
+  await expect(page.getByRole("main").getByRole("listitem")).toHaveCount(1);
+  await shoot(page, "64-card-score-list");
+});
+
+test("card score: typing a round", async ({ page }) => {
+  await createCardGroup(page, ["Lan", "Minh", "Hùng", "Tú"], "Team Dev");
+  await page.getByRole("button", { name: "Nhập ván 1" }).click();
+  await shootScreen(page, "65-card-score-round-open");
+  await page.getByRole("button", { name: "Đóng" }).click();
+  await enterRound(page, ["-10", "-20", "-5"]);
+  await expect(page.getByText("Tú được tự tính: +35")).toBeVisible();
+  await shootScreen(page, "65a-card-score-round-auto");
+  await page.getByRole("button", { name: "Đóng" }).click();
+  await shootScreen(page, "65b-card-score-round-ask");
+});
+
+test("card score: a round that does not add up, and one corrected", async ({ page }) => {
+  await playedCardGroup(page);
+  await enterRound(page, ["5", "5", "5", "5"]);
+  await expect(page.getByText("Tổng đang lệch +20")).toBeVisible();
+  await shootScreen(page, "66-card-score-round-mismatch");
+  await page.getByRole("button", { name: "Đóng" }).click();
+  await page.getByRole("button", { name: "Bỏ ván" }).click();
+  await page.getByRole("button", { name: "Sửa ván 2" }).first().click();
+  await shootScreen(page, "66a-card-score-round-edit");
+});
+
+test("card score: eight long names", async ({ page }) => {
+  test.skip((page.viewportSize()?.width ?? 0) > 500, "a phone's size");
+  await page.setViewportSize({ width: 360, height: 640 });
+  await createCardGroup(page, CARD_SCORE_LONG_NAMES, "Họp lớp 12A");
+  await enterRound(page, ["1", "-1", "2"]);
+  await shootScreen(page, "67-card-score-round-eight-360x640");
+  await page.getByRole("button", { name: "Đóng" }).click();
+  await page.getByRole("button", { name: "Bỏ ván" }).click();
+  await enterRound(page, ["1", "-1", "0", "0", "0", "0", "0"]);
+  await page.getByRole("button", { name: "Lưu ván" }).click();
+  await expect(page.getByRole("region", { name: "Bảng các ván" })).toBeVisible();
+  await shoot(page, "67a-card-score-board-eight-360x640");
+});
+
+test("card score: resting, and editing the group", async ({ page }) => {
+  await playedCardGroup(page);
+  await page.getByRole("link", { name: "Sửa nhóm" }).click();
+  await page.getByRole("button", { name: "Cho nghỉ: Tú" }).click();
+  await expect(page.getByRole("button", { name: "Chơi lại: Tú" })).toBeVisible();
+  await page.getByRole("textbox", { name: "Tên người mới" }).fill("Tú");
+  await page.getByRole("button", { name: "Thêm người" }).click();
+  await expect(page.getByText(/đang nghỉ/)).toBeVisible();
+  await shoot(page, "68-card-score-edit");
+});
+
+test("card score: turned sideways", async ({ page }) => {
+  test.skip((page.viewportSize()?.width ?? 0) > 500, "a phone's size");
+  await page.setViewportSize({ width: 844, height: 390 });
+  await createCardGroup(page, ["Lan", "Minh", "Hùng", "Tú"]);
+  await enterRound(page, ["-10", "-20", "-5"]);
+  await shootScreen(page, "69-card-score-round-sideways");
+});
+
+test("the menu's way to the toolbox", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: "Hộp công cụ" })).toBeVisible();
+  await shootScreen(page, "01f-menu-toolbox");
+});

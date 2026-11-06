@@ -147,6 +147,45 @@ test.describe("on a laptop of 1280 × 800", () => {
   });
 });
 
+test.describe("the toolbox's pages", () => {
+  test.use({ viewport: { width: 390, height: 560 } });
+
+  test("Trang con của Hộp công cụ: each has the way back to the one above it", async ({ page }) => {
+    const back = (name: string) => bar(page).getByRole("link", { name });
+    const settled = async () => {
+      await expect(themeButton(page)).toBeInViewport({ ratio: 1 });
+      await expect(languageButton(page)).toBeInViewport({ ratio: 1 });
+    };
+
+    await page.goto("/tools");
+    await expect(back("Về menu")).toHaveAttribute("href", "/");
+    await settled();
+
+    await page.goto("/tools/card-score");
+    await expect(back("Hộp công cụ")).toHaveAttribute("href", "/tools");
+    await settled();
+
+    await page.goto("/tools/card-score/new");
+    await expect(back("Các nhóm")).toHaveAttribute("href", "/tools/card-score");
+    await settled();
+    await page.getByRole("textbox", { name: "Người chơi 1" }).fill("Lan");
+    await page.getByRole("textbox", { name: "Người chơi 2" }).fill("Minh");
+    await page.getByRole("button", { name: "Tạo nhóm" }).click();
+
+    await expect(back("Các nhóm")).toHaveAttribute("href", "/tools/card-score");
+    await settled();
+    await scrollToEnd(page);
+    await expect(bar(page)).toBeInViewport();
+    await page.getByRole("link", { name: "Sửa nhóm" }).click();
+    await expect(back("Bảng điểm")).toHaveAttribute("href", /\/tools\/card-score\/[^/]+$/);
+    await settled();
+
+    // A group not here: the state screen's way back goes up too.
+    await page.goto("/tools/card-score/khong-co/edit");
+    await expect(back("Các nhóm")).toHaveAttribute("href", "/tools/card-score");
+  });
+});
+
 test("a dialog opens above the bar", async ({ page }) => {
   await page.goto(PAGE_WITHOUT_STORAGE);
   await writeSaved(page, "ludo:local", savedLudoGame(2, []));

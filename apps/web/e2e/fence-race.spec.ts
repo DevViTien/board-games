@@ -296,7 +296,8 @@ test.describe("against the AI", () => {
       await expect(status(page)).toHaveText(/^Máy .+\. Đến lượt bạn \(Đỏ\)$/, {
         timeout: 15_000,
       });
-      await fenceCell(page, "E3").click();
+      // Any cell the pawn can reach: the computer may just have fenced off the one straight ahead.
+      await page.locator('[data-cell][aria-disabled="false"]').first().click();
       await expect(status(page)).toHaveText(/^Máy .+\. Đến lượt bạn \(Đỏ\)$/, {
         timeout: 15_000,
       });

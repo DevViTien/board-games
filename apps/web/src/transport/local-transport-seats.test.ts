@@ -307,9 +307,10 @@ describe("createLocalTransport against the AI: the AI's turn", () => {
     await ready(transport);
 
     transport.submit({ cell: 4 });
-    await aiMoves();
-
-    expect(readySnapshot(transport).moveCount).toBe(2);
+    // The real AI loads and thinks in real time, whatever the fake clock says: no fixed wait.
+    await vi.waitFor(() => {
+      expect(readySnapshot(transport).moveCount).toBe(2);
+    });
     expect(readySnapshot(transport).canMove).toBe(true);
   });
 
@@ -317,10 +318,11 @@ describe("createLocalTransport against the AI: the AI's turn", () => {
     const transport = vsAi({ start: { mode: "ai", level: "easy", first: "ai" } });
     await ready(transport);
 
-    await aiMoves();
+    await vi.waitFor(() => {
+      expect(readySnapshot(transport).moveCount).toBe(1);
+    });
 
     const snapshot = readySnapshot(transport);
-    expect(snapshot.moveCount).toBe(1);
     expect(snapshot.currentPlayer).toBe(1);
     expect(snapshot.canMove).toBe(true);
   });

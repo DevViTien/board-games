@@ -711,3 +711,70 @@ export async function pickLanguage(page: Page, name: "Tiếng Việt" | "English
   await expect(page.locator("html")).toHaveAttribute("lang", lang);
   await expect(languageButton(page)).not.toHaveAttribute("aria-busy");
 }
+
+// ── The card score tool ──
+
+/** Eight players with the longest names the tool takes: what a small screen has to hold. */
+export const CARD_SCORE_LONG_NAMES = [
+  "Nguyễn Thị Thanh Hương A",
+  "Trần Quốc Bảo Long Hoàng",
+  "Lê Minh Khôi Nguyên Phúc",
+  "Phạm Đức Anh Tuấn Khang",
+  "Hoàng Yến Nhi Ngọc Trâm",
+  "Vũ Khánh Linh Bảo Châu A",
+  "Đặng Thuỳ Linh Mai Chi A",
+  "Bùi Quang Huy Hoàng Long",
+] as const;
+
+/** Creates a group through its form and waits for its board. */
+export async function createCardGroup(
+  page: Page,
+  names: readonly string[],
+  name = "",
+): Promise<void> {
+  await page.goto("/tools/card-score/new");
+  if (name !== "") await page.getByRole("textbox", { name: "Tên nhóm" }).fill(name);
+  for (let added = 4; added < names.length; added += 1) {
+    await page.getByRole("button", { name: "Thêm người" }).click();
+  }
+  for (const [index, player] of names.entries()) {
+    await page.getByRole("textbox", { name: `Người chơi ${index + 1}`, exact: true }).fill(player);
+  }
+  await page.getByRole("button", { name: "Tạo nhóm" }).click();
+  await expect(roundButton(page, "Nhập ván 1")).toBeVisible();
+}
+
+/** The button that opens a round: there is only one on the board. */
+export const roundButton = (page: Page, name: string) =>
+  page.getByRole("button", { name, exact: true });
+
+/** A player's score field on the round screen. */
+export const scoreField = (page: Page, name: string) =>
+  page.getByRole("textbox", { name, exact: true });
+
+/** The rows of the standings: the board's first list. */
+export const standings = (page: Page) =>
+  page.getByRole("main").getByRole("list").first().getByRole("listitem");
+
+/**
+ * Opens the next round and types `values` into the first fields: by the keypad on a touch device,
+ * by the keyboard elsewhere. Leaves the screen open, for the test to look and to save.
+ */
+export async function enterRound(page: Page, values: readonly string[]): Promise<void> {
+  await page.getByRole("button", { name: /^Nhập ván \d+$/ }).click();
+  const keypad = page.getByRole("group", { name: "Bàn số" });
+  const touch = (await keypad.count()) > 0;
+  for (const value of values) {
+    if (touch) {
+      const negative = value.startsWith("-");
+      for (const digit of value.replace("-", "")) {
+        await keypad.getByRole("button", { name: digit, exact: true }).click();
+      }
+      if (negative) await keypad.getByRole("button", { name: "Đổi dấu" }).click();
+      await keypad.getByRole("button", { name: "Tiếp" }).click();
+    } else {
+      await page.keyboard.type(value);
+      await page.keyboard.press("Enter");
+    }
+  }
+}

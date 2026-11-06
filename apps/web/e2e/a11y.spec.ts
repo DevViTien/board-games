@@ -3,8 +3,11 @@ import { expect, type Page, test } from "@playwright/test";
 import { expectNoAxeViolations, reportBestPractices } from "./axe";
 import {
   board,
+  CARD_SCORE_LONG_NAMES,
   chessRecord,
   choose,
+  createCardGroup,
+  enterRound,
   fenceMode,
   fenceRaceRecord,
   horseChoices,
@@ -436,6 +439,78 @@ for (const colorScheme of SCHEMES) {
         await page.goto("/room/ZZZ234");
         await expect(page.getByRole("heading", { name: "Không tìm thấy phòng" })).toBeVisible();
         await expectNoAxeViolations(page, "room-not-found");
+      });
+    });
+
+    test.describe("(F) the toolbox", () => {
+      test("the toolbox, the empty list and the forms", async ({ page }) => {
+        await page.goto("/tools");
+        await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+        await expectNoAxeViolations(page, "toolbox");
+
+        await page.goto("/tools/card-score");
+        await expect(page.getByRole("heading", { name: "Chưa có nhóm nào" })).toBeVisible();
+        await expectNoAxeViolations(page, "card-score-empty");
+
+        await page.goto("/tools/card-score/new");
+        await page.getByRole("textbox", { name: "Người chơi 1" }).fill("Lan");
+        await page.getByRole("textbox", { name: "Người chơi 2" }).fill("lan");
+        await page.getByRole("button", { name: "Tạo nhóm" }).click();
+        await expect(page.getByText("Tên này đã có trong nhóm.")).toBeVisible();
+        await expectNoAxeViolations(page, "card-score-form");
+
+        await page.goto("/tools/card-score/khong-co");
+        await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+        await expectNoAxeViolations(page, "card-score-not-found");
+      });
+
+      test("Quét màn hình nhập ván: the board, the round in every state, and the questions", async ({
+        page,
+      }) => {
+        await createCardGroup(page, ["Lan", "Minh", "Hùng", "Tú"], "Team Dev");
+        await expectNoAxeViolations(page, "card-score-board-empty");
+
+        await enterRound(page, ["-10", "-20", "-5"]);
+        await expect(page.getByText("Tú được tự tính: +35")).toBeVisible();
+        await expectNoAxeViolations(page, "card-score-round-auto");
+        await page.getByRole("button", { name: "Lưu ván" }).click();
+        await expect(page.getByRole("status").getByText("Đã lưu ván 1.")).toBeVisible();
+        await expectNoAxeViolations(page, "card-score-board");
+
+        await page.getByRole("button", { name: "Xoá nhóm" }).click();
+        await expect(page.getByRole("dialog", { name: /^Xoá nhóm/ })).toBeVisible();
+        await expectNoAxeViolations(page, "card-score-delete-group");
+        await page.getByRole("button", { name: "Huỷ" }).click();
+
+        await enterRound(page, ["5", "5", "5", "5"]);
+        await expect(page.getByText("Tổng đang lệch +20")).toBeVisible();
+        await expectNoAxeViolations(page, "card-score-round-mismatch");
+        await page.getByRole("button", { name: "Đóng" }).click();
+        await expect(page.getByRole("heading", { name: "Bỏ ván đang nhập?" })).toBeVisible();
+        await expectNoAxeViolations(page, "card-score-round-ask");
+        await page.getByRole("button", { name: "Bỏ ván" }).click();
+
+        await page.getByRole("button", { name: "Sửa ván 1" }).first().click();
+        await expect(page.getByRole("button", { name: "Xoá ván này" })).toBeVisible();
+        await expectNoAxeViolations(page, "card-score-round-edit");
+        await page.getByRole("button", { name: "Đóng" }).click();
+
+        await page.getByRole("link", { name: "Sửa nhóm" }).click();
+        await page.getByRole("button", { name: "Cho nghỉ: Tú" }).click();
+        await expect(page.getByRole("button", { name: "Chơi lại: Tú" })).toBeVisible();
+        await expectNoAxeViolations(page, "card-score-edit");
+        await page.getByRole("link", { name: "Xong" }).click();
+        await page.getByRole("banner").getByRole("link", { name: "Các nhóm" }).click();
+        await expect(page.getByRole("main").getByRole("listitem")).toHaveCount(1);
+        await expectNoAxeViolations(page, "card-score-list");
+      });
+
+      test("eight long names", async ({ page }) => {
+        await createCardGroup(page, CARD_SCORE_LONG_NAMES);
+        await enterRound(page, ["1", "1", "1", "1", "1", "1", "-6"]);
+        await page.getByRole("button", { name: "Lưu ván" }).click();
+        await expect(page.getByRole("region", { name: "Bảng các ván" })).toBeVisible();
+        await expectNoAxeViolations(page, "card-score-board-eight");
       });
     });
 

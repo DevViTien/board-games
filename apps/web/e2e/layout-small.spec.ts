@@ -2,8 +2,11 @@ import { expect, type Locator, type Page, test } from "@playwright/test";
 
 import {
   board,
+  CARD_SCORE_LONG_NAMES,
   chessSquare,
   choose,
+  createCardGroup,
+  enterRound,
   horseChoices,
   LUDO_FOUR_CHOICES,
   ludoRecord,
@@ -11,6 +14,7 @@ import {
   PAGE_WITHOUT_STORAGE,
   pressStart,
   rollButton,
+  roundButton,
   savedChessGame,
   savedLudoGame,
   status,
@@ -100,6 +104,105 @@ for (const viewport of [
     });
   });
 }
+
+test.describe("the card score tool on a small phone", () => {
+  for (const viewport of [
+    { width: 360, height: 740 },
+    { width: 360, height: 640 },
+  ]) {
+    test.describe(`${String(viewport.width)} × ${String(viewport.height)}`, () => {
+      test.use({ viewport });
+
+      test("Không cuộn ngang: eight long names on every screen", async ({ page }) => {
+        await page.goto("/tools");
+        expect(await scrollsSideways(page), "toolbox").toBe(false);
+        await expectTargetsAtLeast24(page, page.locator("body"));
+
+        await createCardGroup(
+          page,
+          CARD_SCORE_LONG_NAMES,
+          "Nhóm có tên dài bốn mươi ký tự vừa đủ nh",
+        );
+        expect(await scrollsSideways(page), "board, no round").toBe(false);
+
+        await enterRound(page, ["1", "-1"]);
+        expect(await scrollsSideways(page), "round").toBe(false);
+        await expectTargetsAtLeast24(page, page.getByRole("dialog"));
+        await page.getByRole("button", { name: "Đóng" }).click();
+        await page.getByRole("button", { name: "Bỏ ván" }).click();
+
+        await enterRound(page, ["0", "0", "0", "0", "0", "0", "0"]);
+        await page.getByRole("button", { name: "Lưu ván" }).click();
+        await expect(roundButton(page, "Nhập ván 2")).toBeVisible();
+        expect(await scrollsSideways(page), "board with a round").toBe(false);
+        await expectTargetsAtLeast24(page, page.locator("body"));
+        // Tám người trên điện thoại: the table scrolls in its own frame.
+        const frame = page.getByRole("region", { name: "Bảng các ván" });
+        expect(await frame.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true);
+
+        await page.getByRole("link", { name: "Sửa nhóm" }).click();
+        await expect(page.getByRole("heading", { level: 1, name: "Sửa nhóm" })).toBeVisible();
+        expect(await scrollsSideways(page), "edit").toBe(false);
+        await expectTargetsAtLeast24(page, page.locator("body"));
+
+        await page.getByRole("banner").getByRole("link", { name: "Bảng điểm" }).click();
+        await page.getByRole("banner").getByRole("link", { name: "Các nhóm" }).click();
+        await expect(page.getByRole("main").getByRole("listitem")).toHaveCount(1);
+        expect(await scrollsSideways(page), "list").toBe(false);
+
+        await page.goto("/tools/card-score/new");
+        await expect(page.getByRole("textbox", { name: "Người chơi 1" })).toBeVisible();
+        expect(await scrollsSideways(page), "form").toBe(false);
+      });
+    });
+  }
+
+  test.describe("360 × 640 with the keypad", () => {
+    test.use({ viewport: { width: 360, height: 640 } });
+
+    test("Tám người trên màn hình nhỏ, Ô được chọn luôn thấy: the keypad whole, every field reached", async ({
+      page,
+      isMobile,
+    }) => {
+      test.skip(!isMobile, "a finger's");
+      await createCardGroup(page, CARD_SCORE_LONG_NAMES);
+      await roundButton(page, "Nhập ván 1").click();
+
+      const keypad = page.getByRole("group", { name: "Bàn số" });
+      await expect(keypad).toBeInViewport({ ratio: 1 });
+      await expect(page.getByText("Để trống một người, app tự tính")).toBeInViewport({ ratio: 1 });
+      await expect(keypad.getByRole("button", { name: "Lưu ván" })).toBeInViewport({ ratio: 1 });
+
+      for (const name of CARD_SCORE_LONG_NAMES) {
+        const field = page.getByRole("textbox", { name, exact: true });
+        await expect(field).toBeFocused();
+        const box = await field.boundingBox();
+        const pad = await keypad.boundingBox();
+        expect((box?.y ?? 0) + (box?.height ?? 0)).toBeLessThanOrEqual(pad?.y ?? 0);
+        await keypad.getByRole("button", { name: "Tiếp" }).click();
+      }
+    });
+  });
+
+  test.describe("turned sideways, 844 × 390", () => {
+    test.use({ viewport: { width: 844, height: 390 } });
+
+    test("Xoay ngang: keypad beside the fields, nothing to scroll to reach it", async ({
+      page,
+      isMobile,
+    }) => {
+      test.skip(!isMobile, "a finger's");
+      await createCardGroup(page, ["Lan", "Minh", "Hùng", "Tú"]);
+      await roundButton(page, "Nhập ván 1").click();
+      const keypad = page.getByRole("group", { name: "Bàn số" });
+      await expect(keypad).toBeInViewport({ ratio: 1 });
+      const field = await page.getByRole("textbox", { name: "Lan", exact: true }).boundingBox();
+      const pad = await keypad.boundingBox();
+      expect((field?.x ?? 0) + (field?.width ?? 0)).toBeLessThanOrEqual(pad?.x ?? 0);
+      expect(await scrollsSideways(page)).toBe(false);
+    });
+  });
+});
 
 test.describe("a phone of 360 × 740", () => {
   test.use({ viewport: { width: 360, height: 740 } });
