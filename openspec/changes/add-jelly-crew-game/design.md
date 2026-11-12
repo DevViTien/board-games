@@ -56,7 +56,7 @@ interface JellyCrewState {
   readonly turnsDone: number; // số lượt đã xong của cả ván
   readonly steps: number; // tổng bước cả đội đã đi (trừ bước đã lùi; giữ qua đặt lại)
   readonly turnBoards: readonly Board[]; // bàn trước mỗi bước của lượt này, để lùi
-  readonly trail: readonly number[]; // các ô nhân vật vừa đi qua trong lượt gần nhất có bước
+  readonly trail: { seat: PlayerIndex; cells: readonly number[] } | null; // đường đi của lượt gần nhất có bước
   readonly last: StepNews | null; // việc của nước vừa đi: khối bị đẩy, cửa mở/đóng, số khuôn đổi
   readonly result: "filled" | "out-of-rounds" | null;
 }
@@ -64,7 +64,7 @@ interface JellyCrewState {
 
 Bố cục (tường, nút, cửa, khuôn, ô xuất phát, số vòng) không nằm trong state mà tra theo `map` và `playerCount` từ bảng hằng số, nên state nhỏ và biên bản không chép bản đồ. `last` và `trail` có trong state để nhãn nước đi (`useMoveLabel(move, stateAfter)`) và dấu đường đi đọc được việc vừa xảy ra mà không cần state trước; chúng tính ra từ nước đi nên vẫn tất định.
 
-**Cửa**: cửa nhóm _g_ mở khi một nút nhóm _g_ có nhân vật hay ô thạch, **hoặc** khi chính ô cửa có nhân vật hay ô thạch (kẹt). Một bước được xét theo cửa của bàn trước bước; sau bước, cửa tính lại từ bàn mới. Nhờ luật kẹt, thạch hay khối nhiều ô đang nằm trong cửa luôn ra được, và bước từ nút vào cửa của nó hợp lệ.
+**Cửa**: một cửa nhóm _g_ mở khi một nút nhóm _g_ có nhân vật hay ô thạch, **hoặc** khi chính ô cửa đó có nhân vật hay ô thạch (kẹt; chỉ cửa đó, không phải mọi cửa nhóm _g_). `last.opened`/`closed` chỉ báo nhóm đổi theo nút, không báo cửa kẹt. Một bước được xét theo cửa của bàn trước bước; sau bước, cửa tính lại từ bàn mới. Nhờ luật kẹt, thạch hay khối nhiều ô đang nằm trong cửa luôn ra được, và bước từ nút vào cửa của nó hợp lệ.
 
 **Luật mỗi nước**:
 
@@ -108,12 +108,26 @@ lớp khuôn: R G Y P S I (một chuỗi mỗi hàng, '.' là không có khuôn)
 | Chợ đêm (vừa)     | Lối đi chung hẹp, nhân vật chắn nhau; một khối thạch có thể nằm giữ nút thay người       | Thêm thạch giữ nút, sương sáo |
 | Kho lạnh (khó)    | Đá viên chắn lối, phải đưa thứ tự đúng; cửa đóng lại sau lưng khi người giữ nút đi       | Thêm đá viên, cửa nhiều nhóm  |
 
-Bố cục 2 người của "Hai gian bếp" đã có trong mockup (19 × 7, lời giải 25 bước trong 4 vòng, giới hạn 10 vòng). Bố cục 4 người trong mockup là bản nháp để xem cỡ 19 × 13.
+Người dùng duyệt mockup ngày 13/11/2026 (yêu cầu implement), không điều chỉnh.
+
+Chín bố cục (task 1.7, `layouts.ts`). Lời giải mẫu do một bộ xếp lượt đơn giản tạo ra: mỗi ghế đi các bước của mình theo đúng thứ tự cần, lượt kết thúc ngay khi bước kế tiếp là của ghế khác, nên số vòng của lời giải lớn hơn khi chơi thật; giới hạn vòng là 2,5 lần số đó, làm tròn lên.
+
+| Bố cục       | Cỡ      | Lời giải (bước / nước / vòng) | Giới hạn vòng | Cơ chế chính                                                          |
+| ------------ | ------- | ----------------------------- | ------------- | --------------------------------------------------------------------- |
+| kitchen-2    | 19 × 7  | 25 / 34 / 5                   | 13            | mỗi người giữ nút cho người kia                                       |
+| kitchen-3    | 19 × 12 | 37 / 59 / 8                   | 20            | vòng giữ nút ba người; khối dọc qua cửa dưới                          |
+| kitchen-4    | 19 × 13 | 44 / 81 / 10                  | 25            | bốn gian, hai cửa ●                                                   |
+| market-2     | 17 × 7  | 37 / 50 / 7                   | 18            | lối chung; người vào trong giữ nút cho người ngoài; sương sáo dính ba |
+| market-3     | 19 × 9  | 41 / 64 / 8                   | 20            | đá viên đẩy lên nút ● giữ cửa thay người                              |
+| market-4     | 19 × 12 | 43 / 73 / 8                   | 20            | thêm gian trên, cửa ● thứ hai                                         |
+| cold-store-2 | 19 × 7  | 59 / 82 / 12                  | 30            | đá viên lên nút ▲; thứ tự vào kho; cửa ● đóng sau lưng                |
+| cold-store-3 | 19 × 10 | 70 / 110 / 14                 | 35            | thêm gian dưới qua cửa ▲                                              |
+| cold-store-4 | 19 × 10 | 89 / 154 / 17                 | 43            | hai người chung gian dưới, chắn nhau                                  |
 
 **Kiểm tra bố cục** (spec "Bố cục giải được"):
 
 - Mỗi bố cục có lời giải mẫu (danh sách nước) trong `layouts.solutions.ts`; test phát lại bằng chính `applyMove` và đòi thắng `filled`, người thắng là mọi ghế (kiểm tra `cooperative-winners` chạy trên đây vì ván ngẫu nhiên không bao giờ thắng), với số vòng dùng ≤ ½ `rounds`. `rounds` của bố cục đặt khoảng gấp 2,5 lần số vòng của lời giải mẫu, làm tròn lên.
-- Test "cửa luôn đóng": BFS một tác nhân (mọi nhân vật đi lần lượt tuỳ ý, không lượt, cửa coi như tường) không tìm thấy lời giải. Khi cửa là tường, các gian tách rời nên trạng thái ít; giới hạn 2 triệu trạng thái, chạm giới hạn thì test **thất bại** (không coi là đạt).
+- Test "cửa luôn đóng": BFS một tác nhân (mọi nhân vật đi lần lượt tuỳ ý, không lượt, cửa coi như tường) không tìm thấy lời giải. Khi cửa là tường, các gian tách rời hẳn, nên BFS chạy riêng từng gian có khuôn với nhân vật và thạch trong gian đó (nhân vật không phân biệt ghế); bố cục thắng được chỉ khi mọi gian ấy thắng được. Giới hạn 2 triệu trạng thái, chạm giới hạn thì test **thất bại** (không coi là đạt). Ở cả chín bố cục, gian khuôn không có nhân vật nào lúc đầu nên BFS dừng ngay.
 - Không tìm lời giải ngắn nhất cho bố cục lớn: BFS nhiều nhân vật trên 13 × 7 với 2 người đã vượt 3,6 triệu trạng thái mà chưa xong (đo trong lúc thiết kế). Vì vậy game không có "ít bước nhất có thể" như Gom thạch.
 
 ### 5. Cờ cùng phe
@@ -175,7 +189,7 @@ Số ghế là chữ nhỏ nên cần 4.5:1: đạt ở mọi ghế, cả tối.
 
 - Mỗi nước là một lần ghi (1 `HGET` + script 5 lệnh, design `add-online-rooms` §8). Một lượt thật khoảng 5–7 nước; ván 2 người 10 vòng ≈ 100–140 nước, ván 4 người 20 vòng ≈ 400–560 nước ≈ 2.400–3.400 lệnh. Gói 500 nghìn lệnh/tháng vẫn đủ hơn 140 ván 4 người mỗi tháng. Tối đa (§3) là 16 nước mỗi lượt.
 - Mỗi lần ghi phát cả phòng: nước đi là chuỗi 1–5 ký tự nên biên bản 600 nước khoảng 6 KB thêm vào JSON phòng; tổng băng thông một ván 4 người khoảng 4–6 MB mỗi chiều. Chi phí tăng theo bình phương độ dài ván, nên giới hạn ở §3 là cần thiết.
-- Server và client dựng ván bằng `fromRecord`, đi qua `step()` của phiên cho mỗi nước: `result`, `legalMoves` (bốn lần `tryStep` có BFS và `settle`, cộng so sánh bàn cho `reset`), rồi `applyMove`. Task 1.6 đo `fromRecord` một biên bản 1.000 nước trên Node và đặt ngân sách dưới 50 ms trên máy dev (điện thoại chậm hơn vài lần). Vượt thì tối ưu `legalMoves` (tính cửa một lần, dùng lại chỉ mục ô) trước khi đổi gì khác.
+- Server và client dựng ván bằng `fromRecord`, đi qua `step()` của phiên cho mỗi nước: `result`, `legalMoves` (bốn lần `tryStep` có BFS và `settle`, cộng so sánh bàn cho `reset`), rồi `applyMove`. Task 1.6 đo `fromRecord` một biên bản 1.000 nước trên Node và đặt ngân sách dưới 50 ms trên máy dev (điện thoại chậm hơn vài lần). Đo được 11–15 ms (biên bản 1.000 nước kiểu dài nhất: 5 bước, lùi rồi đi lại 5 lần, xong lượt, ở cold-store-4); test để ngưỡng rộng 500 ms cho máy CI. Vượt thì tối ưu `legalMoves` (tính cửa một lần, dùng lại chỉ mục ô) trước khi đổi gì khác.
 - Bấm liên tục: nước trước chưa được server nhận thì bàn khoá ("Đang gửi…") như mọi game, bàn điều khiển cũng hiện khoá; không xếp hàng nước đi.
 - Đồng hồ xử bỏ ván tính từ nước gần nhất (mỗi bước khởi động lại đồng hồ), không từ đầu lượt; câu chữ và scenario nói "chưa đi nước nào".
 
@@ -187,6 +201,19 @@ Số ghế là chữ nhỏ nên cần 4.5:1: đạt ở mọi ghế, cả tối.
 - `apps/web`: component test Board, bàn điều khiển, nhãn; test `PlayScreen` cho cùng phe (cùng máy, online, bỏ cuộc, chờ 5 phút); trang luật.
 - E2E `games-jelly-crew.spec.ts`: chơi cùng máy hết bố cục 2 người "Hai gian bếp" bằng phím; online hai trình duyệt: giữ nút và đẩy qua cửa, bỏ cuộc.
 - `pnpm ui:shots`: thêm cảnh đầu ván 2 và 4 người, đang giữ nút, online chờ, thắng, hết vòng, mỗi cảnh × sáng/tối × 390/1280; xem từng ảnh so với mockup (`mockup/png/`).
+
+## Khác thiết kế
+
+Ghi lại khi code (task 1–5), các artifact khác đã sửa cho khớp:
+
+- **Cửa kẹt theo từng ô**: chỉ cửa đang có người hay thạch nằm trong mới mở vì kẹt, không phải mọi cửa cùng nhóm (spec "Nút và cửa" viết "chính ô cửa"; mockup tính theo nhóm). `last.opened`/`closed` chỉ báo nhóm đổi theo nút.
+- **`trail`** là `{ seat, cells } | null` (cần biết màu ghế của vệt), không phải mảng ô trần.
+- **Bàn điều khiển**: bốn hướng ở lưới 3 × 2, "Xong lượt" bên phải cao bằng hai hàng; "Lùi bước", "Đặt lại bản đồ", "Giữ nút" ở một hàng nút có chữ bên dưới, xuống dòng được. Bản đặt "Lùi bước"/"Đặt lại" hai bên mũi tên (mockup) làm chữ vỡ 3–4 dòng ở 360 px và ở cột hẹp khi có cột chat.
+- **"Giữ nút" không tự xong lượt khi mọi ghế đều đang giữ** (cùng máy): nếu không, ván tự chạy hết vòng mà không ai bấm gì.
+- **Nước "xong lượt" của người đứng trên nút** đọc là "giữ nút ●, xong lượt" (`useMoveLabel`), cho mọi người trong phòng; thiết bị tự xong lượt còn báo "Hồng giữ nút, xong lượt." trong vùng `aria-live` của bàn.
+- **Mục cuối trang luật** của game cùng phe tên "Bỏ cuộc và bỏ ván" (`RulesLeavingSection` có thêm `rooms="team"`), thay "Đầu hàng và bỏ ván".
+- **Hình trên menu** (`Artwork.tsx`) vẽ tay riêng và **hình của trang luật** nằm trong `rules/figures.tsx`, chỉ dùng `../pieces` (ESLint cấm Artwork và Rules chạm tới bàn hay luật); `pieces.tsx` chỉ import kiểu từ `@board-games/games/jelly-crew`.
+- **Lưới mờ của sàn** là `--jelly-crew-grid` (trang trí), không phải `--game-line`: `theme-css.test.ts` đòi `--game-line` 3:1 trên bàn.
 
 ## Risks / Trade-offs
 

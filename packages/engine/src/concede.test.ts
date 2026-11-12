@@ -132,6 +132,33 @@ describe("concede", () => {
   });
 });
 
+describe("concede in a cooperative game", () => {
+  const cooperativeRace = {
+    ...diceRaceGame,
+    meta: { ...diceRaceGame.meta, cooperative: true },
+  };
+
+  it("Bỏ cuộc trong game cùng phe: stops a game of three, nobody winning, with the reason", () => {
+    let session = unwrap(
+      createSession(cooperativeRace, { playerCount: 3, options: { target: 100 } }),
+    );
+    session = unwrap(playMove(cooperativeRace, session, { type: "roll" }, rng));
+    const ended = unwrap(concede(cooperativeRace, session, { reason: "resigned", player: 1 }));
+
+    expect(sessionResult(cooperativeRace, ended)).toEqual({ kind: "draw", reason: "resigned" });
+  });
+
+  it("keeps the ending through a record", () => {
+    const ended = unwrap(
+      concede(cooperativeRace, diceRace(2, 2), { reason: ENDING_REASON.Abandoned, player: 0 }),
+    );
+    const rebuilt = unwrap(fromRecord(cooperativeRace, viaJson(toRecord(ended))));
+
+    expect(rebuilt.ending).toEqual({ reason: "abandoned", player: 0 });
+    expect(sessionResult(cooperativeRace, rebuilt)).toEqual({ kind: "draw", reason: "abandoned" });
+  });
+});
+
 describe("a record with an ending", () => {
   it("keeps the moves and the result through JSON", () => {
     const ended = unwrap(concede(diceRaceGame, diceRace(2, 4), RESIGNED));

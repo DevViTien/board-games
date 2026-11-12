@@ -272,3 +272,41 @@ describe("online transport: the turn's clock", () => {
     expect(events).not.toContainEqual({ type: "claim-refused" });
   });
 });
+
+describe("online transport: a cooperative game", () => {
+  /** Tic-tac-toe played on one side: enough to see what the transport does with the flag. */
+  const together: AnyGameDefinition = {
+    ...tictactoe,
+    meta: { ...tictactoe.meta, cooperative: true },
+  };
+
+  it("tells the play screen the game is cooperative, and offers to stop it rather than lose", () => {
+    start(roomView({ seats: ["Minh", "Lan"], cells: [4], turnIdleMs: 0 }), 1, together);
+
+    expect(ready().cooperative).toBe(true);
+    expect(ready().resign).toEqual({ outcome: "end", available: true });
+  });
+
+  it("Chờ quá 5 phút trong ván cùng phe: a claim ends the game, never wins it", () => {
+    start(roomView({ seats: ["Minh", "Lan"], cells: [4], turnIdleMs: 6 * MINUTE }), 0, together);
+
+    expect(ready().turn?.claim).toBe("end");
+  });
+
+  it("Bỏ cuộc trong ván cùng phe: a resigned game is a draw, and tells who left", () => {
+    const view = roomView({ seats: ["Minh", "Lan"], cells: [4] });
+    const ending = { reason: "resigned", player: 1 } as const;
+    start({ ...view, record: { ...view.record, ending } }, 0, together);
+
+    expect(ready().result).toEqual({ kind: "draw", reason: "resigned" });
+    expect(ready().ending).toEqual(ending);
+    expect(ready().canStartNewGame).toBe(true);
+  });
+
+  it("has no ending for a game that is not over, nor for one its rules ended", () => {
+    start(roomView({ seats: ["Minh", "Lan"], cells: [4] }), 0);
+
+    expect(ready().cooperative).toBe(false);
+    expect(ready().ending).toBeNull();
+  });
+});

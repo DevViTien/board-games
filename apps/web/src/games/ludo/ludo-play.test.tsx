@@ -81,6 +81,8 @@ function snapshotAfter(
     canStartNewGame: true,
     resign: null,
     turn: null,
+    cooperative: false,
+    ending: null,
     connection: seats.some((seat) => seat.kind === "remote") ? "online" : null,
     options: LUDO_DEFAULT_OPTIONS,
   };
@@ -308,6 +310,8 @@ function playableTransport(
     canStartNewGame: true,
     resign: null,
     turn: null,
+    cooperative: false,
+    ending: null,
     connection: null,
     options: LUDO_DEFAULT_OPTIONS,
   });

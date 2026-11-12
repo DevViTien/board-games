@@ -108,6 +108,11 @@ export interface RoomChatSnapshot {
   readonly button: HTMLElement | null;
   /** Where the panel shows what it covers of a board's words; `null` when it covers nothing. */
   readonly notesSlot: HTMLElement | null;
+  /**
+   * The chat is the column at the right of a wide screen (design §2 of `rework-chat-layout`): the
+   * column's own strip opens it, not the button in the rows of the lobby and the game.
+   */
+  readonly column: boolean;
 }
 
 /**
@@ -149,6 +154,12 @@ export interface RoomChat {
   setComposing(this: void, composing: boolean): void;
   /** The button that opens the chat, where the focus goes back to. */
   registerButton(this: void, button: HTMLElement | null): void;
+  /** `button` is gone: forgotten, unless another one took its place meanwhile. */
+  releaseButton(this: void, button: HTMLElement | null): void;
+  /** Whether the chat is the column of a wide screen (`column` of the snapshot). */
+  setColumn(this: void, column: boolean): void;
+  /** A composition (an IME) is going on in the field now. */
+  isComposing(this: void): boolean;
   registerNotesSlot(this: void, slot: HTMLElement | null): void;
   /** Gives the focus back to the button, without moving the page to it. */
   focusButton(this: void): void;
@@ -250,6 +261,7 @@ export function createRoomChat(connection: RoomConnection): RoomChat {
   let clearAfterComposing: string | null = null;
   let button: HTMLElement | null = null;
   let notesSlot: HTMLElement | null = null;
+  let column = false;
   let lastStatus: ConnectionStatus | null = null;
   let slowUntil: number | null = null;
   // When each message of this player was sent or first seen, by id, while it counts.
@@ -283,6 +295,7 @@ export function createRoomChat(connection: RoomConnection): RoomChat {
       play,
       button,
       notesSlot,
+      column,
     };
   }
 
@@ -635,6 +648,17 @@ export function createRoomChat(connection: RoomConnection): RoomChat {
       button = next;
       publish();
     },
+    releaseButton: (gone) => {
+      if (button !== gone) return;
+      button = null;
+      publish();
+    },
+    setColumn: (next) => {
+      if (column === next) return;
+      column = next;
+      publish();
+    },
+    isComposing: () => composing,
     registerNotesSlot: (slot) => {
       notesSlot = slot;
       publish();

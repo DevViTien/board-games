@@ -1,5 +1,6 @@
 import type {
   AiLevel,
+  GameEnding,
   GameRecord,
   GameResult,
   HistoryEntry,
@@ -161,10 +162,24 @@ export interface ReadySnapshot<State, Move, Outcome = never> {
    * a result, and while the AI plays the seat to move.
    */
   readonly turn: TurnClock | null;
+  /**
+   * Whether every seat plays on one side (`GameMeta.cooperative`): the play screen says "the team
+   * won" or "the game stopped" instead of naming winners. The screen knows no game's definition.
+   */
+  readonly cooperative: boolean;
+  /**
+   * Who resigned or abandoned the game and why, once that ended it and every move is shown; `null`
+   * otherwise. A cooperative game ended so is a draw: only this says who left.
+   */
+  readonly ending: GameEnding | null;
 }
 
 export interface ResignOption {
-  readonly outcome: "loss" | "stand-in";
+  /**
+   * They lose (`loss`), the server's AI plays their seat to the end (`stand-in`), or the game stops
+   * for everyone, nobody winning (`end`: a cooperative game).
+   */
+  readonly outcome: "loss" | "stand-in" | "end";
   /** False while not connected: the button stays, with the reason. */
   readonly available: boolean;
 }
@@ -181,8 +196,8 @@ export interface TurnClock {
   readonly startedAt: number;
   /**
    * What claiming this turn abandoned does for the player here: they win (`win`), the game ends
-   * without them playing on (`end`: the AI already plays their own seat), or the AI takes the seat
-   * (`stand-in`). `null` when they cannot claim it: their own turn, no seat.
+   * without them playing on (`end`: the AI already plays their own seat, or the game is
+   * cooperative and stops for everyone), or the AI takes the seat (`stand-in`). `null` when they cannot claim it: their own turn, no seat.
    */
   readonly claim: "win" | "end" | "stand-in" | null;
   /** False while not connected. */

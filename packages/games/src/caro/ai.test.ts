@@ -8,9 +8,9 @@ import {
 import { expiresImmediately, neverExpires, playRandomGame } from "@board-games/engine/testing";
 import { describe, expect, it } from "vitest";
 
-import { caroCandidateMoves, caroEvaluate, fiveCellWindows } from "./ai";
+import { caroCandidateMoves, caroEvaluate, fiveCellWindows, windowsWithStones } from "./ai";
 import { CANDIDATE_LIMIT, CANDIDATE_RADIUS } from "./constants";
-import { caro, type CaroState } from "./rules";
+import { caro, caroInArea, type CaroState } from "./rules";
 import { cellAt, drawnPosition, lineOf, position, type RowCol, rowColOf } from "./test-positions";
 
 const ALL_LEVELS = Object.values(AI_LEVEL);
@@ -378,4 +378,145 @@ describe("caro AI", () => {
     expect(evaluations).toBeGreaterThan(0);
     expect(evaluations).toBeLessThanOrEqual(roots.length * (replies + 1));
   });
+});
+
+/** The stones of a 15×15 position on the board that grows: its start area is that 15×15 square. */
+function onInfinite(
+  stones: { x?: readonly RowCol[]; o?: readonly RowCol[] },
+  toMove?: PlayerIndex,
+) {
+  const shift = (cells: readonly RowCol[] = []) =>
+    cells.map(([row, col]): RowCol => [row + 23, col + 23]);
+  return position(
+    { size: "infinite", rule: "blocked-ends" },
+    { x: shift(stones.x), o: shift(stones.o) },
+    toMove,
+  );
+}
+
+describe("caro AI on the board that grows", () => {
+  it.each(ALL_LEVELS)("opens on the middle cell, row 31, column 31 (%s)", (level) => {
+    expect(aiCell(onInfinite({}), level, 1, neverExpires(1))).toBe(cellAt(61, [31, 31]));
+  });
+
+  it("scores a position as on a board of fixed size, looking only at windows with a stone", () => {
+    // The same stones in the middle of a 19×19 board and of the cap: no window near them meets an
+    // edge on either board, so every window with a stone is the same on both.
+    const rows = CROWDED.slice(4).map((row) => `..${row}..`);
+    const fixed = drawnPosition({ size: 19, rule: "blocked-ends" }, ["", "", "", "", ...rows]);
+    const shifted = position(
+      { size: "infinite", rule: "blocked-ends" },
+      {
+        x: fixed.board.flatMap((stone, cell) =>
+          stone === 0 ? [rowColOf(19, cell).map((n) => n + 21) as unknown as RowCol] : [],
+        ),
+        o: fixed.board.flatMap((stone, cell) =>
+          stone === 1 ? [rowColOf(19, cell).map((n) => n + 21) as unknown as RowCol] : [],
+        ),
+      },
+      fixed.toMove,
+    );
+
+    for (const player of [0, 1] as const) {
+      expect(caroEvaluate(shifted, player)).toBe(caroEvaluate(fixed, player));
+    }
+    expect(caroEvaluate(onInfinite({}), 0)).toBe(0);
+    // Each window once: a lone stone lies in 5 windows in each of the 4 directions.
+    expect(windowsWithStones(onInfinite({ x: [[8, 8]] }))).toHaveLength(20);
+  });
+
+  it("only ever considers cells inside the area", () => {
+    const { session } = playRandomGame(caro, {
+      seed: 3,
+      playerCount: 2,
+      maxPlies: 120,
+      options: { size: "infinite", rule: "free" },
+    });
+    for (const state of session.states) {
+      for (const cell of candidateCells(state)) {
+        expect(caroInArea(state.area, state.size, cell)).toBe(true);
+      }
+    }
+  });
+
+  it("at Medium, blocks a four that is blocked at one end", () => {
+    const state = onInfinite(
+      {
+        x: lineOf([8, 4], [8, 7]),
+        o: [
+          [8, 3],
+          [3, 3],
+          [3, 12],
+          [12, 12],
+        ],
+      },
+      1,
+    );
+
+    for (const seed of [1, 2, 3])
+      expect(aiCell(state, AI_LEVEL.Medium, seed)).toBe(cellAt(61, [31, 31]));
+  });
+
+  it("at Medium, blocks a broken four in its gap", () => {
+    const state = onInfinite(
+      {
+        x: [
+          [8, 4],
+          [8, 5],
+          [8, 7],
+          [8, 8],
+        ],
+        o: [
+          [3, 3],
+          [3, 12],
+          [12, 3],
+          [12, 12],
+        ],
+      },
+      1,
+    );
+
+    for (const seed of [1, 2, 3])
+      expect(aiCell(state, AI_LEVEL.Medium, seed)).toBe(cellAt(61, [31, 29]));
+  });
+
+  it.each([AI_LEVEL.Medium, AI_LEVEL.Hard])(
+    "takes its own five before blocking the opponent's, even out of time (%s)",
+    (level) => {
+      const state = onInfinite(
+        { x: [...lineOf([8, 4], [8, 7]), [2, 2]], o: [...lineOf([10, 4], [10, 7]), [8, 3]] },
+        1,
+      );
+      const wins = [cellAt(61, [33, 26]), cellAt(61, [33, 31])];
+
+      for (const seed of [1, 2, 3]) {
+        expect(wins).toContain(aiCell(state, level, seed, expiresImmediately()));
+      }
+    },
+  );
+
+  it.each([
+    [AI_LEVEL.Medium, 0],
+    [AI_LEVEL.Hard, 1500],
+  ] as const)(
+    "at %s, answers a crowded middle game well within the time limit",
+    (level, timeLimitMs) => {
+      const fixed = drawnPosition({}, CROWDED);
+      const stonesOf = (seat: PlayerIndex) =>
+        fixed.board.flatMap((stone, cell) => (stone === seat ? [rowColOf(15, cell)] : []));
+      const state = onInfinite({ x: stonesOf(0), o: stonesOf(1) }, fixed.toMove);
+      const started = performance.now();
+      const chosen = chooseMove(caro, state, {
+        level,
+        rng: createRng(1),
+        now: () => performance.now(),
+        timeLimitMs,
+      });
+      const took = performance.now() - started;
+
+      expect(chosen.ok && caroInArea(state.area, state.size, chosen.value.cell)).toBe(true);
+      // The play-vs-ai budget is 2 s at Hard; Medium searches two moves deep in a few ms (design §3).
+      expect(took).toBeLessThan(level === AI_LEVEL.Hard ? 2000 : 500);
+    },
+  );
 });

@@ -103,7 +103,7 @@ describe("/play/[gameId]", () => {
 
     expect(page.props).toMatchObject({
       optionChoices: [
-        { name: "size", values: [15, 19] },
+        { name: "size", values: [15, 19, "infinite"] },
         { name: "rule", values: ["blocked-ends", "free"] },
       ],
       defaultOptions: { size: 15, rule: "blocked-ends" },

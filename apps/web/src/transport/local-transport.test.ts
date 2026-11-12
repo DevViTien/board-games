@@ -349,3 +349,22 @@ describe("createLocalTransport", () => {
     }).not.toThrow();
   });
 });
+
+describe("createLocalTransport: a cooperative game", () => {
+  it("tells the play screen whether the game is cooperative, and that nobody left it", async () => {
+    const together = { ...tictactoe, meta: { ...tictactoe.meta, cooperative: true } };
+    const transport = createLocalTransport({
+      definition: together,
+      store: createMemoryStore(),
+      rng: createRng(1),
+    });
+    const snapshot = await ready(transport);
+    expect(snapshot.cooperative).toBe(true);
+    expect(snapshot.ending).toBeNull();
+    // On one device there is no resigning, cooperative or not.
+    expect(snapshot.resign).toBeNull();
+
+    const plain = await ready(createTransport());
+    expect(plain.cooperative).toBe(false);
+  });
+});

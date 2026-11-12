@@ -76,6 +76,7 @@ Luật của dự án thắng:
   - **Cờ caro**: "giấy vở ô li", dấu như bút bi (X xanh, O đỏ hay tương tự), hàng thắng như được khoanh/gạch.
   - **Cờ cá ngựa**: nhiều màu, tính xã hội, cảm hứng tranh dân gian (tự vẽ, không sao chép tranh có bản quyền).
   - **Cờ vua** (M7, chốt ở `add-chess-board`): bàn xanh–kem kiểu trang chơi cờ online, quân "staunty" của Lichess, thanh người chơi trên và dưới bàn.
+  - **Đội gom thạch** (chốt ở `add-jelly-crew-game`): cùng họ Gom thạch (khay men kem, tường gạch men, thạch bóng có ký hiệu); nhân vật tròn màu ghế (Lam, Hồng, Cam, Ngọc) có số trắng, người đến lượt có vòng mực dày và khung bàn màu ghế, vệt chấm đường đi của lượt trước; nút be có ký hiệu ● ▲ ■, cửa gỗ đóng có ba song, cửa mở chỉ còn hai cột (nét đứt chỉ dành cho khuôn).
 - Chỉ dùng hình tự làm; không chép tài sản hay bắt chước giao diện game thương mại. **Ngoại lệ duy nhất**: bộ quân Cờ vua "staunty" (người dùng chốt ngày 04/11/2026, change `add-chess-board`). Mọi hình khác của bên thứ ba cần: quyết định của người dùng ghi trong proposal của một change, kiểm giấy phép, nguồn kèm SHA, một mục trong `apps/web/public/third-party-licenses.txt`, và file giữ nguyên không sửa. **Dữ liệu màn chơi** của bên thứ ba (hiện có: 8 màn Boxoban, Apache 2.0, change `add-jelly-gather-molds`) cũng cần bốn điều đầu; được chuyển đổi sang luật của trò nếu giấy phép cho phép, với bản gốc ghi cạnh bản đã chuyển và mục giấy phép nói rõ đã sửa gì.
 
 ## Checklist UX bàn cờ

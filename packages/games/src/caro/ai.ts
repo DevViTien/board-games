@@ -4,7 +4,8 @@ import {
   CANDIDATE_LIMIT,
   CANDIDATE_RADIUS,
   CARO_RULE,
-  type CaroSize,
+  type CaroFixedSize,
+  type CaroRule,
   WIN_LENGTH,
 } from "./constants";
 import {
@@ -48,7 +49,7 @@ export function fiveCellWindows(size: number): readonly FiveCellWindow[] {
 }
 
 /** Computed once per board size: the geometry never changes. */
-const WINDOWS: Readonly<Record<CaroSize, readonly FiveCellWindow[]>> = {
+const WINDOWS: Readonly<Record<CaroFixedSize, readonly FiveCellWindow[]>> = {
   15: fiveCellWindows(15),
   19: fiveCellWindows(19),
 };
@@ -84,33 +85,97 @@ function lineEnd(
 }
 
 /**
+ * What a window scores, signed by whom it is for: positive for X (seat 0), negative for O, 0 when
+ * it is empty, holds both players' stones, or (under "blocked-ends") could never win. A number, not
+ * an object: this runs for every window at every node of the search.
+ */
+function scoreWindow(
+  board: CaroBoard,
+  size: number,
+  rule: CaroRule,
+  { cells, direction, before, after }: FiveCellWindow,
+): number {
+  let x = 0;
+  let o = 0;
+  for (const cell of cells) {
+    const stone = board[cell];
+    if (stone === 0) x += 1;
+    else if (stone === 1) o += 1;
+  }
+  if ((x > 0 && o > 0) || x + o === 0) return 0;
+  const owner = x > 0 ? 0 : 1;
+  if (
+    rule === CARO_RULE.BlockedEnds &&
+    holdsOpponentOf(board, lineEnd(board, size, before, owner, direction, -1), owner) &&
+    holdsOpponentOf(board, lineEnd(board, size, after, owner, direction, 1), owner)
+  ) {
+    return 0;
+  }
+  const score = WINDOW_SCORE[x + o] ?? 0;
+  return owner === 0 ? score : -score;
+}
+
+/**
+ * The windows holding at least one stone, each once, on the board that grows: every other window
+ * scores nothing, so the total is the same as over every window of the cap, at a fraction of the
+ * cost. Stones all lie in the area, so only its cells are looked at.
+ */
+export function windowsWithStones(state: CaroState): readonly FiveCellWindow[] {
+  const { area, board, size } = state;
+  const seen = new Set<number>();
+  const windows: FiveCellWindow[] = [];
+  for (let row = area.top; row <= area.bottom; row += 1) {
+    for (let col = area.left; col <= area.right; col += 1) {
+      const stone = row * size + col;
+      if (board[stone] === null) continue;
+      DIRECTIONS.forEach((direction, index) => {
+        // The five windows through the stone start at it and up to four steps before it.
+        for (
+          let start: number | null = stone, step = 0;
+          start !== null && step < WIN_LENGTH;
+          start = stepFrom(size, start, direction, -1), step += 1
+        ) {
+          const key = start * DIRECTIONS.length + index;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          const window = windowFrom(size, start, direction);
+          if (window !== null) windows.push(window);
+        }
+      });
+    }
+  }
+  return windows;
+}
+
+/** The window of five cells from `start` along `direction`, or `null` when it runs off the board. */
+function windowFrom(size: number, start: number, direction: Direction): FiveCellWindow | null {
+  const cells = [start];
+  let next: number | null = start;
+  while (cells.length < WIN_LENGTH) {
+    next = stepFrom(size, next, direction);
+    if (next === null) return null;
+    cells.push(next);
+  }
+  const [before, after] = outsideEnds(size, cells, direction);
+  return { cells, direction, before, after };
+}
+
+/**
  * Each window holding stones of one player only scores `WINDOW_SCORE[k]` for them. Overlapping
  * windows make an open four worth more than a blocked one, and catch broken lines (`XX_XX`). Under
  * "blocked-ends", a window is skipped when the line that filling it would make, extended through
  * the owner's stones just beyond it, has the opponent's stones at both ends: it could never win
- * (`O X X X X _ O`, and `O X X X X _ X O`, whose gap makes six blocked at both ends). The result is an integer well below 10^8 (at most 1,020 × 1,000 × 6).
+ * (`O X X X X _ O`, and `O X X X X _ X O`, whose gap makes six blocked at both ends). The result is an integer well below 10^8: at most
+ * 1,020 windows × 1,000 × 6 on 19×19, and 13,452 windows on the 61×61 cap of the board that grows.
  */
 export function caroEvaluate(state: CaroState, player: PlayerIndex): number {
   const { board, rule, size } = state;
   const totals = [0, 0];
-  for (const { cells, direction, before, after } of WINDOWS[size]) {
-    let x = 0;
-    let o = 0;
-    for (const cell of cells) {
-      const stone = board[cell];
-      if (stone === 0) x += 1;
-      else if (stone === 1) o += 1;
-    }
-    if ((x > 0 && o > 0) || x + o === 0) continue;
-    const owner = x > 0 ? 0 : 1;
-    if (
-      rule === CARO_RULE.BlockedEnds &&
-      holdsOpponentOf(board, lineEnd(board, size, before, owner, direction, -1), owner) &&
-      holdsOpponentOf(board, lineEnd(board, size, after, owner, direction, 1), owner)
-    ) {
-      continue;
-    }
-    totals[owner] = (totals[owner] ?? 0) + (WINDOW_SCORE[x + o] ?? 0);
+  const windows = state.infinite ? windowsWithStones(state) : WINDOWS[size as CaroFixedSize];
+  for (const window of windows) {
+    const score = scoreWindow(board, size, rule, window);
+    if (score > 0) totals[0] = (totals[0] ?? 0) + score;
+    else if (score < 0) totals[1] = (totals[1] ?? 0) - score;
   }
   const weighted = (seat: PlayerIndex) =>
     (totals[seat] ?? 0) * (seat === state.toMove ? TO_MOVE_WEIGHT : WAITING_WEIGHT);
@@ -120,22 +185,26 @@ export function caroEvaluate(state: CaroState, player: PlayerIndex): number {
 // ---------------------------------------------------------------------------------------------
 // Candidate moves: the empty cells near the stones, forced ones first, then by threat.
 
-/** Empty cells at most `CANDIDATE_RADIUS` rows and columns from a stone, in index order. */
-function cellsNearStones(board: CaroBoard, size: number): number[] {
-  const near = Array.from({ length: board.length }, () => false);
-  board.forEach((stone, cell) => {
-    if (stone === null) return;
-    const row = Math.floor(cell / size);
-    const col = cell % size;
-    for (let r = Math.max(0, row - CANDIDATE_RADIUS); r <= row + CANDIDATE_RADIUS; r += 1) {
-      if (r >= size) break;
-      for (let c = Math.max(0, col - CANDIDATE_RADIUS); c <= col + CANDIDATE_RADIUS; c += 1) {
-        if (c >= size) break;
-        near[r * size + c] = true;
+/**
+ * Empty cells at most `CANDIDATE_RADIUS` rows and columns from a stone, in index order. Stones all
+ * lie in the area, and its margin is wider than the radius (or it is the whole board), so only the
+ * area is looked at: on the board that grows, a few hundred cells instead of the whole cap.
+ */
+function cellsNearStones({ area, board, size }: CaroState): number[] {
+  const near = new Set<number>();
+  for (let row = area.top; row <= area.bottom; row += 1) {
+    for (let col = area.left; col <= area.right; col += 1) {
+      if (board[row * size + col] === null) continue;
+      for (let r = Math.max(0, row - CANDIDATE_RADIUS); r <= row + CANDIDATE_RADIUS; r += 1) {
+        if (r >= size) break;
+        for (let c = Math.max(0, col - CANDIDATE_RADIUS); c <= col + CANDIDATE_RADIUS; c += 1) {
+          if (c >= size) break;
+          if (board[r * size + c] === null) near.add(r * size + c);
+        }
       }
     }
-  });
-  return board.flatMap((stone, cell) => (stone === null && near[cell] === true ? [cell] : []));
+  }
+  return [...near].sort((a, b) => a - b);
 }
 
 /** Threat of extending a line of `length` stones with `open` empty ends (0–2), for move ordering. */
@@ -189,7 +258,7 @@ export function caroCandidateMoves(state: CaroState): readonly CaroMove[] {
     return [{ cell: middle * size + middle }];
   }
 
-  const near = cellsNearStones(board, size);
+  const near = cellsNearStones(state);
   const forced = new Map<number, number>();
   const force = (cell: number, priority: number) => {
     forced.set(cell, Math.min(priority, forced.get(cell) ?? priority));

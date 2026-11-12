@@ -243,6 +243,8 @@ describe("Lý do không gieo được, from the play screen", () => {
       canStartNewGame: false,
       resign: null,
       turn: null,
+      cooperative: false,
+      ending: null,
       connection: "online",
       options: LUDO_DEFAULT_OPTIONS,
     });
@@ -320,6 +322,8 @@ describe("Hoàn tác trong Cờ cá ngựa với máy", () => {
       canStartNewGame: true,
       resign: null,
       turn: null,
+      cooperative: false,
+      ending: null,
       connection: null,
       options: LUDO_DEFAULT_OPTIONS,
     });
@@ -352,6 +356,8 @@ describe("Ghi chú lý do sau một nước", () => {
       canStartNewGame: true,
       resign: null,
       turn: null,
+      cooperative: false,
+      ending: null,
       connection: null,
       options: {},
     });
@@ -393,6 +399,8 @@ describe("Tiêu điểm sau Chơi lại", () => {
       canStartNewGame: true,
       resign: null,
       turn: null,
+      cooperative: false,
+      ending: null,
       connection: "online",
       options: {},
     });
@@ -411,6 +419,8 @@ describe("Tiêu điểm sau Chơi lại", () => {
       canStartNewGame: false,
       resign: null,
       turn: null,
+      cooperative: false,
+      ending: null,
       viewer: 1,
       seats: [{ kind: "remote", name: "Minh" }, { kind: "human" }],
       waitingFor: "opponent",
@@ -440,6 +450,8 @@ describe("Đọc lần gieo một lần", () => {
       canStartNewGame: true,
       resign: null,
       turn: null,
+      cooperative: false,
+      ending: null,
       connection: null,
       options: LUDO_DEFAULT_OPTIONS,
     } as const;

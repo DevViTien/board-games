@@ -59,6 +59,8 @@ function online(overrides: Partial<Snapshot> = {}): Snapshot {
     options: {},
     resign: { outcome: "loss", available: true },
     turn: { player: 0, gameNumber: 1, moveIndex: 2, startedAt: NOW, claim: null, available: true },
+    cooperative: false,
+    ending: null,
     ...overrides,
   };
 }
@@ -130,6 +132,8 @@ describe("Đầu hàng khi chơi online", () => {
       result: { kind: "win", winners: [1], reason: "resigned" },
       resign: null,
       turn: null,
+      cooperative: false,
+      ending: null,
       canMove: false,
       canStartNewGame: true,
     });
@@ -149,6 +153,8 @@ describe("Đầu hàng khi chơi online", () => {
         result: { kind: "win", winners: [1], reason: "resigned" },
         resign: null,
         turn: null,
+        cooperative: false,
+        ending: null,
         canStartNewGame: true,
       }),
     );
@@ -176,6 +182,8 @@ describe("Đầu hàng khi chơi online", () => {
       currentPlayer: 1,
       waitingFor: "opponent",
       turn: null,
+      cooperative: false,
+      ending: null,
     });
 
     const mine = within(screen.getByRole("list", { name: "Người chơi" })).getAllByRole(
@@ -211,6 +219,8 @@ describe("Đầu hàng khi chơi online", () => {
         result: { kind: "win", winners: [0] },
         resign: null,
         turn: null,
+        cooperative: false,
+        ending: null,
         canStartNewGame: true,
       }),
     );
@@ -265,6 +275,8 @@ describe("Chờ người lâu chưa đi", () => {
       result: { kind: "win", winners: [0], reason: "abandoned" },
       resign: null,
       turn: null,
+      cooperative: false,
+      ending: null,
       waitingFor: null,
       canStartNewGame: true,
     });
@@ -280,6 +292,8 @@ describe("Chờ người lâu chưa đi", () => {
         result: { kind: "win", winners: [1], reason: "abandoned" },
         resign: null,
         turn: null,
+        cooperative: false,
+        ending: null,
         canStartNewGame: true,
       }),
     );
@@ -526,6 +540,8 @@ describe("Ghế máy chơi thay trên màn hình", () => {
         waitingFor: "ai",
         resign: null,
         turn: null,
+        cooperative: false,
+        ending: null,
       }),
     );
 
@@ -540,6 +556,8 @@ describe("Ghế máy chơi thay trên màn hình", () => {
         waitingFor: "ai",
         resign: null,
         turn: null,
+        cooperative: false,
+        ending: null,
       }),
     );
 
@@ -557,6 +575,8 @@ describe("Ghế máy chơi thay trên màn hình", () => {
         result: { kind: "win", winners: [1, 2], reason: "abandoned" },
         resign: null,
         turn: null,
+        cooperative: false,
+        ending: null,
         canStartNewGame: true,
       }),
     );
@@ -571,6 +591,8 @@ describe("Ghế máy chơi thay trên màn hình", () => {
         result: { kind: "win", winners: [1] },
         resign: null,
         turn: null,
+        cooperative: false,
+        ending: null,
         canStartNewGame: true,
       }),
     );
@@ -681,6 +703,8 @@ describe("Đầu hàng khi đấu với máy", () => {
         result: { kind: "win", winners: [1, 2, 3], reason: "resigned" },
         resign: null,
         turn: null,
+        cooperative: false,
+        ending: null,
         supportsUndo: true,
         canStartNewGame: true,
       }),

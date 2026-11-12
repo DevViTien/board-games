@@ -2,37 +2,39 @@
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 
-/** Where the chat goes: a sheet from below, a column beside the board, or over the controls. */
+/**
+ * Where the chat goes (design §1 of `rework-chat-layout`): a column at the right of a wide screen, a
+ * panel over the words of the column beside the board on a small laptop, or a dialog over the whole
+ * screen everywhere else.
+ */
 export const CHAT_LAYOUT = {
-  Phone: "phone",
-  /** A phone turned sideways: the same query as the `short-landscape:` variant of `styles.css`. */
-  Landscape: "landscape",
-  Desktop: "desktop",
+  Column: "column",
+  Dock: "dock",
+  Dialog: "dialog",
 } as const;
 export type ChatLayout = (typeof CHAT_LAYOUT)[keyof typeof CHAT_LAYOUT];
 
+/** A phone turned sideways: the same query as the `short-landscape:` variant of `styles.css`. */
 const LANDSCAPE_QUERY = "(orientation: landscape) and (max-height: 32rem)";
-const DESKTOP_QUERY = "(min-width: 1024px)";
-/**
- * Room for the panel beside the lobby's column: a 576 px column in the middle, 320 px and 24 px on
- * the right. Narrower, the panel would cover the players and its own button: a sheet, as on a phone.
- */
-const LOBBY_BESIDE_QUERY = "(min-width: 1264px)";
+/** Room for the column without squeezing the board (design §3): the `xl:` of Tailwind. */
+const COLUMN_QUERY = "(min-width: 1280px)";
+/** Room for the panel over the column beside the board: the `lg:` of Tailwind. */
+const DOCK_QUERY = "(min-width: 1024px)";
 
 function matches(query: string): boolean {
   return typeof window.matchMedia === "function" && window.matchMedia(query).matches;
 }
 
 function currentLayout(inLobby: boolean): ChatLayout {
-  if (matches(LANDSCAPE_QUERY)) return CHAT_LAYOUT.Landscape;
-  if (!matches(DESKTOP_QUERY) || (inLobby && !matches(LOBBY_BESIDE_QUERY)))
-    return CHAT_LAYOUT.Phone;
-  return CHAT_LAYOUT.Desktop;
+  if (matches(LANDSCAPE_QUERY)) return CHAT_LAYOUT.Dialog;
+  if (matches(COLUMN_QUERY)) return CHAT_LAYOUT.Column;
+  if (!inLobby && matches(DOCK_QUERY)) return CHAT_LAYOUT.Dock;
+  return CHAT_LAYOUT.Dialog;
 }
 
 function subscribeLayout(listener: () => void): () => void {
   if (typeof window.matchMedia !== "function") return () => undefined;
-  const queries = [LANDSCAPE_QUERY, DESKTOP_QUERY, LOBBY_BESIDE_QUERY].map((query) =>
+  const queries = [LANDSCAPE_QUERY, COLUMN_QUERY, DOCK_QUERY].map((query) =>
     window.matchMedia(query),
   );
   for (const query of queries) query.addEventListener("change", listener);
@@ -45,7 +47,7 @@ export function useChatLayout(inLobby: boolean): ChatLayout {
   return useSyncExternalStore(
     subscribeLayout,
     () => currentLayout(inLobby),
-    () => CHAT_LAYOUT.Phone,
+    () => CHAT_LAYOUT.Dialog,
   );
 }
 
@@ -73,80 +75,50 @@ function currentViewport(): VisualViewport | null {
   return "visualViewport" in window ? window.visualViewport : null;
 }
 
-/**
- * How much of the bottom of the page the on-screen keyboard covers, from the visual viewport:
- * `interactive-widget` does not exist on iOS Safari, and the page itself must not resize or the
- * board would jump. Pinching to zoom shrinks the visual viewport as well: that is no keyboard.
- */
-export function readKeyboardHeight(): number {
-  const viewport = currentViewport();
-  if (viewport === null || viewport.scale > 1.01) return 0;
-  return Math.max(0, Math.round(window.innerHeight - viewport.height - viewport.offsetTop));
+/** Where the screen is seen now, from the top of the layout viewport. */
+export interface ViewportBox {
+  readonly top: number;
+  readonly height: number;
 }
 
-export function useKeyboardHeight(active: boolean): number {
-  const [height, setHeight] = useState(0);
+/**
+ * The part of the page seen now, from the visual viewport: the on-screen keyboard covers the rest,
+ * and `interactive-widget` does not exist on iOS Safari, so the dialog follows this instead of the
+ * page resizing. Pinching to zoom shrinks the visual viewport as well: that is no keyboard.
+ */
+export function readViewportBox(): ViewportBox {
+  const viewport = currentViewport();
+  if (viewport === null || viewport.scale > 1.01) return { top: 0, height: window.innerHeight };
+  return { top: Math.round(viewport.offsetTop), height: Math.round(viewport.height) };
+}
+
+/** How much of the bottom of the screen the keyboard covers, as `readViewportBox` sees it. */
+export function keyboardHeight(box: ViewportBox): number {
+  return Math.max(0, window.innerHeight - box.top - box.height);
+}
+
+export function useViewportBox(active: boolean): ViewportBox | null {
+  const [box, setBox] = useState<ViewportBox | null>(null);
   useEffect(() => {
     if (!active) return undefined;
-    const viewport = currentViewport();
-    if (viewport === null) return undefined;
     const update = () => {
-      setHeight(readKeyboardHeight());
-    };
-    update();
-    viewport.addEventListener("resize", update);
-    viewport.addEventListener("scroll", update);
-    return () => {
-      viewport.removeEventListener("resize", update);
-      viewport.removeEventListener("scroll", update);
-    };
-  }, [active]);
-  return active ? height : 0;
-}
-
-/** A sheet on a phone: 48 % of what the keyboard leaves. */
-const SHEET_SHARE = 0.48;
-/** At least this much of the sheet, and of the board above it, whatever happens to the other. */
-const SHEET_MIN_PX = 240;
-const BOARD_LEFT_IN_VIEW_PX = 96;
-
-/**
- * How tall the sheet is. Without a keyboard, lower when the board starts low on the screen, so part
- * of it stays in view: the board never moves for the chat. With one, the field and the latest
- * message matter more.
- */
-export function sheetHeight(viewportHeight: number, keyboard: number, boardTop: number | null) {
-  const base = Math.round((viewportHeight - keyboard) * SHEET_SHARE);
-  if (keyboard > 0 || boardTop === null) return base;
-  return Math.min(
-    base,
-    Math.max(SHEET_MIN_PX, Math.round(viewportHeight - boardTop - BOARD_LEFT_IN_VIEW_PX)),
-  );
-}
-
-/**
- * The room to scroll the whole board above the sheet: it lengthens the page below, so nothing above
- * moves. Closing keeps it while the page is scrolled into it, or the browser would pull the board
- * back; it goes as soon as the player has scrolled out.
- */
-export function useSheetSpacer(wanted: number): number {
-  const [height, setHeight] = useState(wanted);
-  useEffect(() => {
-    const settle = () => {
-      setHeight((current) => {
-        if (wanted >= current) return wanted;
-        const root = document.documentElement;
-        const furthest = root.scrollHeight - current + wanted - window.innerHeight;
-        return window.scrollY > furthest ? current : wanted;
+      setBox((current) => {
+        const next = readViewportBox();
+        return current?.top === next.top && current.height === next.height ? current : next;
       });
     };
-    settle();
-    window.addEventListener("scroll", settle, { passive: true });
+    update();
+    const viewport = currentViewport();
+    viewport?.addEventListener("resize", update);
+    viewport?.addEventListener("scroll", update);
+    window.addEventListener("resize", update);
     return () => {
-      window.removeEventListener("scroll", settle);
+      viewport?.removeEventListener("resize", update);
+      viewport?.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
     };
-  }, [wanted]);
-  return height;
+  }, [active]);
+  return active ? box : null;
 }
 
 export interface DockBox {

@@ -109,7 +109,8 @@ export function lastEntry<Move, Outcome>(
 
 /**
  * The result of the current state; the caller pairs the session with its own game. A game ended by
- * `concede` is won by every other seat, once the session shows every entry.
+ * `concede` is won by every other seat, once the session shows every entry; a cooperative game
+ * ended so is a draw, nobody winning, with the ending's reason.
  */
 export function sessionResult<
   State,
@@ -122,6 +123,7 @@ export function sessionResult<
 ): GameResult | null {
   const { ending } = session;
   if (ending !== undefined && session.cursor === session.entries.length) {
+    if (game.meta.cooperative === true) return { kind: "draw", reason: ending.reason };
     const winners = Array.from({ length: session.playerCount }, (_, seat) => seat).filter(
       (seat) => seat !== ending.player,
     );
@@ -145,7 +147,7 @@ export function isGameEnding(raw: unknown, playerCount: number): raw is GameEndi
 
 /**
  * Ends an unfinished game outside its rules: `ending.player` resigns or abandons it and every other
- * seat wins. Undone moves are dropped first, as for a new move; no move is added. A game that has a
+ * seat wins (a cooperative game stops, nobody winning: `sessionResult`). Undone moves are dropped first, as for a new move; no move is added. A game that has a
  * result already is `game-over`; a seat outside the game is `illegal-move`. Never throws.
  */
 export function concede<

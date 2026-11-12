@@ -414,3 +414,143 @@ test.describe("Hard on a 19×19 board", () => {
     expect(secondMs).toBeLessThanOrEqual(2000);
   });
 });
+
+// --- The board that grows (change `add-caro-infinite-board`) ---------------------------------------
+
+/** Starts a game on the board that grows from the setup screen, in `mode`. */
+async function startInfinite(page: Page, mode: "Cùng máy" | "Đấu với máy"): Promise<void> {
+  await openCaroSetup(page);
+  await choose(page, "Chế độ", mode);
+  await choose(page, "Bàn cờ", "Vô hạn");
+  await pressStart(page);
+  await expect(page).toHaveURL(mode === "Cùng máy" ? /\/play\/caro\/local$/ : /\/play\/caro\/ai$/);
+  await expect(board(page)).toBeVisible();
+}
+
+/** The scrolling frame of the board that grows. */
+const frame = (page: Page) => page.locator("[data-caro-frame]");
+
+/** How far the frame scrolls, and how far it could. */
+function frameScroll(page: Page) {
+  return frame(page).evaluate((element) => ({
+    left: element.scrollLeft,
+    top: element.scrollTop,
+    wide: element.scrollWidth > element.clientWidth + 1,
+    tall: element.scrollHeight > element.clientHeight + 1,
+  }));
+}
+
+test.describe("on the board that grows", () => {
+  test("starts like a 15×15 board, grows near its edge without the board jumping, and goes back to the last move", async ({
+    page,
+  }) => {
+    await startInfinite(page, "Cùng máy");
+    await expect(rulesLabel(page, "Vô hạn · Chặn hai đầu")).toBeVisible();
+    await expect(board(page).getByRole("button")).toHaveCount(225);
+    expect(await frameScroll(page)).toMatchObject({ wide: false, tall: false });
+
+    // A stone on the top row of the area: five more rows above it.
+    const before = await cell(page, 24, 31).boundingBox();
+    await cell(page, 24, 31).click();
+    await expect(board(page).getByRole("button")).toHaveCount(20 * 15);
+    const after = await cell(page, 24, 31).boundingBox();
+    expect(Math.abs((after?.y ?? 0) - (before?.y ?? 0))).toBeLessThan(2);
+    expect(Math.abs((after?.x ?? 0) - (before?.x ?? 0))).toBeLessThan(2);
+    expect((await frameScroll(page)).tall).toBe(true);
+    await expect(cell(page, 19, 31)).not.toBeInViewport();
+
+    // O far below, then X further up: the last move is then off the view once scrolled down.
+    await cell(page, 38, 38).click();
+    await cell(page, 19, 31).click();
+    await expect(cell(page, 19, 31)).toHaveAccessibleName("Hàng 19, cột 31, X");
+    await frame(page).evaluate((element) => {
+      element.scrollTop = element.scrollHeight;
+    });
+    await expect(cell(page, 19, 31)).not.toBeInViewport();
+    await page.getByRole("button", { name: "Về nước vừa đi" }).click();
+    await expect(cell(page, 19, 31)).toBeInViewport();
+  });
+
+  test("zooms out and in, and drags with the mouse without placing a stone", async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(isMobile, "A mouse");
+    await startInfinite(page, "Cùng máy");
+    const width = async () => (await cell(page, 31, 31).boundingBox())?.width ?? 0;
+    const start = await width();
+
+    await page.getByRole("button", { name: "Thu nhỏ bàn" }).click();
+    expect((await width()) / start).toBeCloseTo(15 / 19, 1);
+    await page.getByRole("button", { name: "Phóng to bàn" }).click();
+    await page.getByRole("button", { name: "Phóng to bàn" }).click();
+    expect((await width()) / start).toBeCloseTo(15 / 11, 1);
+    const scrolled = await frameScroll(page);
+    expect(scrolled.wide).toBe(true);
+
+    const box = await cell(page, 31, 31).boundingBox();
+    if (box === null) throw new Error("No cell");
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2 + 60, box.y + box.height / 2 + 40, { steps: 6 });
+    await page.mouse.up();
+    const dragged = await frameScroll(page);
+    expect(dragged.left).toBeLessThan(scrolled.left);
+    expect(dragged.top).toBeLessThan(scrolled.top);
+    expect((await countMarks(page, "X")) + (await countMarks(page, "O"))).toBe(0);
+
+    await cell(page, 31, 31).click();
+    await expect(cell(page, 31, 31)).toHaveAccessibleName("Hàng 31, cột 31, X");
+  });
+
+  test("scrolls to the AI's move when it is out of view", async ({ page }) => {
+    await startInfinite(page, "Đấu với máy");
+    // Zoomed in, the frame shows part of the area; the player plays its top left corner.
+    await page.getByRole("button", { name: "Phóng to bàn" }).click();
+    await frame(page).evaluate((element) => {
+      element.scrollLeft = 0;
+      element.scrollTop = 0;
+    });
+    await cell(page, 24, 24).click();
+    await expect(status(page)).toHaveText(/^Máy đánh hàng \d+, cột \d+\. Đến lượt bạn \(X\)$/u, {
+      timeout: 10_000,
+    });
+    const last = board(page).getByRole("button", { description: "Nước vừa đi" });
+    await expect(last).toHaveCount(1);
+    await expect(last).toBeInViewport();
+  });
+
+  test.describe("on a phone 360 px wide", () => {
+    test.use({ viewport: { width: 360, height: 740 } });
+
+    test("fits the screen, scrolls inside the board once it has grown, and places with two taps", async ({
+      page,
+      hasTouch,
+    }) => {
+      await startInfinite(page, "Cùng máy");
+      expect(await scrollsSideways(page)).toBe(false);
+      const box = await frame(page).boundingBox();
+      expect((box?.x ?? 0) + (box?.width ?? Infinity)).toBeLessThanOrEqual(360);
+      for (const name of ["Thu nhỏ bàn", "Phóng to bàn", "Về nước vừa đi"]) {
+        const control = await page.getByRole("button", { name }).boundingBox();
+        expect(control?.height ?? 0).toBeGreaterThanOrEqual(44);
+      }
+
+      // Grown sideways: the board scrolls, the page still does not, and dragging sideways at the
+      // end of the board never reaches the page.
+      await cell(page, 31, 38).click();
+      await expect(board(page).getByRole("button")).toHaveCount(15 * 20);
+      expect((await frameScroll(page)).wide).toBe(true);
+      expect(await scrollsSideways(page)).toBe(false);
+      expect(
+        await frame(page).evaluate((element) => getComputedStyle(element).overscrollBehaviorX),
+      ).toBe("contain");
+
+      test.skip(!hasTouch, "Taps need a touch screen");
+      await cell(page, 30, 31).tap();
+      await expect(page.getByText("Chạm lần nữa để đặt quân")).toBeVisible();
+      await cell(page, 30, 31).tap();
+      await expect(cell(page, 30, 31)).toHaveAccessibleName("Hàng 30, cột 31, O");
+    });
+  });
+});

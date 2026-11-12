@@ -12,6 +12,8 @@ describe("caro options", () => {
     [{ size: 19, rule: "blocked-ends" }],
     [{ size: 15, rule: "free" }],
     [{ size: 19, rule: "free" }],
+    [{ size: "infinite", rule: "blocked-ends" }],
+    [{ size: "infinite", rule: "free" }],
   ])("accept %o", (options) => {
     expect(parseCaroOptions(options)).toEqual(options);
   });
@@ -25,6 +27,7 @@ describe("caro options", () => {
   it.each([
     ["an unsupported board size", { size: 17 }],
     ["a size written as text", { size: "15" }],
+    ["another word for the board that grows", { size: "unlimited" }],
     ["an unknown rule", { rule: "exactly-five" }],
     ["an unknown key", { size: 15, renju: true }],
   ])("refuse %s", (_what, options) => {

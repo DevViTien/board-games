@@ -28,7 +28,8 @@ test.describe("Lối vào", () => {
     await page.goto("/");
     const card = page
       .getByRole("listitem")
-      .filter({ has: page.getByRole("heading", { name: "Gom thạch" }) });
+      // Exact: "Đội gom thạch" is a game of its own, with its own card.
+      .filter({ has: page.getByRole("heading", { name: "Gom thạch", exact: true }) });
     await expect(card.getByText("1 người")).toBeVisible();
     await expect(card.getByText("40 màn")).toBeVisible();
     await expect(card.getByRole("link", { name: "Online" })).toHaveCount(0);

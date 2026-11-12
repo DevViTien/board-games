@@ -7,7 +7,7 @@ import { renderWithIntl } from "@/test/render-with-intl";
 import { useCaroMoveLabel } from "./move-label";
 import { useCaroPlayerLabel } from "./player-label";
 
-const board = (size: 15 | 19): CaroState =>
+const board = (size: 15 | 19 | "infinite"): CaroState =>
   caro.setup({ playerCount: 2, options: { size, rule: "blocked-ends" } });
 
 function MoveLabel({ cell, state }: { cell: number; state: CaroState }) {
@@ -26,11 +26,16 @@ describe("Cờ caro labels", () => {
     [15, 224, "đánh hàng 15, cột 15"],
     [19, 19, "đánh hàng 2, cột 1"],
     [15, 15, "đánh hàng 2, cột 1"],
-  ] as const)("read a move on a %i×… board by row and column (cell %i)", (size, cell, text) => {
-    renderWithIntl(<MoveLabel cell={cell} state={board(size)} />);
+    // The board that grows: by the 61×61 cap, so its middle cell, where the AI opens.
+    ["infinite", 30 * 61 + 30, "đánh hàng 31, cột 31"],
+  ] as const)(
+    "read a move on a %s board by row and column (cell %i) by row and column (cell %i)",
+    (size, cell, text) => {
+      renderWithIntl(<MoveLabel cell={cell} state={board(size)} />);
 
-    expect(screen.getByText(text)).toBeInTheDocument();
-  });
+      expect(screen.getByText(text)).toBeInTheDocument();
+    },
+  );
 
   it("read a move in English", () => {
     renderWithIntl(<MoveLabel cell={360} state={board(19)} />, { locale: "en" });

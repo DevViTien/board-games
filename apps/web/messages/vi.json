@@ -44,7 +44,7 @@
     },
     "caro": {
       "name": "Cờ caro",
-      "tagline": "Năm quân liền là thắng · bàn 15×15 hoặc 19×19",
+      "tagline": "Năm quân liền là thắng · bàn 15×15, 19×19 hoặc vô hạn",
       "players": {
         "x": "X",
         "o": "O"
@@ -52,12 +52,20 @@
       "move": "đánh hàng {row}, cột {col}",
       "winningCell": "Thuộc hàng thắng",
       "boardHint": "Chạm lần nữa để đặt quân",
+      "view": "Xem bàn",
+      "zoomOut": "Thu nhỏ bàn",
+      "zoomIn": "Phóng to bàn",
+      "zoomMin": "Đã nhỏ nhất",
+      "zoomMax": "Đã lớn nhất",
+      "toLastMove": "Về nước vừa đi",
+      "noMoveYet": "Chưa có nước nào",
       "options": {
         "size": {
           "label": "Bàn cờ",
           "values": {
             "15": "15×15",
-            "19": "19×19"
+            "19": "19×19",
+            "infinite": "Vô hạn"
           }
         },
         "rule": {
@@ -371,6 +379,124 @@
         "other": "{player} còn {steps}",
         "draw": "Hết {limit} nước, {players} cùng còn {steps} bước về đích."
       }
+    },
+    "jelly-crew": {
+      "name": "Đội gom thạch",
+      "tagline": "Cả đội cùng đẩy thạch vào khuôn, người này giữ nút cho người kia qua cửa",
+      "seats": {
+        "1": "Lam",
+        "2": "Hồng",
+        "3": "Cam",
+        "4": "Ngọc"
+      },
+      "groups": {
+        "circle": "●",
+        "triangle": "▲",
+        "square": "■"
+      },
+      "kinds": {
+        "strawberry": "thạch dâu",
+        "pandan": "thạch lá dứa",
+        "mango": "thạch xoài",
+        "taro": "thạch khoai môn",
+        "grass": "sương sáo",
+        "ice": "đá viên"
+      },
+      "moldKinds": {
+        "strawberry": "khuôn dâu",
+        "pandan": "khuôn lá dứa",
+        "mango": "khuôn xoài",
+        "taro": "khuôn khoai môn",
+        "grass": "khuôn sương sáo",
+        "ice": "khuôn đá"
+      },
+      "options": {
+        "map": {
+          "label": "Bản đồ",
+          "values": {
+            "kitchen": "Hai gian bếp",
+            "market": "Chợ đêm",
+            "cold-store": "Kho lạnh"
+          }
+        },
+        "summary": "{map}"
+      },
+      "directions": {
+        "U": "Lên",
+        "D": "Xuống",
+        "L": "Sang trái",
+        "R": "Sang phải"
+      },
+      "directionWords": {
+        "U": "lên",
+        "D": "xuống",
+        "L": "sang trái",
+        "R": "sang phải"
+      },
+      "controls": "Điều khiển",
+      "end": "Xong lượt",
+      "back": "Lùi bước",
+      "reset": "Đặt lại bản đồ",
+      "hold": "Giữ nút",
+      "blocked": {
+        "wall": "Tường",
+        "door": "Cửa {group} đóng",
+        "seat": "{name} chắn",
+        "push-wall": "Thạch vướng tường",
+        "push-door": "Thạch vướng cửa {group} đóng",
+        "push-seat": "Thạch vướng {name}",
+        "no-steps": "Hết bước, bấm Xong lượt",
+        "over": "Ván đã xong"
+      },
+      "blockedSay": "Không đi {direction} được: {reason}.",
+      "noBack": "Chưa đi bước nào trong lượt này",
+      "noBacksLeft": "Đã lùi 5 lần trong lượt này",
+      "resetSame": "Bản đồ đang như lúc bắt đầu",
+      "chips": {
+        "turn": "{name} · còn {count} bước",
+        "turnDone": "{name} · hết bước, bấm Xong lượt",
+        "round": "Vòng {round}/{rounds}",
+        "molds": "Khuôn {fitted}/{total}",
+        "moldsLabel": "{fitted} trên {total} ô khuôn đã vừa"
+      },
+      "resetDialog": {
+        "title": "Đặt lại bản đồ?",
+        "body": "Mọi người và thạch về chỗ ban đầu. Lượt của bạn kết thúc; các vòng đã chơi vẫn được tính.",
+        "keep": "Để nguyên",
+        "confirm": "Đặt lại"
+      },
+      "resetNote": "{name} đã đặt lại bản đồ.",
+      "holding": "Giữ nút {group}",
+      "holdOn": "Đang giữ nút: tới lượt bạn thì tự xong lượt.",
+      "holdSay": "{name} giữ nút, xong lượt.",
+      "keys": "Phím: mũi tên hoặc W A S D để đi · Enter xong lượt",
+      "keysOnline": "Phím: mũi tên hoặc W A S D để đi · Enter xong lượt · Z lùi bước",
+      "move": {
+        "step": "đi {direction}",
+        "push": "đẩy {kinds} {direction}",
+        "end": "xong lượt",
+        "back": "lùi một bước",
+        "reset": "đặt lại bản đồ",
+        "opened": "cửa {groups} mở",
+        "closed": "cửa {groups} đóng",
+        "molds": "khuôn {fitted}/{total}",
+        "endHolding": "giữ nút {group}, xong lượt"
+      },
+      "result": {
+        "filled": "Đầy khuôn sau {steps} bước, {rounds} vòng.",
+        "outOfRounds": "Hết {rounds} vòng, còn {left} ô khuôn trống."
+      },
+      "boardLabel": "Bản đồ {map}, {width} × {height} ô",
+      "describe": {
+        "title": "Mô tả bàn",
+        "row": "Hàng {row}: {cells}",
+        "cell": "cột {col}: {things}",
+        "char": "{name} (số {seat})",
+        "plate": "nút {group}",
+        "doorOpen": "cửa {group} mở",
+        "doorClosed": "cửa {group} đóng",
+        "empty": "Hàng {row}: tường và sàn trống"
+      }
     }
   },
   "Modes": {
@@ -520,7 +646,10 @@
       "descriptionStandIn": "Máy sẽ chơi thay bạn tới hết ván. Bạn vẫn ở trong phòng để xem và chơi ván sau.",
       "descriptionAi": "Máy sẽ thắng ván này.",
       "confirm": "Đầu hàng",
-      "cancel": "Chơi tiếp"
+      "cancel": "Chơi tiếp",
+      "titleTeam": "Bỏ cuộc ván này?",
+      "descriptionTeam": "Ván sẽ dừng cho cả đội, không ai thắng. Sau đó cả phòng có thể chơi lại.",
+      "confirmTeam": "Bỏ cuộc"
     },
     "abandon": {
       "waiting": "{name} chưa đi · {elapsed}",
@@ -537,7 +666,9 @@
       "claimWin": "Xử thắng",
       "claimStandIn": "Cho máy chơi thay",
       "claimEnd": "Kết thúc ván",
-      "notYet": "Chưa thể xử: lượt của {name} chưa đủ 5 phút."
+      "notYet": "Chưa thể xử: lượt của {name} chưa đủ 5 phút.",
+      "warnTeam": "Còn {remaining}. Quá 5 phút, người khác có thể kết thúc ván cho cả đội.",
+      "turnWarnTeam": "Chưa tới 1 phút nữa, người khác có thể kết thúc ván cho cả đội."
     },
     "confirmAbandon": {
       "titleWin": "Xử {name} thua vì bỏ ván?",
@@ -546,13 +677,16 @@
       "descriptionWin": "{name} đã không đi 5 phút. Bạn sẽ thắng ván này; sau đó cả phòng có thể chơi lại.",
       "descriptionStandIn": "{name} đã không đi 5 phút. Máy sẽ chơi thay {name} tới hết ván.",
       "descriptionEnd": "{name} đã không đi 5 phút và không còn ai khác tự chơi. Ván sẽ kết thúc; sau đó cả phòng có thể chơi lại.",
-      "cancel": "Chờ thêm"
+      "cancel": "Chờ thêm",
+      "descriptionTeam": "{name} đã không đi 5 phút. Ván sẽ dừng cho cả đội, không ai thắng; sau đó cả phòng có thể chơi lại."
     },
     "ending": {
       "youResigned": "Bạn đã đầu hàng.",
       "opponentResigned": "{name} đã đầu hàng.",
       "youAbandoned": "Bạn bỏ ván: quá 5 phút không đi.",
-      "opponentAbandoned": "{name} bỏ ván: quá 5 phút không đi."
+      "opponentAbandoned": "{name} bỏ ván: quá 5 phút không đi.",
+      "youGaveUp": "Bạn đã bỏ cuộc.",
+      "opponentGaveUp": "{name} đã bỏ cuộc."
     },
     "standIn": "Máy chơi thay",
     "standInName": "Máy (thay {name})",
@@ -573,7 +707,11 @@
       "loading": "Đang tải luật chơi…",
       "loadError": "Không tải được luật chơi. Kiểm tra kết nối rồi thử lại; ván vẫn đang tiếp tục.",
       "retry": "Thử lại"
-    }
+    },
+    "teamWins": "Cả đội thắng!",
+    "teamStopped": "Ván dừng",
+    "teamEnded": "Ván kết thúc",
+    "resignTeam": "Bỏ cuộc"
   },
   "NotFound": {
     "title": "Không tìm thấy trang",
@@ -701,7 +839,9 @@
       "clap": "Vỗ tay"
     },
     "openChat": "Mở chat.",
-    "openPrefix": "Mở"
+    "openPrefix": "Mở",
+    "collapse": "Thu gọn chat",
+    "expand": "Mở chat"
   },
   "Toolbox": {
     "title": "Hộp công cụ",
@@ -991,7 +1131,10 @@
         "abandon": "Chơi online: người đến lượt mà <b>5 phút</b> không đi thì người kia bấm được “Xử thắng” và thắng ván.",
         "abandonRoom": "Chơi online: người đến lượt mà <b>5 phút</b> không đi thì người khác xử được bỏ ván.",
         "standIn": "Phòng 3–4 người: <b>máy chơi thay</b> người đầu hàng hay bỏ ván (“Máy chơi thay”) tới hết ván, người đó chơi lại từ ván sau. Phòng 2 người: ván kết thúc, người kia thắng.",
-        "vsAi": "Khi đấu với máy: đầu hàng thì máy thắng."
+        "vsAi": "Khi đấu với máy: đầu hàng thì máy thắng.",
+        "giveUp": "Bấm <b>“Bỏ cuộc”</b> để dừng ván; app hỏi lại trước. Ván dừng cho <b>cả đội</b>, không ai thắng.",
+        "abandonTeam": "Chơi online: người đến lượt mà <b>5 phút</b> không đi thì người khác bấm được “Kết thúc ván”: ván dừng cho cả đội, không ai thắng.",
+        "titleTeam": "Bỏ cuộc và bỏ ván"
       }
     },
     "tictactoe": {
@@ -1025,7 +1168,7 @@
       },
       "board": {
         "title": "Bàn và lượt đi",
-        "body": "Bàn 15×15 hoặc 19×19, chọn ở màn hình bắt đầu ván cùng với luật thắng. <b>X đi trước</b>; mỗi lượt đánh một quân vào một ô trống bất kỳ."
+        "body": "Bàn 15×15, 19×19 hoặc vô hạn, chọn ở màn hình bắt đầu ván cùng với luật thắng. Bàn vô hạn bắt đầu 15×15 và tự nở khi quân tới gần mép: kéo hay cuộn để xem chỗ khác. <b>X đi trước</b>; mỗi lượt đánh một quân vào một ô trống bất kỳ."
       },
       "free": {
         "title": "Luật “tự do”",
@@ -1215,6 +1358,56 @@
           "label": "Trước khi phá rào, đường dài {before} bước; sau khi phá còn {after} bước",
           "caption": "Phá rào có viền: đường từ <b>{before}</b> còn <b>{after}</b> bước.",
           "steps": "{count} bước"
+        }
+      }
+    },
+    "jelly-crew": {
+      "goal": {
+        "title": "Mục tiêu",
+        "body": "Cả đội cùng đẩy thạch vào <b>khuôn</b>. Khi mọi ô khuôn có thạch đúng loại, <b>cả đội thắng</b>; không ai thắng một mình."
+      },
+      "turn": {
+        "title": "Lượt chơi",
+        "body": "Mỗi người một nhân vật có số. Đến lượt, bạn đi <b>tối đa 5 bước</b> rồi bấm <b>“Xong lượt”</b>; lượt không tự chuyển.",
+        "body2": "Chưa đi bước nào cũng bấm Xong lượt được, để đứng yên giữ nút cho người khác."
+      },
+      "jelly": {
+        "title": "Đẩy và dính",
+        "body": "Đi vào thạch để đẩy nó một ô; thạch đẩy vào thạch khác thì đẩy cả dãy. Thạch cùng loại chạm cạnh nhau thì <b>dính</b> thành một khối và không tách ra nữa.",
+        "grass": "<b>Sương sáo</b> dính với mọi loại thạch, trừ đá viên.",
+        "ice": "<b>Đá viên</b> đẩy được nhưng không dính gì. Loại không có khuôn chỉ là vật cản."
+      },
+      "block": {
+        "title": "Nhân vật chắn đường",
+        "body": "Không ai đi vào ô có nhân vật khác, và không đẩy được nhân vật. Thạch bị đẩy vào một nhân vật thì cả bước bị chặn."
+      },
+      "doors": {
+        "title": "Nút và cửa",
+        "body": "Mỗi nút và cửa có ký hiệu <b>●</b>, <b>▲</b> hay <b>■</b>. Cửa mở khi có người hay thạch đứng trên một nút cùng ký hiệu; không còn gì trên nút thì cửa đóng lại.",
+        "body2": "Cửa đang có người hay thạch nằm trong thì không đóng, nên thứ đã vào cửa luôn ra được."
+      },
+      "rounds": {
+        "title": "Giới hạn vòng",
+        "body": "Một vòng là mỗi người một lượt. Mỗi bản đồ có số vòng tối đa; hết vòng mà khuôn chưa đầy thì ván kết thúc, <b>không ai thắng</b>."
+      },
+      "tools": {
+        "title": "Lùi bước, đặt lại, giữ nút",
+        "back": "<b>Lùi bước</b> (chơi online): lùi bước vừa đi trong lượt của mình, tối đa 5 lần mỗi lượt. Chơi cùng máy thì dùng “Hoàn tác”.",
+        "reset": "<b>Đặt lại bản đồ</b>: mọi người và thạch về chỗ ban đầu và lượt của bạn kết thúc; số vòng và số bước đã đi vẫn tính.",
+        "hold": "<b>Giữ nút</b>: đang đứng trên nút thì bật lên, tới lượt mình app tự bấm Xong lượt."
+      },
+      "maps": {
+        "title": "Bản đồ",
+        "body": "Ba bản đồ, mỗi bản đồ có bố cục riêng cho 2, 3 và 4 người: <b>Hai gian bếp</b> (dễ), <b>Chợ đêm</b> (vừa) và <b>Kho lạnh</b> (khó)."
+      },
+      "figures": {
+        "hold": {
+          "label": "Hồng đứng trên nút ●, cửa ● mở; Lam đẩy thạch dâu qua cửa ●.",
+          "caption": "Hồng <b>giữ nút ●</b> để Lam đẩy thạch dâu qua cửa ●."
+        },
+        "blocked": {
+          "label": "Lam muốn đẩy thạch xoài sang phải, nhưng Hồng đứng ngay sau thạch.",
+          "caption": "Thạch bị đẩy vào <b>nhân vật khác</b>: bước bị chặn."
         }
       }
     }

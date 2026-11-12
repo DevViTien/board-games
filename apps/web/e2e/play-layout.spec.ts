@@ -165,10 +165,10 @@ test.describe("Cờ cá ngựa for four on a laptop of 1280 × 800, four horses 
 
     // The connection line has its room kept: once it speaks, nothing is pushed off the screen.
     await room.loseConnection();
-    await expect(page.getByText("Đang kết nối lại…")).toBeVisible();
+    await expect(page.getByText("Đang kết nối lại…", { exact: true })).toBeVisible();
     await expect(playersPanel(page).getByRole("listitem").first()).toContainText("Mất kết nối");
     await expectFullyOnScreen(
-      page.getByText("Đang kết nối lại…"),
+      page.getByText("Đang kết nối lại…", { exact: true }),
       status(page),
       playersPanel(page),
       die(page),

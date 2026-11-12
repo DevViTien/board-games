@@ -23,7 +23,8 @@ interface ChatButtonProps {
 
 /**
  * Opens and closes the room's chat: in the row of the game's buttons, and on the lobby's title row.
- * Says how many messages are unread, in its name too, or that the chat is muted.
+ * Says how many messages are unread, in its name too, or that the chat is muted. Not there while
+ * the chat is the column of a wide screen.
  */
 export function ChatButton({ chat, className }: ChatButtonProps) {
   const t = useTranslations("Chat");
@@ -33,15 +34,20 @@ export function ChatButton({ chat, className }: ChatButtonProps) {
   const unread = useRoomChatValue(chat, (snapshot) => snapshot.unread);
   // Closed, nothing else says a message did not go through.
   const notSent = useRoomChatValue(chat, (snapshot) => !snapshot.open && snapshot.failure !== null);
+  // On a wide screen the column's strip opens the chat instead (`ChatRail`).
+  const column = useRoomChatValue(chat, (snapshot) => snapshot.column);
   const button = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    chat.registerButton(button.current);
+    if (column) return undefined;
+    const element = button.current;
+    chat.registerButton(element);
     return () => {
-      chat.registerButton(null);
+      chat.releaseButton(element);
     };
-  }, [chat]);
+  }, [chat, column]);
 
+  if (column) return null;
   return (
     <Button
       ref={button}

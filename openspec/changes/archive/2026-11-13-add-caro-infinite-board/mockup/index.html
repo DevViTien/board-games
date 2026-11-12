@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mockup bàn caro vô hạn</title>
+<style>
+  :root { --bg:#f6f5f1; --surface:#fff; --fg:#17182b; --muted:#5e6072; --ctrl:#7c7a72; --accent:#5b34e6; --accent-soft:#ece7ff; --accent-ink:#3a1fa8;
+    --board:#fdfdf8; --line:#6e93c0; --m1:#1f3fa8; --m2:#c42b2b; --margin:#e58a8a; --win:#c77a00; --hl:#fff1b8; --last:#5e6072; }
+  [data-theme="dark"] { --bg:#121322; --surface:#1b1c30; --fg:#f1f0f7; --muted:#a9aabf; --ctrl:#8a8cab; --accent:#a894ff; --accent-soft:#2d2752; --accent-ink:#d9d0ff;
+    --board:#161a2e; --line:#5d6fa3; --m1:#8fb0ff; --m2:#ff8e8e; --margin:#6b3a48; --win:#ffc24d; --hl:#3a3420; --last:#a9aabf; }
+  * { box-sizing: border-box; }
+  body { margin:0; font: 15px/1.4 "Be Vietnam Pro", system-ui, sans-serif; background: var(--bg); color: var(--fg); }
+  body:not(.bare) { display:flex; gap:16px; padding:16px; }
+  #panel { width:240px; flex-shrink:0; font-size:13px; } #panel button { display:block; width:100%; margin:3px 0; text-align:left; }
+  body.bare #panel { display:none; }
+  #vp { background: var(--bg); overflow:hidden; border:1px solid #ccc; } body.bare #vp { border:0; }
+  .top { height:64px; display:flex; align-items:center; justify-content:space-between; padding:0 24px; border-bottom:1px solid color-mix(in srgb, var(--ctrl) 30%, transparent); }
+  .top h1 { margin:0; font-size:26px; } .pill { border:1.5px solid var(--fg); border-radius:12px; padding:6px 12px; font-weight:600; }
+  main { padding:24px 16px; display:grid; gap:16px; justify-items:center; }
+  .desk main { grid-template-columns: auto minmax(20rem, 24rem); align-items:center; justify-content:center; gap:40px; padding:40px; }
+  .col { display:grid; gap:12px; width:100%; }
+  .chip { justify-self:start; background: var(--accent-soft); color: var(--accent-ink); border-radius:999px; padding:2px 10px; font-size:12px; font-weight:600; }
+  .phone .chip { justify-self:center; }
+  .turn { font-size:24px; font-weight:700; margin:0; } .phone .turn { text-align:center; font-size:20px; }
+  .players { display:grid; gap:6px; } .pl { background:var(--surface); border:1px solid color-mix(in srgb, var(--ctrl) 35%, transparent); border-radius:12px; padding:6px 10px; display:flex; gap:8px; align-items:center; }
+  .pl.on { border-color: var(--accent-ink); } .pl b { font-size:14px; } .pl small { color:var(--muted); display:block; }
+  .tag { margin-left:auto; background:var(--fg); color:var(--bg); border-radius:999px; padding:0 8px; font-size:12px; }
+  .paper { display:flex; border:1px solid var(--line); border-radius:4px; background:var(--board); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+  .marg { width:5%; position:relative; flex-shrink:0; } .marg::after { content:""; position:absolute; inset:0 auto 0 50%; width:2px; background:var(--margin); }
+  .frame { position:relative; aspect-ratio:1; flex:1; min-width:0; overflow:auto; overscroll-behavior-x:contain; scrollbar-width:thin; cursor:default; }
+  .frame.drag { cursor:grabbing; }
+  .inner { position:relative; margin:auto; }
+  .inner svg { position:absolute; inset:0; width:100%; height:100%; }
+  .cell { position:absolute; display:flex; align-items:center; justify-content:center; border:0; padding:0; background:none; cursor:pointer; border-radius:2px; }
+  .cell:hover { background: color-mix(in srgb, var(--line) 15%, transparent); }
+  .cell:focus-visible { outline:2px solid var(--fg); outline-offset:1px; }
+  .cell.sel::before { content:""; position:absolute; inset:3px; background:var(--hl); border-radius:2px; }
+  .cell svg { position:relative; width:100%; height:100%; }
+  .tools { display:flex; gap:8px; flex-wrap:wrap; } .phone .tools { justify-content:center; }
+  .btn { height:44px; min-width:44px; padding:0 14px; border-radius:12px; border:1.5px solid var(--fg); background:var(--surface); color:var(--fg); font:600 15px/1 inherit; display:inline-flex; align-items:center; justify-content:center; gap:6px; cursor:pointer; }
+  .btn[aria-disabled="true"] { border-style:dashed; color:var(--muted); border-color:var(--ctrl); cursor:not-allowed; }
+  .btn.primary { background:var(--accent); color:#fff; border-color:var(--accent); } [data-theme="dark"] .btn.primary { color:#121322; }
+  .hint { min-height:20px; font-size:13px; color:var(--muted); margin:0; } .phone .hint { text-align:center; }
+  .setup { width:min(100%, 34rem); display:grid; gap:16px; } fieldset { border:0; padding:0; margin:0; } legend { font-weight:700; margin-bottom:8px; }
+  .radios { display:flex; gap:8px; flex-wrap:wrap; } .radio { border:1.5px solid var(--ctrl); border-radius:12px; padding:10px 14px; display:flex; gap:8px; align-items:center; background:var(--surface); }
+  .radio.on { border-color:var(--accent-ink); box-shadow: inset 0 0 0 1px var(--accent-ink); } .dot { width:16px; height:16px; border-radius:50%; border:2px solid var(--ctrl); } .on .dot { border:5px solid var(--accent-ink); }
+  .radio small { display:block; color:var(--muted); font-size:12px; }
+</style>
+</head>
+<body>
+<div id="panel">
+  <b>Bàn caro vô hạn</b>
+  <p>Sáng/tối, khung, cảnh. Bàn chơi được: chạm/click đặt quân, kéo để cuộn.</p>
+  <button data-set="theme:light">Sáng</button><button data-set="theme:dark">Tối</button>
+  <button data-set="vp:1280x800">1280 × 800</button><button data-set="vp:390x844">390 × 844</button><button data-set="vp:360x740">360 × 740</button>
+  <hr />
+  <button data-set="scene:setup">Bắt đầu ván (chọn Vô hạn)</button>
+  <button data-set="scene:start">Đầu ván (giống 15×15)</button>
+  <button data-set="scene:mid">Giữa ván, vùng đã nở</button>
+  <button data-set="scene:away">Đã kéo ra xa (Về nước vừa đi)</button>
+  <button data-set="scene:out">Thu nhỏ hết mức</button>
+  <button data-set="scene:won">X thắng</button>
+  <button data-set="scene:tap">Điện thoại, chạm lần đầu (xem trước)</button>
+</div>
+<div id="vp"></div>
+<script>
+const CAP = 61, START = 15, MARGIN = 5, STEPS = [25, 19, 15, 11];
+const mid = (CAP - 1) / 2, h = (START - 1) / 2;
+const P = new URLSearchParams(location.search);
+const S = { theme: P.get("theme") ?? "light", vp: P.get("vp") ?? "1280x800", scene: P.get("scene") ?? "start" };
+if (P.has("bare")) document.body.classList.add("bare");
+
+function newGame() { return { board: new Map(), area: { t: mid - h, l: mid - h, b: mid + h, r: mid + h }, toMove: 0, last: null, win: null, zoom: 2, sel: null }; }
+let G = newGame();
+const key = (r, c) => r * CAP + c;
+function grow(a, r, c) { return { t: Math.max(0, Math.min(a.t, r - MARGIN)), l: Math.max(0, Math.min(a.l, c - MARGIN)), b: Math.min(CAP - 1, Math.max(a.b, r + MARGIN)), r: Math.min(CAP - 1, Math.max(a.r, c + MARGIN)) }; }
+function winLine(r, c, p) {
+  for (const [dr, dc] of [[0,1],[1,0],[1,1],[1,-1]]) {
+    const cells = [[r, c]];
+    for (const s of [1, -1]) { let rr = r + s*dr, cc = c + s*dc; while (G.board.get(key(rr, cc)) === p) { s > 0 ? cells.push([rr, cc]) : cells.unshift([rr, cc]); rr += s*dr; cc += s*dc; } }
+    if (cells.length >= 5) return cells;
+  }
+  return null;
+}
+function play(r, c) {
+  const a = G.area; if (G.win || r < a.t || r > a.b || c < a.l || c > a.r || G.board.has(key(r, c))) return;
+  const before = { ...a };
+  G.board.set(key(r, c), G.toMove); G.last = [r, c]; G.area = grow(a, r, c); G.win = winLine(r, c, G.toMove);
+  G.toMove = 1 - G.toMove; G.sel = null; render(before);
+}
+const mark = (p, dash, last) => `<svg viewBox="0 0 24 24" aria-hidden="true">${p === 0 ? `<path d="M6.4 6.2Q12.2 11.6 17.8 17.9M17.6 6.3Q12 11.8 6.3 17.7" fill="none" stroke="var(--m1)" stroke-width="2.2" stroke-linecap="round" ${dash ? 'stroke-dasharray="3.4 2.6"' : ""}/>` : p === 1 ? `<path d="M13.6 5.5C8.6 4.8 5.1 8.4 5.4 12.6C5.7 16.8 9.4 19.1 13 18.6C16.8 18.1 19.1 14.7 18.6 10.9C18.2 7.8 15.8 5.6 12.2 5.8" fill="none" stroke="var(--m2)" stroke-width="2.2" stroke-linecap="round" ${dash ? 'stroke-dasharray="3.4 2.6"' : ""}/>` : ""}${last ? '<circle cx="12" cy="12" r="10.4" fill="none" stroke="var(--last)" stroke-width="1.2" stroke-dasharray="2.2 1.8"/>' : ""}</svg>`;
+
+const icon = { out: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3M8 11h6"/></svg>', in: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3M8 11h6M11 8v6"/></svg>', loc: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>' };
+
+let frameW = 0, cellPx = 0;
+function render(prevArea) {
+  document.documentElement.dataset.theme = S.theme;
+  const [w, hgt] = S.vp.split("x").map(Number); const phone = w < 1024;
+  const vp = document.getElementById("vp"); vp.style.width = w + "px"; vp.style.height = hgt + "px"; vp.className = phone ? "phone" : "desk";
+  const frame0 = vp.querySelector(".frame"); const keep = frame0 ? { x: frame0.scrollLeft, y: frame0.scrollTop } : null;
+  if (S.scene === "setup") { vp.innerHTML = topBar(phone) + setupHtml(); return; }
+  const boardW = phone ? w - 32 : Math.min(600, hgt - 64 - 96);
+  frameW = boardW * 0.95 - 2; const across = STEPS[G.zoom]; cellPx = frameW / across;
+  const a = G.area, rows = a.b - a.t + 1, cols = a.r - a.l + 1;
+  let lines = "";
+  for (let i = 0; i <= cols; i++) lines += `<path d="M${i} 0V${rows}" stroke="var(--line)" stroke-width="${(a.l + i) % 5 === 0 ? 1.6 : 1}" vector-effect="non-scaling-stroke"/>`;
+  for (let i = 0; i <= rows; i++) lines += `<path d="M0 ${i}H${cols}" stroke="var(--line)" stroke-width="${(a.t + i) % 5 === 0 ? 1.6 : 1}" vector-effect="non-scaling-stroke"/>`;
+  let cells = "";
+  for (let r = a.t; r <= a.b; r++) for (let c = a.l; c <= a.r; c++) {
+    const p = G.board.get(key(r, c)); const last = G.last && G.last[0] === r && G.last[1] === c; const sel = G.sel && G.sel[0] === r && G.sel[1] === c;
+    cells += `<button class="cell${sel ? " sel" : ""}" data-r="${r}" data-c="${c}" tabindex="-1" aria-label="Hàng ${r + 1}, cột ${c + 1}" style="left:${(c - a.l) * cellPx}px;top:${(r - a.t) * cellPx}px;width:${cellPx}px;height:${cellPx}px">${p !== undefined ? mark(p, false, last) : sel ? mark(G.toMove, true, false) : ""}</button>`;
+  }
+  let win = "";
+  if (G.win) { const [f, l] = [G.win[0], G.win.at(-1)]; const x1 = f[1] - a.l + .5, y1 = f[0] - a.t + .5, x2 = l[1] - a.l + .5, y2 = l[0] - a.t + .5; const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2, len = Math.hypot(x2 - x1, y2 - y1), ang = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+    win = `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${G.board.get(key(f[0], f[1])) === 1 ? "var(--m2)" : "var(--m1)"}" stroke-width=".16" stroke-linecap="round"/><ellipse cx="${cx}" cy="${cy}" rx="${len / 2 + .85}" ry=".78" transform="rotate(${ang} ${cx} ${cy})" fill="none" stroke="var(--win)" stroke-width=".1"/>`; }
+  const turn = G.win ? `${G.board.get(key(G.win[0][0], G.win[0][1])) === 0 ? "X" : "O"} thắng!` : `Đến lượt ${G.toMove === 0 ? "X" : "O"}`;
+  const pl = (n, i) => `<div class="pl${!G.win && G.toMove === i ? " on" : ""}"><svg width="26" height="26">${mark(i)}</svg><div><b>${n}</b><small>Ở máy này</small></div>${!G.win && G.toMove === i ? '<span class="tag">Đến lượt</span>' : ""}</div>`;
+  const dis = (b) => b ? 'aria-disabled="true"' : "";
+  const tools = `<div class="tools" role="group" aria-label="Xem bàn">
+    <button class="btn" data-act="out" aria-label="Thu nhỏ bàn" ${dis(G.zoom === 0)} title="${G.zoom === 0 ? "Đã nhỏ nhất" : ""}">${icon.out}</button>
+    <button class="btn" data-act="in" aria-label="Phóng to bàn" ${dis(G.zoom === STEPS.length - 1)} title="${G.zoom === STEPS.length - 1 ? "Đã lớn nhất" : ""}">${icon.in}</button>
+    <button class="btn" data-act="loc" ${dis(!G.last)}>${icon.loc} Về nước vừa đi</button></div>`;
+  const hint = `<p class="hint">${G.sel ? "Chạm lần nữa vào ô đó để đặt quân" : ""}</p>`;
+  const buttons = `<div class="tools"><button class="btn">Hoàn tác</button><button class="btn" aria-disabled="true">Làm lại</button><button class="btn primary">Ván mới</button></div>`;
+  const board = `<div class="paper" style="width:${boardW}px"><div class="marg"></div><div class="frame"><div class="inner" style="width:${cols * cellPx}px;height:${rows * cellPx}px"><svg viewBox="0 0 ${cols} ${rows}" preserveAspectRatio="none">${lines}${win}</svg>${cells}</div></div></div>`;
+  const side = `<span class="chip">Vô hạn · Chặn hai đầu</span><p class="turn">${turn}</p>`;
+  vp.innerHTML = topBar(phone) + (phone
+    ? `<main><span class="chip">Vô hạn · Chặn hai đầu</span><p class="turn">${turn}</p><div class="players" style="width:100%">${pl("X", 0)}${pl("O", 1)}</div>${board}${tools}${hint}${buttons}</main>`
+    : `<main>${board}<div class="col">${side}<div class="players">${pl("X", 0)}${pl("O", 1)}</div>${tools}${hint}${buttons}</div></main>`);
+  const frame = vp.querySelector(".frame"); const inner = frame.querySelector(".inner");
+  if (cols * cellPx < frame.clientWidth) inner.style.marginLeft = inner.style.marginRight = "auto";
+  if (keep && prevArea) { frame.scrollLeft = keep.x + (prevArea.l - a.l) * cellPx; frame.scrollTop = keep.y + (prevArea.t - a.t) * cellPx; }
+  else if (keep) { frame.scrollLeft = keep.x; frame.scrollTop = keep.y; }
+  else centreOn(frame, G.last ?? [mid, mid]);
+  wire(frame);
+}
+function centreOn(frame, [r, c]) { frame.scrollLeft = (c - G.area.l + .5) * cellPx - frame.clientWidth / 2; frame.scrollTop = (r - G.area.t + .5) * cellPx - frame.clientHeight / 2; }
+function topBar(phone) { return `<div class="top"><span>${phone ? "←" : "← Về menu"}</span><h1>Cờ caro</h1><span class="pill">${phone ? "📖" : "Luật chơi"}</span></div>`; }
+function setupHtml() {
+  const r = (t, s, on) => `<label class="radio${on ? " on" : ""}"><span class="dot"></span><span>${t}${s ? `<small>${s}</small>` : ""}</span></label>`;
+  return `<main><div class="setup"><fieldset><legend>Chế độ</legend><div class="radios">${r("Cùng máy", "", true)}${r("Đấu với máy")}${r("Online")}</div></fieldset>
+  <fieldset><legend>Bàn cờ</legend><div class="radios">${r("15×15")}${r("19×19")}${r("Vô hạn", "Bắt đầu 15×15, tự nở khi quân tới gần mép", true)}</div></fieldset>
+  <fieldset><legend>Luật thắng</legend><div class="radios">${r("Chặn hai đầu", "", true)}${r("Tự do")}</div></fieldset>
+  <button class="btn primary" style="justify-self:start">Bắt đầu</button></div></main>`;
+}
+let drag = null, dragged = false;
+function wire(frame) {
+  frame.onpointerdown = (e) => { if (e.pointerType !== "mouse" || e.button !== 0) return; drag = { x: e.clientX, y: e.clientY, sl: frame.scrollLeft, st: frame.scrollTop }; dragged = false; };
+  frame.onpointermove = (e) => { if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y; if (!dragged && Math.hypot(dx, dy) > 4) { dragged = true; frame.classList.add("drag"); } if (dragged) { frame.scrollLeft = drag.sl - dx; frame.scrollTop = drag.st - dy; } };
+  frame.onpointerup = () => { drag = null; frame.classList.remove("drag"); };
+  frame.onclick = (e) => { if (dragged) { dragged = false; return; } const b = e.target.closest(".cell"); if (!b) return; const r = +b.dataset.r, c = +b.dataset.c;
+    if (cellPx < 24 && matchMedia("(pointer: coarse)").matches && !(G.sel && G.sel[0] === r && G.sel[1] === c)) { G.sel = [r, c]; render(); return; } play(r, c); };
+  document.querySelectorAll("[data-act]").forEach((b) => b.onclick = () => {
+    if (b.getAttribute("aria-disabled") === "true") return;
+    const fr = document.querySelector(".frame"); const centre = [G.area.t + (fr.scrollTop + fr.clientHeight / 2) / cellPx - .5, G.area.l + (fr.scrollLeft + fr.clientWidth / 2) / cellPx - .5];
+    if (b.dataset.act === "loc") { centreOn(fr, G.last); return; }
+    G.zoom += b.dataset.act === "in" ? 1 : -1; document.getElementById("vp").innerHTML = ""; render(); centreOn(document.querySelector(".frame"), centre);
+  });
+}
+// A game that drifts up and to the left, so the area grows on those sides.
+const MID_GAME = [[30,30],[30,31],[29,29],[31,31],[28,28],[27,27],[29,30],[29,31],[28,31],[27,32],[26,29],[25,28],[28,30],[28,29],[24,26],[23,25],[22,24],[27,30],[26,30],[22,29]];
+const WON = [[30,30],[30,31],[29,29],[31,31],[28,28],[30,32],[27,27],[29,33],[26,26]];
+function scene() {
+  G = newGame(); document.getElementById("vp").innerHTML = "";
+  const seq = { mid: MID_GAME, away: MID_GAME, out: MID_GAME, won: WON, tap: MID_GAME.slice(0, 6) }[S.scene] ?? [];
+  for (const [r, c] of seq) { const a = G.area; G.board.set(key(r, c), G.toMove); G.last = [r, c]; G.area = grow(a, r, c); G.win = G.win ?? winLine(r, c, G.toMove); G.toMove = 1 - G.toMove; }
+  if (S.scene === "out") G.zoom = 0;
+  if (S.scene === "tap") G.sel = [31, 32];
+  render();
+  if (S.scene === "away") { const fr = document.querySelector(".frame"); fr.scrollLeft = fr.scrollWidth; fr.scrollTop = fr.scrollHeight; }
+}
+document.querySelectorAll("[data-set]").forEach((b) => b.onclick = () => { const [k, v] = b.dataset.set.split(":"); S[k] = v; scene(); });
+scene();
+</script>
+</body>
+</html>

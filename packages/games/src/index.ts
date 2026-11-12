@@ -4,6 +4,7 @@ import { caro } from "./caro";
 import { chess } from "./chess";
 import { fenceRace } from "./fence-race";
 import type { RegisteredGameId } from "./ids";
+import { jellyCrew } from "./jelly-crew";
 import { ludo } from "./ludo";
 import { tictactoe } from "./tictactoe";
 
@@ -18,6 +19,7 @@ export const GAMES = [
   ludo,
   chess,
   fenceRace,
+  jellyCrew,
 ] as const satisfies readonly (AnyGameDefinition & {
   readonly id: RegisteredGameId;
 })[];
@@ -30,5 +32,6 @@ export * from "./caro";
 export * from "./chess";
 export * from "./fence-race";
 export { GAME_IDS, isRegisteredGameId, type RegisteredGameId } from "./ids";
+export * from "./jelly-crew";
 export * from "./ludo";
 export * from "./tictactoe";

@@ -1,0 +1,156 @@
+/*
+ * Đội gom thạch's look: Gom thạch's tray, walls and jellies (the same values, design §7), with a
+ * character in each seat's colour, plates and wooden doors. Values of the shared `--game-*`
+ * contract and its own `--jelly-crew-*`, inside `[data-game="jelly-crew"]` only. Light here, dark
+ * in both blocks below, which stay identical (games/theme-css.test.ts; contrast in design §7).
+ */
+[data-game="jelly-crew"] {
+  --game-page: #f7f1e3;
+  --game-tint: #fbf3e0;
+  --game-board: #fff9ec;
+  --jelly-crew-grid: #eadfc6;
+  --jelly-crew-wall: #46677a;
+  --jelly-crew-wall-top: #5f8296;
+  --jelly-crew-strawberry: #ee5a7c;
+  --jelly-crew-strawberry-edge: #9e1f3d;
+  --jelly-crew-strawberry-mark: #5a0f22;
+  --jelly-crew-pandan: #5cbf63;
+  --jelly-crew-pandan-edge: #22692b;
+  --jelly-crew-pandan-mark: #0f3815;
+  --jelly-crew-mango: #f8be3a;
+  --jelly-crew-mango-edge: #8f5800;
+  --jelly-crew-mango-mark: #4d2f00;
+  --jelly-crew-taro: #a983e0;
+  --jelly-crew-taro-edge: #53308a;
+  --jelly-crew-taro-mark: #2a1250;
+  --jelly-crew-grass: #3a302b;
+  --jelly-crew-grass-edge: #120d0b;
+  --jelly-crew-grass-mark: #e9dccb;
+  --jelly-crew-ice: #d5edf9;
+  --jelly-crew-ice-edge: #3f7896;
+  --jelly-crew-ice-mark: #3f7896;
+  --jelly-crew-sheen: rgb(255 255 255 / 0.55);
+  --jelly-crew-mold-fill: 0.28;
+  --jelly-crew-mold-line: #17182b;
+  --jelly-crew-seat-1: #2a5fc4;
+  --jelly-crew-seat-2: #b8327a;
+  --jelly-crew-seat-3: #a8520c;
+  --jelly-crew-seat-4: #0b7169;
+  --jelly-crew-seat-edge: #17182b;
+  --jelly-crew-seat-ink: #ffffff;
+  --jelly-crew-turn: #17182b;
+  --jelly-crew-turn-halo: #fff9ec;
+  --jelly-crew-plate: #e6dcc4;
+  --jelly-crew-plate-on: #c7b48a;
+  --jelly-crew-plate-edge: #6b5f45;
+  --jelly-crew-sign: #2b2418;
+  --jelly-crew-door: #7a5a3a;
+  --jelly-crew-door-bar: #a98762;
+  --jelly-crew-door-sign: #fff9ec;
+  --jelly-crew-door-open: #6b5f45;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) [data-game="jelly-crew"] {
+    --game-page: #15162a;
+    --game-tint: #22233a;
+    --game-board: #1e2036;
+    --jelly-crew-grid: #2b2d48;
+    --jelly-crew-wall: #7f9bb0;
+    --jelly-crew-wall-top: #a1bacb;
+    --jelly-crew-strawberry: #d94a6c;
+    --jelly-crew-strawberry-edge: #ff9fb4;
+    --jelly-crew-strawberry-mark: #3d0815;
+    --jelly-crew-pandan: #46a24f;
+    --jelly-crew-pandan-edge: #9be7a1;
+    --jelly-crew-pandan-mark: #0b2b10;
+    --jelly-crew-mango: #e3a722;
+    --jelly-crew-mango-edge: #ffd77f;
+    --jelly-crew-mango-mark: #3a2300;
+    --jelly-crew-taro: #9270cf;
+    --jelly-crew-taro-edge: #d2b8ff;
+    --jelly-crew-taro-mark: #1e0b3d;
+    --jelly-crew-grass: #3b322d;
+    --jelly-crew-grass-edge: #c9b5a3;
+    --jelly-crew-grass-mark: #f0e4d4;
+    --jelly-crew-ice: #a9d3ea;
+    --jelly-crew-ice-edge: #d9f1ff;
+    --jelly-crew-ice-mark: #2f6582;
+    --jelly-crew-sheen: rgb(255 255 255 / 0.35);
+    --jelly-crew-mold-fill: 0.32;
+    --jelly-crew-mold-line: #f1f0f7;
+    --jelly-crew-seat-1: #3d6fd6;
+    --jelly-crew-seat-2: #c23d86;
+    --jelly-crew-seat-3: #b35e16;
+    --jelly-crew-seat-4: #11807a;
+    --jelly-crew-seat-edge: #f1f0f7;
+    --jelly-crew-seat-ink: #ffffff;
+    --jelly-crew-turn: #f1f0f7;
+    --jelly-crew-turn-halo: #1e2036;
+    --jelly-crew-plate: #3a3c58;
+    --jelly-crew-plate-on: #5d6080;
+    --jelly-crew-plate-edge: #b9b3a2;
+    --jelly-crew-sign: #f1ead8;
+    --jelly-crew-door: #c9a57e;
+    --jelly-crew-door-bar: #8f6c48;
+    --jelly-crew-door-sign: #1e2036;
+    --jelly-crew-door-open: #c9b9a0;
+  }
+}
+
+:root[data-theme="dark"] [data-game="jelly-crew"] {
+  --game-page: #15162a;
+  --game-tint: #22233a;
+  --game-board: #1e2036;
+  --jelly-crew-grid: #2b2d48;
+  --jelly-crew-wall: #7f9bb0;
+  --jelly-crew-wall-top: #a1bacb;
+  --jelly-crew-strawberry: #d94a6c;
+  --jelly-crew-strawberry-edge: #ff9fb4;
+  --jelly-crew-strawberry-mark: #3d0815;
+  --jelly-crew-pandan: #46a24f;
+  --jelly-crew-pandan-edge: #9be7a1;
+  --jelly-crew-pandan-mark: #0b2b10;
+  --jelly-crew-mango: #e3a722;
+  --jelly-crew-mango-edge: #ffd77f;
+  --jelly-crew-mango-mark: #3a2300;
+  --jelly-crew-taro: #9270cf;
+  --jelly-crew-taro-edge: #d2b8ff;
+  --jelly-crew-taro-mark: #1e0b3d;
+  --jelly-crew-grass: #3b322d;
+  --jelly-crew-grass-edge: #c9b5a3;
+  --jelly-crew-grass-mark: #f0e4d4;
+  --jelly-crew-ice: #a9d3ea;
+  --jelly-crew-ice-edge: #d9f1ff;
+  --jelly-crew-ice-mark: #2f6582;
+  --jelly-crew-sheen: rgb(255 255 255 / 0.35);
+  --jelly-crew-mold-fill: 0.32;
+  --jelly-crew-mold-line: #f1f0f7;
+  --jelly-crew-seat-1: #3d6fd6;
+  --jelly-crew-seat-2: #c23d86;
+  --jelly-crew-seat-3: #b35e16;
+  --jelly-crew-seat-4: #11807a;
+  --jelly-crew-seat-edge: #f1f0f7;
+  --jelly-crew-seat-ink: #ffffff;
+  --jelly-crew-turn: #f1f0f7;
+  --jelly-crew-turn-halo: #1e2036;
+  --jelly-crew-plate: #3a3c58;
+  --jelly-crew-plate-on: #5d6080;
+  --jelly-crew-plate-edge: #b9b3a2;
+  --jelly-crew-sign: #f1ead8;
+  --jelly-crew-door: #c9a57e;
+  --jelly-crew-door-bar: #8f6c48;
+  --jelly-crew-door-sign: #1e2036;
+  --jelly-crew-door-open: #c9b9a0;
+}
+
+/* The character whose turn it is: its ring breathes slowly (Board, `motion-safe:` only). */
+@keyframes jelly-crew-breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}

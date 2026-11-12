@@ -11,6 +11,12 @@ export interface GameMeta {
   readonly category: GameCategory;
   readonly durationMinutes: number;
   readonly supportsAI: boolean;
+  /**
+   * Every seat plays on one side: they all win together, or nobody does. A seat that resigns or
+   * abandons then stops the game for everyone (a draw with the ending's reason). Absent: each seat
+   * plays against the others.
+   */
+  readonly cooperative?: boolean;
 }
 
 /** `reason` is a code chosen by the game (e.g. "checkmate"); the app translates it. */
@@ -20,7 +26,8 @@ export type GameResult =
 
 /**
  * A game ended outside its rules: `player` resigned or abandoned it, and every other seat wins with
- * `reason`. Plain data, kept in the session and in its record.
+ * `reason` (in a cooperative game, nobody wins: a draw with `reason`). Plain data, kept in the
+ * session and in its record.
  */
 export interface GameEnding {
   readonly reason: EndingReason;

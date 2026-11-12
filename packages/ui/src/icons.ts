@@ -19,6 +19,7 @@ export {
   Info as InfoIcon,
   Keyboard as KeyboardIcon,
   LoaderCircle as LoaderIcon,
+  LocateFixed as LocateFixedIcon,
   MessageCircle as MessageCircleIcon,
   MessageCircleOff as MessageCircleOffIcon,
   Monitor as MonitorIcon,
@@ -39,4 +40,6 @@ export {
   Wrench as WrenchIcon,
   X as XIcon,
   Zap as ZapIcon,
+  ZoomIn as ZoomInIcon,
+  ZoomOut as ZoomOutIcon,
 } from "lucide-react";

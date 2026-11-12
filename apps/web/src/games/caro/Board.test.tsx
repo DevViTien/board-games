@@ -431,3 +431,151 @@ describe("CaroBoard on a touch screen", () => {
     expect(selectedCells()).toHaveLength(0);
   });
 });
+
+// --- The board that grows (change `add-caro-infinite-board`) ---------------------------------------
+
+const CAP = 61;
+const GROWING: CaroState = caro.setup({
+  playerCount: 2,
+  options: { size: "infinite", rule: "blocked-ends" },
+});
+/** A cell of the board that grows, by its row and column on the 61×61 cap, counted from 1. */
+const on61 = (row: number, col: number) => (row - 1) * CAP + (col - 1);
+
+function playedOn61(...cells: readonly number[]): CaroState {
+  return cells.reduce((state, cell) => caro.applyMove(state, { cell }), GROWING);
+}
+
+/** A growing board whose parent applies each move and re-renders, like the play screen does. */
+function PlayableGrowingBoard({ onMove }: { onMove?: (move: CaroMove) => void }) {
+  const [state, setState] = useState(GROWING);
+  const [last, setLast] = useState<CaroMove | null>(null);
+  return (
+    <CaroBoard
+      {...boardProps(state, {
+        onMove: (move) => {
+          onMove?.(move);
+          setState(caro.applyMove(state, move));
+          setLast(move);
+        },
+        lastEntry: last === null ? null : { move: last },
+      })}
+    />
+  );
+}
+
+describe("CaroBoard on the board that grows", () => {
+  it("shows the 15×15 area it starts with, its cells named by the 61×61 cap", () => {
+    renderWithIntl(<CaroBoard {...boardProps(GROWING)} />);
+
+    expect(screen.getAllByRole("row")).toHaveLength(15);
+    expect(screen.getAllByRole("gridcell")).toHaveLength(225);
+    expect(cellButton(24, 24)).toHaveAccessibleName("Hàng 24, cột 24, trống");
+    expect(cellButton(38, 38)).toHaveAccessibleName("Hàng 38, cột 38, trống");
+    expect(screen.queryByRole("button", { name: /^Hàng 23, cột 24,/ })).not.toBeInTheDocument();
+  });
+
+  it("grows with a stone near its edge, keeping every cell's name", async () => {
+    const onMove = vi.fn();
+    renderWithIntl(<PlayableGrowingBoard onMove={onMove} />);
+
+    await userEvent.click(cellButton(24, 31));
+
+    expect(onMove).toHaveBeenCalledWith({ cell: on61(24, 31) });
+    // Rows 19 to 38, columns 24 to 38.
+    expect(screen.getAllByRole("row")).toHaveLength(20);
+    expect(screen.getAllByRole("gridcell")).toHaveLength(20 * 15);
+    expect(cellButton(24, 31)).toHaveAccessibleName("Hàng 24, cột 31, X");
+    expect(cellButton(19, 24)).toHaveAccessibleName("Hàng 19, cột 24, trống");
+  });
+
+  it("enters on the middle cell with Tab, and stops arrows at the edge of the area", async () => {
+    const user = keyboardUser();
+    renderWithIntl(<CaroBoard {...boardProps(GROWING)} />);
+
+    await user.tab();
+    expectFocusOn(31, 31);
+    expect(document.activeElement).toHaveAccessibleName("Hàng 31, cột 31, trống");
+
+    for (let step = 0; step < 9; step += 1) await user.keyboard("{ArrowUp}");
+    expectFocusOn(24, 31);
+    await user.keyboard("{Home}");
+    expectFocusOn(24, 24);
+    await user.keyboard("{End}");
+    expectFocusOn(24, 38);
+  });
+
+  it("zooms in and out within its levels, saying why a button cannot be pressed", async () => {
+    renderWithIntl(<CaroBoard {...boardProps(GROWING)} />);
+    const view = screen.getByRole("group", { name: "Xem bàn" });
+    const zoomOut = screen.getByRole("button", { name: "Thu nhỏ bàn" });
+    const zoomIn = screen.getByRole("button", { name: "Phóng to bàn" });
+
+    expect(view).toContainElement(zoomOut);
+    expect(zoomOut).toHaveAttribute("aria-disabled", "false");
+    await userEvent.click(zoomOut);
+    await userEvent.click(zoomOut);
+    expect(zoomOut).toHaveAttribute("aria-disabled", "true");
+    expect(zoomOut).toHaveAccessibleDescription("Đã nhỏ nhất");
+    // One more press does nothing: three presses in reach the most zoomed in.
+    await userEvent.click(zoomOut);
+    await userEvent.click(zoomIn);
+    await userEvent.click(zoomIn);
+    expect(zoomIn).toHaveAttribute("aria-disabled", "false");
+    await userEvent.click(zoomIn);
+    expect(zoomIn).toHaveAttribute("aria-disabled", "true");
+    expect(zoomIn).toHaveAccessibleDescription("Đã lớn nhất");
+    expect(zoomOut).toHaveAttribute("aria-disabled", "false");
+  });
+
+  it("offers to go to the last move once there is one", () => {
+    const { rerender } = renderWithIntl(<CaroBoard {...boardProps(GROWING)} />);
+    const toLast = () => screen.getByRole("button", { name: "Về nước vừa đi" });
+
+    expect(toLast()).toHaveAttribute("aria-disabled", "true");
+    expect(toLast()).toHaveAccessibleDescription("Chưa có nước nào");
+
+    const state = playedOn61(on61(31, 31));
+    rerender(<CaroBoard {...boardProps(state, { lastEntry: { move: { cell: on61(31, 31) } } })} />);
+    expect(toLast()).toHaveAttribute("aria-disabled", "false");
+    expect(toLast()).not.toHaveAccessibleDescription();
+  });
+
+  it("places nothing when the mouse drags the board, and places on a plain click", async () => {
+    const onMove = vi.fn();
+    const user = userEvent.setup();
+    renderWithIntl(<CaroBoard {...boardProps(GROWING, { onMove })} />);
+    const cell = cellButton(31, 31);
+
+    await user.pointer([
+      { keys: "[MouseLeft>]", target: cell, coords: { clientX: 100, clientY: 100 } },
+      { target: cell, coords: { clientX: 130, clientY: 110 } },
+      { keys: "[/MouseLeft]", target: cell, coords: { clientX: 130, clientY: 110 } },
+    ]);
+    expect(onMove).not.toHaveBeenCalled();
+
+    await user.click(cell);
+    expect(onMove).toHaveBeenCalledWith({ cell: on61(31, 31) });
+  });
+
+  it("asks for a second tap when its cells are smaller than a finger", async () => {
+    // 20 px cells at the 15 columns the frame starts with.
+    observeWidthAs(20 * 15);
+    const onMove = vi.fn();
+    const user = userEvent.setup();
+    renderWithIntl(<CaroBoard {...boardProps(GROWING, { onMove })} />);
+
+    await tap(user, cellButton(31, 31));
+    expect(onMove).not.toHaveBeenCalled();
+    expect(selectedCells()).toHaveLength(1);
+    await tap(user, cellButton(31, 31));
+    expect(onMove).toHaveBeenCalledWith({ cell: on61(31, 31) });
+  });
+
+  it("draws no zoom buttons on a board of fixed size", () => {
+    renderWithIntl(<CaroBoard {...boardProps(EMPTY)} />);
+
+    expect(screen.queryByRole("group", { name: "Xem bàn" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Về nước vừa đi" })).not.toBeInTheDocument();
+  });
+});

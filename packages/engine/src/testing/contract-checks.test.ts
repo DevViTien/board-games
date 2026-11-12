@@ -46,6 +46,14 @@ function failingChecks(game: AnyGameDefinition, config: ContractConfig): Contrac
   }).map((candidate) => candidate.id);
 }
 
+/** The counter game played on one side: whoever reaches the target, both win. */
+const cooperativeCounter = {
+  ...counterGame,
+  meta: { ...counterGame.meta, cooperative: true },
+  result: (state: CounterState) =>
+    state.count === COUNTER_TARGET ? { kind: "win" as const, winners: [0, 1] } : null,
+};
+
 /** Calls that return a new value on every call, to make a rule non-deterministic. */
 function counter() {
   let calls = 0;
@@ -69,6 +77,7 @@ describe("contract checks on valid games", () => {
   it("all pass for the fixtures", () => {
     expect(failingChecks(counterGame, COUNTER_CONFIG)).toEqual([]);
     expect(failingChecks(diceRaceGame, DICE_CONFIG)).toEqual([]);
+    expect(failingChecks(cooperativeCounter, COUNTER_CONFIG)).toEqual([]);
   });
 
   it("option-choices passes for a game that declares no choice", () => {
@@ -402,6 +411,19 @@ const BROKEN_GAMES: readonly BrokenGame[] = [
     })(),
     config: COUNTER_CONFIG,
     message: "fromRecord failed with corrupt-record",
+  },
+  {
+    id: CONTRACT_CHECK.CooperativeWinners,
+    what: "is cooperative but is won by one seat",
+    game: { ...counterGame, meta: { ...counterGame.meta, cooperative: true } },
+    config: COUNTER_CONFIG,
+    message: "won by [",
+  },
+  {
+    id: CONTRACT_CHECK.CooperativeNoAi,
+    what: "is cooperative and claims AI support",
+    game: { ...cooperativeCounter, meta: { ...cooperativeCounter.meta, supportsAI: true } },
+    config: COUNTER_CONFIG,
   },
   {
     id: CONTRACT_CHECK.AiHasEvaluate,

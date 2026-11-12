@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { Profiler, useEffect } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { CHAT_MUTED_KEY } from "@/config/storage-keys";
+import { CHAT_COLUMN_KEY, CHAT_MUTED_KEY } from "@/config/storage-keys";
 import {
   AI,
   createFakeEnvironment,
@@ -21,7 +21,7 @@ import { createRoomConnection, type RoomConnection } from "@/transport/room-conn
 import { ChatButton } from "./ChatButton";
 import { ChatLayer } from "./ChatLayer";
 import { ChatPlaySlot } from "./ChatPlaySlot";
-import { readKeyboardHeight, sheetHeight } from "./use-chat-placement";
+import { keyboardHeight, readViewportBox } from "./use-chat-placement";
 import { type RoomChat, useRoomChat } from "./use-room-chat";
 
 const SEATS = ["Minh", "Lan"] as const;
@@ -729,7 +729,7 @@ describe("the bubble", () => {
     expect(float).toHaveClass("z-34", "motion-reduce:animate-chat-reaction-still");
   });
 
-  it("stacks over the top bar and under the throw", async () => {
+  it("stacks over the top bar and under the throw; the open chat is a modal dialog, above all", async () => {
     const user = userEvent.setup();
     start();
     receive(message());
@@ -737,7 +737,8 @@ describe("the bubble", () => {
 
     await user.click(chatButton());
 
-    expect(document.getElementById("room-chat")).toHaveClass("z-32");
+    // In the top layer (`showModal()`): over the throw as well, which cannot start meanwhile.
+    expect(document.getElementById("room-chat")?.closest("dialog")).toHaveAttribute("open");
   });
 });
 
@@ -915,8 +916,46 @@ describe("the chat button off the screen", () => {
   });
 });
 
-describe("the sheet and the keyboard", () => {
-  it("Bàn phím ảo mở: takes the keyboard from the visual viewport, and hides the quick row", async () => {
+describe("the dialog over the whole screen and the keyboard", () => {
+  it("Chat toàn màn hình trên điện thoại: opens as a modal dialog, with its close button", async () => {
+    const user = userEvent.setup();
+    start();
+    await user.click(chatButton());
+    const dialog = document.querySelector("dialog[data-chat-dialog]");
+    expect(dialog).toHaveAttribute("open");
+    expect(dialog).toContainElement(log());
+
+    await user.click(screen.getByRole("button", { name: "Đóng chat" }));
+    expect(document.querySelector("dialog[data-chat-dialog]")).not.toBeInTheDocument();
+    expect(chatButton()).toHaveFocus();
+  });
+
+  it("Đóng bằng cử chỉ quay lại: the browser closing the dialog closes the chat", async () => {
+    const user = userEvent.setup();
+    start();
+    await user.click(chatButton());
+    act(() => {
+      document.querySelector("dialog[data-chat-dialog]")?.dispatchEvent(new Event("close"));
+    });
+    expect(screen.queryByRole("log")).not.toBeInTheDocument();
+    expect(chatButton()).toHaveFocus();
+  });
+
+  it("keeps a word being composed when the browser asks to close", async () => {
+    const user = userEvent.setup();
+    start();
+    await user.click(chatButton());
+    fireEvent.compositionStart(field());
+    const cancel = new Event("cancel", { cancelable: true });
+    document.querySelector("dialog[data-chat-dialog]")?.dispatchEvent(cancel);
+    expect(cancel.defaultPrevented).toBe(true);
+    fireEvent.compositionEnd(field());
+    const later = new Event("cancel", { cancelable: true });
+    document.querySelector("dialog[data-chat-dialog]")?.dispatchEvent(later);
+    expect(later.defaultPrevented).toBe(false);
+  });
+
+  it("Bàn phím ảo mở: follows the visual viewport, and hides the quick row", async () => {
     const user = userEvent.setup();
     const viewport = Object.assign(new EventTarget(), { height: 740, offsetTop: 0, scale: 1 });
     vi.stubGlobal("visualViewport", viewport);
@@ -930,31 +969,134 @@ describe("the sheet and the keyboard", () => {
       viewport.dispatchEvent(new Event("resize"));
     });
 
-    const panel = document.getElementById("room-chat");
-    expect(panel).toHaveStyle({ bottom: "270px", height: "226px" });
+    expect(document.querySelector("dialog[data-chat-dialog]")).toHaveStyle({
+      top: "0px",
+      height: "470px",
+    });
     expect(screen.queryByRole("group", { name: "Gửi nhanh" })).not.toBeInTheDocument();
     expect(field()).toBeInTheDocument();
   });
 
-  it("reads the keyboard after the viewport scrolled, as on iOS", () => {
+  it("reads the part seen after the viewport scrolled, as on iOS", () => {
     vi.stubGlobal("innerHeight", 740);
     vi.stubGlobal("visualViewport", { height: 470, offsetTop: 100, scale: 1 });
-    expect(readKeyboardHeight()).toBe(170);
+    const box = readViewportBox();
+    expect(box).toEqual({ top: 100, height: 470 });
+    expect(keyboardHeight(box)).toBe(170);
   });
 
   it("does not take pinching to zoom for a keyboard", () => {
     vi.stubGlobal("innerHeight", 740);
     vi.stubGlobal("visualViewport", { height: 370, offsetTop: 0, scale: 2 });
-    expect(readKeyboardHeight()).toBe(0);
+    expect(keyboardHeight(readViewportBox())).toBe(0);
+  });
+});
+
+/** A screen `width` px wide, not a phone turned sideways; `resize` changes it, telling listeners. */
+function wideScreen(width: number) {
+  let current = width;
+  const listeners = new Set<() => void>();
+  const matches = (query: string) => {
+    const min = /min-width: (\d+)px/u.exec(query);
+    return min !== null && current >= Number(min[1]);
+  };
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn((query: string) => ({
+      get matches() {
+        return matches(query);
+      },
+      addEventListener: (_type: string, listener: () => void) => {
+        listeners.add(listener);
+      },
+      removeEventListener: (_type: string, listener: () => void) => {
+        listeners.delete(listener);
+      },
+    })),
+  );
+  return {
+    resize(next: number) {
+      current = next;
+      act(() => {
+        for (const listener of listeners) listener();
+      });
+    },
+  };
+}
+
+describe("the column of a wide screen", () => {
+  afterEach(() => {
+    window.localStorage.clear();
   });
 
-  it("keeps a part of a board low on the screen in view, down to a sheet of 240 px", () => {
-    expect(sheetHeight(740, 0, null)).toBe(355);
-    // At 360 × 740, with the board's top at 250: 96 px of it stay above the sheet, if possible.
-    expect(sheetHeight(740, 0, 100)).toBe(355);
-    expect(sheetHeight(740, 0, 300)).toBe(344);
-    expect(sheetHeight(740, 0, 500)).toBe(240);
-    // With a keyboard the field matters more than the board.
-    expect(sheetHeight(740, 270, 500)).toBe(226);
+  it("Cột chat khi vào ván: is open from the start, without a button, and takes no focus", () => {
+    wideScreen(1280);
+    start();
+    expect(log()).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Chat/u })).not.toBeInTheDocument();
+    expect(document.documentElement.dataset.chatColumn).toBe("open");
+    expect(field()).not.toHaveFocus();
+    expect(document.querySelector("dialog[data-chat-dialog]")).not.toBeInTheDocument();
+  });
+
+  it("Thu gọn cột: collapses to a strip, whose button takes the focus, and remembers it", async () => {
+    const user = userEvent.setup();
+    wideScreen(1280);
+    start();
+    await user.click(screen.getByRole("button", { name: "Thu gọn chat" }));
+    expect(screen.queryByRole("log")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Mở chat" })).toHaveFocus();
+    expect(document.documentElement.dataset.chatColumn).toBe("rail");
+    expect(window.localStorage.getItem(CHAT_COLUMN_KEY)).toBe('"collapsed"');
+
+    await user.click(screen.getByRole("button", { name: "Mở chat" }));
+    expect(field()).toHaveFocus();
+    expect(window.localStorage.getItem(CHAT_COLUMN_KEY)).toBe('"open"');
+  });
+
+  it("Nhớ lựa chọn thu gọn: starts collapsed when this browser left it so", () => {
+    window.localStorage.setItem(CHAT_COLUMN_KEY, '"collapsed"');
+    wideScreen(1280);
+    start();
+    expect(screen.queryByRole("log")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Mở chat" })).toBeInTheDocument();
+  });
+
+  it("Tin mới khi cột đang mở: no bubble, nothing unread", () => {
+    wideScreen(1280);
+    start();
+    receive(message());
+    expect(document.querySelector("[data-chat-bubble]")).not.toBeInTheDocument();
+    expect(within(log()).getByText("Chào")).toBeInTheDocument();
+    expect(chat.getSnapshot().unread).toBe(0);
+  });
+
+  it("Số chưa đọc trên dải thu gọn: counts on the strip, in its name too, with a bubble beside it", () => {
+    window.localStorage.setItem(CHAT_COLUMN_KEY, '"collapsed"');
+    wideScreen(1280);
+    start();
+    receive(message(), message({ kind: "text", text: "Đi nào" }));
+    expect(screen.getByRole("button", { name: "Mở chat, 2 tin chưa đọc" })).toBeInTheDocument();
+    expect(document.querySelector("[data-chat-bubble]")).toHaveClass("right-[4.25rem]");
+  });
+
+  it("Esc trong cột chat: leaves the column open", async () => {
+    const user = userEvent.setup();
+    wideScreen(1280);
+    start();
+    await user.click(field());
+    await user.keyboard("{Escape}");
+    expect(log()).toBeInTheDocument();
+  });
+
+  it("closes as the window gets narrower, and opens again as it widens", () => {
+    const screenSize = wideScreen(1280);
+    start();
+    screenSize.resize(800);
+    expect(screen.queryByRole("log")).not.toBeInTheDocument();
+    expect(document.documentElement.dataset.chatColumn).toBeUndefined();
+    expect(chatButton()).toBeInTheDocument();
+    screenSize.resize(1440);
+    expect(log()).toBeInTheDocument();
   });
 });

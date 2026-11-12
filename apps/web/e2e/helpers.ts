@@ -5,6 +5,9 @@ import {
   type Fence,
   fenceRace,
   type FenceRaceMove,
+  jellyCrew,
+  type JellyCrewMapId,
+  type JellyCrewMove,
   ludo,
   LUDO_DEFAULT_OPTIONS,
 } from "@board-games/games";
@@ -778,3 +781,77 @@ export async function enterRound(page: Page, values: readonly string[]): Promise
     }
   }
 }
+
+/** A Đội gom thạch record with the moves given (change `add-jelly-crew-game`). */
+export function jellyCrewRecord(
+  playerCount: 2 | 3 | 4,
+  moves: readonly JellyCrewMove[],
+  map: JellyCrewMapId = "kitchen",
+): GameRecord {
+  const created = createSession(jellyCrew, { playerCount, options: { map } });
+  if (!created.ok) throw new Error(created.error);
+  let session = created.value;
+  for (const [index, move] of moves.entries()) {
+    const played = applyEntry(jellyCrew, session, { move });
+    if (!played.ok) throw new Error(`move ${index + 1}: ${played.error}`);
+    session = played.value;
+  }
+  return JSON.parse(JSON.stringify(toRecord(session))) as GameRecord;
+}
+
+/** A saved same-device Đội gom thạch game (slot "jelly-crew:local") with the moves given. */
+export function savedJellyCrewGame(
+  playerCount: 2 | 3 | 4,
+  moves: readonly JellyCrewMove[],
+  map: JellyCrewMapId = "kitchen",
+): unknown {
+  return {
+    version: 2,
+    savedAt: "2026-11-13T08:00:00.000Z",
+    inProgress: moves.length > 0,
+    mode: { kind: "local" },
+    record: jellyCrewRecord(playerCount, moves, map),
+  };
+}
+
+/**
+ * The two players' kitchen won in 4 rounds (the mockup's solution): Lam down; Hồng onto plate ●;
+ * Lam pushes the strawberries through door ● into their molds and walks onto plate ▲; Hồng pushes
+ * the mangoes through door ▲.
+ */
+export const JELLY_CREW_KITCHEN_TWO: readonly JellyCrewMove[] = [
+  "D",
+  "end",
+  "D",
+  "D",
+  "D",
+  "L",
+  "L",
+  "end",
+  "R",
+  "R",
+  "R",
+  "R",
+  "R",
+  "end",
+  "end",
+  "R",
+  "L",
+  "L",
+  "L",
+  "L",
+  "end",
+  "R",
+  "U",
+  "U",
+  "end",
+  "D",
+  "D",
+  "end",
+  "L",
+  "L",
+  "L",
+  "L",
+];
+
+export const crewBoard = (page: Page) => page.locator("[data-crew-board]");

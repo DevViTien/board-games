@@ -174,9 +174,10 @@ export interface RoomService {
     on: boolean,
   ): Promise<ServiceResult<StoredRoom>>;
   /**
-   * The player gives up the current game: it ends with every other seat winning, or, in a room of
-   * three or more seats of a game the AI plays, the AI plays their seat until it ends
-   * (`leaveOutcome`). A seat the AI already stands in for changes nothing.
+   * The player gives up the current game: it ends with every other seat winning (a cooperative
+   * game stops, nobody winning: `sessionResult`), or, in a room of three or more seats of a game
+   * the AI plays, the AI plays their seat until it ends (`leaveOutcome`). A seat the AI already
+   * stands in for changes nothing.
    */
   resign(
     this: void,

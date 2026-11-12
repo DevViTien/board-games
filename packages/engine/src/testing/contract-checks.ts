@@ -39,6 +39,8 @@ export const CONTRACT_CHECK = {
   AiHasEvaluate: "ai-has-evaluate",
   CandidateMoves: "candidate-moves",
   OptionChoices: "option-choices",
+  CooperativeWinners: "cooperative-winners",
+  CooperativeNoAi: "cooperative-no-ai",
 } as const;
 
 export type ContractCheckId = (typeof CONTRACT_CHECK)[keyof typeof CONTRACT_CHECK];
@@ -494,6 +496,42 @@ export const CONTRACT_CHECKS: readonly ContractCheck[] = [
           fail("the rebuilt game differs from the original");
         }
       });
+    },
+  },
+  {
+    id: CONTRACT_CHECK.CooperativeWinners,
+    title: "a cooperative game that is won is won by every seat",
+    run: (game, config) => {
+      if (game.meta.cooperative !== true) return;
+      forEachRun(
+        CONTRACT_CHECK.CooperativeWinners,
+        game,
+        config,
+        (playerCount) => ({
+          onState: (state) => {
+            const result = game.result(state);
+            if (result?.kind !== "win") return;
+            const everyone = new Set(result.winners);
+            if (everyone.size !== playerCount) {
+              fail(`a cooperative game won by ${JSON.stringify(result.winners)} only`);
+            }
+          },
+        }),
+        () => undefined,
+      );
+    },
+  },
+  {
+    id: CONTRACT_CHECK.CooperativeNoAi,
+    title: "a cooperative game does not declare AI support",
+    run: (game) => {
+      // The AI scores a game for one seat against the others.
+      if (game.meta.cooperative === true && game.meta.supportsAI) {
+        violation(
+          CONTRACT_CHECK.CooperativeNoAi,
+          "meta.cooperative and meta.supportsAI are both true",
+        );
+      }
     },
   },
   {

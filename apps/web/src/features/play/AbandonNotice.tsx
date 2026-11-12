@@ -68,7 +68,12 @@ export function AbandonNotice({
 
   if (mover) {
     if (!ticking) return null;
-    const warn = resign?.outcome === "stand-in" ? "warnStandIn" : "warnWin";
+    const warn =
+      resign?.outcome === "end"
+        ? "warnTeam"
+        : resign?.outcome === "stand-in"
+          ? "warnStandIn"
+          : "warnWin";
     return (
       <p className="mt-2 rounded-control bg-warning-soft px-3 py-2 text-small text-warning-ink tabular-nums">
         {t(warn, { remaining: clockText(ABANDON_AFTER_MS - elapsed) })}

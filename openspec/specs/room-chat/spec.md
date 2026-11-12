@@ -13,7 +13,7 @@ Mọi game SHALL có chat ở sảnh chờ và màn hình chơi của phòng onl
 #### Scenario: Chat trong ván online
 
 - **WHEN** hai người đang chơi một ván online, ở bất kỳ game nào
-- **THEN** mỗi người có nút mở chat trên màn hình chơi
+- **THEN** mỗi người có nút mở chat trên màn hình chơi, hoặc cột chat ở màn hình rộng
 
 #### Scenario: Chat ở sảnh chờ
 
@@ -23,12 +23,12 @@ Mọi game SHALL có chat ở sảnh chờ và màn hình chơi của phòng onl
 #### Scenario: Một mình ở sảnh chờ
 
 - **WHEN** chỉ có một người ngồi ghế ở sảnh chờ
-- **THEN** sảnh chờ không có nút chat, và nút hiện ra ngay khi người thứ hai ngồi vào ghế
+- **THEN** sảnh chờ không có nút chat hay cột chat, và chat hiện ra ngay khi người thứ hai ngồi vào ghế
 
 #### Scenario: Sau khi ván kết thúc
 
 - **WHEN** ván online vừa kết thúc
-- **THEN** mỗi người vẫn có nút mở chat
+- **THEN** mỗi người vẫn có nút mở chat, hoặc cột chat ở màn hình rộng
 
 #### Scenario: Chơi cùng máy
 
@@ -299,12 +299,17 @@ Tin gửi cho client MUST chỉ có tên người gửi tại lúc gửi, cho bi
 
 ### Requirement: Tin đến khi chat đóng
 
-Khi chat đóng và chưa tắt, tin mới của người khác tới lúc đang mở trang SHALL hiện thành bong bóng từ 3 đến 5 giây và tăng số chưa đọc; chạm bong bóng SHALL mở chat. Nút chat ngoài màn hình thì số chưa đọc SHALL thấy được ở thẻ dưới thanh trên. Tin có sẵn khi mở trang MUST NOT hiện bong bóng. Trong lúc cú tung xúc xắc đang chạy, bong bóng SHALL chờ tới khi xong. Mở chat SHALL xoá số chưa đọc.
+Khi chat đóng và chưa tắt, tin mới của người khác tới lúc đang mở trang SHALL hiện thành bong bóng từ 3 đến 5 giây và tăng số chưa đọc; chạm bong bóng SHALL mở chat. Cột chat thu gọn được tính là chat đóng; cột đang mở thì tin hiện ngay trong cột, không có bong bóng. Nút chat ngoài màn hình thì số chưa đọc SHALL thấy được ở thẻ dưới thanh trên. Tin có sẵn khi mở trang MUST NOT hiện bong bóng. Trong lúc cú tung xúc xắc đang chạy, bong bóng SHALL chờ tới khi xong. Mở chat SHALL xoá số chưa đọc.
 
 #### Scenario: Tin mới khi chat đóng
 
 - **WHEN** chat đang đóng và Lan gửi "Chào"
 - **THEN** người chơi thấy bong bóng có tên Lan và "Chào", nút chat có số 1, bàn không dịch chuyển và không bị che
+
+#### Scenario: Tin mới khi cột thu gọn
+
+- **WHEN** cột chat đang thu gọn ở khung 1280 × 800 và Lan gửi "Chào"
+- **THEN** người chơi thấy bong bóng có tên Lan và "Chào" cạnh dải thu gọn, không che bàn, và nút "Mở chat" có số 1
 
 #### Scenario: Nút chat ngoài màn hình
 
@@ -376,12 +381,17 @@ Người chơi SHALL tắt được chat trên trình duyệt này; lựa chọn
 
 ### Requirement: Bố cục chat
 
-Mở, đóng chat hay có tin mới MUST NOT làm bàn dịch chuyển hay đổi cỡ. Trên điện thoại dọc, chat SHALL là tấm trượt từ dưới lên, chừa phần đầu bàn; khi bàn phím ảo mở, ô nhập và tin mới nhất SHALL vẫn thấy được. Điện thoại ngang, chat SHALL nằm cạnh bàn, không che bàn. Ở khung rộng 360 px MUST NOT cuộn ngang, và tin dài không có khoảng trắng SHALL xuống dòng.
+Mở, đóng chat hay có tin mới MUST NOT làm bàn dịch chuyển hay đổi cỡ; riêng thu gọn hay mở cột chat ở màn hình rộng thì bàn SHALL được đo lại. Trên điện thoại (cả khi xoay ngang) và khung dưới 1024 px, mở chat SHALL là hộp thoại phủ kín màn hình, đầu hộp thoại có nút đóng và dòng lượt của ván; khi bàn phím ảo mở, ô nhập và tin mới nhất SHALL vẫn thấy được. Đóng hộp thoại SHALL trả tiêu điểm về nút chat. Ở khung rộng 360 px MUST NOT cuộn ngang, và tin dài không có khoảng trắng SHALL xuống dòng.
 
 #### Scenario: Bàn đứng yên trên điện thoại
 
 - **WHEN** người chơi mở rồi đóng chat ở khung 360 × 740
 - **THEN** vị trí và cỡ của bàn không đổi, trang không cuộn ngang
+
+#### Scenario: Chat toàn màn hình trên điện thoại
+
+- **WHEN** người chơi bấm nút chat ở khung 360 × 740 trong ván Cờ vua online
+- **THEN** chat phủ kín màn hình, đầu hộp thoại có nút "Đóng chat" và dòng lượt của ván, ô nhập nằm trong vùng nhìn thấy
 
 #### Scenario: Bàn phím ảo mở
 
@@ -391,12 +401,22 @@ Mở, đóng chat hay có tin mới MUST NOT làm bàn dịch chuyển hay đổ
 #### Scenario: Điện thoại ngang
 
 - **WHEN** người chơi mở chat ở khung 844 × 390
-- **THEN** chat không che ô nào của bàn
+- **THEN** chat phủ kín màn hình, và đóng chat thì bàn vẫn ở đúng chỗ cũ, cùng cỡ
+
+#### Scenario: Đến lượt khi đang chat
+
+- **WHEN** hộp thoại chat đang mở ở khung 360 × 740 và đối thủ vừa đi
+- **THEN** dòng lượt ở đầu hộp thoại nói tới lượt người chơi, và đóng chat thì đi được ngay
+
+#### Scenario: Đóng bằng cử chỉ quay lại
+
+- **WHEN** hộp thoại chat đang mở trên điện thoại và người chơi dùng cử chỉ quay lại của hệ điều hành
+- **THEN** hộp thoại đóng, trang vẫn ở phòng đó và tiêu điểm ở nút chat
 
 #### Scenario: Đủ người khi chat đang mở trên điện thoại
 
 - **WHEN** chat đang mở ở sảnh chờ khung 360 × 740 và ván bắt đầu
-- **THEN** tấm chat thu lại để vẫn thấy ít nhất 96 px đầu bàn
+- **THEN** hộp thoại vẫn mở, chữ đang gõ còn nguyên, và đóng chat thì thấy màn hình chơi
 
 #### Scenario: Tin dài liền nhau
 
@@ -405,31 +425,36 @@ Mở, đóng chat hay có tin mới MUST NOT làm bàn dịch chuyển hay đổ
 
 ### Requirement: Chat trên máy tính
 
-Trên máy tính, bàn và điều khiển của ván SHALL vẫn dùng được khi chat mở, trang không cuộn; lời của bàn mà bảng che (dòng lượt, tên quân đang chọn, dòng chiếu) SHALL được nói trong đầu bảng. Sảnh chờ ở khung không đủ chỗ đặt bảng bên cạnh SHALL dùng tấm trượt, MUST NOT che nút chat.
+Từ 1280 px, chat SHALL là cột theo requirement "Cột chat trên màn hình rộng". Ở khung 1024–1279 px, màn hình chơi SHALL mở chat thành bảng phía trên phần điều khiển của cột bên bàn: bàn và điều khiển của ván SHALL vẫn dùng được khi chat mở, trang không cuộn; lời của bàn mà bảng che (dòng lượt, tên quân đang chọn, dòng chiếu) SHALL được nói trong đầu bảng. Sảnh chờ dưới 1280 px SHALL mở chat thành hộp thoại phủ kín màn hình.
 
 #### Scenario: Máy tính vẫn đi được khi chat mở
 
-- **WHEN** chat đang mở ở khung 1280 × 800 và tới lượt người chơi
+- **WHEN** chat đang mở ở khung 1024 × 768 và tới lượt người chơi
 - **THEN** người chơi đi được một nước mà không phải đóng chat, dòng lượt vẫn đọc được trong khung chat, và ở Cờ cá ngựa xúc xắc cùng nút gieo không bị che
 
 #### Scenario: Lời của bàn bị bảng che
 
-- **WHEN** chat đang mở ở khung 1280 × 800 trên Cờ vua và vua đang bị chiếu
+- **WHEN** chat đang mở ở khung 1024 × 768 trên Cờ vua và vua đang bị chiếu
 - **THEN** dòng chiếu hiện trong đầu bảng, Sổ ghi và các nút của ván không bị che
 
 #### Scenario: Sảnh chờ ở khung vừa
 
 - **WHEN** người chơi mở chat ở sảnh chờ khung rộng 1024 px
-- **THEN** chat là tấm trượt, không che nút chat, và cuộn trang thì thấy đủ danh sách người chơi
+- **THEN** chat phủ kín màn hình, và đóng chat thì thấy đủ danh sách người chơi
 
 ### Requirement: Chat bằng bàn phím và trình đọc màn hình
 
-Mọi thao tác chat SHALL làm được bằng bàn phím: Enter gửi, Esc đóng và trả tiêu điểm về nút chat; khi đang gõ bằng bộ gõ, Enter và Esc MUST NOT gửi hay đóng. Danh sách tin SHALL là vùng nhật ký có tên; tin mới được đọc ở mức lịch sự, không ngắt dòng báo lượt và MUST NOT đọc hai lần. Danh sách MUST NOT tự cuộn khi người chơi đang đọc tin cũ, khi đó SHALL có nút tới tin mới. Tên nút chat SHALL nêu số tin chưa đọc.
+Mọi thao tác chat SHALL làm được bằng bàn phím: Enter gửi; ở hộp thoại và bảng, Esc đóng và trả tiêu điểm về nút chat; ở cột chat, Esc MUST NOT thu gọn cột. Khi đang gõ bằng bộ gõ, Enter và Esc MUST NOT gửi hay đóng. Danh sách tin SHALL là vùng nhật ký có tên; tin mới được đọc ở mức lịch sự, không ngắt dòng báo lượt và MUST NOT đọc hai lần. Danh sách MUST NOT tự cuộn khi người chơi đang đọc tin cũ, khi đó SHALL có nút tới tin mới. Tên nút chat và nút "Mở chat" SHALL nêu số tin chưa đọc.
 
 #### Scenario: Gửi và đóng bằng bàn phím
 
-- **WHEN** người chơi mở chat bằng bàn phím, gõ một câu, nhấn Enter rồi nhấn Esc
+- **WHEN** người chơi mở chat bằng bàn phím ở khung 360 × 740, gõ một câu, nhấn Enter rồi nhấn Esc
 - **THEN** tin được gửi, chat đóng và tiêu điểm ở nút chat
+
+#### Scenario: Esc trong cột chat
+
+- **WHEN** tiêu điểm ở ô nhập của cột chat ở khung 1280 × 800 và người chơi nhấn Esc
+- **THEN** cột vẫn mở
 
 #### Scenario: Enter khi đang gõ bằng bộ gõ
 
@@ -450,3 +475,42 @@ Mọi thao tác chat SHALL làm được bằng bàn phím: Enter gửi, Esc đ�
 
 - **WHEN** Lan gửi một tin, lúc chat đóng rồi lúc chat mở
 - **THEN** mỗi lần trình đọc màn hình đọc tin đó đúng một lần, và dòng báo lượt không bị ngắt
+
+### Requirement: Cột chat trên màn hình rộng
+
+Ở khung từ 1280 px và không phải điện thoại xoay ngang, chat của sảnh chờ và màn hình chơi SHALL là một cột ở mép phải, từ dưới thanh trên tới đáy màn hình, MUST NOT che bàn, điều khiển hay thông tin của ván; bàn SHALL được đo chừa sẵn cột. Cột SHALL thu gọn được thành một dải hẹp có nút mở chat; lựa chọn SHALL được nhớ trên trình duyệt cho mọi phòng, mặc định là mở. Khi cột đang hiện, hàng nút của ván MUST NOT có nút chat.
+
+#### Scenario: Cột chat khi vào ván
+
+- **WHEN** hai người đang chơi Cờ vua online ở khung 1280 × 800 và trình duyệt chưa nhớ lựa chọn nào
+- **THEN** cột chat nằm ở mép phải, không che ô nào của bàn, dòng lượt, bảng người chơi hay Sổ ghi, và hàng nút của ván không có nút chat
+
+#### Scenario: Thu gọn cột
+
+- **WHEN** người chơi bấm "Thu gọn chat" ở khung 1280 × 800
+- **THEN** cột thành một dải hẹp ở mép phải có nút "Mở chat", bàn không bị che, và tiêu điểm ở nút đó
+
+#### Scenario: Nhớ lựa chọn thu gọn
+
+- **WHEN** người chơi đã thu gọn cột rồi vào một phòng khác trên cùng trình duyệt ở khung 1280 × 800
+- **THEN** cột vẫn thu gọn
+
+#### Scenario: Tin mới khi cột đang mở
+
+- **WHEN** cột chat đang mở và Lan gửi "Chào"
+- **THEN** tin hiện trong cột, không có bong bóng, không có số chưa đọc, và vị trí, cỡ của bàn không đổi
+
+#### Scenario: Số chưa đọc trên dải thu gọn
+
+- **WHEN** cột đang thu gọn và Lan gửi 2 tin
+- **THEN** nút "Mở chat" trên dải có số 2 và tên đọc được có số 2
+
+#### Scenario: Sảnh chờ trên màn hình rộng
+
+- **WHEN** hai người đã ngồi ghế ở sảnh chờ khung 1280 × 800
+- **THEN** cột chat ở mép phải không che danh sách người chơi hay nút của sảnh chờ
+
+#### Scenario: Ván kết thúc khi cột mở
+
+- **WHEN** ván online kết thúc lúc cột chat đang mở ở khung 1280 × 800
+- **THEN** thẻ kết quả và nút "Chơi lại" không bị cột che

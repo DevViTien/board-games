@@ -17,4 +17,5 @@ export const GAME_ENTRY_LOADERS = {
   ludo: () => import("./ludo").then((module) => module.ludoEntry),
   chess: () => import("./chess").then((module) => module.chessEntry),
   "fence-race": () => import("./fence-race").then((module) => module.fenceRaceEntry),
+  "jelly-crew": () => import("./jelly-crew").then((module) => module.jellyCrewEntry),
 } satisfies GameEntryLoaders;

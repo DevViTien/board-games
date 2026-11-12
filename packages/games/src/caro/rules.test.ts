@@ -5,7 +5,7 @@ import {
   parseGameOptions,
   playMove,
 } from "@board-games/engine";
-import { deepFreeze, describeGameContract } from "@board-games/engine/testing";
+import { deepFreeze, describeGameContract, playRandomGame } from "@board-games/engine/testing";
 import { describe, expect, it, vi } from "vitest";
 
 import type { CaroRule } from "./constants";
@@ -24,9 +24,9 @@ describe("caro setup and options", () => {
     });
   });
 
-  it("offers the board sizes 15 then 19 and the rules blocked-ends then free", () => {
+  it("offers the board sizes 15, 19 then infinite and the rules blocked-ends then free", () => {
     expect(listOptionChoices(caro)).toEqual([
-      { name: "size", values: [15, 19] },
+      { name: "size", values: [15, 19, "infinite"] },
       { name: "rule", values: ["blocked-ends", "free"] },
     ]);
   });
@@ -67,6 +67,26 @@ describe("caro setup and options", () => {
     expect(state?.rule).toBe("blocked-ends");
   });
 
+  it("starts the board that grows with an empty 15×15 area in the middle of a 61×61 cap", () => {
+    const state = currentState(newGame({ size: "infinite", rule: "free" }));
+
+    expect(state.infinite).toBe(true);
+    expect(state.size).toBe(61);
+    expect(state.rule).toBe("free");
+    expect(state.board).toHaveLength(61 * 61);
+    // Rows and columns 24 to 38, counted from 1.
+    expect(state.area).toEqual({ top: 23, left: 23, bottom: 37, right: 37 });
+    expect(caro.legalMoves(state)).toHaveLength(225);
+    expect(caro.currentPlayer(state)).toBe(0);
+  });
+
+  it("keeps a board of fixed size whole and never growing", () => {
+    const state = currentState(playCells({ size: 15 }, [0, 224]));
+
+    expect(state.infinite).toBe(false);
+    expect(state.area).toEqual({ top: 0, left: 0, bottom: 14, right: 14 });
+  });
+
   it.each([
     ["an unsupported board size", { size: 17 }],
     ["an unknown key", { size: 15, rule: "blocked-ends", renju: true }],
@@ -75,6 +95,116 @@ describe("caro setup and options", () => {
       ok: false,
       error: "invalid-options",
     });
+  });
+});
+
+const INFINITE = { size: "infinite", rule: "blocked-ends" } as const;
+const at61 = (row: number, col: number) => cellAt(61, [row, col]);
+
+describe("caro on the board that grows", () => {
+  it("refuses a cell outside the area", () => {
+    expect(playMove(caro, newGame(INFINITE), { cell: at61(1, 1) }, rng)).toEqual({
+      ok: false,
+      error: "illegal-move",
+    });
+    expect(playMove(caro, newGame(INFINITE), { cell: at61(23, 31) }, rng).ok).toBe(false);
+    expect(playMove(caro, newGame(INFINITE), { cell: at61(24, 31) }, rng).ok).toBe(true);
+  });
+
+  it("grows the area to keep five rows and columns around a stone near its edge", () => {
+    const state = currentState(playCells(INFINITE, [at61(24, 31)]));
+
+    // Rows 19 to 38 and columns 24 to 38, counted from 1.
+    expect(state.area).toEqual({ top: 18, left: 23, bottom: 37, right: 37 });
+    expect(caro.legalMoves(state)).toHaveLength(20 * 15 - 1);
+  });
+
+  it("keeps the area as it is for a stone in its middle", () => {
+    const before = currentState(newGame(INFINITE));
+    const after = currentState(playCells(INFINITE, [at61(31, 31)]));
+
+    expect(after.area).toEqual(before.area);
+  });
+
+  it("never grows the area past the cap", () => {
+    // A walk of X to the top left corner, O answering far from it.
+    const cells: number[] = [];
+    for (let step = 0; step < 6; step += 1) {
+      cells.push(at61(24 - step * 4, 24 - step * 4), at61(38, 38 - step * 2));
+    }
+    const state = currentState(playCells(INFINITE, cells));
+
+    expect(state.area.top).toBe(0);
+    expect(state.area.left).toBe(0);
+    expect(caro.legalMoves(state).every(({ cell }) => cell >= 0 && cell < 61 * 61)).toBe(true);
+  });
+
+  it("never shrinks the area, and rebuilds it with the position on undo", () => {
+    const grown = playCells(INFINITE, [at61(24, 31), at61(31, 31)]);
+    const states = grown.states;
+
+    expect(states.at(-1)?.area).toEqual(states.at(-2)?.area);
+    expect(states[0]?.area).toEqual({ top: 23, left: 23, bottom: 37, right: 37 });
+  });
+
+  it("names cells by the cap, so a cell keeps its index as the area grows", () => {
+    const state = currentState(playCells(INFINITE, [at61(31, 31), at61(24, 24), at61(19, 19)]));
+
+    expect(state.area.top).toBe(13);
+    expect(state.board[at61(31, 31)]).toBe(0);
+    expect(state.board[at61(24, 24)]).toBe(1);
+    expect(state.board[at61(19, 19)]).toBe(0);
+  });
+
+  it("wins with five in a column against the top edge of the cap: the edge does not block", () => {
+    // X walks up column 31 to row 1; O closes the other end of the column, on row 6.
+    const xs: RowCol[] = [
+      [24, 31],
+      [19, 31],
+      [14, 31],
+      [9, 31],
+      [5, 31],
+      [4, 31],
+      [3, 31],
+      [2, 31],
+      [1, 31],
+    ];
+    const os: RowCol[] = [
+      [38, 38],
+      [38, 36],
+      [38, 34],
+      [36, 38],
+      [6, 31],
+      [36, 36],
+      [34, 38],
+      [36, 34],
+    ];
+    const cells = xs.flatMap((x, index) => {
+      const o = os[index];
+      return o === undefined ? [x] : [x, o];
+    });
+    const state = currentState(
+      playCells(
+        INFINITE,
+        cells.map(([row, col]) => at61(row, col)),
+      ),
+    );
+
+    expect(caro.result(state)).toEqual({ kind: "win", winners: [0] });
+    expect(caroWinningLine(state)).toHaveLength(5);
+  });
+
+  it("is no draw while the cap has empty cells, however many stones are down", () => {
+    const { session } = playRandomGame(caro, {
+      seed: 5,
+      playerCount: 2,
+      maxPlies: 400,
+      options: { size: "infinite", rule: "blocked-ends" },
+    });
+    const state = currentState(session);
+
+    if (caro.result(state) === null) expect(caro.legalMoves(state).length).toBeGreaterThan(0);
+    expect(caro.result(state)?.kind).not.toBe("draw");
   });
 });
 
@@ -424,7 +554,8 @@ describe("caroWinningLine", () => {
   });
 });
 
-// Random games are long on these boards: a few seeds per combination of options.
+// Random games are long on these boards: a few seeds per combination of options. The board that
+// grows has its own file (`infinite-contract.test.ts`), so it runs next to this one.
 describe.each([
   [15, "blocked-ends", [1, 2]],
   [15, "free", [1]],

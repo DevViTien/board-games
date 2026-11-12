@@ -52,7 +52,16 @@ const raceGame = {
   evaluate: (state, player) => state.steps[player] ?? 0,
 } as const satisfies GameDefinition<RaceState, { step: true }>;
 
-const GAMES: readonly AnyGameDefinition[] = [tictactoe, caro, chess, ludo, raceGame];
+/** The race played on one side, without the AI: whoever takes two steps first, all three win. */
+const teamRaceGame = {
+  ...raceGame,
+  id: "team-race",
+  meta: { ...raceGame.meta, supportsAI: false, cooperative: true },
+  result: (state: RaceState) =>
+    state.steps.some((steps) => steps >= 2) ? { kind: "win" as const, winners: [0, 1, 2] } : null,
+};
+
+const GAMES: readonly AnyGameDefinition[] = [tictactoe, caro, chess, ludo, raceGame, teamRaceGame];
 
 const LAN: RoomPlayer = { playerId: "lan-0123456789abcdef", name: "Lan" };
 const AN: RoomPlayer = { playerId: "an-0123456789abcdefgh", name: "An" };
@@ -477,5 +486,37 @@ describe("Máy chơi thay người", () => {
       { kind: "human", ...LAN, standIn: false },
       { kind: "human", ...AN, standIn: false },
     ]);
+  });
+});
+
+describe("Game cùng phe", () => {
+  it("Bỏ cuộc trong game cùng phe: the game stops, nobody winning, and a new game follows", async () => {
+    const context = await room("team-race", 3, [AN, BINH]);
+    await play(context, LAN, { step: true });
+
+    const resigned = expectOk(await context.service.resign(context.code, AN.playerId, 1));
+
+    expect(resigned.record.ending).toEqual({ reason: "resigned", player: 1 });
+    expect(replay(resigned).result).toEqual({ kind: "draw", reason: "resigned" });
+    // No AI stands in for anyone: nobody plays a cooperative game for a person who left.
+    expect(resigned.players.every((seat) => seat?.kind === "human" && !seat.standIn)).toBe(true);
+    expect(resigned.turnStartedAt).toBeNull();
+    const next = expectOk(await context.service.rematch(context.code, LAN.playerId, 1));
+    expect(next.gameNumber).toBe(2);
+    expect(replay(next).result).toBeNull();
+  });
+
+  it("Chơi lại sau khi ván dừng: a turn claimed abandoned stops the game for everyone", async () => {
+    const context = await room("team-race", 3, [AN, BINH]);
+    await play(context, LAN, { step: true });
+    context.wait(5 * MINUTE + 10_000);
+
+    const claimed = expectOk(await claim(context, BINH));
+
+    expect(claimed.record.ending).toEqual({ reason: "abandoned", player: 1 });
+    expect(replay(claimed).result).toEqual({ kind: "draw", reason: "abandoned" });
+    expect(expectOk(await context.service.rematch(context.code, AN.playerId, 1)).gameNumber).toBe(
+      2,
+    );
   });
 });

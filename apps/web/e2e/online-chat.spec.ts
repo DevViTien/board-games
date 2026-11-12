@@ -1,6 +1,7 @@
 import type { ChatBody } from "@board-games/protocol";
 import {
   type Browser,
+  devices,
   expect,
   type Locator,
   type Page,
@@ -29,6 +30,14 @@ import {
 
 // The chat of a room (spec `room-chat`). Two browsers on the real realtime server for what crosses
 // the network; a room whose server is the test for what is about the screen.
+
+// A small laptop by default, where the chat opens from its button (`dock`): from 1280 px it is the
+// column of a wide screen, tested on its own below (change `rework-chat-layout`).
+test.use({
+  viewport: async ({ isMobile }, provide) => {
+    await provide(isMobile ? devices["Pixel 7"].viewport : { width: 1100, height: 800 });
+  },
+});
 
 const chatButton = (page: Page) => page.getByRole("button", { name: /^Chat/u });
 const field = (page: Page) => page.getByRole("textbox", { name: "Viết tin nhắn" });
@@ -89,6 +98,8 @@ test("Chat trong ván online: a message reaches the other player, as a bubble an
   await send(minh.page, "Chào Lan");
   await expect(log(page).getByText("Chào Lan")).toBeVisible();
   await expect(log(minh.page).getByText("Chào Lan")).toBeVisible();
+  // On a phone the chat covers the board: closed first, the way back to it.
+  await closeChat(page).click();
   await playFirstEmptyCell(page);
   await expect(status(minh.page)).toHaveText(/Lan vừa đánh/u);
 
@@ -259,7 +270,8 @@ test("Chạm liên tục vào emoji: the connection stays, the screen says to sl
     await page.clock.runFor(200);
   }
 
-  // The game still plays, on the same connection.
+  // The game still plays, on the same connection (on a phone, once back to the board).
+  await closeChat(page).click();
   await cell(page, 1, 1).click();
   await expect(status(minh.page)).toHaveText(/Lan vừa đánh/u);
   expect(reconnections).toBe(0);
@@ -417,7 +429,7 @@ function overlap(one: Box, other: Box): number {
 const SIZES = [
   { width: 360, height: 740 },
   { width: 844, height: 390 },
-  { width: 1280, height: 800 },
+  { width: 1100, height: 800 },
 ] as const;
 
 for (const size of SIZES) {
@@ -537,19 +549,25 @@ for (const [name, room] of [
   ["Cờ vua", CHESS_ROOM],
   ["Cờ cá ngựa", LUDO_ROOM],
 ] as const) {
-  test(`Điện thoại ngang, ${name}: the chat covers no square of the board`, async ({ page }) => {
+  test(`Điện thoại ngang, ${name}: the chat covers the screen, and the board stays where it was`, async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 844, height: 390 });
     await openFakeRoom(page, room, 0);
+    // Focusing brings the button into view: the board is where it is from then on.
     await chatButton(page).focus();
+    const start = await boardBox(page);
     await page.keyboard.press("Enter");
 
-    const panel = await page.locator("#room-chat").boundingBox();
-    const area = await boardBox(page);
-
-    expect(panel).not.toBeNull();
-    expect(area).not.toBeNull();
-    expect(overlap(panel, area)).toBe(0);
+    const dialog = await page.locator("dialog[data-chat-dialog]").boundingBox();
+    expect(dialog).toEqual({ x: 0, y: 0, width: 844, height: 390 });
+    await expect(page.getByRole("button", { name: "Đóng chat" })).toBeInViewport();
     await expectNoSideScroll(page);
+
+    await page.keyboard.press("Escape");
+    await expect(log(page)).toHaveCount(0);
+    await expect(chatButton(page)).toBeFocused();
+    expect(await boardBox(page)).toEqual(start);
   });
 }
 
@@ -557,14 +575,14 @@ test("Máy tính vẫn đi được khi chat mở, Cờ vua: a move with the cha
   page,
 }) => {
   test.skip(test.info().project.name === "mobile", "a laptop");
-  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.setViewportSize({ width: 1024, height: 768 });
   await openFakeRoom(page, CHESS_ROOM, 0);
   await chatButton(page).click();
 
   const panel = page.locator("#room-chat");
   await expect(panel.getByText(/Đến lượt bạn/u)).toBeVisible();
   // The page does not scroll: the chat adds nothing to it.
-  expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(800);
+  expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(768);
 
   await chessSquare(page, "g1").click();
   await chessSquare(page, "f3").click();
@@ -578,7 +596,7 @@ test("Máy tính vẫn đi được khi chat mở, Cờ cá ngựa: the die and 
   page,
 }) => {
   test.skip(test.info().project.name === "mobile", "a laptop");
-  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.setViewportSize({ width: 1024, height: 768 });
   await openFakeRoom(page, LUDO_ROOM, 0);
   await expect(horseChoices(page)).toHaveCount(4);
   await chatButton(page).click();
@@ -592,14 +610,14 @@ test("Máy tính vẫn đi được khi chat mở, Cờ cá ngựa: the die and 
   // Nor does the board lie under it.
   const area = await boardBox(page);
   expect((area?.x ?? 0) + (area?.width ?? 0)).toBeLessThanOrEqual(panel?.x ?? 0);
-  expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(800);
+  expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(768);
 });
 
 test("Sau khi ván kết thúc, trên máy tính: the panel goes under the result card, and leaves Chơi lại", async ({
   page,
 }) => {
   test.skip(test.info().project.name === "mobile", "a laptop");
-  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.setViewportSize({ width: 1024, height: 768 });
   await openFakeRoom(
     page,
     {
@@ -658,7 +676,8 @@ test("Bàn phím ảo mở: the field and the latest message stay in what the ke
   const latest = await log(page).getByText("Tin mới nhất").boundingBox();
   expect((input?.y ?? 999) + (input?.height ?? 0)).toBeLessThanOrEqual(470);
   expect((latest?.y ?? 999) + (latest?.height ?? 0)).toBeLessThanOrEqual(input?.y ?? 0);
-  expect(latest?.y).toBeGreaterThan(740 - 270 - 226);
+  expect(latest?.y).toBeGreaterThan(0);
+  expect((await page.locator("dialog[data-chat-dialog]").boundingBox())?.height).toBe(470);
 });
 
 // --- Where the chat must keep out of the way ---------------------------------------------------------
@@ -746,8 +765,8 @@ const LUDO_LOBBY = {
   record: ludoRecord(3, []),
 } as const;
 
-for (const width of [1024, 1100, 1280]) {
-  test(`Sảnh chờ ở ${String(width)} px: the chat covers neither the players nor its own button`, async ({
+for (const width of [1024, 1100]) {
+  test(`Sảnh chờ ở ${String(width)} px: the chat covers the screen, and closing shows all the players`, async ({
     page,
   }) => {
     test.skip(test.info().project.name === "mobile", "a laptop");
@@ -756,47 +775,45 @@ for (const width of [1024, 1100, 1280]) {
     await expect(page.locator("[data-chat-button]")).toBeVisible();
     await page.locator("[data-chat-button]").click();
     await expect(log(page)).toBeVisible();
+    expect(await page.locator("dialog[data-chat-dialog]").boundingBox()).toEqual({
+      x: 0,
+      y: 0,
+      width,
+      height: 768,
+    });
 
-    const panel = await page.locator("#room-chat").boundingBox();
-    expect(overlap(panel, await page.locator("[data-chat-button]").boundingBox())).toBe(0);
-    if (width >= 1264) {
-      expect(
-        overlap(panel, await page.getByRole("region", { name: "Người chơi" }).boundingBox()),
-      ).toBe(0);
-      return;
-    }
-    // A sheet from below: all of the lobby stays within reach above it, by scrolling.
-    await scrollToEnd(page);
-    await page.waitForTimeout(100);
-    const seats = await page.getByRole("region", { name: "Người chơi" }).boundingBox();
-    expect(overlap(await page.locator("#room-chat").boundingBox(), seats)).toBe(0);
+    await closeChat(page).click();
+    await expect(page.locator("[data-chat-button]")).toBeFocused();
+    await expect(page.getByRole("region", { name: "Người chơi" })).toBeVisible();
   });
 }
 
-test("Đủ người khi chat đang mở: the sheet makes room for part of the board", async ({ page }) => {
+test("Đủ người khi chat đang mở trên điện thoại: the dialog stays, with the words", async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 360, height: 740 });
   const fake = await openFakeRoom(page, LUDO_LOBBY, 0);
   await page.locator("[data-chat-button]").focus();
   await page.keyboard.press("Enter");
   await expect(log(page)).toBeVisible();
+  await field(page).fill("Chờ chút");
 
   fake.update({
     seats: [...LUDO_LOBBY.seats.slice(0, 2), { kind: "human", name: "Chi", standIn: false }],
   });
-  await expect(page.locator("[data-ply]")).toBeVisible();
-  await page.waitForTimeout(100);
+  await expect(page.locator("[data-ply]")).toBeAttached();
+  await expect(log(page)).toBeVisible();
+  await expect(field(page)).toHaveValue("Chờ chút");
 
-  const panel = await page.locator("#room-chat").boundingBox();
-  const area = await boardBox(page);
-  expect(panel).not.toBeNull();
-  expect((panel?.y ?? 0) - (area?.y ?? 0)).toBeGreaterThanOrEqual(96);
+  await closeChat(page).click();
+  await expect(page.locator("[data-ply]").first()).toBeVisible();
 });
 
 test("Cờ vua trên máy tính: the panel has its height, and says what it covers", async ({
   page,
 }) => {
   test.skip(test.info().project.name === "mobile", "a laptop");
-  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.setViewportSize({ width: 1024, height: 768 });
   await openFakeRoom(page, { ...CHESS_ROOM, record: chessRecord(["e2e4", "f7f6", "d1h5"]) }, 1);
   await expect(chatButton(page)).toBeVisible();
   const sheetBefore = await page.getByRole("button", { name: "Lật bàn" }).boundingBox();
@@ -805,7 +822,7 @@ test("Cờ vua trên máy tính: the panel has its height, and says what it cove
 
   const panel = page.locator("#room-chat");
   const box = await panel.boundingBox();
-  expect(box?.height).toBeGreaterThanOrEqual(320);
+  expect(box?.height).toBeGreaterThanOrEqual(240);
   // Its controls did not move, and it stays off them.
   const flip = page.getByRole("button", { name: "Lật bàn" });
   expect(await flip.boundingBox()).toEqual(sheetBefore);
@@ -817,7 +834,7 @@ test("Cờ vua trên máy tính: the panel has its height, and says what it cove
 
 test("Cờ vua trên máy tính: what is selected shows in the panel, told once", async ({ page }) => {
   test.skip(test.info().project.name === "mobile", "a laptop");
-  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.setViewportSize({ width: 1024, height: 768 });
   await openFakeRoom(page, CHESS_ROOM, 0);
   await chatButton(page).click();
   await expect(log(page)).toBeVisible();
@@ -831,7 +848,7 @@ test("Cờ vua trên máy tính: what is selected shows in the panel, told once"
 });
 
 for (const size of [
-  { width: 1280, height: 720 },
+  { width: 1200, height: 720 },
   { width: 1024, height: 600 },
 ]) {
   for (const [name, room] of [
@@ -863,6 +880,102 @@ for (const size of [
     });
   }
 }
+
+// --- The column of a wide screen (change `rework-chat-layout`) ------------------------------------
+
+test.describe("the column of a wide screen", () => {
+  test.skip(({ isMobile }) => isMobile, "a laptop");
+  test.use({ viewport: { width: 1280, height: 800 } });
+
+  for (const [name, room] of [
+    ["Cờ vua", CHESS_ROOM],
+    ["Cờ cá ngựa", LUDO_ROOM],
+  ] as const) {
+    test(`Cột chat khi vào ván, ${name}: open from the start, over nothing of the game`, async ({
+      page,
+    }) => {
+      const fake = await openFakeRoom(page, room, 0);
+      await expect(log(page)).toBeVisible();
+      await expect(chatButton(page)).toHaveCount(0);
+      const column = await page.locator("#room-chat").boundingBox();
+      expect((column?.x ?? 0) + (column?.width ?? 0)).toBe(1280);
+      const start = await boardBox(page);
+      expect(overlap(column, start)).toBe(0);
+      for (const words of [
+        page.getByRole("status").first(),
+        page.getByRole("region", { name: "Người chơi" }),
+        page.getByText("Sổ ghi"),
+        page.getByRole("button", { name: "Đầu hàng" }),
+        rollButton(page),
+      ]) {
+        if ((await words.count()) > 0) expect(overlap(column, await words.boundingBox())).toBe(0);
+      }
+      await expectNoSideScroll(page);
+
+      // Tin mới khi cột đang mở: in the column, no bubble, the board where it was.
+      fake.receive({ kind: "text", text: "Chào" }, ...SOME_WORDS);
+      await expect(log(page).getByText("Chào", { exact: true })).toBeVisible();
+      await expect(bubble(page)).toHaveCount(0);
+      expect(await boardBox(page)).toEqual(start);
+    });
+  }
+
+  test("Thu gọn cột: a strip with the count, remembered for another room; Esc leaves it open", async ({
+    page,
+  }) => {
+    const fake = await openFakeRoom(page, CHESS_ROOM, 0);
+    await field(page).click();
+    await page.keyboard.press("Escape");
+    await expect(log(page)).toBeVisible();
+
+    await page.getByRole("button", { name: "Thu gọn chat" }).click();
+    await expect(log(page)).toHaveCount(0);
+    const open = page.locator("[data-chat-rail]").getByRole("button");
+    await expect(open).toBeFocused();
+    const strip = await page.locator("[data-chat-rail]").boundingBox();
+    expect(overlap(strip, await boardBox(page))).toBe(0);
+
+    fake.receive({ kind: "text", text: "Chào" }, { kind: "text", text: "Đi nào" });
+    await expect(open).toHaveAccessibleName("Mở chat, 2 tin chưa đọc");
+    await expect(bubble(page)).toBeVisible();
+    expect(overlap(await bubble(page).boundingBox(), await boardBox(page))).toBe(0);
+
+    await openFakeRoom(page, LUDO_ROOM, 0);
+    await expect(page.locator("[data-chat-rail]").getByRole("button")).toBeVisible();
+    await expect(log(page)).toHaveCount(0);
+  });
+
+  test("Ván kết thúc khi cột mở: the result card and Chơi lại stay uncovered", async ({ page }) => {
+    await openFakeRoom(
+      page,
+      {
+        ...CHESS_ROOM,
+        record: { ...chessRecord(["e2e4", "e7e5"]), ending: { reason: "resigned", player: 1 } },
+      },
+      0,
+    );
+    const again = page.getByRole("button", { name: "Chơi lại" });
+    await expect(again).toBeInViewport();
+    expect(overlap(await page.locator("#room-chat").boundingBox(), await again.boundingBox())).toBe(
+      0,
+    );
+  });
+
+  test("Sảnh chờ trên màn hình rộng: the column covers neither the players nor the lobby's buttons", async ({
+    page,
+  }) => {
+    await openFakeRoom(page, LUDO_LOBBY, 0);
+    await expect(log(page)).toBeVisible();
+    const column = await page.locator("#room-chat").boundingBox();
+    expect(
+      overlap(column, await page.getByRole("region", { name: "Người chơi" }).boundingBox()),
+    ).toBe(0);
+    for (const button of await page.locator("main button").all()) {
+      expect(overlap(column, await button.boundingBox())).toBe(0);
+    }
+    await expectNoSideScroll(page);
+  });
+});
 
 test("Số điện thoại trong tin không thành link trên iOS: the page says so", async ({ page }) => {
   await page.goto("/");

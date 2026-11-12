@@ -346,6 +346,7 @@ export function PlayScreen<State, Move, Outcome>({
     lastEntry,
     lastMover,
     moveCount,
+    cooperative,
   }: ReadySnapshot<State, Move, Outcome>): string {
     const label = (player: PlayerIndex) => playerLabel(player, state);
     const labels = (players: readonly PlayerIndex[]) =>
@@ -364,6 +365,12 @@ export function PlayScreen<State, Move, Outcome>({
       if (seat?.kind === "ai") return t("aiSeatTitle", { player: label(player) });
       return seat?.kind === "remote" ? nameOf(player) : label(player);
     };
+    // A cooperative game is won, ended or stopped by the whole team, whoever is here (spec
+    // "Kết quả của game cùng phe"): before every way of naming winners below.
+    if (cooperative && result !== null) {
+      if (result.kind === "win") return t("teamWins");
+      return endedOutsideRules(result) ? t("teamStopped") : t("teamEnded");
+    }
     // One person here: told as "you", "the computer" and the online opponent's name.
     if (viewer !== null) {
       // A new online game swaps sides for the one who did not ask for it: say which side is theirs.
@@ -549,6 +556,7 @@ export function PlayScreen<State, Move, Outcome>({
   function describeMoverWarning(): string | null {
     if (turn?.player !== ready.viewer) return null;
     if (turnLevel !== TURN_LEVEL.Warn && turnLevel !== TURN_LEVEL.Claimable) return null;
+    if (ready.resign?.outcome === "end") return t("abandon.turnWarnTeam");
     return ready.resign?.outcome === "stand-in"
       ? t("abandon.turnWarnStandIn")
       : t("abandon.turnWarnWin");
@@ -556,7 +564,20 @@ export function PlayScreen<State, Move, Outcome>({
 
   /** Why the game ended, when not by its rules: who resigned, or who was gone too long. */
   function describeEnding(result: GameResult): string | null {
-    if (result.kind !== "win" || !endedOutsideRules(result)) return null;
+    if (!endedOutsideRules(result)) return null;
+    // A cooperative game stopped is a draw: only the ending says who left.
+    if (ready.cooperative) {
+      const leaver = ready.ending?.player;
+      if (leaver === undefined) return null;
+      const resigned = result.reason === ENDING_REASON.Resigned;
+      if (leaver === ready.viewer)
+        return resigned ? t("ending.youGaveUp") : t("ending.youAbandoned");
+      const name = waitingName(leaver);
+      return resigned
+        ? t("ending.opponentGaveUp", { name })
+        : t("ending.opponentAbandoned", { name });
+    }
+    if (result.kind !== "win") return null;
     const leaver = ready.seats.findIndex((_, seat) => !result.winners.includes(seat));
     if (leaver === -1) return null;
     const resigned = result.reason === ENDING_REASON.Resigned;
@@ -714,6 +735,7 @@ export function PlayScreen<State, Move, Outcome>({
     connectionLost:
       connection === null ? null : connection === CONNECTION_STATUS.Idle || connectionLost,
     thinking,
+    cooperative: snapshot.cooperative,
   } as const;
   const players = (
     <PlayerPanel
@@ -821,7 +843,7 @@ export function PlayScreen<State, Move, Outcome>({
           }}
         >
           <FlagIcon aria-hidden className="size-4" />
-          {t("resign")}
+          {resign.outcome === "end" ? t("resignTeam") : t("resign")}
         </Button>
       )}
       {resign?.available === false && (
@@ -836,6 +858,7 @@ export function PlayScreen<State, Move, Outcome>({
 
   /** What resigning will do, in the question asked first. */
   function resignQuestion(): string {
+    if (resign?.outcome === "end") return t("confirmResign.descriptionTeam");
     if (resign?.outcome === "stand-in") return t("confirmResign.descriptionStandIn");
     const others = ready.seats.flatMap((_, seat) => (seat === ready.viewer ? [] : [seat]));
     // Every other seat played by the AI (against the computer): the computer wins.
@@ -860,7 +883,9 @@ export function PlayScreen<State, Move, Outcome>({
       case "end":
         return {
           title: t("confirmAbandon.titleEnd", { name }),
-          description: t("confirmAbandon.descriptionEnd", { name }),
+          description: ready.cooperative
+            ? t("confirmAbandon.descriptionTeam", { name })
+            : t("confirmAbandon.descriptionEnd", { name }),
           confirm: t("abandon.claimEnd"),
         };
       default:
@@ -915,13 +940,13 @@ export function PlayScreen<State, Move, Outcome>({
     <div
       className={cn(
         "grid w-full grid-cols-[minmax(0,1fr)] gap-y-4 [--board-room:100%]",
-        "lg:grid-cols-[auto_minmax(20rem,24rem)] lg:grid-rows-[minmax(0,1fr)_repeat(7,auto)_minmax(0,1fr)] lg:justify-center lg:gap-x-10 lg:gap-y-0",
+        "lg:grid-cols-[auto_minmax(20rem,24rem)] lg:grid-rows-[minmax(0,1fr)_repeat(7,auto)_minmax(0,1fr)] lg:justify-center lg:gap-x-10 lg:gap-y-0 [:root[data-chat-column=open]_&]:lg:grid-cols-[auto_20rem] [:root[data-chat-column=open]_&]:lg:gap-x-8",
         "lg:[grid-template-areas:'board_.'_'board_chips'_'board_notice'_'board_status'_'board_players'_'board_notes'_'board_controls'_'board_buttons'_'board_.']",
         // The page's height less the top bar and the page's padding (3rem), a little room kept.
         seatOrder === undefined
-          ? "lg:[--board-room:min(100vw_-_34rem,100dvh_-_var(--top-bar-height)_-_var(--safe-top)_-_6rem)]"
+          ? "lg:[--board-room:min(100vw_-_var(--play-side)_-_var(--chat-room),100dvh_-_var(--top-bar-height)_-_var(--safe-top)_-_6rem)]"
           : // Less the two bars (2 × 2.75rem) and their gaps (2 × 0.375rem) too.
-            "lg:[--board-room:min(100vw_-_34rem,100dvh_-_var(--top-bar-height)_-_var(--safe-top)_-_3.25rem_-_6.25rem)]",
+            "lg:[--board-room:min(100vw_-_var(--play-side)_-_var(--chat-room),100dvh_-_var(--top-bar-height)_-_var(--safe-top)_-_3.25rem_-_6.25rem)]",
         "short-landscape:grid-cols-[auto_minmax(0,1fr)] short-landscape:grid-rows-[minmax(0,1fr)_repeat(9,auto)_minmax(0,1fr)] short-landscape:gap-x-6 short-landscape:gap-y-0",
         "short-landscape:[grid-template-areas:'board_.'_'board_chips'_'board_notice'_'board_status'_'board_players'_'board_seat-top'_'board_seat-bottom'_'board_notes'_'board_controls'_'board_buttons'_'board_.']",
         // The page's height less the top bar and the page's padding (1rem); the column at least
@@ -1042,21 +1067,24 @@ export function PlayScreen<State, Move, Outcome>({
         />
       </div>
 
-      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col py-4 px-safe-4 lg:justify-center lg:py-6 lg:px-safe-10 short-landscape:justify-start short-landscape:py-2">
-        <PresentationHoldProvider value={presentation}>
-          <Board
-            state={live.state}
-            legalMoves={live.legalMoves}
-            onMove={transport.submit}
-            disabled={!live.canMove}
-            result={live.result}
-            lastEntry={live.lastEntry}
-            viewer={live.viewer}
-            layout={layout}
-            lockedReason={lockedReason}
-          />
-        </PresentationHoldProvider>
-      </main>
+      {/* Clear of the chat's column at the right of a wide screen: the top bar still runs across. */}
+      <div className="flex flex-1 flex-col pr-(--chat-room)">
+        <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col py-4 px-safe-4 lg:justify-center lg:py-6 lg:px-safe-10 short-landscape:justify-start short-landscape:py-2 [:root[data-chat-column=open]_&]:lg:px-safe-6">
+          <PresentationHoldProvider value={presentation}>
+            <Board
+              state={live.state}
+              legalMoves={live.legalMoves}
+              onMove={transport.submit}
+              disabled={!live.canMove}
+              result={live.result}
+              lastEntry={live.lastEntry}
+              viewer={live.viewer}
+              layout={layout}
+              lockedReason={lockedReason}
+            />
+          </PresentationHoldProvider>
+        </main>
+      </div>
 
       {
         <Dialog
@@ -1101,9 +1129,11 @@ export function PlayScreen<State, Move, Outcome>({
 
       <ConfirmDialog
         open={confirmingResign}
-        title={t("confirmResign.title")}
+        title={resign?.outcome === "end" ? t("confirmResign.titleTeam") : t("confirmResign.title")}
         description={resignQuestion()}
-        confirmLabel={t("confirmResign.confirm")}
+        confirmLabel={
+          resign?.outcome === "end" ? t("confirmResign.confirmTeam") : t("confirmResign.confirm")
+        }
         cancelLabel={t("confirmResign.cancel")}
         confirmUnavailableReason={resign?.available === false ? unavailableReason : undefined}
         onConfirm={() => {

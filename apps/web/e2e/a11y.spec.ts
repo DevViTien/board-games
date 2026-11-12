@@ -304,6 +304,10 @@ for (const colorScheme of SCHEMES) {
       test("the chat: open with every kind of message, a bubble, not sent, muted", async ({
         page,
       }) => {
+        // A small laptop, where the chat opens from its button (from 1280 px: its column, below).
+        if (test.info().project.name !== "mobile") {
+          await page.setViewportSize({ width: 1100, height: 800 });
+        }
         const room = await openFakeRoom(
           page,
           {
@@ -357,6 +361,10 @@ for (const colorScheme of SCHEMES) {
       });
 
       test("the chat in the lobby", async ({ page }) => {
+        // A small laptop, where the chat opens from its button (from 1280 px: its column, below).
+        if (test.info().project.name !== "mobile") {
+          await page.setViewportSize({ width: 1100, height: 800 });
+        }
         const lobby = await openFakeRoom(page, {
           gameId: "ludo",
           seats: [
@@ -373,7 +381,34 @@ for (const colorScheme of SCHEMES) {
         await expectNoAxeViolations(page, "chat-lobby");
       });
 
+      test("the chat's column of a wide screen, open and collapsed", async ({ page }) => {
+        test.skip(test.info().project.name === "mobile", "a wide screen");
+        const room = await openFakeRoom(
+          page,
+          {
+            gameId: "chess",
+            seats: [
+              { kind: "human", name: "Minh", standIn: false },
+              { kind: "human", name: "Lan", standIn: false },
+            ],
+            record: chessRecord(["e2e4", "e7e5"]),
+          },
+          1,
+        );
+        room.receive({ kind: "text", text: "Chào" }, { kind: "reaction", reaction: "like" });
+        await expect(page.getByRole("log").getByText("Chào")).toBeVisible();
+        await expectNoAxeViolations(page, "chat-column-open");
+        await page.getByRole("button", { name: "Thu gọn chat" }).click();
+        room.receive({ kind: "text", text: "Đi nào" });
+        await expect(page.locator("[data-chat-bubble]")).toBeVisible();
+        await expectNoAxeViolations(page, "chat-column-collapsed");
+      });
+
       test("the chat over a Cờ cá ngựa game", async ({ page }) => {
+        // A small laptop, where the chat opens from its button (from 1280 px: its column, below).
+        if (test.info().project.name !== "mobile") {
+          await page.setViewportSize({ width: 1100, height: 800 });
+        }
         const room = await openFakeRoom(page, {
           gameId: "ludo",
           seats: [

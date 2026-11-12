@@ -970,7 +970,8 @@ test.describe("Chat trong phòng Cờ rào", () => {
     page,
   }) => {
     test.skip(test.info().project.name === "mobile", "a laptop");
-    await page.setViewportSize({ width: 1280, height: 800 });
+    // A small laptop, where the chat opens over the column (from 1280 px it is a column of its own).
+    await page.setViewportSize({ width: 1100, height: 800 });
     await openFakeRoom(page, ROOM, 0);
     await expect(fenceFrame(page)).toBeVisible();
     await fenceMode(page, "Đặt rào").click();

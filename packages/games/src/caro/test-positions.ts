@@ -9,8 +9,8 @@ import {
   type Session,
 } from "@board-games/engine";
 
-import { CARO_DEFAULT_OPTIONS, type CaroOptions } from "./options";
-import { caro, type CaroMove, type CaroState } from "./rules";
+import { CARO_DEFAULT_OPTIONS, caroGridSide, type CaroOptions } from "./options";
+import { caro, caroGrowArea, type CaroMove, caroStartArea, type CaroState } from "./rules";
 
 export type CaroSession = Session<CaroState, CaroMove, never, CaroOptions>;
 
@@ -46,21 +46,35 @@ export interface Stones {
 
 /**
  * A position with the given stones and nobody having won; the player to move follows from the
- * counts (X moves first) unless given.
+ * counts (X moves first) unless given. On the board that grows, cells are those of the cap and the
+ * area is the one the stones would have grown, in any order.
  */
 export function position(
   options: Partial<CaroOptions>,
   { x = [], o = [] }: Stones,
   toMove?: PlayerIndex,
 ): CaroState {
-  const { size, rule } = { ...CARO_DEFAULT_OPTIONS, ...options };
+  const chosen = { ...CARO_DEFAULT_OPTIONS, ...options };
+  const size = caroGridSide(chosen.size);
+  const infinite = chosen.size === "infinite";
   const board: (PlayerIndex | null)[] = Array.from({ length: size * size }, () => null);
-  for (const stone of x) board[cellAt(size, stone)] = 0;
-  for (const stone of o) board[cellAt(size, stone)] = 1;
+  let area = caroStartArea(size, infinite);
+  for (const [stones, seat] of [
+    [x, 0],
+    [o, 1],
+  ] as const) {
+    for (const stone of stones) {
+      const cell = cellAt(size, stone);
+      board[cell] = seat;
+      area = caroGrowArea(area, size, cell);
+    }
+  }
   return {
     size,
-    rule,
+    infinite,
+    rule: chosen.rule,
     board,
+    area,
     toMove: toMove ?? (x.length > o.length ? 1 : 0),
     filled: x.length + o.length,
     win: null,

@@ -307,6 +307,8 @@ export function createOnlineTransport<
 
   /** Whether the server can play a seat of this game for a person who left. */
   const hasAi = gameHasAi(definition);
+  /** A seat that leaves a cooperative game stops it for everyone: nobody wins by it. */
+  const cooperative = definition.meta.cooperative === true;
 
   function resignOption(
     plays: readonly SeatPlay[],
@@ -315,6 +317,7 @@ export function createOnlineTransport<
     online: boolean,
   ): ResignOption | null {
     if (!open || you === null || plays[you] !== SEAT_PLAY.Self) return null;
+    if (cooperative) return { outcome: "end", available: online };
     const outcome = leaveOutcome(plays, you, hasAi) === LEAVE_OUTCOME.StandIn ? "stand-in" : "loss";
     return { outcome, available: online };
   }
@@ -346,7 +349,7 @@ export function createOnlineTransport<
     let claim: TurnClock["claim"] = null;
     if (claimable && you !== null) {
       if (leaveOutcome(plays, toMove, hasAi) === LEAVE_OUTCOME.StandIn) claim = "stand-in";
-      else claim = plays[you] === SEAT_PLAY.Self ? "win" : "end";
+      else claim = plays[you] === SEAT_PLAY.Self && !cooperative ? "win" : "end";
     }
     return {
       player: toMove,
@@ -416,6 +419,11 @@ export function createOnlineTransport<
               gameNumber: view.gameNumber,
               moveIndex: whole.cursor,
             })
+          : null,
+      cooperative,
+      ending:
+        current.ending !== undefined && current.cursor === current.entries.length
+          ? current.ending
           : null,
     };
   }

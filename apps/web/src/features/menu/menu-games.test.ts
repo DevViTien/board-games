@@ -47,6 +47,7 @@ describe("buildMenu", () => {
       ["playable", "ludo"],
       ["playable", "chess"],
       ["playable", "fence-race"],
+      ["playable", "jelly-crew"],
       ["puzzle", "jelly-gather"],
     ]);
   });
@@ -73,7 +74,7 @@ describe("buildOptionChoices", () => {
       tictactoe: { choices: [], defaults: {} },
       caro: {
         choices: [
-          { name: "size", values: [15, 19] },
+          { name: "size", values: [15, 19, "infinite"] },
           { name: "rule", values: ["blocked-ends", "free"] },
         ],
         defaults: { size: 15, rule: "blocked-ends" },
@@ -82,6 +83,10 @@ describe("buildOptionChoices", () => {
       ludo: { choices: [], defaults: {} },
       chess: { choices: [], defaults: {} },
       "fence-race": { choices: [], defaults: {} },
+      "jelly-crew": {
+        choices: [{ name: "map", values: ["kitchen", "market", "cold-store"] }],
+        defaults: { map: "kitchen" },
+      },
     });
     expect(JSON.parse(JSON.stringify(choices))).toEqual(choices);
   });

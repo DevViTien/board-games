@@ -16,6 +16,9 @@ export const ROOM_IDENTITY_KEY_PREFIX = "board-games:room-identity:";
 // localStorage: whether the player muted the chat, for every room of this browser.
 export const CHAT_MUTED_KEY = "board-games:chat-muted";
 
+// localStorage: whether the chat's column of a wide screen is open or collapsed, for every room.
+export const CHAT_COLUMN_KEY = "board-games:chat-column";
+
 // sessionStorage: the last chat message read, by its `seq`, one entry per room ("<prefix><code>").
 export const CHAT_READ_KEY_PREFIX = "board-games:chat-read:";
 

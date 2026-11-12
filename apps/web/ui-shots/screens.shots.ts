@@ -20,6 +20,7 @@ import {
   continueSection,
   countMarks,
   createCardGroup,
+  crewBoard,
   enterRound,
   fenceCell,
   fenceFrame,
@@ -27,6 +28,8 @@ import {
   fencePreview,
   fenceRaceRecord,
   horseChoices,
+  JELLY_CREW_KITCHEN_TWO,
+  jellyCrewRecord,
   longChessGame,
   LUDO_FOUR_CHOICES,
   ludoRecord,
@@ -43,6 +46,7 @@ import {
   ROOM_URL,
   savedChessGame,
   savedFenceRaceGame,
+  savedJellyCrewGame,
   savedLudoGame,
   startAiGame,
   startLocalGame,
@@ -339,6 +343,38 @@ test("Cờ caro 19×19 on one device, and its stone preview at 360 px", async ({
   await cell(page, 8, 8).tap();
   await expect(page.getByText("Chạm lần nữa để đặt quân")).toBeVisible();
   await shoot(page, "08c-caro-19-preview-360");
+});
+
+// --- Cờ caro on the board that grows (change `add-caro-infinite-board`) ---------------------------
+
+test("Cờ caro on the board that grows: start, grown, zoomed out, won, and its preview at 360 px", async ({
+  page,
+}) => {
+  await page.goto("/play/caro");
+  await choose(page, "Chế độ", "Cùng máy");
+  await choose(page, "Bàn cờ", "Vô hạn");
+  await pressStart(page);
+  await expect(page).toHaveURL(/\/play\/caro\/local$/u);
+  await expect(board(page)).toBeVisible();
+  await shoot(page, "08f-caro-infinite-start");
+
+  // X climbs a diagonal to the top left: the area grows above and to the left of the start.
+  await play(page, [31, 31], [31, 32], [30, 30], [32, 32], [29, 29], [31, 33], [28, 28], [30, 34]);
+  await shoot(page, "08g-caro-infinite-grown");
+  await page.getByRole("button", { name: "Thu nhỏ bàn" }).click();
+  await page.getByRole("button", { name: "Thu nhỏ bàn" }).click();
+  await shoot(page, "08h-caro-infinite-zoomed-out");
+  await play(page, [27, 27]);
+  await expect(status(page)).toHaveText("X thắng!");
+  await shoot(page, "08i-caro-infinite-won");
+
+  test.skip(test.info().project.use.hasTouch !== true, "a tap needs a touch screen");
+  // The game is over: a new game starts at once, with the same board.
+  await page.getByRole("button", { name: "Ván mới" }).first().click();
+  await page.setViewportSize({ width: 360, height: 780 });
+  await cell(page, 31, 31).tap();
+  await expect(page.getByText("Chạm lần nữa để đặt quân")).toBeVisible();
+  await shoot(page, "08j-caro-infinite-preview-360");
 });
 
 test("Cờ cá ngựa for four on one device, a choice of horses to make", async ({ page }) => {
@@ -1048,6 +1084,15 @@ function openChatRoom(page: Page, gameId: "chess" | "ludo") {
       });
 }
 
+/**
+ * A phone's own size, or one of `CHAT_SIZES`; a laptop of 1100 px, where the chat opens from its
+ * button over the column beside the board: from 1280 px it is a column of its own (`44-*`).
+ */
+async function chatViewport(page: Page, viewport: { width: number; height: number } | null) {
+  if (viewport !== null) await page.setViewportSize(viewport);
+  else if (!onPhone()) await page.setViewportSize({ width: 1100, height: 800 });
+}
+
 const CHAT_SIZES = [
   { suffix: "", viewport: null },
   { suffix: "-360", viewport: { width: 360, height: 740 } },
@@ -1057,7 +1102,7 @@ const CHAT_SIZES = [
 for (const { suffix, viewport } of CHAT_SIZES) {
   test(`the chat of a game, in every state${suffix}`, async ({ page }) => {
     test.skip(viewport !== null && !onPhone(), "a phone's sizes");
-    if (viewport !== null) await page.setViewportSize(viewport);
+    await chatViewport(page, viewport);
 
     const room = await openChatRoom(page, "chess");
     await expect(board(page)).toBeVisible();
@@ -1097,7 +1142,7 @@ for (const { suffix, viewport } of CHAT_SIZES) {
 
   test(`the chat of Cờ cá ngựa, and the lobby${suffix}`, async ({ page }) => {
     test.skip(viewport !== null && !onPhone(), "a phone's sizes");
-    if (viewport !== null) await page.setViewportSize(viewport);
+    await chatViewport(page, viewport);
 
     const room = await openChatRoom(page, "ludo");
     await expect(horseChoices(page)).toHaveCount(4);
@@ -1150,7 +1195,7 @@ for (const { suffix, viewport } of CHAT_SIZES) {
 
   test(`the chat once a game is over${suffix}`, async ({ page }) => {
     test.skip(viewport !== null && !onPhone(), "a phone's sizes");
-    if (viewport !== null) await page.setViewportSize(viewport);
+    await chatViewport(page, viewport);
 
     const room = await openFakeRoom(page, {
       gameId: "chess",
@@ -1158,7 +1203,10 @@ for (const { suffix, viewport } of CHAT_SIZES) {
         { kind: "human", name: "Lan", standIn: false },
         { kind: "human", name: "Minh", standIn: false },
       ],
-      record: { ...chessRecord(["e2e4", "e7e5"]), ending: { reason: "resigned", player: 1 } },
+      record: {
+        ...chessRecord(["e2e4", "e7e5"]),
+        ending: { reason: "resigned" as const, player: 1 },
+      },
     });
     await expect(page.getByRole("button", { name: "Chơi lại" }).first()).toBeVisible();
     room.receive({ kind: "preset", preset: "good-game" }, { kind: "text", text: "Ván nữa nha" });
@@ -1180,6 +1228,55 @@ for (const { suffix, viewport } of CHAT_SIZES) {
     await shootScreen(page, `43-chat-peek${suffix}`);
   });
 }
+
+// The chat's column at the right of a wide screen (change `rework-chat-layout`): open as it comes,
+// collapsed with a bubble beside its strip, in the lobby, and once the game is over.
+test("the chat's column of a wide screen", async ({ page }) => {
+  test.skip(onPhone(), "a wide screen");
+  const room = await openChatRoom(page, "chess");
+  await expect(page.getByRole("log")).toBeVisible();
+  room.receive(...CHAT_MESSAGES);
+  await expect(page.getByRole("log").getByText("Khai cuộc này mình mới học")).toBeVisible();
+  await shootScreen(page, "44-chat-column-chess");
+
+  await page.getByRole("button", { name: "Thu gọn chat" }).click();
+  room.receive({ kind: "text", text: "Đến lượt bạn đó" });
+  await expect(page.locator("[data-chat-bubble]")).toBeVisible();
+  await shootScreen(page, "44a-chat-column-collapsed");
+  await page.locator("[data-chat-rail]").getByRole("button").click();
+
+  const ludo = await openChatRoom(page, "ludo");
+  await expect(horseChoices(page)).toHaveCount(4);
+  ludo.receive(...CHAT_MESSAGES);
+  await shootScreen(page, "44b-chat-column-ludo");
+
+  const lobby = await openFakeRoom(page, {
+    gameId: "ludo",
+    seats: [
+      { kind: "human", name: "Lan", standIn: false },
+      { kind: "human", name: "Minh", standIn: false },
+      null,
+    ],
+    record: ludoRecord(3, []),
+  });
+  await expect(page.getByRole("region", { name: "Người chơi" })).toBeVisible();
+  lobby.receive(...CHAT_MESSAGES);
+  await shootScreen(page, "44c-chat-column-lobby");
+
+  await openFakeRoom(page, {
+    gameId: "chess",
+    seats: [
+      { kind: "human", name: "Lan", standIn: false },
+      { kind: "human", name: "Minh", standIn: false },
+    ],
+    record: {
+      ...chessRecord(["e2e4", "e7e5"]),
+      ending: { reason: "resigned" as const, player: 1 },
+    },
+  });
+  await expect(page.getByRole("button", { name: "Chơi lại" }).first()).toBeVisible();
+  await shootScreen(page, "44d-chat-column-over");
+});
 
 // Cờ rào: the screens of the mockup (`add-fence-race-game`), at a phone of 360 px too. The setup and
 // rules screens first, then the board in each thing it can show.
@@ -1499,7 +1596,7 @@ test("Gom thạch: a level with its hint, and the menu's card", async ({ page })
   await page.waitForTimeout(300);
   await shootScreen(page, "71a-jelly-level-grass");
   await page.goto("/");
-  await page.getByRole("heading", { name: "Gom thạch" }).scrollIntoViewIfNeeded();
+  await page.getByRole("heading", { name: "Gom thạch", exact: true }).scrollIntoViewIfNeeded();
   await shootScreen(page, "01g-menu-jelly-card");
 });
 
@@ -1556,3 +1653,116 @@ test("Gom thạch: Kho đá, and at 360 × 640", async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 640 });
   await shootScreen(page, "76a-jelly-depot-360x640");
 });
+
+// ── Đội gom thạch (change `add-jelly-crew-game`): the scenes of the mockup ──
+
+const CREW = JELLY_CREW_KITCHEN_TWO;
+
+async function openCrew(
+  page: Page,
+  players: 2 | 3 | 4,
+  moves: readonly (typeof CREW)[number][],
+  map: "kitchen" | "market" | "cold-store" = "kitchen",
+) {
+  await page.goto(PAGE_WITHOUT_STORAGE);
+  await writeSaved(page, "jelly-crew:local", savedJellyCrewGame(players, moves, map));
+  await page.goto("/play/jelly-crew/local");
+  await expect(crewBoard(page)).toBeVisible();
+}
+
+test("Đội gom thạch: the setup screen and the rules", async ({ page }) => {
+  await page.goto("/play/jelly-crew");
+  await choose(page, "Số người chơi", "4 người");
+  await shoot(page, "80-setup-jelly-crew");
+  await page.goto("/rules/jelly-crew");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await shoot(page, "80a-rules-jelly-crew");
+});
+
+for (const [suffix, viewport] of [
+  ["", null],
+  ["-360", { width: 360, height: 740 }],
+] as const) {
+  test(`Đội gom thạch, two on one device${suffix}`, async ({ page }) => {
+    test.skip(viewport !== null && (page.viewportSize()?.width ?? 0) > 500, "a phone's size");
+    if (viewport !== null) await page.setViewportSize(viewport);
+
+    await openCrew(page, 2, []);
+    await shootScreen(page, `81-crew-start${suffix}`);
+    await openCrew(page, 2, CREW.slice(0, 10));
+    await shootScreen(page, `81a-crew-holding${suffix}`);
+    await openCrew(page, 2, CREW.slice(0, 7));
+    await shootScreen(page, `81b-crew-no-steps${suffix}`);
+    await page.getByRole("button", { name: "Đặt lại bản đồ" }).click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await shootScreen(page, `81c-crew-reset${suffix}`);
+  });
+
+  test(`Đội gom thạch, the end${suffix}`, async ({ page }) => {
+    test.skip(viewport !== null && (page.viewportSize()?.width ?? 0) > 500, "a phone's size");
+    if (viewport !== null) await page.setViewportSize(viewport);
+
+    await openCrew(page, 2, CREW.slice(0, -1));
+    await page.keyboard.press("ArrowLeft");
+    await expect(page.getByRole("status")).toHaveText(/Cả đội thắng!/u);
+    await shootScreen(page, `81d-crew-won${suffix}`, { moving: true });
+    await openCrew(page, 2, [
+      ...CREW.slice(0, 21),
+      ...Array.from({ length: 4 }, () => "end" as const),
+    ]);
+    for (let turn = 0; turn < 40; turn += 1) {
+      if ((await page.getByRole("button", { name: "Xong lượt" }).count()) === 0) break;
+      await page.getByRole("button", { name: "Xong lượt" }).click();
+    }
+    await expect(page.getByRole("status")).toHaveText(/Ván kết thúc/u);
+    await shootScreen(page, `81e-crew-out-of-rounds${suffix}`);
+  });
+
+  test(`Đội gom thạch, four players${suffix}`, async ({ page }) => {
+    test.skip(viewport !== null && (page.viewportSize()?.width ?? 0) > 500, "a phone's size");
+    if (viewport !== null) await page.setViewportSize(viewport);
+
+    await openCrew(page, 4, ["D", "end", "D", "D", "D", "L", "L", "end"]);
+    await shootScreen(page, `82-crew-four${suffix}`);
+    await openCrew(page, 4, [], "cold-store");
+    await shootScreen(page, `82a-crew-cold-store-four${suffix}`);
+    await openCrew(page, 3, [], "market");
+    await shootScreen(page, `82b-crew-market-three${suffix}`);
+  });
+
+  test(`Đội gom thạch online${suffix}`, async ({ page }) => {
+    test.skip(viewport !== null && (page.viewportSize()?.width ?? 0) > 500, "a phone's size");
+    if (viewport !== null) await page.setViewportSize(viewport);
+    const seats = [
+      { kind: "human", name: "Lan", standIn: false },
+      { kind: "human", name: "Minh", standIn: false },
+    ] as const;
+
+    await openFakeRoom(
+      page,
+      { gameId: "jelly-crew", seats, record: jellyCrewRecord(2, CREW.slice(0, 24)) },
+      1,
+    );
+    await expect(crewBoard(page)).toBeVisible();
+    await shootScreen(page, `83-crew-online${suffix}`);
+    await page.getByRole("button", { name: "Bỏ cuộc" }).click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await shootScreen(page, `83a-crew-give-up${suffix}`);
+
+    await openFakeRoom(
+      page,
+      { gameId: "jelly-crew", seats, record: jellyCrewRecord(2, CREW.slice(0, 2)) },
+      0,
+    );
+    await expect(crewBoard(page)).toBeVisible();
+    await shootScreen(page, `83b-crew-online-wait${suffix}`);
+
+    const stopped = {
+      ...jellyCrewRecord(2, CREW.slice(0, 10)),
+      ending: { reason: "resigned" as const, player: 1 },
+    };
+    await openFakeRoom(page, { gameId: "jelly-crew", seats, record: stopped }, 0);
+    await expect(page.getByRole("status")).toHaveText(/Ván dừng/u);
+    await shootScreen(page, `83c-crew-stopped${suffix}`);
+  });
+}

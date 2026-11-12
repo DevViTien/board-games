@@ -63,6 +63,8 @@ function snapshot(
     canStartNewGame: false,
     resign: { outcome: "loss", available: true },
     turn: null,
+    cooperative: false,
+    ending: null,
     connection: "online",
     options: {},
     ...overrides,

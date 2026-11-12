@@ -264,6 +264,8 @@ export function createLocalTransport<
       // Against the AI only: on one device, "New game" drops a game.
       resign: mode === "ai" && result === null ? { outcome: "loss", available: true } : null,
       turn: null,
+      cooperative: definition.meta.cooperative === true,
+      ending: next.ending !== undefined && next.cursor === next.entries.length ? next.ending : null,
     };
     emit({ type: "changed" });
     // A listener may already have changed the game, and started the AI's turn for that one.

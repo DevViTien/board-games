@@ -20,6 +20,8 @@ interface PlayerPanelProps<State> {
   readonly connectionLost: boolean | null;
   /** The AI is choosing the move of the seat to move. */
   readonly thinking: boolean;
+  /** Every seat plays on one side: a win is the team's, never marked on one seat. */
+  readonly cooperative?: boolean;
   readonly className?: string | undefined;
 }
 
@@ -87,6 +89,7 @@ function useSeatRows<State>({
   viewer,
   connectionLost,
   thinking,
+  cooperative = false,
 }: SeatRowsProps<State>): readonly SeatRow[] {
   const t = useTranslations("Play");
   const tLevels = useTranslations("Levels");
@@ -135,7 +138,9 @@ function useSeatRows<State>({
         .join(" · ");
     let badge: SeatBadge = null;
     if (result === null && player === currentPlayer) badge = "turn";
-    else if (result?.kind === "win" && result.winners.includes(player)) badge = "winner";
+    else if (!cooperative && result?.kind === "win" && result.winners.includes(player)) {
+      badge = "winner";
+    }
     const connection = online && player === viewer ? (connectionLost ? "lost" : "connected") : null;
     return {
       player,

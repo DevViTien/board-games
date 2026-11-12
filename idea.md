@@ -39,7 +39,7 @@ Chỉ chọn **game truyền thống/dân gian/cổ điển** (luật thuộc ph
 
 | Game | Bàn | Độ khó cài đặt | AI | Ưu tiên |
 |---|---|---|---|---|
-| Cờ caro (Gomoku) | Lưới 15×15 hoặc vô hạn | Dễ | Heuristic + minimax | **MVP** |
+| Cờ caro (Gomoku) | Lưới 15×15, 19×19 hoặc vô hạn (tự nở, giới hạn ẩn 61×61; người dùng chọn 13/11/2026) | Dễ | Heuristic + minimax | **MVP** |
 | Cờ cá ngựa | Bàn hình chữ thập, 2–4 người, xúc xắc | Trung bình | Luật ưu tiên (đá quân > lên chuồng > ra quân…) | **MVP** |
 | Ô ăn quan | 10 ô dân + 2 ô quan | Dễ | Minimax (cây nhỏ) | v1 |
 | Cờ gánh | Lưới 5×5 có đường chéo | Trung bình | Minimax | v1 |
@@ -62,6 +62,7 @@ Chỉ chọn **game truyền thống/dân gian/cổ điển** (luật thuộc ph
 Đã có:
 
 - **Cờ rào** — 2–4 người, đua quân về cổng làng ở cạnh đối diện (5 ô giữa của cạnh) và đặt rào làm người khác đi xa hơn, không được bịt kín đường của ai; mỗi người có một lần phá rào, quân không chặn nhau và được đứng chung ô. Bàn 11 × 9 khi hai người, 9 × 9 khi ba hoặc bốn người; ván luôn kết thúc nhờ giới hạn số nước.
+- **Đội gom thạch** — 2–4 người **cùng phe**, mỗi người một nhân vật có số trên một bản đồ chung; mỗi lượt tối đa 5 bước rồi "Xong lượt"; đẩy thạch như Gom thạch, nhân vật chắn nhau, cửa mở khi có người hay thạch đứng trên nút cùng ký hiệu (● ▲ ■); cả đội thắng khi mọi ô khuôn có thạch đúng loại, hết vòng thì không ai thắng. Ba bản đồ (Hai gian bếp, Chợ đêm, Kho lạnh) × bố cục 2, 3, 4 người; chơi cùng máy và online, không có máy chơi (quyết định 21 ở mục 9).
 
 Một vài phác thảo để phát triển thêm:
 
@@ -371,3 +372,4 @@ Vì `Board` là component React nên nằm ở `apps/web`, còn `GameDefinition`
 | 18 | Hộp công cụ | App có thêm **Hộp công cụ** cho những buổi chơi ngoài đời, trước hết là **Ghi điểm đánh bài**. Công cụ không phải game, không đi qua server; **dữ liệu chỉ trên trình duyệt của máy đang nhập** (IndexedDB), một người ghi trên một máy, người khác xem bản tổng kết được chia sẻ. **Tổng mỗi ván luôn bằng 0**, chưa có cách tính khác. Chỉ ghi **điểm**, không quy đổi ra tiền. Đồng bộ nhiều máy và sao lưu ra file để sau nếu dùng thật thấy cần (chốt 07/11/2026, `add-toolbox-card-score`) |
 | 19 | Trò giải đố một người | App có thêm loại **trò giải đố một người** (màn thiết kế sẵn), ngoài `GameDefinition`: không có chế độ với máy hay online, không đi qua server. Trò đầu tiên là **Gom thạch**, cùng thể loại đẩy khối thạch dính với Jelly Is Sticky nhưng tên, hình và luật chi tiết tự làm, màn tự làm trừ chương Boxoban (quyết định 20) (chỉ ba loại: dính cùng màu, sương sáo dính mọi màu, thạch dừa dính tường; đá viên là khối chắn trơ, trừ ở màn có khuôn đá, nơi đá viên phải vào khuôn). **Tiến độ chỉ trên trình duyệt** (localStorage). Mọi màn mở sẵn, không khoá theo tiến độ. Trình tạo màn, gợi ý, chế độ hai người để sau (chốt 12/11/2026, `add-jelly-gather-puzzle`) |
 | 20 | Màn của bên thứ ba và màn khuôn | Gom thạch có thêm **màn khuôn** (ô đích có màu, luật **vừa khít**: mỗi loại có khuôn có đúng bằng số ô khuôn, mọi ô khuôn có khối đúng loại) và một chương **lấy màn từ bộ Boxoban** của DeepMind (**Apache 2.0**, commit `78011d8c`): hộp thành đá viên, ô đích thành khuôn đá; chỉ lấy màn mà luật đẩy dây chuyền không làm ngắn lời giải so với luật Sokoban; ghi công, nêu rõ đã sửa và kèm toàn văn giấy phép trong `/third-party-licenses.txt` và trên danh sách màn. **Không dùng màn của Jelly Is Sticky** (tài sản của Lunarch Studios, không có bộ map công khai) (chốt 12/11/2026, `add-jelly-gather-molds`) |
+| 21 | Game cùng phe | **Đội gom thạch** là game mới (không phải chế độ của trò giải đố) chơi **cùng phe, theo lượt**, 2–4 người, cùng máy và online. Hợp đồng engine có cờ `cooperative`: game cùng phe thắng thì mọi ghế thắng; có người bỏ cuộc hay bỏ ván thì **ván dừng, không ai thắng** (thay vì những người còn lại thắng); màn hình báo "Cả đội thắng!", "Ván kết thúc", "Ván dừng" (chốt 12/11/2026, `add-jelly-crew-game`) |

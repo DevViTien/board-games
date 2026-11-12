@@ -3,3 +3,23 @@
 
 /* Workspace packages live outside this app, so Tailwind must be told to scan them. */
 @source "../../../../packages/ui/src";
+
+/*
+ * The room the chat's column takes at the right of a wide screen (change `rework-chat-layout`,
+ * design §2): `ChatLayer` sets `data-chat-column` on <html> while it is there. `--chat-room` is what
+ * the page leaves it; `--play-side` is what the play screen keeps beside its board (sides, gap and
+ * the column of the game's words), narrower while the chat's column is open.
+ */
+:root {
+  --chat-room: 0rem;
+  --play-side: 34rem;
+}
+
+:root[data-chat-column="open"] {
+  --chat-room: 18rem;
+  --play-side: 25.5rem;
+}
+
+:root[data-chat-column="rail"] {
+  --chat-room: 3.5rem;
+}

@@ -44,7 +44,7 @@
     },
     "caro": {
       "name": "Gomoku",
-      "tagline": "Five in a row wins · 15×15 or 19×19 board",
+      "tagline": "Five in a row wins · 15×15, 19×19 or infinite board",
       "players": {
         "x": "X",
         "o": "O"
@@ -52,12 +52,20 @@
       "move": "played row {row}, column {col}",
       "winningCell": "Part of the winning line",
       "boardHint": "Tap again to place your stone",
+      "view": "Board view",
+      "zoomOut": "Zoom out",
+      "zoomIn": "Zoom in",
+      "zoomMin": "Already at the smallest",
+      "zoomMax": "Already at the largest",
+      "toLastMove": "Go to the last move",
+      "noMoveYet": "No move yet",
       "options": {
         "size": {
           "label": "Board",
           "values": {
             "15": "15×15",
-            "19": "19×19"
+            "19": "19×19",
+            "infinite": "Infinite"
           }
         },
         "rule": {
@@ -371,6 +379,124 @@
         "other": "{player} {steps}",
         "draw": "The {limit} moves ran out with {players} level, {steps, plural, one {# step} other {# steps}} away."
       }
+    },
+    "jelly-crew": {
+      "name": "Jelly Crew",
+      "tagline": "Push jelly into the molds together: hold a plate so a teammate can get through a door",
+      "seats": {
+        "1": "Blue",
+        "2": "Pink",
+        "3": "Orange",
+        "4": "Jade"
+      },
+      "groups": {
+        "circle": "●",
+        "triangle": "▲",
+        "square": "■"
+      },
+      "kinds": {
+        "strawberry": "strawberry jelly",
+        "pandan": "pandan jelly",
+        "mango": "mango jelly",
+        "taro": "taro jelly",
+        "grass": "grass jelly",
+        "ice": "ice block"
+      },
+      "moldKinds": {
+        "strawberry": "strawberry mold",
+        "pandan": "pandan mold",
+        "mango": "mango mold",
+        "taro": "taro mold",
+        "grass": "grass jelly mold",
+        "ice": "ice mold"
+      },
+      "options": {
+        "map": {
+          "label": "Map",
+          "values": {
+            "kitchen": "Two kitchens",
+            "market": "Night market",
+            "cold-store": "Cold store"
+          }
+        },
+        "summary": "{map}"
+      },
+      "directions": {
+        "U": "Up",
+        "D": "Down",
+        "L": "Left",
+        "R": "Right"
+      },
+      "directionWords": {
+        "U": "up",
+        "D": "down",
+        "L": "left",
+        "R": "right"
+      },
+      "controls": "Controls",
+      "end": "End turn",
+      "back": "Step back",
+      "reset": "Reset the map",
+      "hold": "Hold the plate",
+      "blocked": {
+        "wall": "Wall",
+        "door": "Door {group} closed",
+        "seat": "{name} in the way",
+        "push-wall": "Jelly against a wall",
+        "push-door": "Jelly against closed door {group}",
+        "push-seat": "Jelly against {name}",
+        "no-steps": "No steps left, press End turn",
+        "over": "The game is over"
+      },
+      "blockedSay": "Can't go {direction}: {reason}.",
+      "noBack": "No step taken this turn yet",
+      "noBacksLeft": "Stepped back 5 times this turn",
+      "resetSame": "The map is as it started",
+      "chips": {
+        "turn": "{name} · {count, plural, one {# step} other {# steps}} left",
+        "turnDone": "{name} · no steps left, press End turn",
+        "round": "Round {round}/{rounds}",
+        "molds": "Molds {fitted}/{total}",
+        "moldsLabel": "{fitted} of {total} mold cells filled"
+      },
+      "resetDialog": {
+        "title": "Reset the map?",
+        "body": "Everyone and every jelly goes back to the start. Your turn ends; the rounds played still count.",
+        "keep": "Leave it",
+        "confirm": "Reset"
+      },
+      "resetNote": "{name} reset the map.",
+      "holding": "Holding plate {group}",
+      "holdOn": "Holding the plate: your turn will end by itself.",
+      "holdSay": "{name} holds the plate, turn over.",
+      "keys": "Keys: arrows or W A S D to move · Enter ends the turn",
+      "keysOnline": "Keys: arrows or W A S D to move · Enter ends the turn · Z steps back",
+      "move": {
+        "step": "went {direction}",
+        "push": "pushed {kinds} {direction}",
+        "end": "ended the turn",
+        "back": "stepped back",
+        "reset": "reset the map",
+        "opened": "door {groups} open",
+        "closed": "door {groups} closed",
+        "molds": "molds {fitted}/{total}",
+        "endHolding": "held plate {group} and ended the turn"
+      },
+      "result": {
+        "filled": "Molds filled after {steps} steps, {rounds} rounds.",
+        "outOfRounds": "{rounds} rounds over, {left} mold cells still empty."
+      },
+      "boardLabel": "Map {map}, {width} × {height} cells",
+      "describe": {
+        "title": "Board description",
+        "row": "Row {row}: {cells}",
+        "cell": "column {col}: {things}",
+        "char": "{name} (number {seat})",
+        "plate": "plate {group}",
+        "doorOpen": "door {group} open",
+        "doorClosed": "door {group} closed",
+        "empty": "Row {row}: walls and empty floor"
+      }
     }
   },
   "Modes": {
@@ -520,7 +646,10 @@
       "descriptionStandIn": "The computer will play for you until the game ends. You stay in the room to watch and play the next game.",
       "descriptionAi": "The computer will win this game.",
       "confirm": "Resign",
-      "cancel": "Keep playing"
+      "cancel": "Keep playing",
+      "titleTeam": "Give up this game?",
+      "descriptionTeam": "The game stops for the whole team, and nobody wins. Then the room can play again.",
+      "confirmTeam": "Give up"
     },
     "abandon": {
       "waiting": "{name} hasn't moved · {elapsed}",
@@ -537,7 +666,9 @@
       "claimWin": "Claim the win",
       "claimStandIn": "Let the computer play",
       "claimEnd": "End the game",
-      "notYet": "Not yet: {name}'s turn hasn't lasted 5 minutes."
+      "notYet": "Not yet: {name}'s turn hasn't lasted 5 minutes.",
+      "warnTeam": "{remaining} left. After 5 minutes, someone else can end the game for the team.",
+      "turnWarnTeam": "In under a minute, someone else can end the game for the team."
     },
     "confirmAbandon": {
       "titleWin": "Claim the win from {name}?",
@@ -546,13 +677,16 @@
       "descriptionWin": "{name} hasn't moved for 5 minutes. You will win this game; then the room can play again.",
       "descriptionStandIn": "{name} hasn't moved for 5 minutes. The computer will play for {name} until the game ends.",
       "descriptionEnd": "{name} hasn't moved for 5 minutes and nobody else is playing. The game will end; then the room can play again.",
-      "cancel": "Wait longer"
+      "cancel": "Wait longer",
+      "descriptionTeam": "{name} hasn't moved for 5 minutes. The game stops for the whole team, and nobody wins; then the room can play again."
     },
     "ending": {
       "youResigned": "You resigned.",
       "opponentResigned": "{name} resigned.",
       "youAbandoned": "You left the game: no move for 5 minutes.",
-      "opponentAbandoned": "{name} left the game: no move for 5 minutes."
+      "opponentAbandoned": "{name} left the game: no move for 5 minutes.",
+      "youGaveUp": "You gave up.",
+      "opponentGaveUp": "{name} gave up."
     },
     "standIn": "Played by the computer",
     "standInName": "The computer (for {name})",
@@ -573,7 +707,11 @@
       "loading": "Loading the rules…",
       "loadError": "Couldn’t load the rules. Check your connection and try again; the game goes on.",
       "retry": "Try again"
-    }
+    },
+    "teamWins": "The team wins!",
+    "teamStopped": "Game stopped",
+    "teamEnded": "Game over",
+    "resignTeam": "Give up"
   },
   "NotFound": {
     "title": "Page not found",
@@ -701,7 +839,9 @@
       "clap": "Clap"
     },
     "openChat": "Open chat.",
-    "openPrefix": "Open"
+    "openPrefix": "Open",
+    "collapse": "Collapse chat",
+    "expand": "Open chat"
   },
   "Toolbox": {
     "title": "Toolbox",
@@ -991,7 +1131,10 @@
         "abandon": "Online: if the player to move has not moved for <b>5 minutes</b>, the other player can press “Claim the win” and win the game.",
         "abandonRoom": "Online: if the player to move has not moved for <b>5 minutes</b>, the others can claim their turn abandoned.",
         "standIn": "In a room of 3–4: <b>the computer plays</b> for whoever resigned or left (“Played by the computer”) until the game ends; they play again from the next game. In a room of 2: the game ends and the other player wins.",
-        "vsAi": "Against the computer: resigning means the computer wins."
+        "vsAi": "Against the computer: resigning means the computer wins.",
+        "giveUp": "Press <b>“Give up”</b> to stop the game; the app asks first. The game stops for the <b>whole team</b>, and nobody wins.",
+        "abandonTeam": "Online: if the player to move doesn't move for <b>5 minutes</b>, someone else can press “End game”: the game stops for the whole team, and nobody wins.",
+        "titleTeam": "Giving up and leaving"
       }
     },
     "tictactoe": {
@@ -1025,7 +1168,7 @@
       },
       "board": {
         "title": "Board and turns",
-        "body": "A 15×15 or 19×19 board, picked on the setup screen along with the winning rule. <b>X goes first</b>; on your turn, mark any empty square."
+        "body": "A 15×15, 19×19 or infinite board, picked on the setup screen along with the winning rule. The infinite board starts at 15×15 and grows as stones come near its edge: drag or scroll to look around. <b>X goes first</b>; on your turn, mark any empty square."
       },
       "free": {
         "title": "The “Free style” rule",
@@ -1215,6 +1358,56 @@
           "label": "Before breaking the fence the way is {before} steps; after it, {after} steps",
           "caption": "Breaking the ringed fence takes the way from <b>{before}</b> to <b>{after}</b> steps.",
           "steps": "{count} steps"
+        }
+      }
+    },
+    "jelly-crew": {
+      "goal": {
+        "title": "Goal",
+        "body": "The team pushes jelly into the <b>molds</b> together. Once every mold cell holds the right kind, <b>the whole team wins</b>; nobody wins alone."
+      },
+      "turn": {
+        "title": "Turns",
+        "body": "Each player has a numbered character. On your turn you take <b>up to 5 steps</b>, then press <b>“End turn”</b>; the turn never passes by itself.",
+        "body2": "You can end your turn without a step, to stay on a plate for someone else."
+      },
+      "jelly": {
+        "title": "Pushing and sticking",
+        "body": "Walk into jelly to push it one cell; jelly pushed into more jelly pushes the whole line. Jelly of one kind touching side by side <b>sticks</b> into one piece for good.",
+        "grass": "<b>Grass jelly</b> sticks to every kind of jelly except ice.",
+        "ice": "<b>Ice blocks</b> can be pushed but stick to nothing. A kind without molds is only in the way."
+      },
+      "block": {
+        "title": "Characters block the way",
+        "body": "Nobody walks into another character's cell, and characters can't be pushed. Jelly pushed into a character blocks the whole step."
+      },
+      "doors": {
+        "title": "Plates and doors",
+        "body": "Each plate and door has a sign: <b>●</b>, <b>▲</b> or <b>■</b>. A door opens while someone or some jelly stands on a plate with its sign; once the plate is empty, the door closes.",
+        "body2": "A door with someone or some jelly in it doesn't close, so whatever is in a door can always get out."
+      },
+      "rounds": {
+        "title": "Round limit",
+        "body": "A round is one turn for each player. Each map has a limit of rounds; when they are over and a mold is still empty, the game ends and <b>nobody wins</b>."
+      },
+      "tools": {
+        "title": "Step back, reset, hold the plate",
+        "back": "<b>Step back</b> (online): take back the last step of your own turn, at most 5 times a turn. On one device, use “Undo”.",
+        "reset": "<b>Reset the map</b>: everyone and every jelly goes back to the start and your turn ends; the rounds and steps already used still count.",
+        "hold": "<b>Hold the plate</b>: while standing on a plate, turn it on and the app ends your turns for you."
+      },
+      "maps": {
+        "title": "Maps",
+        "body": "Three maps, each with its own layout for 2, 3 and 4 players: <b>Two kitchens</b> (easy), <b>Night market</b> (medium) and <b>Cold store</b> (hard)."
+      },
+      "figures": {
+        "hold": {
+          "label": "Pink stands on plate ●, door ● is open; Blue pushes strawberry jelly through door ●.",
+          "caption": "Pink <b>holds plate ●</b> so Blue can push the strawberry jelly through door ●."
+        },
+        "blocked": {
+          "label": "Blue wants to push the mango jelly right, but Pink stands right behind it.",
+          "caption": "Jelly pushed into <b>another character</b>: the step is blocked."
         }
       }
     }

@@ -62,6 +62,8 @@ function onlineSnapshot(
     canStartNewGame: result !== null,
     resign: null,
     turn: null,
+    cooperative: false,
+    ending: null,
     connection: "online",
     options: {},
     ...overrides,

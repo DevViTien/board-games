@@ -1,4 +1,4 @@
-import { CARO_RULE, CARO_SIZES, type CaroRule, type CaroSize } from "./constants";
+import { CARO_INFINITE, CARO_RULE, CARO_SIZES, type CaroRule, type CaroSize } from "./constants";
 
 export interface CaroOptions {
   readonly size: CaroSize;
@@ -24,6 +24,11 @@ function isSize(value: unknown): value is CaroSize {
 
 function isRule(value: unknown): value is CaroRule {
   return Object.values(CARO_RULE).some((rule) => rule === value);
+}
+
+/** The side of the square of cells a game is played on: the hidden cap for the board that grows. */
+export function caroGridSide(size: CaroSize): number {
+  return size === "infinite" ? CARO_INFINITE.cap : size;
 }
 
 /**

@@ -104,6 +104,9 @@ const CHESS_SQUARES = [
 /** The three kinds of field of Cờ rào. */
 const FENCE_RACE_FIELDS = ["--game-board", "--fence-race-plot-2", "--fence-race-plot-3"] as const;
 
+/** The kinds of jelly of Đội gom thạch. */
+const JELLY_CREW_KINDS = ["strawberry", "pandan", "mango", "taro", "grass", "ice"] as const;
+
 /** Pairs of one game's look (`redesign-game-boards` design §2–§4). */
 const GAME_PAIRS: Readonly<Record<string, readonly Pair[]>> = {
   // A tile that may be chosen: its edge against the lilac page and its own face.
@@ -174,6 +177,31 @@ const GAME_PAIRS: Readonly<Record<string, readonly Pair[]>> = {
     ["--fence-race-wall", "--game-line", 3],
     ["--fence-race-wall", "--fence-race-halo", 3],
     ["--fence-race-bad-ink", "--fence-race-bad", 3],
+  ],
+  // Design §7 of `add-jelly-crew-game`: the seat numbers (small text) on each character, the
+  // characters' edge and the turn's ring on the floor, plates, doors and their signs, the jellies'
+  // edges on the floor and their signs on their bodies, the line over a filled mold.
+  "jelly-crew": [
+    ["--fg-muted", "--game-tint", 4.5],
+    ...[1, 2, 3, 4].map((seat): Pair => [
+      "--jelly-crew-seat-ink",
+      `--jelly-crew-seat-${String(seat)}`,
+      4.5,
+    ]),
+    ["--jelly-crew-seat-edge", "--game-board", 3],
+    ["--jelly-crew-turn", "--game-board", 3],
+    ["--jelly-crew-sign", "--jelly-crew-plate", 4.5],
+    ["--jelly-crew-sign", "--jelly-crew-plate-on", 4.5],
+    ["--jelly-crew-plate-edge", "--game-board", 3],
+    ["--jelly-crew-door", "--game-board", 3],
+    ["--jelly-crew-door-sign", "--jelly-crew-door", 3],
+    ["--jelly-crew-door-open", "--game-board", 3],
+    ["--jelly-crew-mold-line", "--game-board", 3],
+    ["--jelly-crew-wall", "--game-board", 3],
+    ...JELLY_CREW_KINDS.flatMap((kind): Pair[] => [
+      [`--jelly-crew-${kind}-edge`, "--game-board", 3],
+      [`--jelly-crew-${kind}-mark`, `--jelly-crew-${kind}`, 3],
+    ]),
   ],
 };
 

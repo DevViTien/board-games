@@ -15,7 +15,7 @@ function sectionOf(title: string): HTMLElement {
 const BLOCKED = "Luật “chặn hai đầu” (mặc định)";
 
 describe("CaroRules", () => {
-  it("Hai luật thắng: a section for each winning rule, and both board sizes", () => {
+  it("Hai luật thắng: a section for each winning rule, and the three board sizes", () => {
     renderWithIntl(<CaroRules t={rulesTranslator()} place="page" />);
 
     expect(sectionOf("Luật “tự do”")).toHaveTextContent(/Từ 5 quân liền trở lên/);
@@ -23,7 +23,8 @@ describe("CaroRules", () => {
     expect(blocked).toHaveTextContent(/cả hai ô ngay ngoài hai đầu chuỗi là quân đối thủ/);
     expect(blocked).toHaveTextContent("Mép bàn không tính là chặn.");
     expect(blocked).toHaveTextContent("Chuỗi dài hơn 5 quân thắng theo cùng điều kiện.");
-    expect(screen.getByText(/Bàn 15×15 hoặc 19×19/)).toBeInTheDocument();
+    expect(screen.getByText(/Bàn 15×15, 19×19 hoặc vô hạn/)).toBeInTheDocument();
+    expect(screen.getByText(/Bàn vô hạn bắt đầu 15×15 và tự nở/)).toBeInTheDocument();
     expect(sectionOf("Hoà")).toHaveTextContent("Bàn đầy mà không ai thắng thì hoà.");
   });
 

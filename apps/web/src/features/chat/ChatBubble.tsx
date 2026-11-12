@@ -18,11 +18,15 @@ interface SpotProps {
   readonly dock: DockBox | null;
 }
 
-/** Across the column beside the board, the screen on a phone, a corner in the lobby on a laptop. */
+/**
+ * Across the column beside the board, the screen on a phone, a corner in the lobby on a laptop, and
+ * next to the strip of a collapsed column on a wide screen.
+ */
 function spot({ layout, dock }: SpotProps) {
-  if (layout === CHAT_LAYOUT.Phone) return { className: "inset-x-3" };
-  if (dock === null) return { className: "right-6 w-80" };
-  return { className: "", style: { left: dock.left, width: dock.width } };
+  if (layout === CHAT_LAYOUT.Column) return { className: "right-[4.25rem] w-72" };
+  if (dock !== null) return { className: "", style: { left: dock.left, width: dock.width } };
+  if (layout === CHAT_LAYOUT.Dialog) return { className: "inset-x-3" };
+  return { className: "right-6 w-80" };
 }
 
 /**
@@ -136,9 +140,11 @@ export function ChatReactionFloat({ message, belowBubble, layout, dock }: ChatRe
   const over = useOverBoard(element);
   if (message.body.kind !== "reaction") return null;
   const place =
-    layout === CHAT_LAYOUT.Phone || dock === null
-      ? { right: "1.25rem" }
-      : { left: dock.left + dock.width - 72 };
+    layout === CHAT_LAYOUT.Column
+      ? { right: "5rem" }
+      : dock === null
+        ? { right: "1.25rem" }
+        : { left: dock.left + dock.width - 72 };
 
   return (
     <div

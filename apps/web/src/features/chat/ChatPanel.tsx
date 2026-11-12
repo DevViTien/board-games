@@ -9,6 +9,7 @@ import {
 } from "@board-games/protocol";
 import {
   Button,
+  ChevronRightIcon,
   CircleAlertIcon,
   ClockIcon,
   cn,
@@ -253,16 +254,32 @@ interface ChatPanelProps {
   readonly layout: ChatLayout;
   /** The keyboard is up: the quick row gives its room to the messages. */
   readonly keyboard: boolean;
-  /** Where it goes: measured, so not a matter of classes. */
-  readonly style: CSSProperties;
+  /** Where it goes, when measured: not a matter of classes then. */
+  readonly style?: CSSProperties;
   readonly className: string;
+  /**
+   * Takes the focus as it comes: to the field on a laptop, to its close button on a touch screen.
+   * Not when the column of a wide screen is just there, open, as the page or the game comes.
+   */
+  readonly focusOnMount: boolean;
+  /** Closing (collapsing, for the column); without it, closing closes the chat. */
+  readonly onClose?: () => void;
 }
 
 /**
  * The chat itself, the same on every screen: who is speaking, what can be sent in one tap, and the
  * field. In the page only while open: `role="log"` then reads new messages, and nothing else does.
  */
-export function ChatPanel({ chat, snapshot, layout, keyboard, style, className }: ChatPanelProps) {
+export function ChatPanel({
+  chat,
+  snapshot,
+  layout,
+  keyboard,
+  style,
+  className,
+  focusOnMount,
+  onClose,
+}: ChatPanelProps) {
   const t = useTranslations("Chat");
   const bodyText = useChatBodyText();
   const titleId = useId();
@@ -278,13 +295,21 @@ export function ChatPanel({ chat, snapshot, layout, keyboard, style, className }
   const busy = pending !== null;
   const canSendNow = online && !busy && !slow;
   const canSendDraft = canSendNow && draft.trim() !== "" && draftProblem === null;
-  const covers = layout !== CHAT_LAYOUT.Phone;
+  // The column covers nothing of the game; the panel and the dialog cover the board's words.
+  const covers = layout !== CHAT_LAYOUT.Column;
+  const isDialog = layout === CHAT_LAYOUT.Dialog;
+  const isColumn = layout === CHAT_LAYOUT.Column;
   const inGame = play !== null;
 
   // Reads with the keyboard at hand on a laptop; on a touch screen, opening must not raise it just
   // to read what was said.
   useEffect(() => {
+    if (!focusOnMount) return;
+    // The column, opened from its strip: only from there, gone with it, not from elsewhere since.
+    if (isColumn && document.activeElement !== document.body) return;
     (isTouchScreen() ? close.current : input.current)?.focus({ preventScroll: true });
+    // As it comes only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // What the panel covers of a board's words comes to its head, while it covers them.
@@ -298,6 +323,10 @@ export function ChatPanel({ chat, snapshot, layout, keyboard, style, className }
   }, [chat, hasNotesSlot]);
 
   function closePanel(): void {
+    if (onClose !== undefined) {
+      onClose();
+      return;
+    }
     chat.setOpen(false);
     chat.focusButton();
   }
@@ -403,26 +432,40 @@ export function ChatPanel({ chat, snapshot, layout, keyboard, style, className }
       style={style}
       className={cn("flex min-h-0 flex-col bg-surface text-fg", className)}
       onKeyDown={(event) => {
-        if (event.key !== "Escape" || isImeKey(event)) return;
-        // A dialog's own Esc: it sits above the chat.
-        if (document.querySelector("dialog[open]") !== null) return;
+        // The column stays: collapsing it resizes the board, not for a key so easily pressed.
+        if (event.key !== "Escape" || isImeKey(event) || isColumn) return;
+        // A dialog's own Esc, when one sits above the chat.
+        const panel = event.currentTarget;
+        const above = [...document.querySelectorAll("dialog[open]")].some(
+          (open) => !open.contains(panel),
+        );
+        if (above) return;
+        // The chat's own dialog: closed here, and not again by the browser.
+        event.preventDefault();
         event.stopPropagation();
         closePanel();
       }}
     >
-      <div className="relative flex min-h-12 flex-none items-center gap-1.5 border-b border-border py-0.5 pr-1 pl-3 max-lg:pt-2 short-landscape:pt-0.5">
-        {layout === CHAT_LAYOUT.Phone && (
-          <span
-            aria-hidden
-            className="absolute top-1.5 left-1/2 h-1 w-9 -translate-x-1/2 rounded-full bg-border-control"
-          />
+      <div
+        className={cn(
+          "relative flex min-h-12 flex-none items-center gap-1.5 border-b border-border py-0.5 pr-1 pl-3",
+          // Over the whole screen, under a phone's status bar.
+          isDialog && "pt-[max(0.125rem,var(--safe-top))]",
         )}
+      >
         <div className="min-w-0 flex-1">
           <h2 id={titleId} className="text-body/tight font-bold">
             {t("title")}
           </h2>
+          {/* Over the whole screen, the board's own status line is out of reach: this one is read
+              instead, without a role, so as not to be a second status. */}
           {covers && inGame && !play.over && (
-            <p className="line-clamp-2 text-caption text-fg-muted">{play.turnLine}</p>
+            <p
+              aria-live={isDialog ? "polite" : undefined}
+              className="line-clamp-2 text-caption text-fg-muted"
+            >
+              {play.turnLine}
+            </p>
           )}
           {/* What the panel covers of a board's own words. Empty lines keep no room here. */}
           {hasNotesSlot && (
@@ -461,37 +504,38 @@ export function ChatPanel({ chat, snapshot, layout, keyboard, style, className }
         <button
           ref={close}
           type="button"
-          aria-label={t("close")}
+          aria-label={isColumn ? t("collapse") : t("close")}
+          aria-expanded={isColumn ? true : undefined}
           className="focus-ring inline-flex size-11 flex-none cursor-pointer items-center justify-center rounded-control hover:bg-surface-muted"
           onClick={closePanel}
         >
-          <XIcon aria-hidden className="size-5" />
+          {isColumn ? (
+            <ChevronRightIcon aria-hidden className="size-5" />
+          ) : (
+            <XIcon aria-hidden className="size-5" />
+          )}
         </button>
       </div>
 
       {/* What the panel covers and is needed now comes with it. */}
-      {covers &&
-        inGame &&
-        play.over &&
-        layout === CHAT_LAYOUT.Landscape &&
-        play.rematch !== null && (
-          <ChatLine
-            tone="info"
-            action={
-              <button
-                type="button"
-                className={LINE_BUTTON}
-                onClick={(event) => {
-                  play.rematch?.run(event.currentTarget);
-                }}
-              >
-                {play.rematch.label}
-              </button>
-            }
-          >
-            {play.turnLine}
-          </ChatLine>
-        )}
+      {covers && inGame && play.over && isDialog && play.rematch !== null && (
+        <ChatLine
+          tone="info"
+          action={
+            <button
+              type="button"
+              className={LINE_BUTTON}
+              onClick={(event) => {
+                play.rematch?.run(event.currentTarget);
+              }}
+            >
+              {play.rematch.label}
+            </button>
+          }
+        >
+          {play.turnLine}
+        </ChatLine>
+      )}
       {covers && inGame && !play.over && play.claim !== null && (
         <ChatLine
           tone="info"

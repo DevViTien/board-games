@@ -92,6 +92,8 @@ function fakeTransport(
     canStartNewGame: true,
     resign: null,
     turn: null,
+    cooperative: false,
+    ending: null,
     connection: null,
     options: {},
     ...overrides,
@@ -629,6 +631,8 @@ function onlineSnapshot(
     canStartNewGame: result !== null,
     resign: null,
     turn: null,
+    cooperative: false,
+    ending: null,
     connection: "online",
     ...overrides,
   };
@@ -905,6 +909,8 @@ function caroAfterAiMove(
     canStartNewGame: true,
     resign: null,
     turn: null,
+    cooperative: false,
+    ending: null,
     connection: null,
     options,
     ...overrides,
@@ -1000,6 +1006,8 @@ describe("Bố cục màn hình chơi", () => {
           canStartNewGame: false,
           resign: null,
           turn: null,
+          cooperative: false,
+          ending: null,
         })}
         ui={ui}
       />,

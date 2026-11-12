@@ -133,7 +133,10 @@ describe.each(GAME_IDS)("the rules of %s", (gameId) => {
     await renderRulesPage(gameId, "vi");
 
     const headings = screen.getAllByRole("heading", { level: 2 });
-    expect(headings.at(-1)).toHaveAccessibleName("Đầu hàng và bỏ ván");
+    // A cooperative game is given up, not resigned: nobody wins it (change `add-jelly-crew-game`).
+    expect(headings.at(-1)).toHaveAccessibleName(
+      gameId === "jelly-crew" ? "Bỏ cuộc và bỏ ván" : "Đầu hàng và bỏ ván",
+    );
     expect(headings.at(-1)?.closest("section")).toHaveTextContent(/5 phút/);
   });
 
