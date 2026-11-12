@@ -6,6 +6,7 @@ import {
 import { GAMES, type RegisteredGameId } from "@board-games/games";
 
 import { type ChosenOptions, matchOptionChoices } from "@/lib/option-choices";
+import { type PuzzleEntry, PUZZLES } from "@/puzzles/registry";
 
 import { PLANNED_GAMES } from "./planned-games";
 
@@ -21,19 +22,25 @@ interface CardInfo {
 
 export type MenuGame =
   | (CardInfo & { readonly kind: "playable"; readonly id: RegisteredGameId })
+  | (Pick<PuzzleEntry, "id" | "href" | "Artwork" | "levelCount"> & { readonly kind: "puzzle" })
   | (CardInfo & { readonly kind: "planned"; readonly id: MenuGameId });
 
 interface MenuSources {
   readonly registered: readonly { readonly id: RegisteredGameId; readonly meta: CardInfo }[];
   readonly planned: readonly (CardInfo & { readonly id: MenuGameId })[];
+  /** One-player puzzles (`PUZZLES`): after the playable games, before the planned ones. */
+  readonly puzzles?: readonly PuzzleEntry[];
 }
 
 /**
- * The cards of the menu: playable games first, then planned games that have no rules yet. A
- * planned game that has since been registered appears once, as playable.
+ * The cards of the menu: playable games first, then the puzzles, then planned games that have no
+ * rules yet. A planned game that has since been registered appears once, as playable.
  */
 export function buildMenu(
-  { registered, planned }: MenuSources = { registered: GAMES, planned: PLANNED_GAMES },
+  { registered, planned, puzzles = PUZZLES }: MenuSources = {
+    registered: GAMES,
+    planned: PLANNED_GAMES,
+  },
 ): readonly MenuGame[] {
   const playable = registered.map(({ id, meta }): MenuGame => ({
     kind: "playable",
@@ -50,7 +57,14 @@ export function buildMenu(
       players,
       durationMinutes,
     }));
-  return [...playable, ...comingSoon];
+  const puzzleCards = puzzles.map(({ id, href, Artwork, levelCount }): MenuGame => ({
+    kind: "puzzle",
+    id,
+    href,
+    Artwork,
+    levelCount,
+  }));
+  return [...playable, ...puzzleCards, ...comingSoon];
 }
 
 /** The rule options a game offers and its default for each: plain data for client components. */

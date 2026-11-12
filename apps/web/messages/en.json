@@ -21,7 +21,8 @@
     "joinPlaceholder": "e.g. ABC234",
     "thirdPartyLicenses": "Third-party licenses",
     "rulesLink": "Rules <hidden>of {game}</hidden>",
-    "toolbox": "Toolbox"
+    "toolbox": "Toolbox",
+    "levels": "{count, plural, one {# level} other {# levels}}"
   },
   "Games": {
     "tictactoe": {
@@ -833,6 +834,120 @@
     "summarySettlement": "{from} → {to}: {amount, plural, one {# point} other {# points}}",
     "settlementRead": "{from} gives {to} {amount, plural, one {# point} other {# points}}",
     "openCorrupt": "Open unreadable group {number}"
+  },
+  "Puzzles": {
+    "jelly-gather": {
+      "name": "Jelly Gather",
+      "tagline": "Push the jellies until each colour sticks together in one piece."
+    }
+  },
+  "JellyGather": {
+    "title": "Jelly Gather",
+    "lead": "Push the jellies until each colour sticks together in one piece.",
+    "solvedCount": "{solved} of {total} levels solved.",
+    "fresh": "{total} levels: play them in any order.",
+    "continue": "Continue: level {level}",
+    "start": "Start: level {level}",
+    "allSolved": "You have solved all {total} levels!",
+    "localOnly": "Your progress is kept in this browser only.",
+    "chapterTitle": "Chapter {chapter} · {name}",
+    "chapterLevels": "Levels of chapter {chapter}",
+    "levelBest": "{moves, plural, one {# move} other {# moves}}",
+    "chapters": {
+      "1": {
+        "name": "Sticking",
+        "lead": "Jellies of one colour stick when they touch."
+      },
+      "2": {
+        "name": "Grass jelly",
+        "lead": "Grass jelly sticks to every colour."
+      },
+      "3": {
+        "name": "Coconut",
+        "lead": "Coconut sticks to walls too."
+      }
+    },
+    "howTo": {
+      "title": "How to play",
+      "push": "Walk into a jelly to push it one cell. A jelly pushed into another pushes both.",
+      "stick": "Jellies of the same colour stick together when their sides touch.",
+      "goal": "Gather each colour into <b>one piece</b> to solve the level.",
+      "stuck": "A jelly against a wall can never be pulled away. Stuck? <b>Undo</b> or <b>Restart level</b>.",
+      "ice": "Ice can be pushed but sticks to nothing.",
+      "grass": "Grass jelly sticks to every colour, so it can join two pieces of one colour.",
+      "coconut": "Coconut jelly that touches a wall never moves again."
+    },
+    "play": {
+      "title": "Level {level}",
+      "chapterLine": "Chapter {chapter} · {name}",
+      "best": "best {moves, plural, one {# move} other {# moves}}",
+      "steps": "{count, plural, one {<b>#</b> move} other {<b>#</b> moves}}",
+      "controls": "Controls",
+      "up": "Up",
+      "down": "Down",
+      "left": "Left",
+      "right": "Right",
+      "undo": "Undo",
+      "undoNone": "There is no move to undo yet.",
+      "restart": "Restart level",
+      "keys": "Keys: arrows or W A S D to move · Z undo · R restart level",
+      "board": "The board",
+      "backToList": "Levels"
+    },
+    "hints": {
+      "push": "Walk into a jelly to push it. Two pieces of one colour stick when their sides touch. Gather each colour into one piece to solve the level.",
+      "ice": "Ice can be pushed but sticks to nothing, and need not be gathered.",
+      "grass": "Grass jelly sticks to every colour. Two strawberry pieces stuck to one grass jelly are gathered.",
+      "coconut": "Coconut jelly sticks to walls too: once it touches one, it never moves again."
+    },
+    "solved": {
+      "title": "Gathered!",
+      "thisTime": "This time",
+      "best": "Best",
+      "fewest": "Fewest possible",
+      "moves": "{count, plural, one {# move} other {# moves}}",
+      "perfect": "The fewest moves possible!",
+      "next": "Next level",
+      "list": "Levels"
+    },
+    "say": {
+      "at": "Row {row}, column {col}.",
+      "pushed": "Pushed {kinds}.",
+      "stuck": "Stuck together: {kind}, {count, plural, one {# piece} other {# pieces}} left.",
+      "glued": "Grass jelly took hold of {kinds}.",
+      "fixed": "That piece is stuck for good.",
+      "solved": "Gathered! {count, plural, one {# move} other {# moves}}.",
+      "wall": "Cannot go there: a wall.",
+      "jam": "Cannot push: something is in the way.",
+      "fixedBlock": "Cannot push: the coconut jelly is stuck to a wall.",
+      "undone": "Undone. {count, plural, one {# move} other {# moves}}.",
+      "restarted": "Level restarted. Undo to go back."
+    },
+    "cell": {
+      "row": "Row {row}: {cells}",
+      "wall": "{count, plural, one {# wall} other {# walls}}",
+      "floor": "{count, plural, one {# empty cell} other {# empty cells}}",
+      "player": "you",
+      "piece": "{count, plural, one {# cell of {name}} other {# cells of {name}}}",
+      "fixed": "{name}, stuck",
+      "separator": ", "
+    },
+    "notFound": {
+      "title": "No such level",
+      "description": "Jelly Gather has {count} levels, from {first} to {last}.",
+      "back": "Back to the levels"
+    },
+    "kinds": {
+      "strawberry": "strawberry jelly",
+      "pandan": "pandan jelly",
+      "mango": "mango jelly",
+      "taro": "taro jelly",
+      "coconut": "coconut jelly",
+      "grass": "grass jelly",
+      "ice": "ice"
+    },
+    "levelLinkSolved": "Level {level}, solved, {moves, plural, one {# move} other {# moves}}",
+    "levelLinkUnsolved": "Level {level}, not solved"
   },
   "Rules": {
     "title": "How to play {game}",

@@ -64,12 +64,51 @@ describe("a tool stays out of what games are made of", () => {
     expect(problems("src/tools/card-score/x.ts", imports(specifier))).not.toEqual([]);
   });
 
+  it.each(["@/puzzles/registry", "../../puzzles/jelly-gather/levels"])(
+    "src/tools/card-score/x.ts may not import %s",
+    (specifier) => {
+      expect(problems("src/tools/card-score/x.ts", imports(specifier))).not.toEqual([]);
+    },
+  );
+
   it.each(["@board-games/ui", "@/features/shell/AppTopBar", "@/lib/random-id", "./group"])(
     "src/tools/card-score/x.ts may import %s",
     (specifier) => {
       expect(problems("src/tools/card-score/x.ts", imports(specifier))).toEqual([]);
     },
   );
+});
+
+describe("a puzzle stays out of games, tools and the server", () => {
+  it.each([
+    "@/transport/types",
+    "../../transport/types",
+    "@/server/env",
+    "../../server/env",
+    "@/games/registry",
+    "../../games/artwork",
+    "@/ai-worker/ai-player",
+    "@/tools/registry",
+    "../../tools/card-score/group",
+    "@board-games/engine",
+    "@board-games/games",
+    "@board-games/games/ids",
+    "@board-games/protocol",
+  ])("src/puzzles/jelly-gather/x.ts may not import %s", (specifier) => {
+    expect(problems("src/puzzles/jelly-gather/x.ts", imports(specifier))).not.toEqual([]);
+  });
+
+  it.each([
+    "@board-games/ui",
+    "@/features/shell/client-navigation",
+    "@/lib/with-timeout",
+    "@/config/storage-keys",
+    "@/test/theme-css",
+    "./rules/step",
+    "../registry",
+  ])("src/puzzles/jelly-gather/x.ts may import %s", (specifier) => {
+    expect(problems("src/puzzles/jelly-gather/x.ts", imports(specifier))).toEqual([]);
+  });
 });
 
 describe("a game's rules may only import what their page needs", () => {

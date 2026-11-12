@@ -1,0 +1,31 @@
+import type { LevelId } from "./rules/types";
+
+// One shortest solution of each level (`U D L R`), found by the solver: `levels.test.ts` replays
+// each one. Imported only by that test, so it never reaches a page.
+
+export const SOLUTIONS: Readonly<Record<LevelId, string>> = {
+  "1-1": "LLUR",
+  "1-2": "UURDDRRDLLDLUU",
+  "1-3": "URRDLLDDRUURULL",
+  "1-4": "DRDDLLLULURDRURRDLLL",
+  "1-5": "RRDDURRDDLDLULRUU",
+  "1-6": "DLLLULDRRRRDDLLDLUUURUL",
+  "1-7": "DLLUUULULLDDDUUURRDLURRR",
+  "1-8": "LUDLLUURUURRRDLLULDDDLDRRRRLLUUU",
+  "2-1": "ULLURR",
+  "2-2": "LUULUURRDR",
+  "2-3": "DDULLLDUULDDDRR",
+  "2-4": "UULDDUULURRDRRDD",
+  "2-5": "DDRULURRUULDDLDDRUUURR",
+  "2-6": "DDDULLLRRUULLDDRDDLLURRRR",
+  "2-7": "ULLLUURDLDRRRURRULULDDRDLLLULD",
+  "2-8": "URRRURDDRDDDLLUUURDDRDLUUUULLLULDLD",
+  "3-1": "ULLDDLDR",
+  "3-2": "RRURULLLDRR",
+  "3-3": "URURRDRDLLDLUURR",
+  "3-4": "LDLLULDDDRULURRRURDD",
+  "3-5": "LLUULUURDLDRRRUDLLURRRD",
+  "3-6": "LUURDDRRULLULDLDRRURDDDLUUU",
+  "3-7": "UURDLDRRURULULDDDLDRDRRUUUDLLDRR",
+  "3-8": "DDDRDULUUURDRRULDLLDDDRUDRRRRDRUUU",
+};

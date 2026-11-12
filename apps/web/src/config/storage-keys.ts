@@ -32,3 +32,8 @@ export const CARD_SCORE_DRAFT_KEY_PREFIX = "board-games:card-score-draft:";
 
 // localStorage: the player changed the round screen's keypad for the device's own keyboard.
 export const CARD_SCORE_KEYBOARD_KEY = "board-games:card-score-keyboard";
+
+// localStorage: Gom thạch's progress (solved levels and best moves) and each level's attempt
+// ("<prefix><levelId>", the history of its moves), so a reload goes on where the player was.
+export const JELLY_GATHER_PROGRESS_KEY = "board-games:jelly-gather:progress";
+export const JELLY_GATHER_ATTEMPT_KEY_PREFIX = "board-games:jelly-gather:attempt:";

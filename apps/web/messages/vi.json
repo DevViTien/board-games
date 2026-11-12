@@ -21,7 +21,8 @@
     "joinPlaceholder": "VD: ABC234",
     "thirdPartyLicenses": "Giấy phép bên thứ ba",
     "rulesLink": "Luật chơi <hidden>{game}</hidden>",
-    "toolbox": "Hộp công cụ"
+    "toolbox": "Hộp công cụ",
+    "levels": "{count} màn"
   },
   "Games": {
     "tictactoe": {
@@ -833,6 +834,120 @@
     "summarySettlement": "{from} → {to}: {amount, number} điểm",
     "settlementRead": "{from} chuyển cho {to} {amount, number} điểm",
     "openCorrupt": "Mở nhóm hỏng {number}"
+  },
+  "Puzzles": {
+    "jelly-gather": {
+      "name": "Gom thạch",
+      "tagline": "Đẩy thạch rau câu cho cùng màu dính lại thành một khối."
+    }
+  },
+  "JellyGather": {
+    "title": "Gom thạch",
+    "lead": "Đẩy thạch rau câu cho cùng màu dính lại thành một khối.",
+    "solvedCount": "Đã giải {solved}/{total} màn.",
+    "fresh": "{total} màn, chơi màn nào trước cũng được.",
+    "continue": "Tiếp tục: màn {level}",
+    "start": "Bắt đầu: màn {level}",
+    "allSolved": "Bạn đã giải hết {total} màn!",
+    "localOnly": "Tiến độ chỉ lưu trên trình duyệt này.",
+    "chapterTitle": "Chương {chapter} · {name}",
+    "chapterLevels": "Các màn của chương {chapter}",
+    "levelBest": "{moves} bước",
+    "chapters": {
+      "1": {
+        "name": "Dính lại",
+        "lead": "Thạch cùng màu chạm nhau là dính."
+      },
+      "2": {
+        "name": "Sương sáo",
+        "lead": "Sương sáo dính với mọi màu."
+      },
+      "3": {
+        "name": "Thạch dừa",
+        "lead": "Dừa dính cả vào tường."
+      }
+    },
+    "howTo": {
+      "title": "Cách chơi",
+      "push": "Đi vào thạch để đẩy nó một ô. Thạch đẩy vào thạch khác thì đẩy cả hai.",
+      "stick": "Thạch cùng màu chạm cạnh nhau thì dính lại thành một khối.",
+      "goal": "Gom mỗi màu thành <b>một khối</b> là qua màn.",
+      "stuck": "Thạch sát tường không kéo ra được. Kẹt thì <b>Hoàn tác</b> hoặc <b>Chơi lại màn</b>.",
+      "ice": "Đá viên đẩy được nhưng không dính gì.",
+      "grass": "Sương sáo dính với mọi màu, nối được hai khối cùng màu.",
+      "coconut": "Thạch dừa chạm tường là đứng yên luôn."
+    },
+    "play": {
+      "title": "Màn {level}",
+      "chapterLine": "Chương {chapter} · {name}",
+      "best": "tốt nhất {moves} bước",
+      "steps": "<b>{count}</b> bước",
+      "controls": "Điều khiển",
+      "up": "Lên",
+      "down": "Xuống",
+      "left": "Sang trái",
+      "right": "Sang phải",
+      "undo": "Hoàn tác",
+      "undoNone": "Chưa có bước nào để hoàn tác.",
+      "restart": "Chơi lại màn",
+      "keys": "Phím: mũi tên hoặc W A S D để đi · Z hoàn tác · R chơi lại màn",
+      "board": "Mô tả bàn",
+      "backToList": "Danh sách màn"
+    },
+    "hints": {
+      "push": "Đi vào thạch để đẩy nó. Hai khối cùng màu chạm cạnh nhau thì dính lại. Gom mỗi màu thành một khối là qua màn.",
+      "ice": "Đá viên đẩy được nhưng không dính gì, cũng không cần gom.",
+      "grass": "Sương sáo dính với mọi màu. Hai khối dâu cùng dính vào một khối sương sáo là đã gom xong.",
+      "coconut": "Thạch dừa dính cả vào tường: chạm tường là đứng yên luôn."
+    },
+    "solved": {
+      "title": "Gom xong!",
+      "thisTime": "Lần này",
+      "best": "Tốt nhất",
+      "fewest": "Ít nhất có thể",
+      "moves": "{count} bước",
+      "perfect": "Ít bước nhất có thể!",
+      "next": "Màn tiếp",
+      "list": "Danh sách màn"
+    },
+    "say": {
+      "at": "Hàng {row}, cột {col}.",
+      "pushed": "Đẩy {kinds}.",
+      "stuck": "Dính lại: {kind} còn {count} khối.",
+      "glued": "Sương sáo dính {kinds}.",
+      "fixed": "Khối vừa đẩy đã đứng yên luôn.",
+      "solved": "Gom xong! {count} bước.",
+      "wall": "Không đi được: tường.",
+      "jam": "Không đẩy được: phía trước bị chặn.",
+      "fixedBlock": "Không đẩy được: thạch dừa đã dính tường.",
+      "undone": "Hoàn tác. {count} bước.",
+      "restarted": "Chơi lại màn. Hoàn tác để quay lại."
+    },
+    "cell": {
+      "row": "Hàng {row}: {cells}",
+      "wall": "{count, plural, other {# ô tường}}",
+      "floor": "{count, plural, other {# ô trống}}",
+      "player": "bạn",
+      "piece": "{count, plural, other {# ô {name}}}",
+      "fixed": "{name} đứng yên",
+      "separator": ", "
+    },
+    "notFound": {
+      "title": "Không có màn này",
+      "description": "Gom thạch có {count} màn, từ {first} tới {last}.",
+      "back": "Về danh sách màn"
+    },
+    "kinds": {
+      "strawberry": "thạch dâu",
+      "pandan": "thạch lá dứa",
+      "mango": "thạch xoài",
+      "taro": "thạch khoai môn",
+      "coconut": "thạch dừa",
+      "grass": "sương sáo",
+      "ice": "đá viên"
+    },
+    "levelLinkSolved": "Màn {level}, đã giải, {moves} bước",
+    "levelLinkUnsolved": "Màn {level}, chưa giải"
   },
   "Rules": {
     "title": "Luật chơi {game}",

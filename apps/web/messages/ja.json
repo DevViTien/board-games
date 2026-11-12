@@ -21,7 +21,8 @@
     "joinPlaceholder": "例：ABC234",
     "thirdPartyLicenses": "サードパーティのライセンス",
     "rulesLink": "<hidden>{game}の</hidden>ルール",
-    "toolbox": "ツールボックス"
+    "toolbox": "ツールボックス",
+    "levels": "{count}ステージ"
   },
   "Games": {
     "tictactoe": {
@@ -833,6 +834,120 @@
     "summarySettlement": "{from} → {to}: {amount, number}点",
     "settlementRead": "{from}から{to}へ{amount, number}点",
     "openCorrupt": "読み取れないグループ{number}を開く"
+  },
+  "Puzzles": {
+    "jelly-gather": {
+      "name": "ゼリーあつめ",
+      "tagline": "ゼリーを押して、同じ色をひとつにくっつけよう。"
+    }
+  },
+  "JellyGather": {
+    "title": "ゼリーあつめ",
+    "lead": "ゼリーを押して、同じ色をひとつにくっつけよう。",
+    "solvedCount": "{total}ステージ中{solved}ステージをクリア。",
+    "fresh": "全{total}ステージ。どこから遊んでもOK。",
+    "continue": "続きから:ステージ{level}",
+    "start": "はじめる:ステージ{level}",
+    "allSolved": "全{total}ステージをクリアしました!",
+    "localOnly": "進み具合はこのブラウザーにだけ保存されます。",
+    "chapterTitle": "第{chapter}章 · {name}",
+    "chapterLevels": "第{chapter}章のステージ",
+    "levelBest": "{moves}手",
+    "chapters": {
+      "1": {
+        "name": "くっつく",
+        "lead": "同じ色のゼリーは触れるとくっつく。"
+      },
+      "2": {
+        "name": "仙草ゼリー",
+        "lead": "仙草ゼリーはどの色にもくっつく。"
+      },
+      "3": {
+        "name": "ココナッツ",
+        "lead": "ココナッツは壁にもくっつく。"
+      }
+    },
+    "howTo": {
+      "title": "遊び方",
+      "push": "ゼリーに向かって進むと1マス押せます。押したゼリーが別のゼリーに当たると両方動きます。",
+      "stick": "同じ色のゼリーは辺で触れるとくっついてひとつになります。",
+      "goal": "各色を<b>ひとつのかたまり</b>にするとクリア。",
+      "stuck": "壁ぎわのゼリーは引き戻せません。詰まったら<b>元に戻す</b>か<b>やり直す</b>。",
+      "ice": "氷は押せますが、何にもくっつきません。",
+      "grass": "仙草ゼリーはどの色にもくっつき、同じ色の2つのかたまりをつなげます。",
+      "coconut": "ココナッツゼリーは壁に触れるともう動きません。"
+    },
+    "play": {
+      "title": "ステージ{level}",
+      "chapterLine": "第{chapter}章 · {name}",
+      "best": "ベスト{moves}手",
+      "steps": "<b>{count}</b>手",
+      "controls": "操作",
+      "up": "上",
+      "down": "下",
+      "left": "左",
+      "right": "右",
+      "undo": "元に戻す",
+      "undoNone": "まだ戻せる手がありません。",
+      "restart": "やり直す",
+      "keys": "キー:矢印または W A S D で移動 · Z 元に戻す · R やり直す",
+      "board": "盤面の説明",
+      "backToList": "ステージ一覧"
+    },
+    "hints": {
+      "push": "ゼリーに向かって進むと押せます。同じ色のかたまりは辺で触れるとくっつきます。各色をひとつにするとクリア。",
+      "ice": "氷は押せますが何にもくっつかず、集める必要もありません。",
+      "grass": "仙草ゼリーはどの色にもくっつきます。いちごの2つのかたまりが同じ仙草ゼリーにくっつけば集まったことになります。",
+      "coconut": "ココナッツゼリーは壁にもくっつきます。壁に触れたらもう動きません。"
+    },
+    "solved": {
+      "title": "あつまった!",
+      "thisTime": "今回",
+      "best": "ベスト",
+      "fewest": "最少手数",
+      "moves": "{count}手",
+      "perfect": "最少手数でクリア!",
+      "next": "次のステージ",
+      "list": "ステージ一覧"
+    },
+    "say": {
+      "at": "{row}行{col}列。",
+      "pushed": "{kinds}を押した。",
+      "stuck": "くっついた:{kind}は残り{count}かたまり。",
+      "glued": "仙草ゼリーが{kinds}にくっついた。",
+      "fixed": "そのかたまりはもう動きません。",
+      "solved": "あつまった!{count}手。",
+      "wall": "進めません:壁です。",
+      "jam": "押せません:先がふさがっています。",
+      "fixedBlock": "押せません:ココナッツゼリーが壁にくっついています。",
+      "undone": "元に戻した。{count}手。",
+      "restarted": "やり直した。元に戻すで戻れます。"
+    },
+    "cell": {
+      "row": "{row}行目:{cells}",
+      "wall": "{count, plural, other {#マスの壁}}",
+      "floor": "{count, plural, other {#マスの空き}}",
+      "player": "あなた",
+      "piece": "{count, plural, other {#マスの{name}}}",
+      "fixed": "{name}(固定)",
+      "separator": "、"
+    },
+    "notFound": {
+      "title": "このステージはありません",
+      "description": "ゼリーあつめは全{count}ステージ({first}〜{last})です。",
+      "back": "ステージ一覧へ"
+    },
+    "kinds": {
+      "strawberry": "いちごゼリー",
+      "pandan": "パンダンゼリー",
+      "mango": "マンゴーゼリー",
+      "taro": "タロイモゼリー",
+      "coconut": "ココナッツゼリー",
+      "grass": "仙草ゼリー",
+      "ice": "氷"
+    },
+    "levelLinkSolved": "ステージ{level}、クリア、{moves}手",
+    "levelLinkUnsolved": "ステージ{level}、未クリア"
   },
   "Rules": {
     "title": "{game}のルール",

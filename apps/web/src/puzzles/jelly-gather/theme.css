@@ -1,0 +1,129 @@
+/*
+ * Gom thạch's look ("thạch rau câu": glossy jellies on a cream enamel tray, walls of blue-grey
+ * tiles; by night a dark tray, the jellies' edges lit to stand out), as values of the shared
+ * `--game-*` contract and its own `--jelly-gather-*`, inside `[data-game="jelly-gather"]` only.
+ * Light here, dark in both blocks below, which stay identical (puzzles/theme-css.test.ts; the
+ * contrast of each pair is in design §9 of add-jelly-gather-puzzle).
+ */
+[data-game="jelly-gather"] {
+  /* The page around the tray, and the artwork's background. */
+  --game-page: #f7f1e3;
+  --game-tint: #fbf3e0;
+  /* The tray's floor, and the faint grid on it (decorative). */
+  --game-board: #fff9ec;
+  --game-line: #eadfc6;
+  /* A wall tile and its glazed top. */
+  --jelly-gather-wall: #46677a;
+  --jelly-gather-wall-top: #5f8296;
+  /* The player: ink, with light eyes. */
+  --jelly-gather-player: #17182b;
+  --jelly-gather-player-eye: #ffffff;
+  /* Each kind: its body, its edge (3:1 on the tray), its sign (3:1 on its body). */
+  --jelly-gather-strawberry: #ee5a7c;
+  --jelly-gather-strawberry-edge: #9e1f3d;
+  --jelly-gather-strawberry-mark: #5a0f22;
+  --jelly-gather-pandan: #5cbf63;
+  --jelly-gather-pandan-edge: #22692b;
+  --jelly-gather-pandan-mark: #0f3815;
+  --jelly-gather-mango: #f8be3a;
+  --jelly-gather-mango-edge: #8f5800;
+  --jelly-gather-mango-mark: #4d2f00;
+  --jelly-gather-taro: #a983e0;
+  --jelly-gather-taro-edge: #53308a;
+  --jelly-gather-taro-mark: #2a1250;
+  --jelly-gather-coconut: #f4efe3;
+  --jelly-gather-coconut-edge: #7d6f55;
+  --jelly-gather-coconut-mark: #7d6f55;
+  --jelly-gather-grass: #3a302b;
+  --jelly-gather-grass-edge: #120d0b;
+  --jelly-gather-grass-mark: #e9dccb;
+  --jelly-gather-ice: #d5edf9;
+  --jelly-gather-ice-edge: #3f7896;
+  --jelly-gather-ice-mark: #3f7896;
+  /* The pin of a coconut piece stuck to a wall, on the coconut's body. */
+  --jelly-gather-pin: #2f2a20;
+  /* The gloss on a jelly (decorative). */
+  --jelly-gather-sheen: rgb(255 255 255 / 0.55);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) [data-game="jelly-gather"] {
+    --game-page: #15162a;
+    --game-tint: #22233a;
+    --game-board: #1e2036;
+    --game-line: #2b2d48;
+    --jelly-gather-wall: #7f9bb0;
+    --jelly-gather-wall-top: #a1bacb;
+    --jelly-gather-player: #f1f0f7;
+    --jelly-gather-player-eye: #17182b;
+    --jelly-gather-strawberry: #d94a6c;
+    --jelly-gather-strawberry-edge: #ff9fb4;
+    --jelly-gather-strawberry-mark: #3d0815;
+    --jelly-gather-pandan: #46a24f;
+    --jelly-gather-pandan-edge: #9be7a1;
+    --jelly-gather-pandan-mark: #0b2b10;
+    --jelly-gather-mango: #e3a722;
+    --jelly-gather-mango-edge: #ffd77f;
+    --jelly-gather-mango-mark: #3a2300;
+    --jelly-gather-taro: #9270cf;
+    --jelly-gather-taro-edge: #d2b8ff;
+    --jelly-gather-taro-mark: #1e0b3d;
+    --jelly-gather-coconut: #e6dfcf;
+    --jelly-gather-coconut-edge: #cfc4ab;
+    --jelly-gather-coconut-mark: #6e6248;
+    --jelly-gather-grass: #3b322d;
+    --jelly-gather-grass-edge: #c9b5a3;
+    --jelly-gather-grass-mark: #f0e4d4;
+    --jelly-gather-ice: #a9d3ea;
+    --jelly-gather-ice-edge: #d9f1ff;
+    --jelly-gather-ice-mark: #2f6582;
+    --jelly-gather-pin: #2f2a20;
+    --jelly-gather-sheen: rgb(255 255 255 / 0.35);
+  }
+}
+
+:root[data-theme="dark"] [data-game="jelly-gather"] {
+  --game-page: #15162a;
+  --game-tint: #22233a;
+  --game-board: #1e2036;
+  --game-line: #2b2d48;
+  --jelly-gather-wall: #7f9bb0;
+  --jelly-gather-wall-top: #a1bacb;
+  --jelly-gather-player: #f1f0f7;
+  --jelly-gather-player-eye: #17182b;
+  --jelly-gather-strawberry: #d94a6c;
+  --jelly-gather-strawberry-edge: #ff9fb4;
+  --jelly-gather-strawberry-mark: #3d0815;
+  --jelly-gather-pandan: #46a24f;
+  --jelly-gather-pandan-edge: #9be7a1;
+  --jelly-gather-pandan-mark: #0b2b10;
+  --jelly-gather-mango: #e3a722;
+  --jelly-gather-mango-edge: #ffd77f;
+  --jelly-gather-mango-mark: #3a2300;
+  --jelly-gather-taro: #9270cf;
+  --jelly-gather-taro-edge: #d2b8ff;
+  --jelly-gather-taro-mark: #1e0b3d;
+  --jelly-gather-coconut: #e6dfcf;
+  --jelly-gather-coconut-edge: #cfc4ab;
+  --jelly-gather-coconut-mark: #6e6248;
+  --jelly-gather-grass: #3b322d;
+  --jelly-gather-grass-edge: #c9b5a3;
+  --jelly-gather-grass-mark: #f0e4d4;
+  --jelly-gather-ice: #a9d3ea;
+  --jelly-gather-ice-edge: #d9f1ff;
+  --jelly-gather-ice-mark: #2f6582;
+  --jelly-gather-pin: #2f2a20;
+  --jelly-gather-sheen: rgb(255 255 255 / 0.35);
+}
+
+/* The solved panel's one moment: it grows into place (PlayLevel, `motion-safe:` only). */
+@keyframes jelly-gather-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

@@ -3,6 +3,7 @@ import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { PUZZLES } from "@/puzzles/registry";
 import { renderWithIntl } from "@/test/render-with-intl";
 import type { SavedGameStore } from "@/transport/types";
 
@@ -94,7 +95,8 @@ describe("MenuPage", () => {
     renderWithIntl(<MenuPage />);
 
     const names = ["Tic-tac-toe", "Cờ caro", "Cờ cá ngựa", "Cờ vua", "Cờ rào"];
-    expect(cardNames()).toEqual(names);
+    // And the puzzle after them (its own card, below).
+    expect(cardNames()).toEqual([...names, "Gom thạch"]);
     for (const name of names) {
       expect(gameCard(name).getByRole("link", { name: "Chơi" })).toBeInTheDocument();
       expect(gameCard(name).getByRole("link", { name: "Online" })).toBeInTheDocument();
@@ -171,7 +173,7 @@ describe("MenuPage", () => {
 
     expect(
       [...container.querySelectorAll("[data-game]")].map((art) => art.getAttribute("data-game")),
-    ).toEqual(["tictactoe", "caro", "ludo", "chess", "fence-race"]);
+    ).toEqual(["tictactoe", "caro", "ludo", "chess", "fence-race", "jelly-gather"]);
     expect(
       gameCard("Cờ cá ngựa").getByText("Gieo xúc xắc, đua ngựa về chuồng"),
     ).toBeInTheDocument();
@@ -190,6 +192,7 @@ describe("MenuPage", () => {
     const cards = buildMenu({
       registered: GAMES.filter((game) => game.id !== "chess"),
       planned: [{ id: "chess", players: { min: 2, max: 2 }, durationMinutes: 20 }],
+      puzzles: [],
     });
     renderWithIntl(<MenuPage cards={cards} />);
 
@@ -213,8 +216,44 @@ describe("MenuPage", () => {
   it("links every game of the real menu: Play, Online and the rules on each of the five cards", () => {
     renderWithIntl(<MenuPage />);
 
-    // With the way to the toolbox.
-    expect(within(screen.getByRole("main")).getAllByRole("link")).toHaveLength(16);
+    // With the way to the toolbox and Gom thạch's "Chơi".
+    expect(within(screen.getByRole("main")).getAllByRole("link")).toHaveLength(17);
+  });
+
+  it("Thẻ Gom thạch: one player, its levels, one way in named with it, no Online", () => {
+    renderWithIntl(<MenuPage />);
+
+    expect(cardNames().at(-1)).toBe("Gom thạch");
+    const card = gameCard("Gom thạch");
+    expect(card.getByText("1 người")).toBeInTheDocument();
+    expect(card.getByText(`${PUZZLES[0]?.levelCount ?? 0} màn`)).toBeInTheDocument();
+    const links = card.getAllByRole("link");
+    expect(links).toHaveLength(1);
+    expect(links[0]).toHaveAccessibleName("Chơi");
+    expect(links[0]).toHaveAccessibleDescription("Gom thạch");
+    expect(links[0]).toHaveAttribute("href", "/puzzles/jelly-gather");
+  });
+
+  it("Trò giải đố mới: one more line in the list, one more card", () => {
+    const puzzle = PUZZLES[0];
+    if (puzzle === undefined) throw new Error("no puzzle");
+    function TestArtwork() {
+      return <svg aria-hidden data-testid="test-artwork" />;
+    }
+    const cards = buildMenu({
+      registered: [],
+      planned: [],
+      puzzles: [puzzle, { ...puzzle, Artwork: TestArtwork }],
+    });
+    renderWithIntl(<MenuPage cards={cards} />);
+
+    expect(screen.getAllByRole("heading", { level: 2, name: "Gom thạch" })).toHaveLength(2);
+    expect(screen.getByTestId("test-artwork")).toBeInTheDocument();
+    // Each card's way in is described by its own heading.
+    const descriptions = screen
+      .getAllByRole("link", { name: "Chơi" })
+      .map((link) => link.getAttribute("aria-describedby"));
+    expect(new Set(descriptions).size).toBe(2);
   });
 
   it("Tên liên kết không trùng: four links to the rules, each named with its game", () => {

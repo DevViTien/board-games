@@ -12,6 +12,7 @@ describe("buildMenu", () => {
     const menu = buildMenu({
       registered: [tictactoe],
       planned: [{ id: "chess", players: { min: 2, max: 2 }, durationMinutes: 20 }],
+      puzzles: [],
     });
 
     expect(menu.map((game) => [game.kind, game.id])).toEqual([
@@ -27,6 +28,7 @@ describe("buildMenu", () => {
         { id: "tictactoe", players: { min: 2, max: 2 }, durationMinutes: 99 },
         { id: "caro", players: { min: 2, max: 2 }, durationMinutes: 5 },
       ],
+      puzzles: [],
     });
 
     expect(menu.map((game) => game.id)).toEqual(["tictactoe", "caro"]);
@@ -45,7 +47,21 @@ describe("buildMenu", () => {
       ["playable", "ludo"],
       ["playable", "chess"],
       ["playable", "fence-race"],
+      ["puzzle", "jelly-gather"],
     ]);
+  });
+
+  it("Thẻ trò giải đố trên menu: puzzles after the playable games, before the planned ones", () => {
+    const menu = buildMenu({
+      registered: [tictactoe],
+      planned: [{ id: "chess", players: { min: 2, max: 2 }, durationMinutes: 20 }],
+    });
+    expect(menu.map((game) => [game.kind, game.id])).toEqual([
+      ["playable", "tictactoe"],
+      ["puzzle", "jelly-gather"],
+      ["planned", "chess"],
+    ]);
+    expect(menu[1]).toMatchObject({ href: "/puzzles/jelly-gather", levelCount: 24 });
   });
 });
 

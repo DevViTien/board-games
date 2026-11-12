@@ -15,8 +15,20 @@ interface MenuPageProps {
   readonly cards?: readonly MenuGame[];
 }
 
+/** "1 người · 24 màn": a puzzle's card says its levels instead of a duration. */
+function PuzzleFacts({ levelCount }: { readonly levelCount: number }) {
+  const t = useTranslations("Menu");
+  return (
+    <p className="flex flex-wrap gap-x-1 text-caption text-fg-muted">
+      <span>{t("playersFixed", { count: 1 })}</span>
+      <span aria-hidden>·</span>
+      <span>{t("levels", { count: levelCount })}</span>
+    </p>
+  );
+}
+
 /** "2 người · ~10 phút": each part its own element, so each reads and wraps on its own. */
-function GameFacts({ game }: { readonly game: MenuGame }) {
+function GameFacts({ game }: { readonly game: Exclude<MenuGame, { kind: "puzzle" }> }) {
   const t = useTranslations("Menu");
   return (
     <p className="flex flex-wrap gap-x-1 text-caption text-fg-muted">
@@ -44,6 +56,7 @@ const GROW =
 export function MenuPage({ cards = buildMenu() }: MenuPageProps) {
   const t = useTranslations("Menu");
   const tGames = useTranslations("Games");
+  const tPuzzles = useTranslations("Puzzles");
 
   return (
     <>
@@ -70,8 +83,8 @@ export function MenuPage({ cards = buildMenu() }: MenuPageProps) {
         </div>
 
         <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {cards.map((game) => {
-            const headingId = `game-${game.id}`;
+          {cards.map((game, index) => {
+            const headingId = `game-${game.id}${game.kind === "puzzle" ? `-${index}` : ""}`;
             if (game.kind === "planned") {
               // Not a link nor a card: a thin dashed row, below the playable games.
               return (
@@ -83,6 +96,42 @@ export function MenuPage({ cards = buildMenu() }: MenuPageProps) {
                     <GameFacts game={game} />
                     <Badge className="ml-auto">{t("comingSoon")}</Badge>
                   </div>
+                </li>
+              );
+            }
+            if (game.kind === "puzzle") {
+              // One player, no "Online": a single way in, to the puzzle's levels.
+              const { Artwork } = game;
+              return (
+                <li key={`${game.id}-${index}`} className="flex">
+                  <Card className={cn("group flex w-full flex-col overflow-hidden p-0", LIFT)}>
+                    <div
+                      data-game={game.id}
+                      className="grid h-42 place-items-center overflow-hidden bg-game-tint"
+                    >
+                      <div className={GROW}>
+                        <Artwork />
+                      </div>
+                    </div>
+                    <div className="flex flex-1 flex-col gap-1 p-6">
+                      <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                        <h2 id={headingId} className="text-heading">
+                          {tPuzzles(`${game.id}.name`)}
+                        </h2>
+                        <PuzzleFacts levelCount={game.levelCount} />
+                      </div>
+                      <p className="text-small text-fg-muted">{tPuzzles(`${game.id}.tagline`)}</p>
+                      <div className="mt-auto pt-4">
+                        <Link
+                          href={game.href}
+                          aria-describedby={headingId}
+                          className={cn(buttonVariants(), "w-full")}
+                        >
+                          {t("play")}
+                        </Link>
+                      </div>
+                    </div>
+                  </Card>
                 </li>
               );
             }

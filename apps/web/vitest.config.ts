@@ -11,6 +11,11 @@ const alias = { "@": fileURLToPath(new URL("./src", import.meta.url)) };
  * stay at the root: projects get the root's `include` added to theirs.
  */
 const SERVER_TESTS = ["src/server/**/*.test.ts", "src/app/api/**/*.test.ts"];
+/**
+ * A puzzle's rules and levels are plain functions with no DOM: they run in Node, without the DOM
+ * setup, where the levels' solver also runs fastest (design §5 of add-jelly-gather-puzzle).
+ */
+const PURE_TESTS = ["src/puzzles/*/rules/**/*.test.ts", "src/puzzles/*/levels*.test.ts"];
 
 export default defineConfig({
   test: {
@@ -23,12 +28,16 @@ export default defineConfig({
           environment: "jsdom",
           setupFiles: ["./vitest.setup.ts"],
           include: ["src/**/*.test.{ts,tsx}"],
-          exclude: [...configDefaults.exclude, ...SERVER_TESTS],
+          exclude: [...configDefaults.exclude, ...SERVER_TESTS, ...PURE_TESTS],
         },
       },
       {
         resolve: { alias },
         test: { name: "server", environment: "node", include: SERVER_TESTS },
+      },
+      {
+        resolve: { alias },
+        test: { name: "pure", environment: "node", include: PURE_TESTS },
       },
     ],
   },

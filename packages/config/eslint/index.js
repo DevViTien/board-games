@@ -63,14 +63,23 @@ const WEB_REGISTRY_FREE_FILES = ["src/features/**", "src/transport/**", "src/lib
  * made of (design of add-toolbox-card-score).
  */
 const WEB_TOOL_FILES = ["src/tools/**"];
-const WEB_TOOL_FORBIDDEN = ["transport", "server", "games", "ai-worker"].flatMap((folder) => [
-  `@/${folder}`,
-  `@/${folder}/**`,
-  ...["../", "../../", "../../../", "../../../../"].flatMap((up) => [
-    `${up}${folder}`,
-    `${up}${folder}/**`,
-  ]),
-]);
+/** The folders of the web app that `folders` names, by alias and by relative path. */
+const webFolders = (folders) =>
+  folders.flatMap((folder) => [
+    `@/${folder}`,
+    `@/${folder}/**`,
+    ...["../", "../../", "../../../", "../../../../"].flatMap((up) => [
+      `${up}${folder}`,
+      `${up}${folder}/**`,
+    ]),
+  ]);
+const WEB_TOOL_FORBIDDEN = webFolders(["transport", "server", "games", "ai-worker", "puzzles"]);
+/**
+ * A puzzle is not a game either: one player, no seats, no server, its own rules in its own folder
+ * (design of add-jelly-gather-puzzle). Nor does it reach into a tool.
+ */
+const WEB_PUZZLE_FILES = ["src/puzzles/**"];
+const WEB_PUZZLE_FORBIDDEN = webFolders(["transport", "server", "games", "ai-worker", "tools"]);
 const WEB_TOOL_FORBIDDEN_PACKAGES = ["engine", "games", "protocol"].flatMap((name) => [
   `@board-games/${name}`,
   `@board-games/${name}/**`,
@@ -252,7 +261,24 @@ function boundaries(layer) {
               {
                 group: [...WEB_TOOL_FORBIDDEN, ...WEB_TOOL_FORBIDDEN_PACKAGES],
                 message:
-                  "A tool does not touch what games are made of: no transport, server, games, AI or protocol.",
+                  "A tool does not touch what games are made of, nor a puzzle: no transport, server, games, AI, protocol or puzzles.",
+              },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      files: WEB_PUZZLE_FILES,
+      rules: {
+        "@typescript-eslint/no-restricted-imports": [
+          "error",
+          {
+            patterns: [
+              {
+                group: [...WEB_PUZZLE_FORBIDDEN, ...WEB_TOOL_FORBIDDEN_PACKAGES],
+                message:
+                  "A puzzle has its own rules and talks to no server: no transport, server, games, AI, protocol or tools.",
               },
             ],
           },
