@@ -1,0 +1,666 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mockup Đội gom thạch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* App tokens copied from packages/ui/src/styles.css. */
+:root{color-scheme:light;--bg:#f6f5f1;--surface:#fff;--surface-muted:#efede6;--fg:#17182b;--fg-muted:#5e6072;--border:#e2e0d8;--border-control:#7c7a72;--accent:#5b34e6;--accent-hover:#4a26cf;--accent-fg:#fff;--accent-press:#3a1fa8;--accent-soft:#ece7ff;--accent-ink:#3a1fa8;--focus:#17182b;--halo:#fff;--success-soft:#dff5ec;--success-ink:#0d6b4b;--celebration-soft:#ffe9db;--celebration-ink:#a6430c;--danger:#b42318;--card:0 1px 2px rgb(23 24 43/.06);--r-c:.875rem;--r-card:1.25rem}
+[data-theme=dark]{color-scheme:dark;--bg:#121322;--surface:#1b1c30;--surface-muted:#24253b;--fg:#f1f0f7;--fg-muted:#a9aabf;--border:#2c2e47;--border-control:#8a8cab;--accent:#a894ff;--accent-hover:#bbacff;--accent-fg:#121322;--accent-press:#6f5bd6;--accent-soft:#2d2752;--accent-ink:#d9d0ff;--focus:#f1f0f7;--halo:#121322;--success-soft:#173a30;--success-ink:#7fe3bd;--celebration-soft:#3a2a1e;--celebration-ink:#ffb98c;--danger:#ff8a80;--card:0 0 #0000}
+
+/* The game's own tokens (would be games/jelly-crew/theme.css, [data-game="jelly-crew"]). The
+   jellies keep Gom thạch's values so both read as one family. */
+[data-game=jelly-crew]{
+  --game-page:#f7f1e3;--game-tint:#fbf3e0;--game-board:#fff9ec;--game-line:#eadfc6;
+  --jelly-crew-wall:#46677a;--jelly-crew-wall-top:#5f8296;
+  --jelly-crew-strawberry:#ee5a7c;--jelly-crew-strawberry-edge:#9e1f3d;--jelly-crew-strawberry-mark:#5a0f22;
+  --jelly-crew-pandan:#5cbf63;--jelly-crew-pandan-edge:#22692b;--jelly-crew-pandan-mark:#0f3815;
+  --jelly-crew-mango:#f8be3a;--jelly-crew-mango-edge:#8f5800;--jelly-crew-mango-mark:#4d2f00;
+  --jelly-crew-taro:#a983e0;--jelly-crew-taro-edge:#53308a;--jelly-crew-taro-mark:#2a1250;
+  --jelly-crew-grass:#3a302b;--jelly-crew-grass-edge:#120d0b;--jelly-crew-grass-mark:#e9dccb;
+  --jelly-crew-ice:#d5edf9;--jelly-crew-ice-edge:#3f7896;--jelly-crew-ice-mark:#3f7896;
+  --jelly-crew-sheen:rgb(255 255 255/.55);--jelly-crew-mold-fill:.28;--jelly-crew-mold-line:#17182b;
+  /* Seats: a body the white number reads on (4.5:1), an edge 3:1 on the floor. */
+  --jelly-crew-seat-1:#2a5fc4;--jelly-crew-seat-2:#b8327a;--jelly-crew-seat-3:#a8520c;--jelly-crew-seat-4:#0b7169;
+  --jelly-crew-seat-edge:#17182b;--jelly-crew-seat-ink:#ffffff;
+  /* The seat to move: an ink ring, and the halo between it and the body. */
+  --jelly-crew-turn:#17182b;--jelly-crew-turn-halo:#fff9ec;
+  /* Plates and doors: neutral, told apart by their sign (● ▲ ■), not by colour. */
+  --jelly-crew-plate:#e6dcc4;--jelly-crew-plate-edge:#6b5f45;--jelly-crew-plate-on:#c7b48a;--jelly-crew-sign:#2b2418;
+  --jelly-crew-door:#7a5a3a;--jelly-crew-door-bar:#a98762;--jelly-crew-door-sign:#fff9ec;--jelly-crew-door-open:#6b5f45;
+}
+[data-theme=dark] [data-game=jelly-crew],[data-theme=dark][data-game=jelly-crew]{
+  --game-page:#15162a;--game-tint:#22233a;--game-board:#1e2036;--game-line:#2b2d48;
+  --jelly-crew-wall:#7f9bb0;--jelly-crew-wall-top:#a1bacb;
+  --jelly-crew-strawberry:#d94a6c;--jelly-crew-strawberry-edge:#ff9fb4;--jelly-crew-strawberry-mark:#3d0815;
+  --jelly-crew-pandan:#46a24f;--jelly-crew-pandan-edge:#9be7a1;--jelly-crew-pandan-mark:#0b2b10;
+  --jelly-crew-mango:#e3a722;--jelly-crew-mango-edge:#ffd77f;--jelly-crew-mango-mark:#3a2300;
+  --jelly-crew-taro:#9270cf;--jelly-crew-taro-edge:#d2b8ff;--jelly-crew-taro-mark:#1e0b3d;
+  --jelly-crew-grass:#3b322d;--jelly-crew-grass-edge:#c9b5a3;--jelly-crew-grass-mark:#f0e4d4;
+  --jelly-crew-ice:#a9d3ea;--jelly-crew-ice-edge:#d9f1ff;--jelly-crew-ice-mark:#2f6582;
+  --jelly-crew-sheen:rgb(255 255 255/.35);--jelly-crew-mold-fill:.32;--jelly-crew-mold-line:#f1f0f7;
+  --jelly-crew-seat-1:#3d6fd6;--jelly-crew-seat-2:#c23d86;--jelly-crew-seat-3:#b35e16;--jelly-crew-seat-4:#11807a;
+  --jelly-crew-seat-edge:#f1f0f7;--jelly-crew-seat-ink:#ffffff;
+  --jelly-crew-turn:#f1f0f7;--jelly-crew-turn-halo:#1e2036;
+  --jelly-crew-plate:#3a3c58;--jelly-crew-plate-edge:#b9b3a2;--jelly-crew-plate-on:#5d6080;--jelly-crew-sign:#f1ead8;
+  --jelly-crew-door:#c9a57e;--jelly-crew-door-bar:#8f6c48;--jelly-crew-door-sign:#1e2036;--jelly-crew-door-open:#c9b9a0;
+}
+
+*{box-sizing:border-box}html,body{margin:0;height:100%}
+body{font:400 16px/1.55 "Be Vietnam Pro",system-ui,sans-serif;background:#d9d7cf;color:#17182b}
+button{font:inherit;color:inherit;cursor:pointer}
+
+/* Review shell, not part of the design. */
+.shell{display:flex;gap:20px;padding:16px;min-height:100%;align-items:flex-start}
+.panel{width:260px;flex:none;background:#fff;border-radius:14px;padding:14px;font-size:13px;position:sticky;top:16px;max-height:calc(100vh - 32px);overflow:auto}
+.panel h1{font-size:15px;margin:0 0 6px}.panel h2{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#5e6072;margin:14px 0 5px}
+.panel button{display:block;width:100%;text-align:left;border:1px solid #d6d4cc;background:#fff;border-radius:7px;padding:4px 8px;margin-bottom:3px;font-size:12.5px;color:#17182b}
+.panel button.on{background:#17182b;color:#fff}
+.panel p{margin:6px 0;color:#3b3d52;line-height:1.45}
+.bare .shell{padding:0}.bare .panel{display:none}.bare .frame{border-radius:0;box-shadow:none}
+.frame{flex:none;background:var(--bg);color:var(--fg);border-radius:18px;overflow:hidden;box-shadow:0 8px 30px rgb(0 0 0/.25);position:relative;transform:translateZ(0)}
+.screen{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column}
+
+/* App frame. */
+.topbar{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;height:56px;padding:0 12px;flex:none}
+.wide .topbar{height:64px;padding:0 40px}
+.topbar .t{font-weight:700;font-size:1.125rem;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip{height:40px;min-width:40px;border:1.5px solid var(--fg);border-radius:var(--r-c);background:var(--surface);display:grid;place-items:center;font-size:12px;font-weight:700;padding:0 8px;flex:none}
+.back{display:inline-grid;place-items:center;border:0;background:none;width:44px;height:44px;border-radius:var(--r-c);flex:none}
+main{padding:16px 16px 24px;display:flex;flex-direction:column;gap:12px;flex:1;width:100%;max-width:72rem;margin:0 auto}
+.wide main{padding:28px 40px 40px}
+h1.page{font-size:clamp(1.625rem,1.4rem + .9vw,2rem);line-height:1.15;font-weight:700;margin:0}
+.muted{color:var(--fg-muted)}.small{font-size:.875rem;line-height:1.45}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-card);box-shadow:var(--card)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:var(--r-c);min-height:48px;padding:0 18px;font-weight:600;border:0;text-decoration:none;color:var(--fg);background:none}
+.btn.primary{background:var(--accent);color:var(--accent-fg);font-weight:700;box-shadow:0 2px 0 var(--accent-press)}
+.btn.secondary{background:var(--surface);border:1.5px solid var(--fg)}
+.btn[aria-disabled=true]{color:var(--fg-muted);border:1.5px dashed var(--border-control);cursor:not-allowed;background:var(--surface-muted);box-shadow:none}
+.btn.full{width:100%}
+button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--focus);outline-offset:2px;box-shadow:0 0 0 2px var(--halo)}
+svg.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.num{font-variant-numeric:tabular-nums}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* Shared play screen (features/play), as it is today. */
+.turn{font-weight:700;font-size:1.125rem;text-align:center;margin:0}
+.seats{display:grid;gap:8px;grid-template-columns:1fr}
+.seats.many{grid-template-columns:1fr 1fr}
+.seat{display:flex;gap:10px;align-items:center;border:1.5px solid var(--border);background:var(--surface);border-radius:var(--r-c);padding:8px 10px;min-width:0}
+.seat.now{border-color:var(--fg);box-shadow:0 0 0 3px var(--accent-soft)}
+.seat .nm{font-weight:700;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seat .sub{font-size:.8125rem;color:var(--fg-muted);line-height:1.3;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.badge{display:inline-flex;align-items:center;border-radius:999px;padding:0 8px;font-size:.75rem;font-weight:700;background:var(--fg);color:var(--bg);line-height:1.5}
+.badge.win{background:var(--celebration-ink);color:var(--bg)}
+.seats.many .seat{padding:6px 8px;gap:8px}.seats.many .seat .nm{font-size:.9375rem}
+.bottom{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.bottom .btn{flex:1;max-width:11rem;white-space:nowrap;padding:0 12px}
+.result{padding:14px 16px;display:flex;flex-direction:column;gap:8px;background:var(--celebration-soft);border-color:transparent;text-align:center}
+.result h2{margin:0;font-size:1.375rem;color:var(--celebration-ink)}
+.result.flat{background:var(--surface-muted)}.result.flat h2{color:var(--fg)}
+.result p{margin:0}
+.notice{font-size:.875rem;color:var(--fg-muted);text-align:center;margin:0}
+
+/* The board's parts (games/jelly-crew/Board). */
+.boardbox{display:flex;align-items:center;justify-content:center;background:var(--game-page);border-radius:var(--r-card);padding:6px;border:3px solid var(--seat,transparent);touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.wide .boardbox{padding:20px}
+.board{display:block;width:100%;height:auto}
+.board .mv{transition:transform 120ms cubic-bezier(.2,.8,.3,1)}
+.board .now-ring{animation:breathe 1.6s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes breathe{0%,100%{opacity:1}50%{opacity:.55}}
+@media (prefers-reduced-motion:reduce){.board .mv{transition:none}.board .now-ring{animation:none}}
+.rm .board .mv{transition:none}.rm .board .now-ring{animation:none}
+.chips{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--border-control);border-radius:999px;padding:1px 10px;font-size:.8125rem;font-weight:700;background:var(--surface)}
+.pill.full{border-color:var(--success-ink);color:var(--success-ink);background:var(--success-soft)}
+.pill.warn{border-color:var(--celebration-ink);color:var(--celebration-ink)}
+.pad{display:grid;grid-template-columns:1fr 52px 52px 52px 1fr;grid-template-rows:52px 52px;gap:8px;align-items:stretch}
+.pad .dir{border:1.5px solid var(--fg);background:var(--surface);border-radius:var(--r-c);display:grid;place-items:center;touch-action:manipulation}
+.pad .dir:active{background:var(--surface-muted)}
+.pad .act{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;border:0;background:none;border-radius:var(--r-c);font-size:.75rem;font-weight:600;line-height:1.2;touch-action:manipulation;min-width:44px}
+.pad .act.end{border:1.5px solid var(--fg);background:var(--surface);font-size:.8125rem;font-weight:700}
+.pad [aria-disabled=true]{color:var(--fg-muted);border-color:var(--border-control);border-style:dashed;cursor:not-allowed}
+.pad .act.end[aria-disabled=true]{border:1.5px dashed var(--border-control)}
+.pad .act.hold{border:1.5px solid var(--fg);background:var(--surface)}.pad .act.hold[aria-pressed=true]{background:var(--fg);color:var(--bg)}
+.pad .act:not(.end)[aria-disabled=true]{opacity:.7}
+.why{font-size:.8125rem;color:var(--fg-muted);text-align:center;margin:0;min-height:1.3em}
+.status{min-height:1.5em;font-size:.8125rem;color:var(--fg-muted);font-weight:600;text-align:center;margin:0}
+.side{display:flex;flex-direction:column;gap:14px}
+.wide .playgrid{display:grid;grid-template-columns:1fr 23rem;gap:28px;align-items:start}
+.keys{font-size:.8125rem;color:var(--fg-muted);line-height:1.6;margin:0}
+.keys kbd{font:600 .75rem/1 "Be Vietnam Pro",system-ui;border:1px solid var(--border-control);border-radius:6px;padding:2px 6px;background:var(--surface)}
+
+/* Dialog. */
+.scrim{position:absolute;inset:0;background:rgb(0 0 0/.45);display:grid;place-items:center;padding:16px;z-index:9}
+.dialog{background:var(--surface);border-radius:var(--r-card);padding:20px;max-width:24rem;width:100%;display:flex;flex-direction:column;gap:10px}
+.dialog h2{margin:0;font-size:1.25rem}
+.dialog .row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:6px}
+
+/* Menu and setup. */
+.games{display:grid;gap:20px;grid-template-columns:1fr}
+.wide .games{grid-template-columns:repeat(3,1fr)}
+.ghost{height:96px;border-radius:var(--r-card);border:1.5px dashed var(--border);display:grid;place-items:center;color:var(--fg-muted);font-size:.875rem}
+.gcard{overflow:hidden;display:flex;flex-direction:column}
+.gcard .art{height:168px;display:grid;place-items:center;background:var(--game-tint)}
+.gcard .body{padding:20px;display:flex;flex-direction:column;gap:6px}
+.gcard h2{font-size:1.25rem;margin:0;font-weight:700}
+.facts{display:flex;gap:4px;font-size:.8125rem;color:var(--fg-muted);font-weight:600;margin:0}
+.duo{display:flex;gap:8px;padding-top:10px}.duo .btn{flex:1}
+fieldset{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+legend{font-weight:700;margin-bottom:6px}
+.radio{display:flex;gap:10px;align-items:center;border:1.5px solid var(--border-control);border-radius:var(--r-c);padding:10px 12px;background:var(--surface)}
+.radio.on{border-color:var(--fg);box-shadow:inset 0 0 0 1.5px var(--fg)}
+.radio .dot{width:20px;height:20px;border-radius:50%;border:2px solid var(--fg);display:grid;place-items:center;flex:none}
+.radio.on .dot::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--fg)}
+.radio small{display:block;color:var(--fg-muted);font-size:.8125rem;line-height:1.3}
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="panel" aria-label="Điều khiển mockup">
+    <h1>Mockup: Đội gom thạch</h1>
+    <p>Chơi được thật: lượt 5 bước, nút và cửa, khuôn, giới hạn vòng, lùi bước (online), đặt lại bản đồ. Bản đồ "Hai gian bếp" cho 2 và 4 người.</p>
+    <h2>Giao diện</h2>
+    <button data-set="theme:light" class="on">Sáng</button>
+    <button data-set="theme:dark">Tối</button>
+    <h2>Khung</h2>
+    <button data-set="vp:390x844" class="on">Điện thoại 390 × 844</button>
+    <button data-set="vp:360x640">Điện thoại nhỏ 360 × 640</button>
+    <button data-set="vp:1280x800">Máy tính 1280 × 800</button>
+    <h2>Cảnh</h2>
+    <button data-set="scene:menu">Menu (thẻ game)</button>
+    <button data-set="scene:setup">Bắt đầu ván (chọn bản đồ)</button>
+    <button data-set="scene:local2" class="on">Cùng máy, 2 người, đầu ván</button>
+    <button data-set="scene:local2mid">Cùng máy, 2 người, đang giữ nút</button>
+    <button data-set="scene:full">Cùng máy, đã đi đủ 5 bước</button>
+    <button data-set="scene:local4">Cùng máy, 4 người, giữa ván</button>
+    <button data-set="scene:online">Online, đến lượt bạn (có Lùi bước)</button>
+    <button data-set="scene:wait">Online, chờ người khác</button>
+    <button data-set="scene:reset">Hộp thoại đặt lại bản đồ</button>
+    <button data-set="scene:resign">Hộp thoại bỏ cuộc (online)</button>
+    <button data-set="scene:win">Cả đội thắng</button>
+    <button data-set="scene:out">Hết vòng</button>
+    <button data-set="scene:quit">Online, có người bỏ cuộc</button>
+    <h2>Chuyển động</h2>
+    <button data-set="motion:on" class="on">Bình thường</button>
+    <button data-set="motion:off">Giảm chuyển động</button>
+    <h2>Cách thử</h2>
+    <p>Bấm vào khung rồi dùng phím mũi tên / WASD, <b>Enter</b> xong lượt (khi tiêu điểm không ở trên nút), <b>Z</b> lùi bước (online). Hoặc vuốt trên bàn, hoặc bấm nút.</p>
+    <p>Lời giải 2 người: Lam xuống 1; Hồng xuống 3, trái 2 (giữ ●, bật "Giữ nút"); Lam đẩy thạch dâu qua cửa ●; Lam về, lên nút ▲; Hồng đẩy thạch xoài qua cửa ▲. Mỗi lượt kết thúc bằng Xong lượt.</p>
+    <p>Dòng chữ xám dưới bàn là lời báo cho trình đọc màn hình (bản thật ẩn đi).</p>
+  </aside>
+  <div id="frame" class="frame" data-game="jelly-crew"><div class="screen" id="screen"></div></div>
+</div>
+
+<script>
+// ---------- Rules (design §3) ----------
+const DIRS = { U: [0, -1], D: [0, 1], L: [-1, 0], R: [1, 0] };
+const DIR_WORD = { U: "lên", D: "xuống", L: "sang trái", R: "sang phải" };
+const KINDS = { r: "strawberry", g: "pandan", y: "mango", p: "taro", s: "grass", i: "ice" };
+const NAMES = { strawberry: "dâu", pandan: "lá dứa", mango: "xoài", taro: "khoai môn", grass: "sương sáo", ice: "đá viên" };
+const kindName = (k) => (k === "ice" ? "đá viên" : `thạch ${NAMES[k]}`);
+const sticks = (a, b) => a !== "ice" && b !== "ice" && (a === b || a === "grass" || b === "grass");
+const kindsOf = (p) => [...new Set(p.kinds)];
+const GROUPS = { a: "●", b: "▲", c: "■" };
+const SEATS = ["Lam", "Hồng", "Cam", "Ngọc"];
+const STEPS = 5, BACKS = 5;
+
+// Rows: '#' wall, '.' floor, '1'..'4' starts, r g y p s i jellies, a b c plates, A B C doors.
+const MAPS = {
+  2: {
+    name: "Hai gian bếp", rounds: 10,
+    rows: [
+      "###################",
+      "#1....#.....#....2#",
+      "#.rr..A.....B.yy..#",
+      "#.....#.....#.....#",
+      "#..b..#.....#..a..#",
+      "#.....#.....#.....#",
+      "###################",
+    ],
+    molds: { 2: "........RRYY......." },
+  },
+  4: {
+    name: "Hai gian bếp", rounds: 10,
+    rows: [
+      "###################",
+      "#1....#.....#....2#",
+      "#.rr..A.....B.yy..#",
+      "#.....#.....#.....#",
+      "#..b..#.....#..a..#",
+      "#.....#.....#.....#",
+      "#######.....#######",
+      "#.....#.....#.....#",
+      "#..c..#.....#.....#",
+      "#.....#.....#.....#",
+      "#.gg..A.....C.pp..#",
+      "#3....#.....#....4#",
+      "###################",
+    ],
+    molds: { 2: "........RRYY.......", 10: "........GGPP......." },
+  },
+};
+const MOLD_KIND = { R: "strawberry", G: "pandan", Y: "mango", P: "taro", S: "grass", I: "ice" };
+
+function parseMap(def) {
+  const h = def.rows.length, w = def.rows[0].length;
+  const walls = new Set(), plates = new Map(), doors = new Map(), molds = new Map(), starts = [], pieces = [];
+  def.rows.forEach((row, y) => [...row].forEach((ch, x) => {
+    const c = y * w + x;
+    if (ch === "#") walls.add(c);
+    else if (ch >= "1" && ch <= "4") starts[Number(ch) - 1] = c;
+    else if (GROUPS[ch]) plates.set(c, ch);
+    else if (GROUPS[ch.toLowerCase()]) doors.set(c, ch.toLowerCase());
+    else if (KINDS[ch]) pieces.push({ cells: [c], kinds: [KINDS[ch]] });
+  }));
+  for (const [y, row] of Object.entries(def.molds)) [...row].forEach((ch, x) => { if (ch !== ".") molds.set(Number(y) * w + x, MOLD_KIND[ch]); });
+  const level = { w, h, walls, plates, doors, molds, rounds: def.rounds, name: def.name };
+  return { level, start: { chars: starts, pieces: settle(level, pieces) } };
+}
+function nbs(level, c) { const x = c % level.w, o = []; if (x > 0) o.push(c - 1); if (x < level.w - 1) o.push(c + 1); if (c >= level.w) o.push(c - level.w); if (c < level.w * (level.h - 1)) o.push(c + level.w); return o; }
+function settle(level, pieces) {
+  const parent = pieces.map((_, i) => i), find = (i) => (parent[i] === i ? i : (parent[i] = find(parent[i])));
+  const at = new Map(); pieces.forEach((p, i) => p.cells.forEach((c, k) => at.set(c, [i, p.kinds[k]])));
+  for (const [c, [i, k]] of at) for (const m of nbs(level, c)) { const o = at.get(m); if (o && o[0] !== i && sticks(k, o[1])) parent[find(i)] = find(o[0]); }
+  const groups = new Map();
+  pieces.forEach((p, i) => { const r = find(i); const g = groups.get(r) ?? { cells: [], kinds: [] }; p.cells.forEach((c, k) => { g.cells.push(c); g.kinds.push(p.kinds[k]); }); groups.set(r, g); });
+  return [...groups.values()].map((g) => { const o = g.cells.map((c, k) => [c, g.kinds[k]]).sort((a, b) => a[0] - b[0]); return { cells: o.map((e) => e[0]), kinds: o.map((e) => e[1]) }; }).sort((a, b) => a.cells[0] - b.cells[0]);
+}
+function openGroups(level, board) {
+  const held = new Set(board.chars); for (const p of board.pieces) for (const c of p.cells) held.add(c);
+  const open = new Set(); for (const [c, g] of level.plates) if (held.has(c)) open.add(g);
+  // A door with something in it cannot close (jammed).
+  for (const [c, g] of level.doors) if (held.has(c)) open.add(g);
+  return open;
+}
+function closed(level, cell, open) { const g = level.doors.get(cell); return g !== undefined && !open.has(g); }
+/** One step of seat `seat`: the new board, or why it is blocked. */
+function tryStep(level, board, seat, dir) {
+  const [dx, dy] = DIRS[dir];
+  const st = (c) => { const x = (c % level.w) + dx, y = Math.floor(c / level.w) + dy; return x < 0 || y < 0 || x >= level.w || y >= level.h ? -1 : y * level.w + x; };
+  const me = board.chars[seat], open = openGroups(level, board), t = st(me);
+  if (t < 0 || level.walls.has(t)) return { blocked: "wall" };
+  if (closed(level, t, open)) return { blocked: "door", group: level.doors.get(t) };
+  const others = new Set(board.chars.filter((_, i) => i !== seat));
+  if (others.has(t)) return { blocked: "seat", who: board.chars.indexOf(t) };
+  const owner = new Map(); board.pieces.forEach((p, i) => p.cells.forEach((c) => owner.set(c, i)));
+  const first = owner.get(t); let pieces = board.pieces, pushed = [];
+  if (first !== undefined) {
+    const set = new Set([first]), q = [first];
+    while (q.length) {
+      const i = q.shift();
+      for (const c of board.pieces[i].cells) {
+        const m = st(c);
+        if (m < 0 || level.walls.has(m)) return { blocked: "push-wall" };
+        if (closed(level, m, open)) return { blocked: "push-door", group: level.doors.get(m) };
+        if (others.has(m)) return { blocked: "push-seat", who: board.chars.indexOf(m) };
+        const j = owner.get(m); if (j !== undefined && !set.has(j)) { set.add(j); q.push(j); }
+      }
+    }
+    pushed = [...set];
+    pieces = settle(level, board.pieces.map((p, i) => (set.has(i) ? { ...p, cells: p.cells.map(st) } : p)));
+  }
+  return { board: { chars: board.chars.map((c, i) => (i === seat ? t : c)), pieces }, pushed: pushed.map((i) => board.pieces[i]), from: board };
+}
+function moldCount(level, board) {
+  const at = new Map(); board.pieces.forEach((p) => p.cells.forEach((c, k) => at.set(c, p.kinds[k])));
+  let fitted = 0; for (const [c, k] of level.molds) if (at.get(c) === k) fitted++;
+  return { fitted, total: level.molds.size };
+}
+const sameBoard = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+// A game: the start, and the moves played (step U/D/L/R, back, end, reset). State by replaying them.
+function setup(n) { const { level, start } = parseMap(MAPS[n]); return { level, start, n }; }
+function replay(game, moves) {
+  const { level, start, n } = game;
+  let s = { board: start, turn: 0, taken: 0, backs: 0, turns: 0, steps: 0, stack: [], trail: [], trailSeat: -1, last: null, result: null };
+  const endTurn = () => { s.turns++; s.turn = (s.turn + 1) % n; s.taken = 0; s.backs = 0; s.stack = []; if (s.turns >= level.rounds * n) s.result = { kind: "draw", reason: "out-of-rounds" }; };
+  for (const m of moves) {
+    s.last = { move: m, seat: s.turn };
+    if (m === "end") endTurn();
+    else if (m === "back") { s.board = s.stack.pop(); s.taken--; s.steps--; s.backs++; s.trail = s.trail.slice(0, -1); }
+    else if (m === "reset") { s.board = start; s.trail = []; endTurn(); }
+    else {
+      const r = tryStep(level, s.board, s.turn, m);
+      if (s.taken === 0) { s.trail = [s.board.chars[s.turn]]; s.trailSeat = s.turn; }
+      s.stack.push(s.board); s.board = r.board; s.taken++; s.steps++;
+      s.trail = [...s.trail, s.board.chars[s.turn]];
+      const mc = moldCount(level, s.board);
+      if (mc.fitted === mc.total) s.result = { kind: "win", reason: "filled" };
+    }
+  }
+  return s;
+}
+const round = (game, s) => Math.min(game.level.rounds, Math.floor(s.turns / game.n) + 1);
+const holding = (level, board, seat) => level.plates.get(board.chars[seat]);
+
+// ---------- Drawing ----------
+const v = (name) => `var(--jelly-crew-${name})`;
+function markSvg(kind, cx, cy, r, fill) {
+  const m = fill ?? v(`${kind}-mark`);
+  switch (kind) {
+    case "strawberry": return `<circle cx="${cx}" cy="${cy}" r="${r * 0.8}" fill="${m}"/>`;
+    case "pandan": return `<path d="M${cx} ${cy - r} L${cx + r} ${cy + r * 0.8} L${cx - r} ${cy + r * 0.8}Z" fill="${m}"/>`;
+    case "mango": return `<rect x="${cx - r * 0.78}" y="${cy - r * 0.78}" width="${r * 1.56}" height="${r * 1.56}" fill="${m}"/>`;
+    case "taro": return `<path d="M${cx} ${cy - r} L${cx + r} ${cy} L${cx} ${cy + r} L${cx - r} ${cy}Z" fill="${m}"/>`;
+    case "grass": return `<path d="M${cx - r * 0.75} ${cy - r * 0.75} L${cx + r * 0.75} ${cy + r * 0.75} M${cx + r * 0.75} ${cy - r * 0.75} L${cx - r * 0.75} ${cy + r * 0.75}" stroke="${m}" stroke-width="${r * 0.4}" stroke-linecap="round"/>`;
+    case "ice": return `<path d="M${cx - r * 0.2} ${cy + r * 0.6} L${cx + r * 0.6} ${cy - r * 0.2}" stroke="${v("ice-mark")}" stroke-width="${r * 0.18}" stroke-linecap="round"/>`;
+  }
+  return "";
+}
+function groupSign(g, cx, cy, r, fill) {
+  if (g === "a") return `<circle cx="${cx}" cy="${cy}" r="${r * 0.85}" fill="${fill}"/>`;
+  if (g === "b") return `<path d="M${cx} ${cy - r} L${cx + r} ${cy + r * 0.8} L${cx - r} ${cy + r * 0.8}Z" fill="${fill}"/>`;
+  return `<rect x="${cx - r * 0.75}" y="${cy - r * 0.75}" width="${r * 1.5}" height="${r * 1.5}" fill="${fill}"/>`;
+}
+function pieceSvg(level, p, s, extra = "") {
+  const w = level.w, kindAt = new Map(p.cells.map((c, k) => [c, p.kinds[k]]));
+  const xy = (c) => [(c % w) * s, Math.floor(c / w) * s];
+  const right = (c) => ((c % w) < w - 1 ? c + 1 : -1);
+  let edge = "", body = "", glue = "", marks = "";
+  const ow = Math.max(2, s * 0.07), inset = s * 0.05;
+  for (const kind of kindsOf(p)) {
+    const rad = kind === "ice" ? s * 0.12 : s * 0.26, same = (c) => kindAt.get(c) === kind;
+    const shape = (ins, r, fill) => { let out = ""; for (const c of p.cells) { if (!same(c)) continue; const [x, y] = xy(c);
+      out += `<rect x="${x + ins}" y="${y + ins}" width="${s - 2 * ins}" height="${s - 2 * ins}" rx="${r}" fill="${fill}"/>`;
+      if (same(right(c))) out += `<rect x="${x + s / 2}" y="${y + ins}" width="${s}" height="${s - 2 * ins}" fill="${fill}"/>`;
+      if (same(c + w)) out += `<rect x="${x + ins}" y="${y + s / 2}" width="${s - 2 * ins}" height="${s}" fill="${fill}"/>`;
+      if (same(right(c)) && same(c + w) && same(c + w + 1)) out += `<rect x="${x + s / 2}" y="${y + s / 2}" width="${s}" height="${s}" fill="${fill}"/>`; } return out; };
+    edge += shape(inset, rad, v(`${kind}-edge`)); body += shape(inset + ow, Math.max(1, rad - ow), v(kind));
+  }
+  for (const c of p.cells) {
+    const [x, y] = xy(c), k = kindAt.get(c);
+    for (const [n, horiz] of [[right(c), true], [c + w, false]]) { const kn = kindAt.get(n); if (kn === undefined || kn === k) continue;
+      glue += horiz ? `<rect x="${x + s * 0.84}" y="${y + s * 0.28}" width="${s * 0.32}" height="${s * 0.44}" rx="${s * 0.08}" fill="${v("grass")}" stroke="${v("grass-edge")}" stroke-width="${s * 0.04}"/>` : `<rect x="${x + s * 0.28}" y="${y + s * 0.84}" width="${s * 0.44}" height="${s * 0.32}" rx="${s * 0.08}" fill="${v("grass")}" stroke="${v("grass-edge")}" stroke-width="${s * 0.04}"/>`; }
+    if (k !== "ice") marks += `<path d="M${x + s * 0.24} ${y + s * 0.3} q${s * 0.06} ${-s * 0.1} ${s * 0.2} ${-s * 0.1}" stroke="${v("sheen")}" stroke-width="${s * 0.07}" stroke-linecap="round" fill="none"/>`;
+    marks += markSvg(k, x + s / 2, y + s / 2 + s * 0.04, s * 0.15);
+  }
+  return `<g ${extra}>${edge}${body}${glue}${marks}</g>`;
+}
+function charSvg(level, c, seat, s, now, extra = "", plate) {
+  const x = (c % level.w) * s + s / 2, y = Math.floor(c / level.w) * s + s / 2, r = now ? s * 0.36 : s * 0.41;
+  const ring = now ? `<circle class="now-ring" cx="${x}" cy="${y}" r="${s * 0.47}" fill="none" stroke="${v("turn")}" stroke-width="${s * 0.12}"/>` : "";
+  const badge = plate ? `<circle cx="${x + s * 0.32}" cy="${y - s * 0.32}" r="${s * 0.17}" fill="${v("plate")}" stroke="${v("plate-edge")}" stroke-width="${s * 0.04}"/>` + groupSign(plate, x + s * 0.32, y - s * 0.32, s * 0.09, v("sign")) : "";
+  return `<g ${extra}>${ring}<circle cx="${x}" cy="${y}" r="${r + s * 0.04}" fill="${now ? v("turn-halo") : "none"}"/><circle cx="${x}" cy="${y}" r="${r}" fill="${v(`seat-${seat + 1}`)}" stroke="${v("seat-edge")}" stroke-width="${s * 0.05}"/>` +
+    `<text x="${x}" y="${y + s * 0.18}" text-anchor="middle" font-size="${s * 0.52}" font-weight="800" fill="${v("seat-ink")}" font-family="Be Vietnam Pro,system-ui">${seat + 1}</text>${badge}</g>`;
+}
+function boardSvg(game, board, s, opts = {}) {
+  const { level } = game, W = level.w * s, H = level.h * s, open = openGroups(level, board);
+  let bg = `<rect width="${W}" height="${H}" rx="${s * 0.3}" fill="var(--game-board)"/>`;
+  for (let y = 1; y < level.h; y++) bg += `<path d="M0 ${y * s}H${W}" stroke="var(--game-line)" stroke-width="1"/>`;
+  for (let x = 1; x < level.w; x++) bg += `<path d="M${x * s} 0V${H}" stroke="var(--game-line)" stroke-width="1"/>`;
+  let walls = "";
+  for (const c of level.walls) { const x = (c % level.w) * s, y = Math.floor(c / level.w) * s;
+    walls += `<rect x="${x}" y="${y}" width="${s}" height="${s}" fill="${v("wall")}"/><rect x="${x + s * 0.12}" y="${y + s * 0.12}" width="${s * 0.76}" height="${s * 0.62}" rx="${s * 0.1}" fill="${v("wall-top")}"/>`; }
+  let fixtures = "";
+  for (const [c, g] of level.plates) { const x = (c % level.w) * s, y = Math.floor(c / level.w) * s, held = board.chars.includes(c) || board.pieces.some((p) => p.cells.includes(c));
+    fixtures += `<rect x="${x + s * 0.1}" y="${y + s * 0.1}" width="${s * 0.8}" height="${s * 0.8}" rx="${s * 0.16}" fill="${held ? v("plate-on") : v("plate")}" stroke="${v("plate-edge")}" stroke-width="${s * 0.06}"/>` + groupSign(g, x + s / 2, y + s / 2, s * 0.2, v("sign")); }
+  for (const [c, g] of level.doors) { const x = (c % level.w) * s, y = Math.floor(c / level.w) * s;
+    if (open.has(g)) fixtures += `<rect x="${x}" y="${y}" width="${s * 0.16}" height="${s}" fill="${v("door")}"/><rect x="${x + s * 0.84}" y="${y}" width="${s * 0.16}" height="${s}" fill="${v("door")}"/>` + groupSign(g, x + s / 2, y + s / 2, s * 0.14, v("door-open"));
+    else { fixtures += `<rect x="${x}" y="${y}" width="${s}" height="${s}" fill="${v("door")}"/>`; for (let k = 0; k < 3; k++) fixtures += `<rect x="${x + s * (0.14 + k * 0.27)}" y="${y + s * 0.08}" width="${s * 0.17}" height="${s * 0.84}" rx="${s * 0.05}" fill="${v("door-bar")}"/>`;
+      fixtures += `<circle cx="${x + s / 2}" cy="${y + s / 2}" r="${s * 0.26}" fill="${v("door")}"/>` + groupSign(g, x + s / 2, y + s / 2, s * 0.17, v("door-sign")); } }
+  let moldsUnder = "", moldsOver = "";
+  const at = new Map(); board.pieces.forEach((p) => p.cells.forEach((c, k) => at.set(c, p.kinds[k])));
+  for (const [c, k] of level.molds) { const x = (c % level.w) * s, y = Math.floor(c / level.w) * s, i = s * 0.09;
+    moldsUnder += `<rect x="${x + i}" y="${y + i}" width="${s - 2 * i}" height="${s - 2 * i}" rx="${s * 0.2}" fill="${v(k)}" fill-opacity="${v("mold-fill")}" stroke="${v(k + "-edge")}" stroke-width="${s * 0.05}" stroke-dasharray="${s * 0.12} ${s * 0.08}"/>` + markSvg(k, x + s / 2, y + s / 2, s * 0.1, v(k + "-edge"));
+    const on = at.get(c); if (on === undefined) continue; const ok = on === k;
+    moldsOver += `<rect x="${x + s * 0.03}" y="${y + s * 0.03}" width="${s * 0.94}" height="${s * 0.94}" rx="${s * 0.24}" fill="none" stroke="${v("mold-line")}" stroke-width="${s * 0.045}" ${ok ? "" : `stroke-dasharray="${s * 0.1} ${s * 0.07}"`}/>` + (ok ? `<path d="M${x + s * 0.66} ${y + s * 0.8} l${s * 0.07} ${s * 0.07} l${s * 0.13} -${s * 0.15}" stroke="${v("mold-line")}" stroke-width="${s * 0.06}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>` : ""); }
+  let trail = "";
+  if (opts.trail) for (const c of opts.trail.cells.slice(0, -1)) trail += `<circle cx="${(c % level.w) * s + s / 2}" cy="${Math.floor(c / level.w) * s + s / 2}" r="${s * 0.1}" fill="${v(`seat-${opts.trail.seat + 1}`)}" opacity=".7"/>`;
+  const pieces = board.pieces.map((p, i) => pieceSvg(level, p, s, opts.pieceAttr ? opts.pieceAttr(p, i) : "")).join("");
+  const chars = board.chars.map((c, i) => charSvg(level, c, i, s, i === opts.now, opts.charAttr ? opts.charAttr(i) : "", level.plates.get(c))).join("");
+  return `<svg class="board" viewBox="0 0 ${W} ${H}" style="max-width:${opts.max ?? W}px" aria-hidden="true">${bg}${walls}${moldsUnder}${fixtures}${trail}${pieces}${moldsOver}${chars}</svg>`;
+}
+function describeRows(game, board) {
+  const { level } = game, open = openGroups(level, board), out = [];
+  const at = new Map(); board.pieces.forEach((p) => p.cells.forEach((c, k) => at.set(c, p.kinds[k])));
+  for (let y = 0; y < level.h; y++) { const bits = [];
+    for (let x = 0; x < level.w; x++) { const c = y * level.w + x, seat = board.chars.indexOf(c), things = [];
+      if (seat >= 0) things.push(`${SEATS[seat]} (số ${seat + 1})`);
+      if (at.has(c)) things.push(kindName(at.get(c)));
+      if (level.molds.has(c)) things.push(`khuôn ${NAMES[level.molds.get(c)]}`);
+      if (level.plates.has(c)) things.push(`nút ${GROUPS[level.plates.get(c)]}`);
+      if (level.doors.has(c)) things.push(`cửa ${GROUPS[level.doors.get(c)]} ${open.has(level.doors.get(c)) ? "mở" : "đóng"}`);
+      if (things.length) bits.push(`cột ${x + 1}: ${things.join(", ")}`); }
+    if (bits.length) out.push(`Hàng ${y + 1}: ${bits.join("; ")}`); }
+  return out;
+}
+
+// ---------- Screens ----------
+const ic = {
+  back: '<svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>',
+  up: '<svg class="i" viewBox="0 0 24 24" style="width:24px;height:24px"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
+  down: '<svg class="i" viewBox="0 0 24 24" style="width:24px;height:24px"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>',
+  left: '<svg class="i" viewBox="0 0 24 24" style="width:24px;height:24px"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>',
+  right: '<svg class="i" viewBox="0 0 24 24" style="width:24px;height:24px"><path d="M5 12h14M12 5l7 7-7 7"/></svg>',
+  undo: '<svg class="i" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>',
+  reset: '<svg class="i" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>',
+  check: '<svg class="i" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>',
+  book: '<svg class="i" viewBox="0 0 24 24"><path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2zM22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/></svg>',
+  screen: '<svg class="i" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>',
+  globe: '<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20"/></svg>',
+};
+const frame = document.getElementById("frame"), screen = document.getElementById("screen");
+const params = new URLSearchParams(location.search);
+const S = { theme: params.get("theme") ?? "light", vp: params.get("vp") ?? "390x844", scene: params.get("scene") ?? "local2", motion: "on", moves: [], status: "", dialog: null, hold: new Set() };
+if (params.has("bare")) document.body.classList.add("bare");
+let game = setup(2);
+
+// Turns: Lam D; Hồng to plate ●; Lam pushes the strawberries (5); Hồng waits; Lam fits them and walks back; Hồng goes round the mangoes; Lam onto plate ▲; Hồng pushes the mangoes through ▲.
+const SOL2 = ["D", "end", "D", "D", "D", "L", "L", "end", "R", "R", "R", "R", "R", "end", "end", "R", "L", "L", "L", "L", "end", "R", "U", "U", "end", "D", "D", "end", "L", "L", "L", "L"];
+function scene() {
+  S.dialog = null; S.status = ""; S.hold = new Set(); clearTimeout(S.holdTimer);
+  const n = { local4: 4 }[S.scene] ?? 2;
+  game = setup(n);
+  S.online = ["online", "wait", "resign", "quit"].includes(S.scene);
+  S.names = S.online ? ["Lan", "Minh", "Hoa", "Vy"] : null;
+  S.viewer = S.online ? (S.scene === "wait" || S.scene === "quit" ? 0 : 1) : null;
+  S.moves = { local2: [], local2mid: SOL2.slice(0, 10), local4: ["D", "end", "D", "D", "D", "L", "L", "end", "U", "R", "R", "R", "R", "end", "end"], online: SOL2.slice(0, 24), wait: SOL2.slice(0, 2), reset: SOL2.slice(0, 10), resign: SOL2.slice(0, 24), win: SOL2, out: [], quit: SOL2.slice(0, 10), full: SOL2.slice(0, 7) }[S.scene] ?? [];
+  if (S.scene === "out") { S.moves = SOL2.slice(0, 21); while (replay(game, S.moves).result === null) S.moves.push("end"); }
+  if (S.scene === "reset") S.dialog = "reset";
+  if (S.scene === "resign") S.dialog = "resign";
+  S.quit = S.scene === "quit";
+}
+
+function topbar(title) {
+  return `<header class="topbar"><button class="back" aria-label="Về menu">${ic.back}</button><span class="t">${title}</span><span class="chip" aria-label="Luật chơi">${ic.book}</span><span class="chip" aria-label="Giao diện">${ic.screen}</span><span class="chip" style="gap:4px;display:flex">${ic.globe}VI</span></header>`;
+}
+const seatName = (i) => (S.names ? (i === S.viewer ? "Bạn" : S.names[i]) : SEATS[i]);
+function seatMark(i, size = 32) {
+  const s = size, l = { w: 1, h: 1 };
+  return `<svg width="${s}" height="${s}" viewBox="0 0 ${s} ${s}" aria-hidden="true" style="flex:none">${charSvg(l, 0, i, s, false).replace(/class="now-ring"[^>]*>/, ">")}</svg>`;
+}
+function renderMenu() {
+  const art = boardSvg(game, replay(game, SOL2.slice(0, 9)).board, 14, { now: 0, max: 300 });
+  screen.innerHTML = `<header class="topbar"><b style="flex:1">Board Games Hub</b><span class="chip">${ic.screen}</span><span class="chip" style="gap:4px;display:flex">${ic.globe}VI</span></header><main>
+    <h1 class="page">Chơi cờ cùng bạn bè</h1>
+    <ul class="games" style="list-style:none;margin:0;padding:0"><li class="ghost">Cờ caro</li><li class="ghost">Cờ rào</li>
+    <li class="card gcard"><div class="art" data-game="jelly-crew">${art}</div><div class="body">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px 12px"><h2 id="g">Đội gom thạch</h2><p class="facts"><span>2–4 người</span><span aria-hidden="true">·</span><span>~15 phút</span></p></div>
+      <p class="small muted" style="margin:0">Cùng nhau đẩy thạch vào khuôn: người đứng giữ nút, người đẩy thạch qua cửa.</p>
+      <div class="duo"><a class="btn primary" href="#" data-go="setup" aria-describedby="g">Chơi</a><a class="btn secondary" href="#" aria-describedby="g">Online</a></div></div></li>
+    <li class="ghost">Gom thạch (giải đố 1 người)</li></ul></main>`;
+}
+function renderSetup() {
+  const map = (name, sub, on) => `<label class="radio ${on ? "on" : ""}"><span class="dot"></span><span><b>${name}</b><small>${sub}</small></span></label>`;
+  const mode = (name, on) => `<label class="radio ${on ? "on" : ""}" style="justify-content:center"><span class="dot"></span><b>${name}</b></label>`;
+  screen.innerHTML = topbar("Đội gom thạch") + `<main style="max-width:36rem">
+    <h1 class="page">Đội gom thạch</h1>
+    <p class="muted" style="margin:0">Cả đội cùng thắng khi mọi khuôn có thạch đúng màu. Mỗi lượt đi tối đa 5 bước.</p>
+    <fieldset><legend>Chế độ</legend><div class="row3" style="grid-template-columns:1fr 1fr">${mode("Cùng máy", true)}${mode("Online", false)}</div></fieldset>
+    <fieldset><legend>Số người chơi</legend><div class="row3">${mode("2 người", true)}${mode("3 người", false)}${mode("4 người", false)}</div></fieldset>
+    <fieldset><legend>Bản đồ</legend>${map("Hai gian bếp", "Dễ · giữ nút cho nhau qua cửa", true)}${map("Chợ đêm", "Vừa · thạch cũng giữ được nút", false)}${map("Kho lạnh", "Khó · đá viên chắn lối, cửa đóng sau lưng", false)}</fieldset>
+    <a class="btn primary full" href="#" data-go="local2">Bắt đầu</a></main>`;
+}
+
+function renderPlay(anim) {
+  const s = replay(game, S.moves), { level } = game, wide = S.vp === "1280x800";
+  const [fw] = S.vp.split("x").map(Number);
+  const mc = moldCount(level, s.board), over = s.result !== null || S.quit;
+  const mine = !over && (S.viewer === null || S.viewer === s.turn);
+  const unit = 40;
+  const opts = { now: over ? -1 : s.turn, max: wide ? 760 : fw - 48, trail: s.trail.length > 1 ? { cells: s.trail, seat: s.trailSeat } : null };
+  if (anim) {
+    opts.charAttr = (i) => (i === anim.seat ? `class="mv" data-from="${anim.dx * -unit},${anim.dy * -unit}"` : "");
+    opts.pieceAttr = (p) => (anim.pushed.some((q) => q.cells.every((c) => p.cells.includes(c + anim.dx + anim.dy * level.w))) ? `class="mv" data-from="${anim.dx * -unit},${anim.dy * -unit}"` : "");
+  }
+  const board = boardSvg(game, s.board, unit, opts);
+  const many = game.n > 2;
+  const seats = `<div class="seats ${many || wide ? "" : ""} ${many && !wide ? "many" : ""}" role="list" aria-label="Người chơi">${s.board.chars.map((_, i) => {
+    const g = holding(level, s.board, i), now = !over && i === s.turn;
+    const sub = [now ? `<span class="badge">Đến lượt</span>` : "", g ? `<span>Giữ nút ${GROUPS[g]}</span>` : "", ""].filter(Boolean).join("");
+    const label = S.names ? `${seatName(i)} · ${SEATS[i]}` : SEATS[i];
+    return `<div class="seat ${now ? "now" : ""}" role="listitem">${seatMark(i, many && !wide ? 28 : 32)}<div style="min-width:0"><div class="nm">${label}</div><div class="sub">${sub || "&nbsp;"}</div></div></div>`;
+  }).join("")}</div>`;
+  let turnLine;
+  if (S.quit) turnLine = "Ván dừng";
+  else if (s.result?.kind === "win") turnLine = "Cả đội thắng!";
+  else if (s.result) turnLine = "Ván kết thúc";
+  else if (S.viewer !== null) turnLine = s.turn === S.viewer ? "Đến lượt bạn" : `Đang chờ ${S.names[s.turn]}`;
+  else turnLine = `Đến lượt ${SEATS[s.turn]}`;
+  const left = STEPS - s.taken;
+  const chips = `<div class="chips">${over ? "" : `<span class="pill num ${left === 0 ? "warn" : ""}">${seatName(s.turn)} · ${left ? `còn ${left} bước` : "hết bước, bấm Xong lượt"}</span>`}<span class="pill num ${round(game, s) >= level.rounds - 1 ? "warn" : ""}">Vòng ${round(game, s)}/${level.rounds}</span><span class="pill num ${mc.fitted === mc.total ? "full" : ""}">Khuôn ${mc.fitted}/${mc.total}</span></div>`;
+  const dis = mine ? "false" : "true";
+  const why = mine ? "" : over ? "" : S.viewer !== null ? `Đang chờ ${S.names[s.turn]} đi.` : "";
+  const backOff = !mine || s.taken === 0 || s.backs >= BACKS, resetOff = !mine || sameBoard(s.board, game.start);
+  // A blocked direction is off, with its reason (the same check as the rules).
+  const dirOff = {};
+  for (const d of "UDLR") {
+    if (!mine) { dirOff[d] = why; continue; }
+    if (s.taken >= STEPS) { dirOff[d] = "Hết 5 bước"; continue; }
+    const r = tryStep(level, s.board, s.turn, d);
+    dirOff[d] = r.blocked ? blockedWhy(r) : "";
+  }
+  const dirBtn = (d, col, row, label, icon) => `<button class="dir" style="grid-column:${col};grid-row:${row}" data-dir="${d}" aria-label="${label}${dirOff[d] ? `: ${dirOff[d]}` : ""}" title="${dirOff[d]}" aria-disabled="${dirOff[d] ? "true" : "false"}">${icon}</button>`;
+  const onPlate = mine && level.plates.get(s.board.chars[s.turn]);
+  const pad = `<div class="pad" role="group" aria-label="Điều khiển ${SEATS[s.turn]}">
+      ${S.viewer !== null ? `<button class="act" style="grid-column:1;grid-row:1" data-act="back" aria-disabled="${backOff}">${ic.undo}<span>Lùi bước</span></button>` : ""}
+      ${dirBtn("U", 3, 1, "Lên", ic.up)}
+      <button class="act end" style="grid-column:5;grid-row:1" data-act="end" aria-disabled="${dis}">${ic.check}<span>Xong lượt</span></button>
+      <button class="act" style="grid-column:1;grid-row:2" data-act="reset" aria-disabled="${resetOff}">${ic.reset}<span>Đặt lại<br>bản đồ</span></button>
+      ${dirBtn("L", 2, 2, "Sang trái", ic.left)}${dirBtn("D", 3, 2, "Xuống", ic.down)}${dirBtn("R", 4, 2, "Sang phải", ic.right)}
+      ${onPlate || S.hold.has(s.turn) ? `<button class="act hold" style="grid-column:5;grid-row:2" data-act="hold" aria-pressed="${S.hold.has(s.turn)}">${GROUPS[onPlate] ?? ""}<span>Giữ nút</span></button>` : ""}
+    </div>${why ? `<p class="why">${why}</p>` : ""}`;
+  let result = "";
+  if (S.quit) result = `<section class="card result flat"><h2>Ván dừng</h2><p>Minh đã bỏ cuộc.</p><div class="bottom"><button class="btn primary">Chơi lại</button></div></section>`;
+  else if (s.result?.kind === "win") result = `<section class="card result"><h2>Cả đội thắng!</h2><p class="num">Đầy khuôn sau ${s.steps} bước, ${round(game, s)} vòng.</p><div class="bottom"><button class="btn primary">${S.viewer !== null ? "Chơi lại" : "Ván mới"}</button></div></section>`;
+  else if (s.result) result = `<section class="card result flat"><h2>Ván kết thúc</h2><p class="num">Hết ${level.rounds} vòng, còn ${mc.total - mc.fitted} ô khuôn trống.</p><div class="bottom"><button class="btn primary">Ván mới</button></div></section>`;
+  const bottom = over ? "" : S.viewer !== null ? `<div class="bottom"><button class="btn secondary" data-act="resign">Bỏ cuộc</button></div>`
+    : `<div class="bottom"><button class="btn secondary" data-act="undo" aria-disabled="${S.moves.length === 0}">${ic.undo}Hoàn tác</button><button class="btn secondary" aria-disabled="true">Làm lại</button><button class="btn primary">Ván mới</button></div>`;
+  const desc = `<ol class="sr" aria-label="Mô tả bàn">${describeRows(game, s.board).map((t) => `<li>${t}</li>`).join("")}</ol>`;
+  const status = `<p class="status" role="status">${S.status}</p>`;
+  const boardBox = `<div class="boardbox" id="boardbox" style="${over ? "" : `--seat:var(--jelly-crew-seat-${s.turn + 1});`}${mine ? "touch-action:none" : ""}">${board}</div>`;
+  const resetNote = s.last?.move === "reset" ? `<p class="notice">${seatName(s.last.seat)} đã đặt lại bản đồ.</p>` : "";
+  const keys = `<p class="keys">Phím: <kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd> hoặc <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> · <kbd>Enter</kbd> xong lượt${S.viewer !== null ? " · <kbd>Z</kbd> lùi bước" : ""}</p>`;
+  const title = `Đội gom thạch`;
+  if (wide) {
+    screen.innerHTML = topbar(title) + `<main><div class="playgrid"><div style="display:flex;flex-direction:column;gap:10px">${boardBox}${status}${desc}</div>
+      <div class="side"><p class="turn" role="status">${turnLine}</p>${seats}${chips}${result || `<div class="card" style="padding:16px;display:flex;flex-direction:column;gap:12px">${pad}${keys}</div>`}${bottom}</div></div></main>`;
+  } else {
+    screen.innerHTML = topbar(title) + `<main><p class="turn" role="status">${turnLine}</p>${seats}${boardBox}${chips}${resetNote}${status}${desc}${result || pad}${bottom}</main>`;
+  }
+  if (S.dialog) screen.insertAdjacentHTML("beforeend", dialogHtml(S.dialog));
+  frame.classList.toggle("wide", wide);
+  if (anim) {
+    const els = screen.querySelectorAll("[data-from]");
+    els.forEach((el) => { const [x, y] = el.dataset.from.split(","); el.style.transform = `translate(${x}px,${y}px)`; });
+    void screen.offsetWidth; els.forEach((el) => { el.style.transform = "translate(0,0)"; });
+  }
+}
+function dialogHtml(kind) {
+  if (kind === "reset") return `<div class="scrim"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dh"><h2 id="dh">Đặt lại bản đồ?</h2><p class="small" style="margin:0">Mọi người và thạch về chỗ ban đầu. Lượt của bạn kết thúc; các vòng đã chơi vẫn được tính.</p><div class="row"><button class="btn secondary" data-act="keep" autofocus>Để nguyên</button><button class="btn primary" data-act="do-reset">Đặt lại</button></div></div></div>`;
+  return `<div class="scrim"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dh"><h2 id="dh">Bỏ cuộc?</h2><p class="small" style="margin:0">Ván sẽ dừng cho cả đội, không ai thắng. Mọi người vẫn ở trong phòng và có thể chơi lại.</p><div class="row"><button class="btn secondary" data-act="keep" autofocus>Chơi tiếp</button><button class="btn primary" style="background:var(--danger);box-shadow:none">Bỏ cuộc</button></div></div></div>`;
+}
+
+function blockedWhy(r) {
+  const g = r.group ? GROUPS[r.group] : "";
+  return { wall: "Tường", door: `Cửa ${g} đóng`, seat: `${seatName(r.who)} chắn`, "push-wall": "Thạch chạm tường", "push-door": `Cửa ${g} đóng`, "push-seat": `${seatName(r.who)} chắn thạch` }[r.blocked];
+}
+function say(text) { S.status = S.status === text ? text + "​" : text; }
+function act(dir) {
+  const s = replay(game, S.moves);
+  if (s.result || (S.viewer !== null && S.viewer !== s.turn)) return;
+  if (s.taken >= STEPS) { say("Đã đi đủ 5 bước. Bấm Xong lượt."); renderPlay(); return; }
+  S.hold.delete(s.turn);
+  const r = tryStep(game.level, s.board, s.turn, dir), who = seatName(s.turn);
+  if (r.blocked) {
+    const g = r.group ? GROUPS[r.group] : "";
+    say({ wall: "Không đi được: tường.", door: `Không đi được: cửa ${g} đang đóng.`, seat: `Không đi được: ${seatName(r.who)} đứng đó.`, "push-wall": "Không đẩy được: phía trước là tường.", "push-door": `Không đẩy được: cửa ${g} đang đóng.`, "push-seat": `Không đẩy được: ${seatName(r.who)} chắn.` }[r.blocked]);
+    renderPlay(); return;
+  }
+  const before = openGroups(game.level, s.board), after = openGroups(game.level, r.board);
+  S.moves = [...S.moves, dir];
+  const t = replay(game, S.moves), parts = [];
+  parts.push(r.pushed.length ? `${who} đẩy ${r.pushed.flatMap((p) => kindsOf(p)).map(kindName).join(", ")} ${DIR_WORD[dir]}.` : `${who} đi ${DIR_WORD[dir]}.`);
+  for (const g of Object.keys(GROUPS)) { if (!before.has(g) && after.has(g)) parts.push(`Cửa ${GROUPS[g]} mở.`); if (before.has(g) && !after.has(g)) parts.push(`Cửa ${GROUPS[g]} đóng.`); }
+  const m0 = moldCount(game.level, s.board).fitted, m1 = moldCount(game.level, t.board).fitted; if (m0 !== m1) parts.push(`Khuôn ${m1}/${game.level.molds.size}.`);
+  if (t.result?.kind === "win") parts.push("Cả đội thắng!");
+  else if (t.taken === STEPS) parts.push("Hết 5 bước, bấm Xong lượt.");
+  say(parts.join(" "));
+  const [dx, dy] = DIRS[dir];
+  renderPlay({ seat: s.turn, dx, dy, pushed: r.pushed.map((p) => ({ cells: p.cells })) });
+}
+function endTurn(held) {
+  const s = replay(game, S.moves); if (s.result || (S.viewer !== null && S.viewer !== s.turn && !held)) return;
+  S.moves = [...S.moves, "end"]; const t = replay(game, S.moves);
+  say(t.result ? "Hết vòng. Ván kết thúc." : `${seatName(s.turn)} ${held ? "giữ nút, " : ""}xong lượt. Đến lượt ${seatName(t.turn)}.`);
+  renderPlay(); autoHold();
+}
+// "Giữ nút": the seat to move holds a plate and asked to keep holding it, so its turn ends by itself.
+function autoHold() {
+  const s = replay(game, S.moves);
+  if (s.result || !S.hold.has(s.turn) || !game.level.plates.has(s.board.chars[s.turn])) return;
+  if (S.viewer !== null && S.viewer !== s.turn) return;
+  clearTimeout(S.holdTimer); S.holdTimer = setTimeout(() => endTurn(true), 600);
+}
+function back() { const s = replay(game, S.moves); if (s.taken === 0 || s.backs >= BACKS) return; S.hold.delete(s.turn); S.moves = [...S.moves, "back"]; say(`Lùi một bước. Bước ${s.taken - 1}/5.`); renderPlay(); }
+function undo() { if (!S.moves.length) return; S.moves = S.moves.slice(0, -1); say("Hoàn tác."); renderPlay(); }
+function doReset() { S.dialog = null; S.moves = [...S.moves, "reset"]; const t = replay(game, S.moves); say(`Đã đặt lại bản đồ. Đến lượt ${seatName(t.turn)}.`); renderPlay(); }
+
+function render() {
+  document.documentElement.dataset.theme = S.theme; frame.dataset.theme = S.theme;
+  const [w, h] = S.vp.split("x").map(Number); frame.style.width = `${w}px`; frame.style.height = `${h}px`;
+  frame.classList.toggle("rm", S.motion === "off"); frame.classList.toggle("wide", S.vp === "1280x800");
+  if (S.scene === "menu") renderMenu(); else if (S.scene === "setup") renderSetup(); else renderPlay();
+}
+document.querySelectorAll(".panel button").forEach((b) => {
+  const [k, val] = b.dataset.set.split(":");
+  b.classList.toggle("on", S[k] === val);
+  b.addEventListener("click", () => {
+    document.querySelectorAll(`.panel button[data-set^="${k}:"]`).forEach((o) => o.classList.toggle("on", o === b));
+    S[k] = val; if (k === "scene") scene(); render();
+  });
+});
+screen.addEventListener("click", (e) => {
+  const t = e.target.closest("[data-go],[data-dir],[data-act]"); if (!t) return; e.preventDefault();
+  if (t.dataset.go) { S.scene = t.dataset.go; scene(); render(); return; }
+  if (t.getAttribute("aria-disabled") === "true") return;
+  if (t.dataset.dir) act(t.dataset.dir);
+  const a = t.dataset.act;
+  if (a === "end") endTurn(); if (a === "back") back(); if (a === "undo") undo();
+  if (a === "reset") { S.dialog = "reset"; renderPlay(); screen.querySelector("[autofocus]")?.focus(); }
+  if (a === "resign") { S.dialog = "resign"; renderPlay(); screen.querySelector("[autofocus]")?.focus(); }
+  if (a === "keep") { S.dialog = null; renderPlay(); }
+  if (a === "hold") { const s = replay(game, S.moves); if (S.hold.has(s.turn)) S.hold.delete(s.turn); else { S.hold.add(s.turn); say(`${seatName(s.turn)} giữ nút: tới lượt thì tự xong lượt.`); } renderPlay(); }
+  if (a === "do-reset") doReset();
+});
+const KEYMAP = { ArrowUp: "U", ArrowDown: "D", ArrowLeft: "L", ArrowRight: "R", w: "U", s: "D", a: "L", d: "R" };
+window.addEventListener("keydown", (e) => {
+  if (["menu", "setup"].includes(S.scene) || S.dialog) return;
+  const k = KEYMAP[e.key] ?? KEYMAP[e.key.toLowerCase()];
+  if (k) { e.preventDefault(); if (!e.repeat) act(k); return; }
+  // Enter ends the turn only away from buttons and links, which Enter presses.
+  if (e.key === "Enter" && !e.target.closest("button, a, [role=button], summary, input, textarea")) { e.preventDefault(); endTurn(); }
+  if (e.key.toLowerCase() === "z" && S.viewer !== null) { e.preventDefault(); back(); }
+});
+let touch = null;
+screen.addEventListener("pointerdown", (e) => { if (e.target.closest("#boardbox")) touch = [e.clientX, e.clientY]; });
+screen.addEventListener("pointerup", (e) => { if (!touch) return; const dx = e.clientX - touch[0], dy = e.clientY - touch[1]; touch = null; if (Math.max(Math.abs(dx), Math.abs(dy)) < 32) return; act(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "R" : "L") : dy > 0 ? "D" : "U"); });
+scene(); render();
+</script>
+</body>
+</html>
