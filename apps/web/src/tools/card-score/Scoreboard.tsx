@@ -21,6 +21,7 @@ import { flushSync } from "react-dom";
 
 import { AppStateScreen } from "@/features/shell/AppStateScreen";
 import { AppTopBar } from "@/features/shell/AppTopBar";
+import { BackLink, goTo, HistoryLink, ScreenTitle } from "@/features/shell/client-navigation";
 import { randomId } from "@/lib/random-id";
 
 import { scoreClass, useLocalTimeFormat, useScoreFormat } from "./format";
@@ -34,7 +35,6 @@ import {
   MAX_ROUNDS,
 } from "./group";
 import { groupStore } from "./group-store";
-import { BackLink, goTo, ScreenTitle, ToolLink } from "./navigation";
 import { clearRoundDraft, readRoundDraft } from "./round-draft";
 import { RoundHistory } from "./RoundHistory";
 import { type RoundRequest, RoundSheet } from "./RoundSheet";
@@ -76,9 +76,9 @@ export function Scoreboard({ groupId }: { readonly groupId: string }) {
           tone="warning"
           back={back}
         >
-          <ToolLink href={CARD_SCORE_HOME} className={buttonVariants()}>
+          <HistoryLink href={CARD_SCORE_HOME} className={buttonVariants()}>
             {t("backToGroups")}
-          </ToolLink>
+          </HistoryLink>
         </AppStateScreen>
       );
     case "newer":
@@ -351,13 +351,13 @@ function Board({ group, change }: BoardProps) {
               </div>
               <StandingsList table={table} />
               <div className="mt-3 flex flex-wrap gap-2 [&>*]:flex-auto">
-                <ToolLink
+                <HistoryLink
                   href={editHref(group.id)}
                   className={buttonVariants({ variant: "secondary", size: "sm" })}
                 >
                   <UsersIcon aria-hidden className="size-4" />
                   {t("editGroup")}
-                </ToolLink>
+                </HistoryLink>
                 <Button
                   variant="secondary"
                   size="sm"
@@ -370,13 +370,13 @@ function Board({ group, change }: BoardProps) {
                   <Share2Icon aria-hidden className="size-4" />
                   {t("share")}
                 </Button>
-                <ToolLink
+                <HistoryLink
                   href={newHref(group.id)}
                   className={buttonVariants({ variant: "secondary", size: "sm" })}
                 >
                   <PlusIcon aria-hidden className="size-4" />
                   {t("newSession")}
-                </ToolLink>
+                </HistoryLink>
               </div>
               {group.rounds.length === 0 && (
                 <p id="card-score-no-share" className="mt-2 text-small text-fg-muted">

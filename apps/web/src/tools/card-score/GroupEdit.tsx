@@ -7,6 +7,7 @@ import { type RefObject, type SyntheticEvent, useEffect, useId, useRef, useState
 import { PLAYER_NAME_MAX_LENGTH } from "@/features/identity/name-limit";
 import { AppStateScreen } from "@/features/shell/AppStateScreen";
 import { AppTopBar } from "@/features/shell/AppTopBar";
+import { BackLink, goTo, HistoryLink, ScreenTitle } from "@/features/shell/client-navigation";
 import { isImeKey } from "@/lib/ime-key";
 
 import {
@@ -26,7 +27,6 @@ import {
   restPlayer,
   returnPlayer,
 } from "./group";
-import { BackLink, goTo, ScreenTitle, ToolLink } from "./navigation";
 import { boardHref, CARD_SCORE_HOME } from "./routes";
 import { type UseGroup, useGroup } from "./use-group";
 
@@ -76,9 +76,9 @@ export function GroupEdit({ groupId }: { readonly groupId: string }) {
           tone="warning"
           back={<BackLink href={CARD_SCORE_HOME} label={t("backToGroups")} />}
         >
-          <ToolLink href={CARD_SCORE_HOME} className={buttonVariants()}>
+          <HistoryLink href={CARD_SCORE_HOME} className={buttonVariants()}>
             {t("backToGroups")}
-          </ToolLink>
+          </HistoryLink>
         </AppStateScreen>
       );
   }
@@ -355,7 +355,7 @@ function EditForm({ group, change }: EditFormProps) {
 
         <p className="text-small text-fg-muted">{t("editHint")}</p>
 
-        <ToolLink
+        <HistoryLink
           href={done}
           className={cn(buttonVariants(), "w-full")}
           onClick={(event) => {
@@ -369,7 +369,7 @@ function EditForm({ group, change }: EditFormProps) {
           }}
         >
           {t("done")}
-        </ToolLink>
+        </HistoryLink>
       </main>
     </>
   );

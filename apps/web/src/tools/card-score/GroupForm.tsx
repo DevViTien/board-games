@@ -8,6 +8,7 @@ import { parsePlayerName } from "@/features/identity/identity";
 import { PLAYER_NAME_MAX_LENGTH } from "@/features/identity/name-limit";
 import { AppStateScreen } from "@/features/shell/AppStateScreen";
 import { AppTopBar } from "@/features/shell/AppTopBar";
+import { BackLink, goTo, ScreenTitle } from "@/features/shell/client-navigation";
 import { randomId } from "@/lib/random-id";
 
 import {
@@ -20,7 +21,6 @@ import {
   parseGroupName,
 } from "./group";
 import { groupStore } from "./group-store";
-import { BackLink, goTo, ScreenTitle } from "./navigation";
 import { boardHref, CARD_SCORE_HOME } from "./routes";
 
 const INITIAL_ROWS = 4;

@@ -8,11 +8,11 @@ import { useTranslations } from "next-intl";
 
 import { AppStateScreen } from "@/features/shell/AppStateScreen";
 import { AppTopBar, BACK_LINK_CLASS } from "@/features/shell/AppTopBar";
+import { HistoryLink, ScreenTitle } from "@/features/shell/client-navigation";
 
 import { CardScoreArtwork } from "./Artwork";
 import { useLocalTimeFormat } from "./format";
 import { type CardScoreGroup, displayName } from "./group";
-import { ScreenTitle, ToolLink } from "./navigation";
 import { boardHref, newHref } from "./routes";
 import { useGroups } from "./use-group";
 
@@ -34,7 +34,7 @@ function GroupCard({ group }: { readonly group: CardScoreGroup }) {
   const { dateTime } = useLocalTimeFormat();
   return (
     <li>
-      <ToolLink
+      <HistoryLink
         href={boardHref(group.id)}
         className="focus-ring block rounded-card border border-border bg-surface p-5 shadow-card transition-lift hover:shadow-raised motion-reduce:transition-none"
       >
@@ -52,7 +52,7 @@ function GroupCard({ group }: { readonly group: CardScoreGroup }) {
           </span>
         )}
         <span className="mt-1.5 block text-small text-fg-muted">{dateTime(group.updatedAt)}</span>
-      </ToolLink>
+      </HistoryLink>
     </li>
   );
 }
@@ -81,10 +81,10 @@ export function GroupList() {
   }
 
   const createLink = (
-    <ToolLink href={newHref()} className={buttonVariants()}>
+    <HistoryLink href={newHref()} className={buttonVariants()}>
       <PlusIcon aria-hidden className="size-5" />
       {t("create")}
-    </ToolLink>
+    </HistoryLink>
   );
   const hasGroups = state.groups.length > 0;
 
@@ -108,12 +108,12 @@ export function GroupList() {
             <ul className="mt-1 flex flex-wrap gap-x-3">
               {state.corruptIds.map((id, index) => (
                 <li key={id}>
-                  <ToolLink
+                  <HistoryLink
                     href={boardHref(id)}
                     className="focus-ring inline-block rounded-sm py-1 underline underline-offset-2"
                   >
                     {t("openCorrupt", { number: index + 1 })}
-                  </ToolLink>
+                  </HistoryLink>
                 </li>
               ))}
             </ul>
