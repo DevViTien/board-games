@@ -30,13 +30,13 @@ test.describe("Lối vào", () => {
       .getByRole("listitem")
       .filter({ has: page.getByRole("heading", { name: "Gom thạch" }) });
     await expect(card.getByText("1 người")).toBeVisible();
-    await expect(card.getByText("24 màn")).toBeVisible();
+    await expect(card.getByText("40 màn")).toBeVisible();
     await expect(card.getByRole("link", { name: "Online" })).toHaveCount(0);
     await card.getByRole("link", { name: "Chơi" }).click();
 
     await expect(page).toHaveURL(new RegExp(`${HOME}$`));
     await expect(page.getByRole("heading", { level: 1, name: "Gom thạch" })).toBeVisible();
-    await expect(page.getByRole("link", { name: /, chưa giải$/ })).toHaveCount(24);
+    await expect(page.getByRole("link", { name: /, chưa giải$/ })).toHaveCount(40);
     await page.getByRole("link", { name: "Bắt đầu: màn 1-1" }).click();
 
     await expect(page).toHaveURL(new RegExp(`${HOME}/1-1$`));
@@ -48,7 +48,7 @@ test.describe("Lối vào", () => {
   });
 
   test("Màn không có: 404, and the way back to the levels", async ({ page }) => {
-    const response = await page.goto(`${HOME}/4-1`);
+    const response = await page.goto(`${HOME}/6-1`);
     expect(response?.status()).toBe(404);
     await expect(page.getByRole("heading", { name: "Không có màn này" })).toBeVisible();
     await page.getByRole("main").getByRole("link", { name: "Về danh sách màn" }).click();
@@ -210,5 +210,40 @@ test.describe("Dữ liệu trên trình duyệt này", () => {
       .click();
     await expect(page.getByRole("link", { name: "Màn 2-1, đã giải, 6 bước" })).toBeVisible();
     await context.setOffline(false);
+  });
+});
+
+test.describe("Khuôn và kho đá", () => {
+  test("Vừa khít khuôn: 4-1 by keys, the chip following each move, then the solved panel", async ({
+    page,
+  }) => {
+    await openLevel(page, "4-1");
+    await expect(page.getByText(/Khuôn: đưa thạch vào khuôn cùng màu/)).toBeVisible();
+    const chip = page.getByRole("main").getByText(/^Khuôn \d+\/\d+$/);
+    await expect(chip).toHaveText("Khuôn 0/2");
+    // levels.solutions.ts: RRULULDD.
+    await keys(page, "RRULULD");
+    await expect(page.getByRole("region", { name: "Vừa khuôn!" })).toHaveCount(0);
+    const before = await chip.innerText();
+    await keys(page, "D");
+    await expect(chip).toHaveText("Khuôn 2/2");
+    await expect(page.getByRole("region", { name: "Vừa khuôn!" })).toBeVisible();
+    await page.keyboard.press("z");
+    await expect(chip).toHaveText(before);
+  });
+
+  test("Kho đá: chapter 5 opens with its hint and four ice molds; the list credits Boxoban", async ({
+    page,
+  }) => {
+    await openLevel(page, "5-1");
+    await expect(page.getByText(/Kho đá: đẩy mọi đá viên vào khuôn đá/)).toBeVisible();
+    await expect(page.getByRole("main").getByText(/^Khuôn \d+\/\d+$/)).toHaveText("Khuôn 0/4");
+    await page.getByRole("banner").getByRole("link", { name: "Danh sách màn" }).click();
+    const chapter = page.getByRole("region", { name: "Chương 5 · Kho đá" });
+    await expect(chapter).toContainText("Màn từ bộ Boxoban của DeepMind, giấy phép Apache 2.0");
+    await expect(chapter.getByRole("link", { name: "Giấy phép bên thứ ba" })).toHaveAttribute(
+      "href",
+      "/third-party-licenses.txt",
+    );
   });
 });

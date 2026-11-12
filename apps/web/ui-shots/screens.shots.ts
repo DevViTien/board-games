@@ -50,6 +50,7 @@ import {
   tryFenceAt,
   writeSaved,
 } from "../e2e/helpers";
+import { SOLUTIONS as JELLY_SOLUTIONS } from "../src/puzzles/jelly-gather/levels.solutions";
 import { shoot, shootScreen } from "./shoot";
 
 // The key screens, each in every project of playwright.shots.config.ts (phone and desktop, light
@@ -1523,4 +1524,35 @@ test("Gom thạch: no such level", async ({ page }) => {
   await page.goto("/puzzles/jelly-gather/9-9");
   await expect(page.getByRole("heading", { name: "Không có màn này" })).toBeVisible();
   await shoot(page, "74-jelly-not-found");
+});
+
+// Molds (add-jelly-gather-molds design §5): 4-1 at the start, 4-8 with grass jelly on a strawberry
+// mold, 4-3 with some molds filled; chapter 5 (and at 360 × 640). The list of five chapters is above.
+
+const JELLY_KEY = { U: "ArrowUp", D: "ArrowDown", L: "ArrowLeft", R: "ArrowRight" } as const;
+
+test("Gom thạch: molds, empty, a wrong kind on one, and some filled", async ({ page }) => {
+  await openJellyLevel(page, "4-1");
+  await shootScreen(page, "75-jelly-molds-start");
+  await openJellyLevel(page, "4-8");
+  await shootScreen(page, "75a-jelly-molds-wrong-kind");
+  await openJellyLevel(page, "4-3");
+  // The first part of the level's shortest solution, until some molds fit.
+  const moves = JELLY_SOLUTIONS["4-3"] ?? "";
+  for (const move of moves.slice(0, moves.length - 4)) {
+    await page.keyboard.press(JELLY_KEY[move as keyof typeof JELLY_KEY]);
+  }
+  await page.waitForTimeout(300);
+  await shootScreen(page, "75b-jelly-molds-some-filled");
+});
+
+test("Gom thạch: Kho đá, and at 360 × 640", async ({ page }) => {
+  await openJellyLevel(page, "5-1");
+  for (const key of ["ArrowRight", "ArrowRight", "ArrowRight", "ArrowRight"])
+    await page.keyboard.press(key);
+  await page.waitForTimeout(300);
+  await shootScreen(page, "76-jelly-depot");
+  test.skip((page.viewportSize()?.width ?? 0) > 500, "a phone's size");
+  await page.setViewportSize({ width: 360, height: 640 });
+  await shootScreen(page, "76a-jelly-depot-360x640");
 });

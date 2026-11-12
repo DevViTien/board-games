@@ -464,6 +464,20 @@ for (const colorScheme of SCHEMES) {
         );
         await expectNoAxeViolations(page, "jelly-gather-coconut");
 
+        await page.goto("/puzzles/jelly-gather/4-8");
+        await expect(page.getByRole("button", { name: "Lên" })).toHaveAttribute(
+          "aria-disabled",
+          "false",
+        );
+        await expectNoAxeViolations(page, "jelly-gather-molds");
+
+        await page.goto("/puzzles/jelly-gather/5-1");
+        await expect(page.getByRole("button", { name: "Lên" })).toHaveAttribute(
+          "aria-disabled",
+          "false",
+        );
+        await expectNoAxeViolations(page, "jelly-gather-depot");
+
         await page.goto("/puzzles/jelly-gather/1-1");
         await expect(page.getByRole("button", { name: "Lên" })).toHaveAttribute(
           "aria-disabled",

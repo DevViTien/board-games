@@ -118,7 +118,7 @@ test.describe("Gom thạch on a small phone", () => {
         await expect(page.getByRole("link", { name: /^Bắt đầu/ })).toBeVisible();
         expect(await scrollsSideways(page), "level list").toBe(false);
         await expectTargetsAtLeast24(page, page.locator("body"));
-        for (const id of ["1-8", "2-8", "3-8"]) {
+        for (const id of ["1-8", "2-8", "3-8", "4-8", "5-8"]) {
           await page.goto(`/puzzles/jelly-gather/${id}`);
           await expect(page.getByRole("group", { name: "Điều khiển" })).toBeInViewport({
             ratio: 1,
