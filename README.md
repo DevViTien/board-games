@@ -7,7 +7,7 @@ App chơi cờ trên trình duyệt: Tic-tac-toe, Cờ caro, Cờ cá ngựa, C�
 - Hành vi hiện trạng và việc sắp làm (OpenSpec): [openspec/](openspec/)
 - Hướng dẫn làm việc cùng Claude Code: [CLAUDE.md](CLAUDE.md)
 
-Ngoài các game còn có **Hộp công cụ** (`/tools`) cho những buổi chơi ngoài đời: Ghi điểm đánh bài, dữ liệu chỉ lưu trên trình duyệt.
+Ngoài các game còn có **Hộp công cụ** (`/tools`) cho những buổi chơi ngoài đời: Ghi điểm đánh bài, dữ liệu chỉ lưu trên trình duyệt. Và một **trò giải đố một người**, **Gom thạch** (`/puzzles/jelly-gather`): đẩy thạch cho cùng màu dính lại, 24 màn, tiến độ lưu trên trình duyệt.
 
 ## Chạy ở máy
 
@@ -81,10 +81,11 @@ Lưu ý:
 
 ```
 apps/web            Next.js: giao diện, route, server WebSocket
-  src/app           route (menu, /play, /room, /rules, /tools)
+  src/app           route (menu, /play, /room, /rules, /tools, /puzzles)
   src/features      màn hình dùng chung (menu, bắt đầu ván, màn hình chơi, phòng, luật, thanh trên)
   src/games         bàn, hình, token và trang luật của từng game
   src/tools         công cụ ngoài game (Hộp công cụ): mỗi công cụ một thư mục
+  src/puzzles       trò giải đố một người (không phải GameDefinition): mỗi trò một thư mục, luật thuần trong rules/
   e2e               Playwright (kể cả a11y.spec.ts), ui-shots/ chụp màn hình
 packages/engine     Hợp đồng game, session, AI — không phụ thuộc framework
 packages/games      Luật từng game

@@ -143,7 +143,17 @@ Không làm (không cần cho nhóm nhỏ): ghép trận với người lạ, t�
 
 Ngoài các game, app có một **Hộp công cụ** (`/tools`) cho những buổi chơi ngoài đời. Công cụ đầu tiên là **Ghi điểm đánh bài**: tạo nhóm 2–8 người, sau mỗi ván một người nhập điểm, để trống một người thì app tự tính để tổng bằng 0; xem xếp hạng, lịch sử các ván, gợi ý ai chuyển cho ai bao nhiêu điểm, và chia sẻ tổng kết thành chữ. Dữ liệu chỉ nằm trên trình duyệt của máy đang nhập. Quyết định 18 ở mục 9.
 
-### 4.5 Ý tưởng xa hơn
+### 4.5 Trò giải đố
+
+Ngoài game nhiều người, app có **trò giải đố một người** với màn thiết kế sẵn. Trò đầu tiên là **Gom thạch**, lấy cảm hứng từ thể loại của Jelly Is Sticky nhưng tên, hình, màn và luật chi tiết đều tự làm:
+- Đẩy các khối thạch trên lưới ô nhìn từ trên xuống; thạch cùng màu chạm cạnh nhau thì dính lại mãi.
+- Qua màn khi mỗi màu nằm gọn trong một khối.
+- Ba chương, 24 màn: thạch thường (có đá viên từ màn 1-5), sương sáo dính mọi màu, thạch dừa dính cả vào tường.
+- Mọi màn được bộ giải tự động chứng minh là giải được và có số bước ít nhất.
+- Hoàn tác không giới hạn, chơi lại màn hoàn tác được.
+- Tiến độ chỉ nằm trên trình duyệt; không có chế độ với máy hay online. Quyết định 19 ở mục 9.
+
+### 4.6 Ý tưởng xa hơn
 - Câu đố hằng ngày (puzzle caro "thắng trong 3 nước", cờ vua).
 - Chế độ hướng dẫn tương tác cho người mới.
 - Giải đấu nhỏ trong nhóm (vòng tròn, loại trực tiếp).
@@ -359,3 +369,4 @@ Vì `Board` là component React nên nằm ở `apps/web`, còn `GameDefinition`
 | 16 | Chat trong phòng online | **Gõ tự do + câu có sẵn + emoji** cho mọi game, chỉ người có ghế đọc và gửi; **giữ 30 tin gần nhất theo phòng** (nằm trong dữ liệu phòng trên Redis, xoá cùng phòng); **không lọc từ** (nhóm bạn qua link riêng, có nút "Tắt chat" lưu theo trình duyệt) (chốt 05/11/2026, `add-room-chat`) |
 | 17 | Game tự thiết kế làm sớm | **Cờ rào** làm trước các game v1 theo yêu cầu người dùng, thay cho "game tự thiết kế để v2" ở quyết định 6 với riêng game này. Theo lượt, đồ hoạ 2D, 2–4 người, luật và hình riêng (cổng đích 5 ô, một lần phá rào, không nhảy và được chung ô, không tuỳ chọn luật); không dùng tên hay hình của game thương mại cùng thể loại (chốt 06/11/2026, `add-fence-race-game`) |
 | 18 | Hộp công cụ | App có thêm **Hộp công cụ** cho những buổi chơi ngoài đời, trước hết là **Ghi điểm đánh bài**. Công cụ không phải game, không đi qua server; **dữ liệu chỉ trên trình duyệt của máy đang nhập** (IndexedDB), một người ghi trên một máy, người khác xem bản tổng kết được chia sẻ. **Tổng mỗi ván luôn bằng 0**, chưa có cách tính khác. Chỉ ghi **điểm**, không quy đổi ra tiền. Đồng bộ nhiều máy và sao lưu ra file để sau nếu dùng thật thấy cần (chốt 07/11/2026, `add-toolbox-card-score`) |
+| 19 | Trò giải đố một người | App có thêm loại **trò giải đố một người** (màn thiết kế sẵn), ngoài `GameDefinition`: không có chế độ với máy hay online, không đi qua server. Trò đầu tiên là **Gom thạch**, cùng thể loại đẩy khối thạch dính với Jelly Is Sticky nhưng tên, hình, màn và luật chi tiết tự làm (chỉ ba loại: dính cùng màu, sương sáo dính mọi màu, thạch dừa dính tường; đá viên là khối chắn trơ). **Tiến độ chỉ trên trình duyệt** (localStorage). Mọi màn mở sẵn, không khoá theo tiến độ. Trình tạo màn, gợi ý, chế độ hai người để sau (chốt 12/11/2026, `add-jelly-gather-puzzle`) |

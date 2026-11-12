@@ -45,6 +45,11 @@ context: |
     route dưới app/tools/, bản dịch và một dòng TOOLS (tools/registry.ts); công cụ không import trực
     tiếp engine, games, protocol, transport, server (ESLint chặn; luật tên người chơi đi qua
     features/identity) và không gửi dữ liệu người dùng đi đâu khi chưa có quyết định ghi vào idea.md.
+  - Trò giải đố (một người, màn thiết kế sẵn) không phải game: thêm một trò chỉ gồm thư mục
+    apps/web/src/puzzles/<id>/, route dưới app/puzzles/, bản dịch và một dòng PUZZLES
+    (puzzles/registry.ts); luật của trò là hàm thuần trong thư mục đó; trò không import engine, games,
+    protocol, transport, server, tools (ESLint chặn) và không gửi dữ liệu người chơi đi đâu khi chưa có
+    quyết định ghi vào idea.md.
 
   Quy ước: plan.md §4 (TypeScript strict, không enum mà dùng `as const`, export có tên, file
   kebab-case, component PascalCase, cn()/cva() cho style, icon chỉ qua @board-games/ui, test đặt
