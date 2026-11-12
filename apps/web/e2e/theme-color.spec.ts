@@ -32,8 +32,21 @@ async function openLudo(page: Page): Promise<void> {
   await expect(page.locator("[data-ply]")).toBeVisible();
 }
 
+/** Gom thạch's page in the dark (puzzles/jelly-gather/theme.css). */
+const JELLY_DARK = "rgb(21, 22, 42)";
+
 test.describe("on a light system", () => {
   test.use({ colorScheme: "light" });
+
+  test("Gom thạch ở giao diện tối: a level's bar takes the puzzle's dark tray page", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await pickTheme(page, "Tối");
+    await page.goto("/puzzles/jelly-gather/1-1");
+    await expect(page.getByRole("heading", { level: 1, name: "Màn 1-1" })).toBeVisible();
+    await expect.poll(() => themeColour(page)).toBe(JELLY_DARK);
+  });
 
   test("Màn hình chơi Cờ cá ngựa ở giao diện tối: the bar takes Cờ cá ngựa's dark paper", async ({
     page,

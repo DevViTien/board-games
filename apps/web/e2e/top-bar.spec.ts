@@ -186,6 +186,28 @@ test.describe("the toolbox's pages", () => {
   });
 });
 
+test.describe("Gom thạch's pages", () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test("Màn chơi của trò giải đố: the level list goes back to the menu, a level to the list", async ({
+    page,
+  }) => {
+    const back = (name: string) => bar(page).getByRole("link", { name });
+    await page.goto("/puzzles/jelly-gather");
+    await expect(back("Về menu")).toHaveAttribute("href", "/");
+    await expect(themeButton(page)).toBeInViewport({ ratio: 1 });
+
+    await page.goto("/puzzles/jelly-gather/1-2");
+    await expect(back("Danh sách màn")).toHaveAttribute("href", "/puzzles/jelly-gather");
+    await expect(themeButton(page)).toBeInViewport({ ratio: 1 });
+    await expect(languageButton(page)).toBeInViewport({ ratio: 1 });
+
+    // No such level: the state screen's way back goes to the list too.
+    await page.goto("/puzzles/jelly-gather/9-9");
+    await expect(back("Danh sách màn")).toHaveAttribute("href", "/puzzles/jelly-gather");
+  });
+});
+
 test("a dialog opens above the bar", async ({ page }) => {
   await page.goto(PAGE_WITHOUT_STORAGE);
   await writeSaved(page, "ludo:local", savedLudoGame(2, []));

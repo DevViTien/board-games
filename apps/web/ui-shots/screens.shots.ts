@@ -1457,3 +1457,70 @@ test("the menu's way to the toolbox", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Hộp công cụ" })).toBeVisible();
   await shootScreen(page, "01f-menu-toolbox");
 });
+
+// Gom thạch (add-jelly-gather-puzzle design §9): the level list new and with progress, a level with
+// its hint, a stuck coconut, the solved panel (and at 360 × 640), no such level.
+
+async function openJellyLevel(page: Page, id: string): Promise<void> {
+  await page.goto(`/puzzles/jelly-gather/${id}`);
+  await expect(page.getByRole("button", { name: "Lên" })).toHaveAttribute("aria-disabled", "false");
+}
+
+async function solveJellyFirst(page: Page): Promise<void> {
+  await openJellyLevel(page, "1-1");
+  for (const key of ["ArrowLeft", "ArrowLeft", "ArrowUp", "ArrowRight"])
+    await page.keyboard.press(key);
+  await expect(page.getByRole("region", { name: "Gom xong!" })).toBeVisible();
+}
+
+test("Gom thạch: the level list, new and with progress", async ({ page }) => {
+  await page.goto("/puzzles/jelly-gather");
+  await expect(page.getByRole("link", { name: /^Bắt đầu/ })).toBeVisible();
+  await shoot(page, "70-jelly-list-new");
+  await solveJellyFirst(page);
+  await openJellyLevel(page, "2-1");
+  await page.keyboard.press("ArrowUp");
+  await page.goto("/puzzles/jelly-gather");
+  await expect(page.getByRole("link", { name: "Tiếp tục: màn 2-1" })).toBeVisible();
+  await shoot(page, "70a-jelly-list-progress");
+});
+
+test("Gom thạch: a level with its hint, and the menu's card", async ({ page }) => {
+  await openJellyLevel(page, "1-1");
+  await shootScreen(page, "71-jelly-level-hint");
+  await openJellyLevel(page, "2-1");
+  await page.keyboard.press("ArrowUp");
+  await page.keyboard.press("ArrowLeft");
+  await page.keyboard.press("ArrowLeft");
+  await page.keyboard.press("ArrowUp");
+  // Strawberry pushed into the grass jelly: stuck across a seam.
+  await page.keyboard.press("ArrowRight");
+  await page.waitForTimeout(300);
+  await shootScreen(page, "71a-jelly-level-grass");
+  await page.goto("/");
+  await page.getByRole("heading", { name: "Gom thạch" }).scrollIntoViewIfNeeded();
+  await shootScreen(page, "01g-menu-jelly-card");
+});
+
+test("Gom thạch: a coconut stuck to a wall", async ({ page }) => {
+  await openJellyLevel(page, "3-2");
+  await shootScreen(page, "72-jelly-level-coconut");
+});
+
+test("Gom thạch: solved, and at 360 × 640", async ({ page }) => {
+  await solveJellyFirst(page);
+  await page.waitForTimeout(400);
+  await shootScreen(page, "73-jelly-solved");
+  test.skip((page.viewportSize()?.width ?? 0) > 500, "a phone's size");
+  await page.setViewportSize({ width: 360, height: 640 });
+  await page.evaluate(() => {
+    window.scrollTo(0, 0);
+  });
+  await shootScreen(page, "73a-jelly-solved-360x640");
+});
+
+test("Gom thạch: no such level", async ({ page }) => {
+  await page.goto("/puzzles/jelly-gather/9-9");
+  await expect(page.getByRole("heading", { name: "Không có màn này" })).toBeVisible();
+  await shoot(page, "74-jelly-not-found");
+});

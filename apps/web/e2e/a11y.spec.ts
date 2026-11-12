@@ -442,6 +442,48 @@ for (const colorScheme of SCHEMES) {
       });
     });
 
+    test.describe("(G) Gom thạch", () => {
+      test("the level list, a level with its hint, a stuck coconut, solved, and no such level", async ({
+        page,
+      }) => {
+        await page.goto("/puzzles/jelly-gather");
+        await expect(page.getByRole("link", { name: /^Bắt đầu/ })).toBeVisible();
+        await expectNoAxeViolations(page, "jelly-gather-list");
+
+        await page.goto("/puzzles/jelly-gather/2-1");
+        await expect(page.getByRole("button", { name: "Lên" })).toHaveAttribute(
+          "aria-disabled",
+          "false",
+        );
+        await expectNoAxeViolations(page, "jelly-gather-level");
+
+        await page.goto("/puzzles/jelly-gather/3-2");
+        await expect(page.getByRole("button", { name: "Lên" })).toHaveAttribute(
+          "aria-disabled",
+          "false",
+        );
+        await expectNoAxeViolations(page, "jelly-gather-coconut");
+
+        await page.goto("/puzzles/jelly-gather/1-1");
+        await expect(page.getByRole("button", { name: "Lên" })).toHaveAttribute(
+          "aria-disabled",
+          "false",
+        );
+        for (const key of ["ArrowLeft", "ArrowLeft", "ArrowUp", "ArrowRight"])
+          await page.keyboard.press(key);
+        await expect(page.getByRole("region", { name: "Gom xong!" })).toBeVisible();
+        await expectNoAxeViolations(page, "jelly-gather-solved");
+
+        await page.goto("/puzzles/jelly-gather");
+        await expect(page.getByRole("link", { name: "Màn 1-1, đã giải, 4 bước" })).toBeVisible();
+        await expectNoAxeViolations(page, "jelly-gather-list-progress");
+
+        await page.goto("/puzzles/jelly-gather/9-9");
+        await expect(page.getByRole("heading", { name: "Không có màn này" })).toBeVisible();
+        await expectNoAxeViolations(page, "jelly-gather-not-found");
+      });
+    });
+
     test.describe("(F) the toolbox", () => {
       test("the toolbox, the empty list and the forms", async ({ page }) => {
         await page.goto("/tools");

@@ -85,6 +85,35 @@ test.describe("with a mouse", () => {
   });
 });
 
+test.describe("Gom thạch's board", () => {
+  async function pushOnce(page: Page): Promise<number> {
+    await page.goto("/puzzles/jelly-gather/1-1");
+    await expect(page.getByRole("button", { name: "Lên" })).toHaveAttribute(
+      "aria-disabled",
+      "false",
+    );
+    await page.keyboard.press("ArrowLeft");
+    await page.keyboard.press("ArrowLeft");
+    await page.keyboard.press("ArrowUp");
+    // This one pushes a strawberry into the other: a slide, then the two settle.
+    await page.keyboard.press("ArrowRight");
+    return page.evaluate(() => document.getAnimations().length);
+  }
+
+  test("a push slides", async ({ page }) => {
+    expect(await pushOnce(page)).toBeGreaterThan(0);
+  });
+
+  test.describe("when motion is reduced", () => {
+    test.use({ reducedMotion: "reduce" });
+
+    test("Giảm chuyển động: the board shows the move at once", async ({ page }) => {
+      expect(await pushOnce(page)).toBe(0);
+      await expect(page.getByRole("region", { name: "Gom xong!" })).toBeVisible();
+    });
+  });
+});
+
 test.describe("Cờ cá ngựa's horses to choose", () => {
   async function openChoices(page: Page) {
     await page.goto(PAGE_WITHOUT_STORAGE);

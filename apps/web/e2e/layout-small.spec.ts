@@ -105,6 +105,54 @@ for (const viewport of [
   });
 }
 
+test.describe("Gom thạch on a small phone", () => {
+  for (const viewport of [
+    { width: 360, height: 740 },
+    { width: 360, height: 640 },
+  ]) {
+    test.describe(`${String(viewport.width)} × ${String(viewport.height)}`, () => {
+      test.use({ viewport });
+
+      test("Không cuộn ngang: the level list and the widest levels", async ({ page }) => {
+        await page.goto("/puzzles/jelly-gather");
+        await expect(page.getByRole("link", { name: /^Bắt đầu/ })).toBeVisible();
+        expect(await scrollsSideways(page), "level list").toBe(false);
+        await expectTargetsAtLeast24(page, page.locator("body"));
+        for (const id of ["1-8", "2-8", "3-8"]) {
+          await page.goto(`/puzzles/jelly-gather/${id}`);
+          await expect(page.getByRole("group", { name: "Điều khiển" })).toBeInViewport({
+            ratio: 1,
+          });
+          expect(await scrollsSideways(page), id).toBe(false);
+          await expectTargetsAtLeast24(page, page.locator("body"));
+        }
+      });
+
+      test("Vừa trong màn hình nhỏ: the solved panel and its buttons without scrolling", async ({
+        page,
+      }) => {
+        await page.goto("/puzzles/jelly-gather/1-1");
+        await expect(page.getByRole("button", { name: "Lên" })).toHaveAttribute(
+          "aria-disabled",
+          "false",
+        );
+        for (const key of ["ArrowLeft", "ArrowLeft", "ArrowUp", "ArrowRight"])
+          await page.keyboard.press(key);
+        const panel = page.getByRole("region", { name: "Gom xong!" });
+        await expect(panel).toBeVisible();
+        await page.evaluate(() => {
+          window.scrollTo(0, 0);
+        });
+        await expect(panel.getByRole("link", { name: "Màn tiếp" })).toBeInViewport({ ratio: 1 });
+        await expect(panel.getByRole("link", { name: "Danh sách màn" })).toBeInViewport({
+          ratio: 1,
+        });
+        expect(await scrollsSideways(page), "solved").toBe(false);
+      });
+    });
+  }
+});
+
 test.describe("the card score tool on a small phone", () => {
   for (const viewport of [
     { width: 360, height: 740 },
