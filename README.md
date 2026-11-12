@@ -7,7 +7,7 @@ App chơi cờ trên trình duyệt: Tic-tac-toe, Cờ caro, Cờ cá ngựa, C�
 - Hành vi hiện trạng và việc sắp làm (OpenSpec): [openspec/](openspec/)
 - Hướng dẫn làm việc cùng Claude Code: [CLAUDE.md](CLAUDE.md)
 
-Ngoài các game còn có **Hộp công cụ** (`/tools`) cho những buổi chơi ngoài đời: Ghi điểm đánh bài, dữ liệu chỉ lưu trên trình duyệt. Và một **trò giải đố một người**, **Gom thạch** (`/puzzles/jelly-gather`): đẩy thạch cho cùng màu dính lại, 24 màn, tiến độ lưu trên trình duyệt.
+Ngoài các game còn có **Hộp công cụ** (`/tools`) cho những buổi chơi ngoài đời: Ghi điểm đánh bài, dữ liệu chỉ lưu trên trình duyệt. Và một **trò giải đố một người**, **Gom thạch** (`/puzzles/jelly-gather`): đẩy thạch cho cùng màu dính lại hay vào đúng khuôn, 40 màn (8 màn lấy từ bộ Boxoban, Apache 2.0), tiến độ lưu trên trình duyệt.
 
 ## Chạy ở máy
 
