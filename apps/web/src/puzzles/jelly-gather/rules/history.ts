@@ -118,4 +118,5 @@ export function replay(level: Level, history: string): Attempt | null {
   return attempt;
 }
 
-export const isAttemptSolved = (attempt: Attempt) => isSolved(currentFrame(attempt).board);
+export const isAttemptSolved = (attempt: Attempt) =>
+  isSolved(attempt.level, currentFrame(attempt).board);

@@ -21,9 +21,17 @@ function boardKey(board: Board): string {
   return key;
 }
 
-/** The fewest moves from the level's start to a solved board, looking at no more than `limit` boards. */
-export function solve(level: Level, limit = 300_000): SolveResult {
-  if (isSolved(level.start)) return { kind: "solved", moves: "", states: 1 };
+/**
+ * The fewest moves from the level's start to a solved board, looking at no more than `limit`
+ * boards. `chainPush: false` plays by Sokoban's rule instead: a move that pushes more than one
+ * piece is not taken (chapter 5's levels are proved to need no such move to be shortest).
+ */
+export function solve(
+  level: Level,
+  limit = 300_000,
+  { chainPush = true }: { readonly chainPush?: boolean } = {},
+): SolveResult {
+  if (isSolved(level, level.start)) return { kind: "solved", moves: "", states: 1 };
   // Each board seen, with the board and move it was reached from, to rebuild the path.
   const seen = new Map<string, { readonly from: string | null; readonly move: Direction | null }>();
   const startKey = boardKey(level.start);
@@ -34,7 +42,7 @@ export function solve(level: Level, limit = 300_000): SolveResult {
     for (const { key, board } of frontier) {
       for (const direction of DIRECTIONS) {
         const result = step(level, board, direction);
-        if (!result.ok) continue;
+        if (!result.ok || (!chainPush && result.pushedPieces.length > 1)) continue;
         const nextKey = boardKey(result.board);
         if (seen.has(nextKey)) continue;
         seen.set(nextKey, { from: key, move: direction });

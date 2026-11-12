@@ -838,12 +838,12 @@
   "Puzzles": {
     "jelly-gather": {
       "name": "Gom thạch",
-      "tagline": "Đẩy thạch rau câu cho cùng màu dính lại thành một khối."
+      "tagline": "Đẩy thạch rau câu cho cùng màu dính lại, hay vào đúng khuôn."
     }
   },
   "JellyGather": {
     "title": "Gom thạch",
-    "lead": "Đẩy thạch rau câu cho cùng màu dính lại thành một khối.",
+    "lead": "Đẩy thạch rau câu cho cùng màu dính lại, hay vào đúng khuôn.",
     "solvedCount": "Đã giải {solved}/{total} màn.",
     "fresh": "{total} màn, chơi màn nào trước cũng được.",
     "continue": "Tiếp tục: màn {level}",
@@ -865,17 +865,27 @@
       "3": {
         "name": "Thạch dừa",
         "lead": "Dừa dính cả vào tường."
+      },
+      "4": {
+        "name": "Khuôn",
+        "lead": "Đổ thạch vào khuôn cùng màu cho vừa khít."
+      },
+      "5": {
+        "name": "Kho đá",
+        "lead": "Đẩy mọi đá viên vào khuôn đá.",
+        "credit": "Màn từ bộ <b>Boxoban</b> của DeepMind, giấy phép Apache 2.0 · <link>Giấy phép bên thứ ba</link>"
       }
     },
     "howTo": {
       "title": "Cách chơi",
       "push": "Đi vào thạch để đẩy nó một ô. Thạch đẩy vào thạch khác thì đẩy cả hai.",
       "stick": "Thạch cùng màu chạm cạnh nhau thì dính lại thành một khối.",
-      "goal": "Gom mỗi màu thành <b>một khối</b> là qua màn.",
+      "goal": "Màn không có khuôn: gom mỗi màu thành <b>một khối</b> là qua màn.",
       "stuck": "Thạch sát tường không kéo ra được. Kẹt thì <b>Hoàn tác</b> hoặc <b>Chơi lại màn</b>.",
       "ice": "Đá viên đẩy được nhưng không dính gì.",
       "grass": "Sương sáo dính với mọi màu, nối được hai khối cùng màu.",
-      "coconut": "Thạch dừa chạm tường là đứng yên luôn."
+      "coconut": "Thạch dừa chạm tường là đứng yên luôn.",
+      "mold": "Màn có <b>khuôn</b>: đổ thạch vào khuôn cùng màu cho đến khi mọi ô khuôn đều có thạch đúng màu."
     },
     "play": {
       "title": "Màn {level}",
@@ -892,13 +902,17 @@
       "restart": "Chơi lại màn",
       "keys": "Phím: mũi tên hoặc W A S D để đi · Z hoàn tác · R chơi lại màn",
       "board": "Mô tả bàn",
-      "backToList": "Danh sách màn"
+      "backToList": "Danh sách màn",
+      "molds": "Khuôn {fitted}/{total}",
+      "moldsLabel": "{fitted} trên {total} ô khuôn đã vừa"
     },
     "hints": {
       "push": "Đi vào thạch để đẩy nó. Hai khối cùng màu chạm cạnh nhau thì dính lại. Gom mỗi màu thành một khối là qua màn.",
       "ice": "Đá viên đẩy được nhưng không dính gì, cũng không cần gom.",
       "grass": "Sương sáo dính với mọi màu. Hai khối dâu cùng dính vào một khối sương sáo là đã gom xong.",
-      "coconut": "Thạch dừa dính cả vào tường: chạm tường là đứng yên luôn."
+      "coconut": "Thạch dừa dính cả vào tường: chạm tường là đứng yên luôn.",
+      "mold": "Khuôn: đưa thạch vào khuôn cùng màu. Qua màn khi mọi ô khuôn đều có thạch đúng màu.",
+      "depot": "Kho đá: đẩy mọi đá viên vào khuôn đá. Các màn của chương này lấy từ bộ Boxoban."
     },
     "solved": {
       "title": "Gom xong!",
@@ -908,7 +922,8 @@
       "moves": "{count} bước",
       "perfect": "Ít bước nhất có thể!",
       "next": "Màn tiếp",
-      "list": "Danh sách màn"
+      "list": "Danh sách màn",
+      "titleMolds": "Vừa khuôn!"
     },
     "say": {
       "at": "Hàng {row}, cột {col}.",
@@ -921,7 +936,9 @@
       "jam": "Không đẩy được: phía trước bị chặn.",
       "fixedBlock": "Không đẩy được: thạch dừa đã dính tường.",
       "undone": "Hoàn tác. {count} bước.",
-      "restarted": "Chơi lại màn. Hoàn tác để quay lại."
+      "restarted": "Chơi lại màn. Hoàn tác để quay lại.",
+      "molds": "Khuôn {fitted}/{total}.",
+      "solvedMolds": "Vừa khuôn! {count} bước."
     },
     "cell": {
       "row": "Hàng {row}: {cells}",
@@ -930,7 +947,9 @@
       "player": "bạn",
       "piece": "{count, plural, other {# ô {name}}}",
       "fixed": "{name} đứng yên",
-      "separator": ", "
+      "separator": ", ",
+      "mold": "{count, plural, other {# ô {name}}}",
+      "onMold": "{thing} trên {mold}"
     },
     "notFound": {
       "title": "Không có màn này",
@@ -947,7 +966,15 @@
       "ice": "đá viên"
     },
     "levelLinkSolved": "Màn {level}, đã giải, {moves} bước",
-    "levelLinkUnsolved": "Màn {level}, chưa giải"
+    "levelLinkUnsolved": "Màn {level}, chưa giải",
+    "moldNames": {
+      "strawberry": "khuôn dâu",
+      "pandan": "khuôn lá dứa",
+      "mango": "khuôn xoài",
+      "taro": "khuôn khoai môn",
+      "coconut": "khuôn dừa",
+      "ice": "khuôn đá"
+    }
   },
   "Rules": {
     "title": "Luật chơi {game}",

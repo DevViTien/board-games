@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { AppTopBar } from "@/features/shell/AppTopBar";
 import { HistoryLink, ScreenTitle } from "@/features/shell/client-navigation";
 
-import { LEVELS, levelsByChapter } from "./levels";
+import { chapterKey, LEVELS, levelsByChapter } from "./levels";
 import { PieceShape } from "./pieces";
 import { continueLevel } from "./progress-store";
 import { levelHref } from "./routes";
@@ -133,12 +133,13 @@ export function LevelList() {
               <li>
                 <Swatch kind={JELLY_KIND.Coconut} /> {t("howTo.coconut")}
               </li>
+              <li>{t.rich("howTo.mold", { b: (chunks) => <b>{chunks}</b> })}</li>
             </ul>
           </details>
         </div>
 
         {levelsByChapter().map((levels, index) => {
-          const chapter = String(index + 1) as "1" | "2" | "3";
+          const chapter = chapterKey(index + 1);
           const headingId = `jelly-chapter-${chapter}`;
           return (
             <section key={chapter} aria-labelledby={headingId} className="flex flex-col gap-3">
@@ -147,6 +148,22 @@ export function LevelList() {
                   {t("chapterTitle", { chapter, name: t(`chapters.${chapter}.name`) })}
                 </h2>
                 <p className="text-small text-fg-muted">{t(`chapters.${chapter}.lead`)}</p>
+                {chapter === "5" && (
+                  // Levels from Boxoban (Apache 2.0): their source and licence, by the levels.
+                  <p className="text-caption text-fg-muted">
+                    {t.rich("chapters.5.credit", {
+                      b: (chunks) => <b>{chunks}</b>,
+                      link: (chunks) => (
+                        <a
+                          href="/third-party-licenses.txt"
+                          className="focus-ring rounded-sm font-semibold text-accent-ink underline underline-offset-2"
+                        >
+                          {chunks}
+                        </a>
+                      ),
+                    })}
+                  </p>
+                )}
               </div>
               <ol
                 aria-label={t("chapterLevels", { chapter })}

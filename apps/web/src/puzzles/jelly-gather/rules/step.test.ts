@@ -69,6 +69,8 @@ describe("Đi và đẩy", () => {
       stuck: [],
       glued: [],
       fixed: false,
+      molds: null,
+      moldsChanged: false,
       solved: false,
     });
   });
@@ -166,7 +168,7 @@ describe("Thạch cùng màu dính lại", () => {
   it("Chạm chéo không dính", () => {
     const lv = level(["######", "#@...#", "#.y..#", "#..y.#", "######"]);
     expect(lv.start.pieces).toHaveLength(2);
-    expect(isSolved(lv.start)).toBe(false);
+    expect(isSolved(lv, lv.start)).toBe(false);
   });
 });
 
@@ -271,7 +273,7 @@ describe("Qua màn", () => {
   const lv = level(["########", "#@r.r..#", "#......#", "#.g...g#", "########"]);
 
   it("Còn một màu chưa gom: strawberry is one piece, pandan still two", () => {
-    expect(isSolved(play(lv, "R"))).toBe(false);
+    expect(isSolved(lv, play(lv, "R"))).toBe(false);
   });
 
   it("Gom xong mọi màu: then no move happens", () => {

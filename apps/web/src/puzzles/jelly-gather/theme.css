@@ -44,6 +44,8 @@
   --jelly-gather-pin: #2f2a20;
   /* The gloss on a jelly (decorative). */
   --jelly-gather-sheen: rgb(255 255 255 / 0.55);
+  /* How strongly a mold shows its kind's body on the tray (decorative: its edge is what reads). */
+  --jelly-gather-mold-fill: 0.28;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -79,6 +81,7 @@
     --jelly-gather-ice-mark: #2f6582;
     --jelly-gather-pin: #2f2a20;
     --jelly-gather-sheen: rgb(255 255 255 / 0.35);
+    --jelly-gather-mold-fill: 0.32;
   }
 }
 
@@ -114,6 +117,7 @@
   --jelly-gather-ice-mark: #2f6582;
   --jelly-gather-pin: #2f2a20;
   --jelly-gather-sheen: rgb(255 255 255 / 0.35);
+  --jelly-gather-mold-fill: 0.32;
 }
 
 /* The solved panel's one moment: it grows into place (PlayLevel, `motion-safe:` only). */

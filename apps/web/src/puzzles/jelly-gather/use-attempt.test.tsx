@@ -71,9 +71,9 @@ describe("useAttempt", () => {
     refreshProgress();
     const { result } = renderHook(() => useAttempt(bridge));
     expect(result.current.attempt && currentFrame(result.current.attempt).steps).toBe(3);
-    let left: number | null = null;
+    let left: number | undefined;
     act(() => {
-      left = result.current.undo();
+      left = result.current.undo()?.steps;
     });
     expect(left).toBe(2);
     expect(result.current.attempt && currentFrame(result.current.attempt).steps).toBe(2);

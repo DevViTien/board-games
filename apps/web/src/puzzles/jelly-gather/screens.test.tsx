@@ -333,7 +333,13 @@ describe("LevelList", () => {
   it("Lần đầu vào: every chapter, nothing solved, start at 1-1, how to play open", () => {
     renderWithIntl(<LevelList />);
     expect(screen.getByRole("heading", { level: 1, name: "Gom thạch" })).toBeVisible();
-    for (const name of ["Chương 1 · Dính lại", "Chương 2 · Sương sáo", "Chương 3 · Thạch dừa"]) {
+    for (const name of [
+      "Chương 1 · Dính lại",
+      "Chương 2 · Sương sáo",
+      "Chương 3 · Thạch dừa",
+      "Chương 4 · Khuôn",
+      "Chương 5 · Kho đá",
+    ]) {
       expect(screen.getByRole("heading", { level: 2, name })).toBeVisible();
     }
     const links = screen.getAllByRole("link", { name: /^Màn \d-\d, chưa giải$/ });

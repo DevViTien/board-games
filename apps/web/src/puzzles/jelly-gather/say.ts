@@ -40,7 +40,15 @@ export function useSay() {
       }
       if (result.glued.length > 0) parts.push(t("say.glued", { kinds: list(result.glued) }));
       if (result.fixed) parts.push(t("say.fixed"));
-      if (result.solved) parts.push(t("say.solved", { count: steps }));
+      if (result.molds !== null && result.moldsChanged)
+        parts.push(t("say.molds", { fitted: result.molds.fitted, total: result.molds.total }));
+      if (result.solved) {
+        parts.push(
+          level.molds.size > 0
+            ? t("say.solvedMolds", { count: steps })
+            : t("say.solved", { count: steps }),
+        );
+      }
       return parts.join(" ");
     },
     [kindName, list, t],
@@ -71,20 +79,29 @@ export function useSay() {
         for (let col = 0; col < level.width; col += 1) {
           const cell = row * level.width + col;
           const thing = at.get(cell);
+          const mold = level.molds.get(cell);
+          const moldName = mold === undefined ? undefined : t(`moldNames.${mold}`);
+          const on = (thing: string) =>
+            moldName === undefined ? thing : t("cell.onMold", { thing, mold: moldName });
           const entry =
             cell === board.player
-              ? { key: "player", text: () => t("cell.player") }
+              ? { key: "player", text: () => on(t("cell.player")) }
               : level.walls.has(cell)
                 ? { key: "wall", text: (count: number) => t("cell.wall", { count }) }
                 : thing === undefined
-                  ? { key: "floor", text: (count: number) => t("cell.floor", { count }) }
+                  ? moldName === undefined
+                    ? { key: "floor", text: (count: number) => t("cell.floor", { count }) }
+                    : {
+                        key: `mold:${mold ?? ""}`,
+                        text: (count: number) => t("cell.mold", { count, name: moldName }),
+                      }
                   : {
-                      key: `${thing.kind}${thing.fixed ? "!" : ""}`,
+                      key: `${thing.kind}${thing.fixed ? "!" : ""}@${mold ?? ""}`,
                       text: (count: number) => {
                         const name = thing.fixed
                           ? t("cell.fixed", { name: kindName(thing.kind) })
                           : kindName(thing.kind);
-                        return t("cell.piece", { count, name });
+                        return t("cell.piece", { count, name: on(name) });
                       },
                     };
           const last = runs.at(-1);

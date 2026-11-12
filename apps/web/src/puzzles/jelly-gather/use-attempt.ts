@@ -7,6 +7,7 @@ import {
   type Attempt,
   canUndo,
   currentFrame,
+  type Frame,
   isAttemptSolved,
   playMove,
   restart as restartAttempt,
@@ -26,8 +27,8 @@ export interface UseAttempt {
   readonly move: (
     direction: Direction,
   ) => { readonly result: StepResult; readonly steps: number } | null;
-  /** The moves left after taking one back, or `null` when there was nothing to take back. */
-  readonly undo: () => number | null;
+  /** The state after taking one back, or `null` when there was nothing to take back. */
+  readonly undo: () => Frame | null;
   /** Whether the board went back to the start (not when it was there already). */
   readonly restart: () => boolean;
 }
@@ -85,7 +86,7 @@ export function useAttempt(level: Level): UseAttempt {
 
   const undo = useCallback(() => {
     const changed = change(undoAttempt);
-    return changed === null || changed.to === changed.from ? null : currentFrame(changed.to).steps;
+    return changed === null || changed.to === changed.from ? null : currentFrame(changed.to);
   }, [change]);
 
   const restart = useCallback(() => {

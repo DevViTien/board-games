@@ -838,12 +838,12 @@
   "Puzzles": {
     "jelly-gather": {
       "name": "Jelly Gather",
-      "tagline": "Push the jellies until each colour sticks together in one piece."
+      "tagline": "Push the jellies until each colour sticks together, or fills its mold."
     }
   },
   "JellyGather": {
     "title": "Jelly Gather",
-    "lead": "Push the jellies until each colour sticks together in one piece.",
+    "lead": "Push the jellies until each colour sticks together, or fills its mold.",
     "solvedCount": "{solved} of {total} levels solved.",
     "fresh": "{total} levels: play them in any order.",
     "continue": "Continue: level {level}",
@@ -865,17 +865,27 @@
       "3": {
         "name": "Coconut",
         "lead": "Coconut sticks to walls too."
+      },
+      "4": {
+        "name": "Molds",
+        "lead": "Fill each mold with its colour, exactly."
+      },
+      "5": {
+        "name": "Ice depot",
+        "lead": "Push every ice block into an ice mold.",
+        "credit": "Levels from DeepMind's <b>Boxoban</b> set, Apache 2.0 licence · <link>Third-party licences</link>"
       }
     },
     "howTo": {
       "title": "How to play",
       "push": "Walk into a jelly to push it one cell. A jelly pushed into another pushes both.",
       "stick": "Jellies of the same colour stick together when their sides touch.",
-      "goal": "Gather each colour into <b>one piece</b> to solve the level.",
+      "goal": "In a level without molds, gather each colour into <b>one piece</b> to solve it.",
       "stuck": "A jelly against a wall can never be pulled away. Stuck? <b>Undo</b> or <b>Restart level</b>.",
       "ice": "Ice can be pushed but sticks to nothing.",
       "grass": "Grass jelly sticks to every colour, so it can join two pieces of one colour.",
-      "coconut": "Coconut jelly that touches a wall never moves again."
+      "coconut": "Coconut jelly that touches a wall never moves again.",
+      "mold": "In a level with <b>molds</b>, fill the molds with jelly of their colour until every mold cell holds one."
     },
     "play": {
       "title": "Level {level}",
@@ -892,13 +902,17 @@
       "restart": "Restart level",
       "keys": "Keys: arrows or W A S D to move · Z undo · R restart level",
       "board": "The board",
-      "backToList": "Levels"
+      "backToList": "Levels",
+      "molds": "Molds {fitted}/{total}",
+      "moldsLabel": "{fitted} of {total} mold cells filled"
     },
     "hints": {
       "push": "Walk into a jelly to push it. Two pieces of one colour stick when their sides touch. Gather each colour into one piece to solve the level.",
       "ice": "Ice can be pushed but sticks to nothing, and need not be gathered.",
       "grass": "Grass jelly sticks to every colour. Two strawberry pieces stuck to one grass jelly are gathered.",
-      "coconut": "Coconut jelly sticks to walls too: once it touches one, it never moves again."
+      "coconut": "Coconut jelly sticks to walls too: once it touches one, it never moves again.",
+      "mold": "Molds: push jellies into the mold of their colour. The level is solved when every mold cell holds jelly of its colour.",
+      "depot": "Ice depot: push every ice block into an ice mold. This chapter's levels come from the Boxoban set."
     },
     "solved": {
       "title": "Gathered!",
@@ -908,7 +922,8 @@
       "moves": "{count, plural, one {# move} other {# moves}}",
       "perfect": "The fewest moves possible!",
       "next": "Next level",
-      "list": "Levels"
+      "list": "Levels",
+      "titleMolds": "It fits!"
     },
     "say": {
       "at": "Row {row}, column {col}.",
@@ -921,7 +936,9 @@
       "jam": "Cannot push: something is in the way.",
       "fixedBlock": "Cannot push: the coconut jelly is stuck to a wall.",
       "undone": "Undone. {count, plural, one {# move} other {# moves}}.",
-      "restarted": "Level restarted. Undo to go back."
+      "restarted": "Level restarted. Undo to go back.",
+      "molds": "Molds {fitted}/{total}.",
+      "solvedMolds": "It fits! {count, plural, one {# move} other {# moves}}."
     },
     "cell": {
       "row": "Row {row}: {cells}",
@@ -930,7 +947,9 @@
       "player": "you",
       "piece": "{count, plural, one {# cell of {name}} other {# cells of {name}}}",
       "fixed": "{name}, stuck",
-      "separator": ", "
+      "separator": ", ",
+      "mold": "{count, plural, one {# cell of {name}} other {# cells of {name}}}",
+      "onMold": "{thing} on a {mold}"
     },
     "notFound": {
       "title": "No such level",
@@ -947,7 +966,15 @@
       "ice": "ice"
     },
     "levelLinkSolved": "Level {level}, solved, {moves, plural, one {# move} other {# moves}}",
-    "levelLinkUnsolved": "Level {level}, not solved"
+    "levelLinkUnsolved": "Level {level}, not solved",
+    "moldNames": {
+      "strawberry": "strawberry mold",
+      "pandan": "pandan mold",
+      "mango": "mango mold",
+      "taro": "taro mold",
+      "coconut": "coconut mold",
+      "ice": "ice mold"
+    }
   },
   "Rules": {
     "title": "How to play {game}",

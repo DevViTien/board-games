@@ -23,7 +23,7 @@ describe("/puzzles/jelly-gather/[[...path]]", () => {
     expect((await route(path)).type).toBe(JellyGatherApp);
   });
 
-  it.each([[["4-1"]], [["1-1", "x"]], [["nope"]], [["1-1", "edit"]]])(
+  it.each([[["6-1"]], [["1-1", "x"]], [["nope"]], [["1-1", "edit"]]])(
     "Màn không có: %j is not found",
     async (path) => {
       await expect(route(path)).rejects.toBe(NOT_FOUND);

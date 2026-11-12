@@ -15,7 +15,7 @@ interface MenuPageProps {
   readonly cards?: readonly MenuGame[];
 }
 
-/** "1 người · 24 màn": a puzzle's card says its levels instead of a duration. */
+/** "1 người · 40 màn": a puzzle's card says its levels instead of a duration. */
 function PuzzleFacts({ levelCount }: { readonly levelCount: number }) {
   const t = useTranslations("Menu");
   return (

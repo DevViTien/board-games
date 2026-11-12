@@ -1,6 +1,13 @@
 import type { ReactNode } from "react";
 
-import { type Direction, JELLY_KIND, type JellyKind, OFFSET, type Piece } from "./rules/types";
+import {
+  type Direction,
+  JELLY_KIND,
+  type JellyKind,
+  type MoldKind,
+  OFFSET,
+  type Piece,
+} from "./rules/types";
 
 // Gom thạch's drawings, plain SVG with no state (the tray, the menu's artwork): every piece as one
 // shape per kind with grass jelly across the seams between kinds, a sign on every cell, the pin of a
@@ -11,57 +18,82 @@ export const CELL = 56;
 
 /** Tailwind sees whole class names only: each kind's three colours, written out. */
 const KIND_FILL: Readonly<
-  Record<JellyKind, { body: string; edge: string; mark: string; stroke: string }>
+  Record<
+    JellyKind,
+    { body: string; edge: string; mark: string; stroke: string; edgeStroke: string }
+  >
 > = {
   [JELLY_KIND.Strawberry]: {
     body: "fill-(--jelly-gather-strawberry)",
     edge: "fill-(--jelly-gather-strawberry-edge)",
     mark: "fill-(--jelly-gather-strawberry-mark)",
     stroke: "stroke-(--jelly-gather-strawberry-mark)",
+    edgeStroke: "stroke-(--jelly-gather-strawberry-edge)",
   },
   [JELLY_KIND.Pandan]: {
     body: "fill-(--jelly-gather-pandan)",
     edge: "fill-(--jelly-gather-pandan-edge)",
     mark: "fill-(--jelly-gather-pandan-mark)",
     stroke: "stroke-(--jelly-gather-pandan-mark)",
+    edgeStroke: "stroke-(--jelly-gather-pandan-edge)",
   },
   [JELLY_KIND.Mango]: {
     body: "fill-(--jelly-gather-mango)",
     edge: "fill-(--jelly-gather-mango-edge)",
     mark: "fill-(--jelly-gather-mango-mark)",
     stroke: "stroke-(--jelly-gather-mango-mark)",
+    edgeStroke: "stroke-(--jelly-gather-mango-edge)",
   },
   [JELLY_KIND.Taro]: {
     body: "fill-(--jelly-gather-taro)",
     edge: "fill-(--jelly-gather-taro-edge)",
     mark: "fill-(--jelly-gather-taro-mark)",
     stroke: "stroke-(--jelly-gather-taro-mark)",
+    edgeStroke: "stroke-(--jelly-gather-taro-edge)",
   },
   [JELLY_KIND.Coconut]: {
     body: "fill-(--jelly-gather-coconut)",
     edge: "fill-(--jelly-gather-coconut-edge)",
     mark: "fill-(--jelly-gather-coconut-mark)",
     stroke: "stroke-(--jelly-gather-coconut-mark)",
+    edgeStroke: "stroke-(--jelly-gather-coconut-edge)",
   },
   [JELLY_KIND.Grass]: {
     body: "fill-(--jelly-gather-grass)",
     edge: "fill-(--jelly-gather-grass-edge)",
     mark: "fill-(--jelly-gather-grass-mark)",
     stroke: "stroke-(--jelly-gather-grass-mark)",
+    edgeStroke: "stroke-(--jelly-gather-grass-edge)",
   },
   [JELLY_KIND.Ice]: {
     body: "fill-(--jelly-gather-ice)",
     edge: "fill-(--jelly-gather-ice-edge)",
     mark: "fill-(--jelly-gather-ice-mark)",
     stroke: "stroke-(--jelly-gather-ice-mark)",
+    edgeStroke: "stroke-(--jelly-gather-ice-edge)",
   },
 };
 
 const r1 = (value: number) => Math.round(value * 10) / 10;
 
 /** The sign of a kind, centred on (x, y): what tells the kinds apart without colour. */
-function KindSign({ kind, x, y, size }: { kind: JellyKind; x: number; y: number; size: number }) {
-  const { mark, stroke } = KIND_FILL[kind];
+function KindSign({
+  kind,
+  x,
+  y,
+  size,
+  tone = "mark",
+}: {
+  kind: JellyKind;
+  x: number;
+  y: number;
+  size: number;
+  /** `edge`: in the kind's edge colour, for a mold's sign on the tray. */
+  tone?: "mark" | "edge";
+}) {
+  const fills = KIND_FILL[kind];
+  const mark = tone === "edge" ? fills.edge : fills.mark;
+  const stroke = tone === "edge" ? fills.edgeStroke : fills.stroke;
   const r = size;
   switch (kind) {
     case JELLY_KIND.Strawberry:
@@ -321,5 +353,108 @@ export function Player({
       {eye(-1)}
       {eye(1)}
     </>
+  );
+}
+
+interface MoldProps {
+  readonly at: number;
+  readonly kind: MoldKind;
+  readonly width: number;
+  readonly cell?: number;
+}
+
+/** A mold on the tray, under the pieces: its kind's body faint, a dashed edge, its sign. */
+export function MoldUnder({ at, kind, width, cell = CELL }: MoldProps) {
+  const x = (at % width) * cell;
+  const y = Math.floor(at / width) * cell;
+  const inset = cell * 0.09;
+  const { body, edgeStroke } = KIND_FILL[kind];
+  return (
+    <g data-mold={kind}>
+      <rect
+        x={r1(x + inset)}
+        y={r1(y + inset)}
+        width={r1(cell - 2 * inset)}
+        height={r1(cell - 2 * inset)}
+        rx={r1(cell * 0.2)}
+        strokeWidth={r1(cell * 0.05)}
+        strokeDasharray={`${r1(cell * 0.12)} ${r1(cell * 0.08)}`}
+        className={`${body} ${edgeStroke} [fill-opacity:var(--jelly-gather-mold-fill)]`}
+      />
+      <KindSign
+        kind={kind}
+        x={r1(x + cell / 2)}
+        y={r1(y + cell / 2)}
+        size={cell * 0.1}
+        tone="edge"
+      />
+    </g>
+  );
+}
+
+/**
+ * A mold seen through what lies on it (design §5): its edge over the piece, dashed, with its sign in
+ * a corner, so the kind it asks for still shows under a wrong piece; solid with a tick once it fits.
+ * Each line has a halo of the tray's colour, to read on any piece.
+ */
+export function MoldOver({
+  at,
+  kind,
+  width,
+  fitted,
+  cell = CELL,
+}: MoldProps & { readonly fitted: boolean }) {
+  const x = (at % width) * cell;
+  const y = Math.floor(at / width) * cell;
+  const { edgeStroke } = KIND_FILL[kind];
+  const frame = {
+    x: r1(x + cell * 0.04),
+    y: r1(y + cell * 0.04),
+    width: r1(cell * 0.92),
+    height: r1(cell * 0.92),
+    rx: r1(cell * 0.24),
+    fill: "none",
+    ...(!fitted && { strokeDasharray: `${r1(cell * 0.1)} ${r1(cell * 0.07)}` }),
+  };
+  const tick = `M${r1(x + cell * 0.64)} ${r1(y + cell * 0.8)}l${r1(cell * 0.07)} ${r1(cell * 0.07)}l${r1(cell * 0.13)} ${r1(-cell * 0.15)}`;
+  return (
+    <g data-mold-over={kind} data-cell={at} {...(fitted && { "data-fitted": "" })}>
+      <rect {...frame} strokeWidth={r1(cell * 0.09)} className="stroke-game-board" />
+      <rect {...frame} strokeWidth={r1(cell * 0.045)} className={edgeStroke} />
+      <circle
+        cx={r1(x + cell * 0.2)}
+        cy={r1(y + cell * 0.2)}
+        r={r1(cell * 0.13)}
+        strokeWidth={r1(cell * 0.03)}
+        className={`fill-game-board ${edgeStroke}`}
+      />
+      <KindSign
+        kind={kind}
+        x={r1(x + cell * 0.2)}
+        y={r1(y + cell * 0.2)}
+        size={cell * 0.075}
+        tone="edge"
+      />
+      {fitted && (
+        <>
+          <path
+            d={tick}
+            strokeWidth={r1(cell * 0.12)}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+            className="stroke-game-board"
+          />
+          <path
+            d={tick}
+            strokeWidth={r1(cell * 0.06)}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+            className={edgeStroke}
+          />
+        </>
+      )}
+    </g>
   );
 }

@@ -8,27 +8,34 @@ import {
   JELLY_KIND,
   type JellyKind,
   KINDS,
+  type MoldKind,
+  type MoldProgress,
   OFFSET,
   type Piece,
   type StepResult,
 } from "./types";
 
-/** The grid a board lives on: what `step` needs of a level. */
-export interface Grid {
+/** The cells and walls a board lives on: what sticking needs. */
+interface Area {
   readonly width: number;
   readonly height: number;
   readonly walls: ReadonlySet<number>;
 }
 
+/** What `step` needs of a level: its area and its molds, which decide when it is solved. */
+export interface Grid extends Area {
+  readonly molds: ReadonlyMap<number, MoldKind>;
+}
+
 /** The cell next to `cell` towards `direction`, or -1 off the grid. */
-function nextCell(grid: Grid, cell: number, direction: Direction): number {
+function nextCell(grid: Area, cell: number, direction: Direction): number {
   const [dx, dy] = OFFSET[direction];
   const x = (cell % grid.width) + dx;
   const y = Math.floor(cell / grid.width) + dy;
   return x < 0 || y < 0 || x >= grid.width || y >= grid.height ? -1 : y * grid.width + x;
 }
 
-function neighbours(grid: Grid, cell: number): number[] {
+function neighbours(grid: Area, cell: number): number[] {
   const out: number[] = [];
   for (const direction of DIRECTIONS) {
     const next = nextCell(grid, cell, direction);
@@ -43,7 +50,7 @@ function sticks(a: JellyKind, b: JellyKind): boolean {
   return a === b || a === JELLY_KIND.Grass || b === JELLY_KIND.Grass;
 }
 
-const touchesWall = (grid: Grid, cell: number) =>
+const touchesWall = (grid: Area, cell: number) =>
   neighbours(grid, cell).some((next) => grid.walls.has(next));
 
 interface Settled {
@@ -57,7 +64,7 @@ interface Settled {
  * Sticks together whatever touches and sticks, until nothing more does, then fixes the pieces with
  * a coconut cell next to a wall. Fixing moves nothing, so it never makes a new piece stick.
  */
-export function settle(grid: Grid, player: number, pieces: readonly Piece[]): Settled {
+export function settle(grid: Area, player: number, pieces: readonly Piece[]): Settled {
   const parent = pieces.map((_, index) => index);
   const find = (index: number): number => {
     let root = index;
@@ -124,8 +131,29 @@ function colourPieces(board: Board, colour: Colour): number {
   return board.pieces.filter((piece) => piece.kinds.includes(colour)).length;
 }
 
-/** Solved: every colour on the board has all its cells in one piece. */
-export function isSolved(board: Board): boolean {
+/** The mold cells holding the kind they ask for, or `null` in a level without molds. */
+export function moldProgress(grid: Grid, board: Board): MoldProgress | null {
+  if (grid.molds.size === 0) return null;
+  const kindAt = new Map<number, JellyKind>();
+  for (const piece of board.pieces) {
+    piece.cells.forEach((cell, index) => {
+      const kind = piece.kinds[index];
+      if (kind !== undefined) kindAt.set(cell, kind);
+    });
+  }
+  let fitted = 0;
+  for (const [cell, kind] of grid.molds) if (kindAt.get(cell) === kind) fitted += 1;
+  return { fitted, total: grid.molds.size };
+}
+
+/**
+ * Solved. A level with molds: every mold cell holds its kind; as each moulded kind has as many
+ * cells as molds (`parseLevel` checks), they then all lie in the molds. A level without molds:
+ * every colour on the board has all its cells in one piece.
+ */
+export function isSolved(grid: Grid, board: Board): boolean {
+  const molds = moldProgress(grid, board);
+  if (molds !== null) return molds.fitted === molds.total;
   return COLOURS.every((colour) => colourPieces(board, colour) <= 1);
 }
 
@@ -140,7 +168,7 @@ const inKindOrder = (kinds: Iterable<JellyKind>) => {
  * player leaves is no obstacle, as the player moves too.
  */
 export function step(grid: Grid, board: Board, direction: Direction): StepResult {
-  if (isSolved(board)) return { ok: false, blocked: BLOCKED.Solved };
+  if (isSolved(grid, board)) return { ok: false, blocked: BLOCKED.Solved };
   const target = nextCell(grid, board.player, direction);
   if (target === -1 || grid.walls.has(target)) return { ok: false, blocked: BLOCKED.Wall };
 
@@ -156,7 +184,16 @@ export function step(grid: Grid, board: Board, direction: Direction): StepResult
       board: walked,
       moved: walked,
       pushedPieces: [],
-      outcome: { player: target, pushed: [], stuck: [], glued: [], fixed: false, solved: false },
+      outcome: {
+        player: target,
+        pushed: [],
+        stuck: [],
+        glued: [],
+        fixed: false,
+        molds: moldProgress(grid, walked),
+        moldsChanged: false,
+        solved: false,
+      },
     };
   }
 
@@ -185,6 +222,7 @@ export function step(grid: Grid, board: Board, direction: Direction): StepResult
   const moved: Board = { player: target, pieces: movedPieces };
   const settled = settle(grid, target, movedPieces);
 
+  const after = moldProgress(grid, settled.board);
   const stuck = COLOURS.flatMap((colour) => {
     const before = colourPieces(board, colour);
     const after = colourPieces(settled.board, colour);
@@ -214,7 +252,9 @@ export function step(grid: Grid, board: Board, direction: Direction): StepResult
       stuck,
       glued,
       fixed: settled.fixedNow,
-      solved: isSolved(settled.board),
+      molds: after,
+      moldsChanged: after?.fitted !== moldProgress(grid, board)?.fitted,
+      solved: isSolved(grid, settled.board),
     },
   };
 }

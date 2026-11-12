@@ -5,6 +5,7 @@ import {
   type JellyKind,
   type Level,
   type LevelId,
+  type MoldKind,
   type Piece,
 } from "./types";
 
@@ -15,6 +16,11 @@ export interface LevelDefinition {
   readonly minMoves: number;
   readonly hint?: Hint;
   readonly rows: readonly string[];
+  /**
+   * Molds, a layer as large as `rows`: `.` none, or the kind a mold asks for (`R G Y P C` the
+   * colours, `I` ice). A separate layer, as a mold may start under a piece or the player.
+   */
+  readonly molds?: readonly string[];
 }
 
 /** The largest grid, walls included: 10 columns fit a 360 px phone at 32 px a cell. */
@@ -37,6 +43,7 @@ export const LEVEL_ERROR = {
   Player: "player",
   Symbol: "symbol",
   Id: "id",
+  Mold: "mold",
 } as const;
 export type LevelErrorCode = (typeof LEVEL_ERROR)[keyof typeof LEVEL_ERROR];
 
@@ -49,6 +56,59 @@ export class LevelError extends Error {
     this.name = "LevelError";
     this.code = code;
   }
+}
+
+const MOLD_SYMBOL: Readonly<Record<string, MoldKind>> = {
+  R: JELLY_KIND.Strawberry,
+  G: JELLY_KIND.Pandan,
+  Y: JELLY_KIND.Mango,
+  P: JELLY_KIND.Taro,
+  C: JELLY_KIND.Coconut,
+  I: JELLY_KIND.Ice,
+};
+
+/**
+ * The molds of a level (design §2 of add-jelly-gather-molds): as large as the level, never on a
+ * wall, and each moulded kind with as many cells on the board as molds, or it could never fit.
+ */
+function parseMolds(
+  definition: LevelDefinition,
+  width: number,
+  height: number,
+  walls: ReadonlySet<number>,
+  pieces: readonly Piece[],
+): ReadonlyMap<number, MoldKind> {
+  const molds = new Map<number, MoldKind>();
+  const rows = definition.molds;
+  if (rows === undefined) return molds;
+  const { id } = definition;
+  if (rows.length !== height || rows.some((row) => row.length !== width)) {
+    throw new LevelError(LEVEL_ERROR.Mold, `${id}: molds not the level's size`);
+  }
+  rows.forEach((row, y) => {
+    Array.from({ length: width }, (_, x) => row.charAt(x)).forEach((symbol, x) => {
+      if (symbol === ".") return;
+      const kind = MOLD_SYMBOL[symbol];
+      const cell = y * width + x;
+      if (kind === undefined) throw new LevelError(LEVEL_ERROR.Mold, `${id}: mold "${symbol}"`);
+      if (walls.has(cell)) {
+        throw new LevelError(LEVEL_ERROR.Mold, `${id}: mold on a wall at ${x},${y}`);
+      }
+      molds.set(cell, kind);
+    });
+  });
+  // Each cell is a piece of its own until the level settles: counting pieces counts cells.
+  for (const kind of new Set(molds.values())) {
+    const cells = pieces.filter((piece) => piece.kinds[0] === kind).length;
+    const wanted = [...molds.values()].filter((moldKind) => moldKind === kind).length;
+    if (cells !== wanted) {
+      throw new LevelError(
+        LEVEL_ERROR.Mold,
+        `${id}: ${cells} cells of ${kind} for ${wanted} molds`,
+      );
+    }
+  }
+  return molds;
 }
 
 /**
@@ -94,6 +154,7 @@ export function parseLevel(definition: LevelDefinition): Level {
     throw new LevelError(LEVEL_ERROR.Player, `${id}: ${players.length} players`);
   }
 
+  const molds = parseMolds(definition, width, height, walls, pieces);
   const grid = { width, height, walls };
   return {
     id,
@@ -102,6 +163,7 @@ export function parseLevel(definition: LevelDefinition): Level {
     width,
     height,
     walls,
+    molds,
     start: settle(grid, player, pieces).board,
     minMoves: definition.minMoves,
     ...(definition.hint && { hint: definition.hint }),

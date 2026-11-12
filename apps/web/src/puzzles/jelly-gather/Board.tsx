@@ -7,7 +7,7 @@ import { useLayoutEffect, useRef } from "react";
 
 import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
 
-import { CELL, PieceShape, Player } from "./pieces";
+import { CELL, MoldOver, MoldUnder, PieceShape, Player } from "./pieces";
 import { type Board, type Direction, type Level, OFFSET } from "./rules/types";
 
 // Gom thạch's tray (design §7): the floor, its walls, the pieces and the player, and one moment a
@@ -88,6 +88,15 @@ export function JellyBoard({
         easing: "cubic-bezier(0.2, 0.8, 0.3, 1)",
       });
     }
+    // A mold's frame over a cell a piece just slid onto: once the piece is there.
+    for (const element of svg.querySelectorAll<SVGGElement>("[data-mold-over]")) {
+      if (!motion.slid.has(Number(element.dataset.cell))) continue;
+      element.animate([{ opacity: 0 }, { opacity: 1 }], {
+        duration: SETTLE_MS,
+        delay: SLIDE_MS,
+        fill: "backwards",
+      });
+    }
     for (const element of svg.querySelectorAll<SVGGElement>("[data-settled]")) {
       element.animate(
         [{ transform: "scale(1)" }, { transform: "scale(1.06, 0.94)" }, { transform: "scale(1)" }],
@@ -100,6 +109,11 @@ export function JellyBoard({
   const viewHeight = height * CELL;
   const slid = motion?.slid ?? new Set<number>();
   const settled = motion?.settled ?? new Set<number>();
+  const kindAt = new Map(
+    board.pieces.flatMap((piece) =>
+      piece.cells.map((at, index) => [at, piece.kinds[index]] as const),
+    ),
+  );
   const px = (board.player % width) * CELL + CELL / 2;
   const py = Math.floor(board.player / width) * CELL + CELL / 2;
 
@@ -146,6 +160,9 @@ export function JellyBoard({
           </g>
         );
       })}
+      {[...level.molds].map(([at, kind]) => (
+        <MoldUnder key={`m${at}`} at={at} kind={kind} width={width} />
+      ))}
       {board.pieces.map((piece) => {
         const first = piece.cells[0] ?? 0;
         return (
@@ -158,6 +175,12 @@ export function JellyBoard({
           >
             <PieceShape piece={piece} width={width} walls={walls} slid={slid} />
           </g>
+        );
+      })}
+      {[...level.molds].map(([at, kind]) => {
+        const on = kindAt.get(at);
+        return on === undefined ? null : (
+          <MoldOver key={`o${at}`} at={at} kind={kind} width={width} fitted={on === kind} />
         );
       })}
       <g data-slide="" data-player="">

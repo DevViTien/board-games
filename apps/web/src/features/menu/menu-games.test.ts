@@ -61,7 +61,7 @@ describe("buildMenu", () => {
       ["puzzle", "jelly-gather"],
       ["planned", "chess"],
     ]);
-    expect(menu[1]).toMatchObject({ href: "/puzzles/jelly-gather", levelCount: 24 });
+    expect(menu[1]).toMatchObject({ href: "/puzzles/jelly-gather", levelCount: 40 });
   });
 });
 

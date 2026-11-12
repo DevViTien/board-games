@@ -46,8 +46,18 @@ export const OFFSET: Readonly<Record<Direction, readonly [number, number]>> = {
   [DIRECTION.Right]: [1, 0],
 };
 
+/** What a mold asks for: any kind but grass jelly, which no mold takes. */
+export type MoldKind = Exclude<JellyKind, typeof JELLY_KIND.Grass>;
+
 /** The first level of each mechanic says a line about it. */
-export const HINT = { Push: "push", Ice: "ice", Grass: "grass", Coconut: "coconut" } as const;
+export const HINT = {
+  Push: "push",
+  Ice: "ice",
+  Grass: "grass",
+  Coconut: "coconut",
+  Mold: "mold",
+  Depot: "depot",
+} as const;
 export type Hint = (typeof HINT)[keyof typeof HINT];
 
 /**
@@ -78,6 +88,8 @@ export interface Level {
   readonly width: number;
   readonly height: number;
   readonly walls: ReadonlySet<number>;
+  /** The mold cells and the kind each asks for; empty in a level without molds. */
+  readonly molds: ReadonlyMap<number, MoldKind>;
   readonly start: Board;
   /** The fewest moves that solve it, proved by the solver in the levels' tests. */
   readonly minMoves: number;
@@ -108,7 +120,17 @@ export interface Outcome {
   readonly glued: readonly JellyKind[];
   /** A piece stuck to a wall in this move. */
   readonly fixed: boolean;
+  /** The mold cells holding their kind after the move, in a level with molds. */
+  readonly molds: MoldProgress | null;
+  /** The move changed how many mold cells fit. */
+  readonly moldsChanged: boolean;
   readonly solved: boolean;
+}
+
+/** How many mold cells hold the kind they ask for, of how many. */
+export interface MoldProgress {
+  readonly fitted: number;
+  readonly total: number;
 }
 
 export type StepResult =

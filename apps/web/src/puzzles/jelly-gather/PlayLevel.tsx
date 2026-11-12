@@ -28,10 +28,11 @@ import { AppTopBar } from "@/features/shell/AppTopBar";
 import { BackLink, HistoryLink, ScreenTitle } from "@/features/shell/client-navigation";
 
 import { type BoardMotion, JellyBoard } from "./Board";
-import { nextLevel } from "./levels";
+import { chapterKey, nextLevel } from "./levels";
 import { JELLY_GATHER_HOME, levelHref } from "./routes";
 import { currentFrame } from "./rules/history";
-import { BLOCKED, DIRECTION, type Direction, type Level } from "./rules/types";
+import { moldProgress } from "./rules/step";
+import { BLOCKED, type Board, DIRECTION, type Direction, type Level } from "./rules/types";
 import { useSay } from "./say";
 import { useAttempt } from "./use-attempt";
 import { usePlayKeys } from "./use-play-keys";
@@ -187,7 +188,7 @@ export function SolvedPanel({ level, steps, best, onRestart, onUndo, firstRef }:
         className="flex items-center gap-2 text-heading text-celebration-ink"
       >
         <PartyPopperIcon aria-hidden className="size-6" />
-        {t("title")}
+        {level.molds.size > 0 ? t("titleMolds") : t("title")}
       </h2>
       <div className="flex flex-wrap gap-x-5 gap-y-1">
         {stat(t("thisTime"), steps)}
@@ -286,16 +287,25 @@ export function PlayLevel({ level }: { readonly level: Level }) {
     [announce, level, play, say],
   );
 
+  // In a level with molds, what is said after an undo or a restart ends with the mold count.
+  const withMolds = useCallback(
+    (text: string, after: Board) => {
+      const molds = moldProgress(level, after);
+      return molds === null ? text : `${text} ${t("say.molds", { ...molds })}`;
+    },
+    [level, t],
+  );
+
   const undo = useCallback(() => {
     const wasSolved = play.solved;
-    const left = play.undo();
-    if (left === null) return;
+    const back = play.undo();
+    if (back === null) return;
     setMotion(null);
     setJustSolved(false);
     // Undone from the solved panel: the panel goes, the focus goes to the pad's undo.
     if (wasSolved) focusUndo.current = true;
-    announce(t("say.undone", { count: left }));
-  }, [announce, play, t]);
+    announce(withMolds(t("say.undone", { count: back.steps }), back.board));
+  }, [announce, play, t, withMolds]);
 
   const restart = useCallback(() => {
     const wasSolved = play.solved;
@@ -304,8 +314,8 @@ export function PlayLevel({ level }: { readonly level: Level }) {
     setJustSolved(false);
     // Restarted from the solved panel: the panel goes, the focus goes to the pad.
     if (wasSolved) focusUndo.current = true;
-    announce(t("say.restarted"));
-  }, [announce, play, t]);
+    announce(withMolds(t("say.restarted"), level.start));
+  }, [announce, level.start, play, t, withMolds]);
 
   usePlayKeys({ move, undo, restart }, ready);
 
@@ -344,7 +354,8 @@ export function PlayLevel({ level }: { readonly level: Level }) {
     else move(dy > 0 ? DIRECTION.Down : DIRECTION.Up);
   };
 
-  const chapterName = t(`chapters.${String(level.chapter) as "1" | "2" | "3"}.name`);
+  const chapterName = t(`chapters.${chapterKey(level.chapter)}.name`);
+  const molds = moldProgress(level, board);
   const hint: ReactNode =
     level.hint !== undefined && !play.solved ? (
       <p className="flex items-start gap-2.5 rounded-control bg-accent-soft px-3 py-2.5 text-small font-semibold text-accent-ink">
@@ -377,21 +388,36 @@ export function PlayLevel({ level }: { readonly level: Level }) {
   );
 
   return (
-    <div data-game="jelly-gather" className="flex min-h-dvh flex-col bg-game-page">
+    <div data-game="jelly-gather" className="flex min-h-dvh flex-col bg-game-page max-lg:h-dvh">
       <AppTopBar back={<BackLink href={JELLY_GATHER_HOME} label={t("play.backToList")} />} />
       {/* One DOM for every width: a column on a phone (title, hint, board, controls); from 1024 px
           the board on the left and the rest in a column on its right. */}
-      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-3 pt-3 px-safe-4 pb-safe-4 sm:px-safe-6 lg:grid lg:grid-cols-[1fr_22rem] lg:content-start lg:gap-x-8 lg:gap-y-4 lg:pt-8 lg:px-safe-10">
+      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-3 pt-3 px-safe-4 pb-safe-4 max-lg:min-h-0 max-lg:overflow-y-auto sm:px-safe-6 lg:grid lg:grid-cols-[1fr_22rem] lg:content-start lg:gap-x-8 lg:gap-y-4 lg:pt-8 lg:px-safe-10">
         <div className="flex flex-col gap-1 lg:col-start-2">
           <div className="flex items-baseline justify-between gap-3">
             <ScreenTitle className="text-heading">
               {t("play.title", { level: level.id })}
             </ScreenTitle>
-            <p className="text-small font-semibold text-fg-muted tabular-nums">
-              {t.rich("play.steps", {
-                count: steps,
-                b: (chunks) => <b className="text-heading text-fg">{chunks}</b>,
-              })}
+            <p className="flex items-baseline gap-2.5 text-small font-semibold text-fg-muted tabular-nums">
+              {molds !== null && (
+                <span
+                  className={cn(
+                    "rounded-full border-[1.5px] px-2.5 py-0.5 text-caption font-bold",
+                    molds.fitted === molds.total
+                      ? "border-success-ink bg-success-soft text-success-ink"
+                      : "border-border-control bg-surface text-fg",
+                  )}
+                >
+                  <span aria-hidden>{t("play.molds", { ...molds })}</span>
+                  <span className="sr-only">{t("play.moldsLabel", { ...molds })}</span>
+                </span>
+              )}
+              <span>
+                {t.rich("play.steps", {
+                  count: steps,
+                  b: (chunks) => <b className="text-heading text-fg">{chunks}</b>,
+                })}
+              </span>
             </p>
           </div>
           <p className="text-small text-fg-muted">
@@ -401,7 +427,7 @@ export function PlayLevel({ level }: { readonly level: Level }) {
         </div>
         {hint !== null && <div className="lg:col-start-2">{hint}</div>}
         <div
-          className="flex min-h-36 flex-1 touch-none items-center justify-center rounded-card bg-game-tint p-3 lg:col-start-1 lg:row-span-4 lg:row-start-1 lg:min-h-[36rem] lg:p-6"
+          className="flex min-h-36 flex-[1_1_0] touch-none items-center justify-center rounded-card bg-game-tint p-3 lg:col-start-1 lg:row-span-4 lg:row-start-1 lg:min-h-[36rem] lg:p-6"
           onPointerDown={onPointerDown}
           onPointerUp={onPointerUp}
           onPointerCancel={() => {
