@@ -17,6 +17,12 @@ export interface GameMeta {
    * plays against the others.
    */
   readonly cooperative?: boolean;
+  /**
+   * Every seat may move at any time: there are no turns. `legalMoves` lists the moves of every
+   * seat, and each move names its seat (`moverOf`, required). `currentPlayer` is still declared
+   * but code shared between games never reads it for such a game. Absent: seats take turns.
+   */
+  readonly freePlay?: boolean;
 }
 
 /** `reason` is a code chosen by the game (e.g. "checkmate"); the app translates it. */
@@ -117,6 +123,11 @@ export interface GameDefinition<
    * guarantees. Absent: the AI considers every legal move.
    */
   candidateMoves?(this: void, state: State): readonly Move[];
+  /**
+   * The seat that plays `move`, read from the move alone; required when `meta.freePlay`. Shared
+   * code reaches it through the module function `moverOf`.
+   */
+  moverOf?(this: void, move: Move): PlayerIndex;
   /** Identity of a move; defaults to JSON with sorted keys. */
   moveKey?(this: void, move: Move): string;
 }

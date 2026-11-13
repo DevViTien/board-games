@@ -347,6 +347,7 @@ export function PlayScreen<State, Move, Outcome>({
     lastMover,
     moveCount,
     cooperative,
+    freePlay,
   }: ReadySnapshot<State, Move, Outcome>): string {
     const label = (player: PlayerIndex) => playerLabel(player, state);
     const labels = (players: readonly PlayerIndex[]) =>
@@ -370,6 +371,12 @@ export function PlayScreen<State, Move, Outcome>({
     if (cooperative && result !== null) {
       if (result.kind === "win") return t("teamWins");
       return endedOutsideRules(result) ? t("teamStopped") : t("teamEnded");
+    }
+    // Every seat moves at any time: nobody is to move. The game's board tells its moves itself.
+    if (freePlay && result === null) {
+      return viewer !== null && online
+        ? t("freePlayYou", { player: label(viewer) })
+        : t("freePlay");
     }
     // One person here: told as "you", "the computer" and the online opponent's name.
     if (viewer !== null) {
@@ -689,7 +696,7 @@ export function PlayScreen<State, Move, Outcome>({
             (describeEnding(snapshot.result) ??
             (endedOutsideRules(snapshot.result)
               ? null
-              : resultDetail(snapshot.result, snapshot.state)))
+              : resultDetail(snapshot.result, snapshot.state, snapshot.gameTime)))
       }
       notice={
         turn === null ? null : (
@@ -736,6 +743,7 @@ export function PlayScreen<State, Move, Outcome>({
       connection === null ? null : connection === CONNECTION_STATUS.Idle || connectionLost,
     thinking,
     cooperative: snapshot.cooperative,
+    freePlay: snapshot.freePlay,
   } as const;
   const players = (
     <PlayerPanel

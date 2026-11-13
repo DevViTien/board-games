@@ -41,6 +41,8 @@ export const CONTRACT_CHECK = {
   OptionChoices: "option-choices",
   CooperativeWinners: "cooperative-winners",
   CooperativeNoAi: "cooperative-no-ai",
+  FreePlayMovers: "free-play-movers",
+  FreePlayNoAi: "free-play-no-ai",
 } as const;
 
 export type ContractCheckId = (typeof CONTRACT_CHECK)[keyof typeof CONTRACT_CHECK];
@@ -531,6 +533,44 @@ export const CONTRACT_CHECKS: readonly ContractCheck[] = [
           CONTRACT_CHECK.CooperativeNoAi,
           "meta.cooperative and meta.supportsAI are both true",
         );
+      }
+    },
+  },
+  {
+    id: CONTRACT_CHECK.FreePlayMovers,
+    title: "a game played freely names a seat of the game for every legal move",
+    run: (game, config) => {
+      if (game.meta.freePlay !== true) return;
+      const { moverOf } = game;
+      if (moverOf === undefined) {
+        violation(CONTRACT_CHECK.FreePlayMovers, "meta.freePlay is true but moverOf is missing");
+      }
+      forEachRun(
+        CONTRACT_CHECK.FreePlayMovers,
+        game,
+        config,
+        (playerCount) => ({
+          onState: (state) => {
+            if (game.result(state) !== null) return;
+            for (const move of game.legalMoves(state)) {
+              const seat = moverOf(move);
+              if (!isValidSeat(seat, playerCount)) {
+                fail(`moverOf(${moveKeyOf(game, move)}) is ${seat}, outside 0..${playerCount - 1}`);
+              }
+            }
+          },
+        }),
+        () => undefined,
+      );
+    },
+  },
+  {
+    id: CONTRACT_CHECK.FreePlayNoAi,
+    title: "a game played freely does not declare AI support",
+    run: (game) => {
+      // The AI searches a game whose seats take turns.
+      if (game.meta.freePlay === true && game.meta.supportsAI) {
+        violation(CONTRACT_CHECK.FreePlayNoAi, "meta.freePlay and meta.supportsAI are both true");
       }
     },
   },

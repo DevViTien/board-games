@@ -3,6 +3,7 @@ import {
   jellyCrew,
   jellyCrewLayout,
   type JellyCrewMove,
+  jellyCrewMove,
   type JellyCrewState,
 } from "@board-games/games/jelly-crew";
 import { screen } from "@testing-library/react";
@@ -10,8 +11,10 @@ import { describe, expect, it } from "vitest";
 
 import type { Locale } from "@/i18n/config";
 import { renderWithIntl } from "@/test/render-with-intl";
+import type { GameTime } from "@/transport/types";
 
 import {
+  isQuietMove,
   useJellyCrewMoveLabel,
   useJellyCrewPlayerLabel,
   useJellyCrewResultDetail,
@@ -42,8 +45,16 @@ function SeatLine({ player, state }: { player: PlayerIndex; state: JellyCrewStat
   return <p>{summary === null ? "-" : `${summary.full} | ${summary.short}`}</p>;
 }
 
-function ResultLine({ result, state }: { result: GameResult; state: JellyCrewState }) {
-  return <p>{useJellyCrewResultDetail()(result, state)}</p>;
+function ResultLine({
+  result,
+  state,
+  gameTime = null,
+}: {
+  result: GameResult;
+  state: JellyCrewState;
+  gameTime?: GameTime | null;
+}) {
+  return <p>{useJellyCrewResultDetail()(result, state, gameTime)}</p>;
 }
 
 function line(element: React.JSX.Element, locale: Locale = "vi"): string | null {
@@ -55,112 +66,78 @@ function line(element: React.JSX.Element, locale: Locale = "vi"): string | null 
 
 /** The move just played, read from the state after it. */
 function lastLine(state: JellyCrewState, locale: Locale = "vi") {
-  const move = state.last?.move;
-  if (move === undefined) throw new Error("No move played");
-  return line(<MoveLine move={move} state={state} />, locale);
+  const last = state.last;
+  if (last === null) throw new Error("No move played");
+  return line(<MoveLine move={jellyCrewMove(last.seat, last.action)} state={state} />, locale);
 }
 
-const SOLUTION: readonly JellyCrewMove[] = [
-  "D",
-  "end",
-  "D",
-  "D",
-  "D",
-  "L",
-  "L",
-  "end",
-  "R",
-  "R",
-  "R",
-  "R",
-  "R",
-  "end",
-  "end",
-  "R",
-  "L",
-  "L",
-  "L",
-  "L",
-  "end",
-  "R",
-  "U",
-  "U",
-  "end",
-  "D",
-  "D",
-  "end",
-  "L",
-  "L",
-  "L",
-  "L",
-];
-
 describe("Bảng người chơi của Đội gom thạch", () => {
-  it("names the seats by their characters' colours", () => {
+  it("names each seat by its character's colour", () => {
     expect([0, 1, 2, 3].map((player) => line(<PlayerLine player={player} />))).toEqual([
       "Lam",
       "Hồng",
       "Cam",
       "Ngọc",
     ]);
-    expect(line(<PlayerLine player={1} />, "en")).toBe("Pink");
   });
 
-  it("Ghế đang giữ nút: a seat on a plate says so, the others nothing", () => {
-    const state = { ...start(), board: { ...KITCHEN.start, chars: [at(1, 1), at(15, 4)] } };
-
-    expect(line(<SeatLine player={1} state={state} />)).toBe("Giữ nút ● | Giữ nút ●");
-    expect(line(<SeatLine player={0} state={state} />)).toBe("-");
+  it("Ghế đang giữ nút: a seat on a plate says which", () => {
+    const onPlate = play(start(), ["1D", "1D", "1D", "1L", "1L"]);
+    expect(onPlate.board.chars[1]).toBe(at(15, 4));
+    expect(line(<SeatLine player={1} state={onPlate} />)).toBe("Giữ nút ● | Giữ nút ●");
+    expect(line(<SeatLine player={0} state={onPlate} />)).toBe("-");
   });
 });
 
 describe("Đọc nước đi và kết quả", () => {
-  it("reads a step, and a door opening with it", () => {
-    expect(lastLine(play(start(), ["D"]))).toBe("đi xuống");
-    // Hồng onto plate ●.
-    expect(lastLine(play(start(), ["end", "D", "D", "D", "L", "L"]))).toBe(
-      "đi sang trái, cửa ● mở",
+  it("names the character of each move, and what it did", () => {
+    expect(lastLine(play(start(), ["1L"]))).toBe("Hồng đi sang trái");
+    expect(lastLine(play(start(), ["1D", "1D", "1D", "1L", "1L"]))).toBe(
+      "Hồng đi sang trái, cửa ● mở",
     );
+    expect(lastLine(play(start(), ["0D", "0R"]))).toBe("Lam đẩy thạch dâu sang phải");
+    expect(lastLine(play(start(), ["0D", "1reset"]))).toBe("Hồng đặt lại bản đồ");
+    expect(lastLine(play(start(), ["1L"]), "en")).toBe("Pink goes left");
   });
 
-  it("reads a push, and the molds when their count changes", () => {
-    const pushed = play(start(), SOLUTION.slice(0, 9));
-    expect(lastLine(pushed)).toBe("đẩy thạch dâu sang phải");
-    const fitting = play(start(), SOLUTION.slice(0, 14));
-    expect(lastLine(play(start(), SOLUTION.slice(0, 13)))).toBe(
-      "đẩy thạch dâu sang phải, khuôn 1/4",
-    );
-    expect(lastLine(fitting)).toBe("xong lượt");
+  it("tells a quiet step from one that did something", () => {
+    expect(isQuietMove(play(start(), ["1L"]))).toBe(true);
+    expect(isQuietMove(play(start(), ["0D", "0R"]))).toBe(false);
+    expect(isQuietMove(play(start(), ["1D", "1D", "1D", "1L", "1L"]))).toBe(false);
+    expect(isQuietMove(play(start(), ["0D", "0reset"]))).toBe(false);
+    expect(isQuietMove(start())).toBe(false);
   });
 
-  it("reads ending a turn, a step back and a reset", () => {
-    expect(lastLine(play(start(), ["D", "end"]))).toBe("xong lượt");
-    expect(lastLine(play(start(), ["D", "back"]))).toBe("lùi một bước");
-    expect(lastLine(play(start(), ["D", "reset"]))).toBe("đặt lại bản đồ");
-    expect(lastLine(play(start(), ["D", "end"]), "en")).toBe("ended the turn");
+  it("Chi tiết khi thắng: the steps and the time", () => {
+    const won = { ...start(), steps: 87 };
+    const result: GameResult = { kind: "win", winners: [0, 1], reason: "filled" };
+    expect(
+      line(
+        <ResultLine
+          result={result}
+          state={won}
+          gameTime={{ startedAt: 1000, endedAt: 1000 + (7 * 60 + 12) * 1000 }}
+        />,
+      ),
+    ).toBe("Đầy khuôn sau 87 bước, 7 phút 12 giây.");
+    expect(
+      line(<ResultLine result={result} state={won} gameTime={{ startedAt: 0, endedAt: 45_000 }} />),
+    ).toBe("Đầy khuôn sau 87 bước, 45 giây.");
+    expect(
+      line(
+        <ResultLine result={result} state={won} gameTime={{ startedAt: 0, endedAt: 61_000 }} />,
+        "en",
+      ),
+    ).toBe("Molds full after 87 steps, 1 minute 1 second.");
+    // A game saved or a room made before the time was kept: the steps only.
+    expect(line(<ResultLine result={result} state={won} />)).toBe("Đầy khuôn sau 87 bước.");
   });
 
-  it("reads a turn ended while holding a plate", () => {
-    const onPlate = play(start(), ["end", "D", "D", "D", "L", "L", "end"]);
-    expect(lastLine(onPlate)).toBe("giữ nút ●, xong lượt");
-  });
-
-  it("Chi tiết khi thắng: the steps and rounds it took", () => {
-    const won = play(start(), SOLUTION);
-    const result = jellyCrew.result(won);
-    if (result === null) throw new Error("Not won");
-    expect(line(<ResultLine result={result} state={won} />)).toBe("Đầy khuôn sau 25 bước, 4 vòng.");
-  });
-
-  it("Chi tiết khi hết vòng: the rounds and the mold cells left empty", () => {
-    const over = play(
-      start(),
-      Array.from({ length: KITCHEN.rounds * 2 }, (): JellyCrewMove => "end"),
-    );
-    const result = jellyCrew.result(over);
-    if (result === null) throw new Error("Not over");
-    expect(line(<ResultLine result={result} state={over} />)).toBe(
-      `Hết ${String(KITCHEN.rounds)} vòng, còn 4 ô khuôn trống.`,
+  it("Chi tiết khi chạm giới hạn: the moves played", () => {
+    const long = { ...start(), moves: 3000 };
+    const result: GameResult = { kind: "draw", reason: "too-long" };
+    expect(line(<ResultLine result={result} state={long} />)).toBe(
+      "Đã đi 3.000 nước mà khuôn chưa đầy.",
     );
   });
 });

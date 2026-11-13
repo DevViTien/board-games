@@ -382,7 +382,7 @@
     },
     "jelly-crew": {
       "name": "Đội gom thạch",
-      "tagline": "Cả đội cùng đẩy thạch vào khuôn, người này giữ nút cho người kia qua cửa",
+      "tagline": "Cả đội cùng đẩy thạch vào khuôn, ai cũng đi bất cứ lúc nào",
       "seats": {
         "1": "Lam",
         "2": "Hồng",
@@ -433,11 +433,11 @@
         "L": "sang trái",
         "R": "sang phải"
       },
-      "controls": "Điều khiển",
-      "end": "Xong lượt",
-      "back": "Lùi bước",
+      "controls": "Bàn điều khiển",
+      "pad": "Hướng đi của {name}",
+      "pick": "Điều khiển",
+      "pickSay": "Đang điều khiển {name}.",
       "reset": "Đặt lại bản đồ",
-      "hold": "Giữ nút",
       "blocked": {
         "wall": "Tường",
         "door": "Cửa {group} đóng",
@@ -445,46 +445,39 @@
         "push-wall": "Thạch vướng tường",
         "push-door": "Thạch vướng cửa {group} đóng",
         "push-seat": "Thạch vướng {name}",
-        "no-steps": "Hết bước, bấm Xong lượt",
         "over": "Ván đã xong"
       },
-      "blockedSay": "Không đi {direction} được: {reason}.",
-      "noBack": "Chưa đi bước nào trong lượt này",
-      "noBacksLeft": "Đã lùi 5 lần trong lượt này",
+      "blockedSay": "{name}: không đi {direction} được, {reason}.",
       "resetSame": "Bản đồ đang như lúc bắt đầu",
       "chips": {
-        "turn": "{name} · còn {count} bước",
-        "turnDone": "{name} · hết bước, bấm Xong lượt",
-        "round": "Vòng {round}/{rounds}",
+        "steps": "Bước {count}",
         "molds": "Khuôn {fitted}/{total}",
         "moldsLabel": "{fitted} trên {total} ô khuôn đã vừa"
       },
       "resetDialog": {
         "title": "Đặt lại bản đồ?",
-        "body": "Mọi người và thạch về chỗ ban đầu. Lượt của bạn kết thúc; các vòng đã chơi vẫn được tính.",
+        "body": "Mọi người và thạch về chỗ ban đầu, cho cả đội. Số bước đã đi vẫn được tính.",
         "keep": "Để nguyên",
         "confirm": "Đặt lại"
       },
       "resetNote": "{name} đã đặt lại bản đồ.",
       "holding": "Giữ nút {group}",
-      "holdOn": "Đang giữ nút: tới lượt bạn thì tự xong lượt.",
-      "holdSay": "{name} giữ nút, xong lượt.",
-      "keys": "Phím: mũi tên hoặc W A S D để đi · Enter xong lượt",
-      "keysOnline": "Phím: mũi tên hoặc W A S D để đi · Enter xong lượt · Z lùi bước",
+      "keysOnline": "Phím: mũi tên hoặc W A S D để đi",
+      "keysLocal": "Phím: W A S D đi Lam · mũi tên đi nhân vật đang chọn · 1–{count} chọn nhân vật",
       "move": {
-        "step": "đi {direction}",
-        "push": "đẩy {kinds} {direction}",
-        "end": "xong lượt",
-        "back": "lùi một bước",
-        "reset": "đặt lại bản đồ",
+        "step": "{name} đi {direction}",
+        "push": "{name} đẩy {kinds} {direction}",
+        "reset": "{name} đặt lại bản đồ",
         "opened": "cửa {groups} mở",
         "closed": "cửa {groups} đóng",
-        "molds": "khuôn {fitted}/{total}",
-        "endHolding": "giữ nút {group}, xong lượt"
+        "molds": "khuôn {fitted}/{total}"
       },
       "result": {
-        "filled": "Đầy khuôn sau {steps} bước, {rounds} vòng.",
-        "outOfRounds": "Hết {rounds} vòng, còn {left} ô khuôn trống."
+        "filled": "Đầy khuôn sau {steps} bước.",
+        "filledTime": "Đầy khuôn sau {steps} bước, {time}.",
+        "tooLong": "Đã đi {moves, number} nước mà khuôn chưa đầy.",
+        "minutes": "{minutes} phút {seconds} giây",
+        "seconds": "{seconds} giây"
       },
       "boardLabel": "Bản đồ {map}, {width} × {height} ô",
       "describe": {
@@ -708,6 +701,8 @@
       "loadError": "Không tải được luật chơi. Kiểm tra kết nối rồi thử lại; ván vẫn đang tiếp tục.",
       "retry": "Thử lại"
     },
+    "freePlay": "Cả đội cùng đi",
+    "freePlayYou": "Cả đội cùng đi · bạn là {player}",
     "teamWins": "Cả đội thắng!",
     "teamStopped": "Ván dừng",
     "teamEnded": "Ván kết thúc",
@@ -1134,7 +1129,9 @@
         "vsAi": "Khi đấu với máy: đầu hàng thì máy thắng.",
         "giveUp": "Bấm <b>“Bỏ cuộc”</b> để dừng ván; app hỏi lại trước. Ván dừng cho <b>cả đội</b>, không ai thắng.",
         "abandonTeam": "Chơi online: người đến lượt mà <b>5 phút</b> không đi thì người khác bấm được “Kết thúc ván”: ván dừng cho cả đội, không ai thắng.",
-        "titleTeam": "Bỏ cuộc và bỏ ván"
+        "titleTeam": "Bỏ cuộc và bỏ ván",
+        "titleFree": "Bỏ cuộc",
+        "noAbandon": "Không có lượt nên không ai bị xử bỏ ván. Đồng đội rời đi giữa ván thì bấm “Bỏ cuộc” để dừng."
       }
     },
     "tictactoe": {
@@ -1367,9 +1364,9 @@
         "body": "Cả đội cùng đẩy thạch vào <b>khuôn</b>. Khi mọi ô khuôn có thạch đúng loại, <b>cả đội thắng</b>; không ai thắng một mình."
       },
       "turn": {
-        "title": "Lượt chơi",
-        "body": "Mỗi người một nhân vật có số. Đến lượt, bạn đi <b>tối đa 5 bước</b> rồi bấm <b>“Xong lượt”</b>; lượt không tự chuyển.",
-        "body2": "Chưa đi bước nào cũng bấm Xong lượt được, để đứng yên giữ nút cho người khác."
+        "title": "Mọi người cùng đi",
+        "body": "Mỗi người một nhân vật có số và đi <b>bất cứ lúc nào</b>: không có lượt, không giới hạn bước. Đứng trên nút là giữ cửa mở cho người khác.",
+        "body2": "Chơi cùng máy: W A S D luôn đi Lam; mũi tên, bàn điều khiển và vuốt trên bàn đi nhân vật đang chọn ở hàng “Điều khiển” (phím 1–4 để đổi)."
       },
       "jelly": {
         "title": "Đẩy và dính",
@@ -1386,15 +1383,13 @@
         "body": "Mỗi nút và cửa có ký hiệu <b>●</b>, <b>▲</b> hay <b>■</b>. Cửa mở khi có người hay thạch đứng trên một nút cùng ký hiệu; không còn gì trên nút thì cửa đóng lại.",
         "body2": "Cửa đang có người hay thạch nằm trong thì không đóng, nên thứ đã vào cửa luôn ra được."
       },
-      "rounds": {
-        "title": "Giới hạn vòng",
-        "body": "Một vòng là mỗi người một lượt. Mỗi bản đồ có số vòng tối đa; hết vòng mà khuôn chưa đầy thì ván kết thúc, <b>không ai thắng</b>."
+      "end": {
+        "title": "Kết thúc ván",
+        "body": "Ván xong khi khuôn đầy, <b>không có thua</b>. Thẻ kết quả ghi số bước và thời gian để cả đội tự so lần sau."
       },
       "tools": {
-        "title": "Lùi bước, đặt lại, giữ nút",
-        "back": "<b>Lùi bước</b> (chơi online): lùi bước vừa đi trong lượt của mình, tối đa 5 lần mỗi lượt. Chơi cùng máy thì dùng “Hoàn tác”.",
-        "reset": "<b>Đặt lại bản đồ</b>: mọi người và thạch về chỗ ban đầu và lượt của bạn kết thúc; số vòng và số bước đã đi vẫn tính.",
-        "hold": "<b>Giữ nút</b>: đang đứng trên nút thì bật lên, tới lượt mình app tự bấm Xong lượt."
+        "title": "Đặt lại bản đồ",
+        "reset": "<b>Đặt lại bản đồ</b>: ai cũng bấm được; mọi người và thạch về chỗ ban đầu, số bước đã đi vẫn tính. Chơi cùng máy còn có “Hoàn tác”."
       },
       "maps": {
         "title": "Bản đồ",

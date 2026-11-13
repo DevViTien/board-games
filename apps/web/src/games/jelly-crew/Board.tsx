@@ -1,15 +1,15 @@
 "use client";
 
+import type { PlayerIndex } from "@board-games/engine";
 import {
   isJellyCrewDirection,
-  JELLY_CREW_BACKS,
+  JELLY_CREW_ACTION,
   JELLY_CREW_DIRECTIONS,
-  JELLY_CREW_STEPS,
   type JellyCrewDirection,
   jellyCrewLayoutOf,
   jellyCrewMolds,
   type JellyCrewMove,
-  jellyCrewRound,
+  jellyCrewMove,
   type JellyCrewState,
   jellyCrewStep,
   jellyCrewTryStep,
@@ -19,12 +19,9 @@ import {
   ArrowLeftIcon,
   ArrowRightIcon,
   ArrowUpIcon,
-  Button,
-  CheckIcon,
   cn,
   ConfirmDialog,
   RotateCcwIcon,
-  Undo2Icon,
 } from "@board-games/ui";
 import { useTranslations } from "next-intl";
 import {
@@ -42,29 +39,32 @@ import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
 import type { BoardProps } from "../types";
 import { CrewBoardSvg } from "./board-drawing";
 import { BoardDescription } from "./BoardDescription";
-import { CELL } from "./pieces";
+import { CELL, Character } from "./pieces";
 import {
-  holdingOf,
+  isQuietMove,
   useBlockedReason,
   useDirectionWords,
-  useGroupSign,
+  useJellyCrewMoveLabel,
   useJellyCrewPlayerLabel,
 } from "./words";
 
 /** A move slides this long (design §6), within the 300 ms of a game without dice. */
 const SLIDE_MS = 120;
-/** A device holding a plate ends its turn after this beat, so everyone sees whose turn it was. */
-const HOLD_END_MS = 600;
 /** No cell slid. */
 const NOTHING: ReadonlySet<number> = new Set();
 /** A swipe on the board counts from this many pixels along its main axis. */
 const SWIPE_PX = 32;
+/** On one device, the arrows move the second character at first: W A S D always move the first. */
+const FIRST_PICK = 1;
 
-const KEY_DIRECTION: Readonly<Record<string, JellyCrewDirection>> = {
+const ARROW_DIRECTION: Readonly<Record<string, JellyCrewDirection>> = {
   ArrowUp: "U",
   ArrowDown: "D",
   ArrowLeft: "L",
   ArrowRight: "R",
+};
+
+const WASD_DIRECTION: Readonly<Record<string, JellyCrewDirection>> = {
   w: "U",
   s: "D",
   a: "L",
@@ -86,7 +86,7 @@ const DIRECTION_ICON: Readonly<Record<JellyCrewDirection, ComponentType<{ classN
     R: ArrowRightIcon,
   };
 
-/** Where each direction's button sits in the pad (design §6): ↑ above, ← ↓ → below. */
+/** Where each direction's button sits in the pad (design §10.5): ↑ above, ← ↓ → below. */
 const DIRECTION_PLACE: Readonly<Record<JellyCrewDirection, string>> = {
   U: "col-start-2 row-start-1",
   L: "col-start-1 row-start-2",
@@ -94,17 +94,9 @@ const DIRECTION_PLACE: Readonly<Record<JellyCrewDirection, string>> = {
   R: "col-start-3 row-start-2",
 };
 
-/** Tailwind sees whole class names only: the frame in each seat's colour. */
-const SEAT_BORDER = [
-  "border-(--jelly-crew-seat-1)",
-  "border-(--jelly-crew-seat-2)",
-  "border-(--jelly-crew-seat-3)",
-  "border-(--jelly-crew-seat-4)",
-] as const;
-
 /**
- * Whether a key press is for someone else: a field being typed in (the chat), an open dialog or
- * menu, or a handler that took it already.
+ * Whether a key press is for someone else: a field being typed in (the chat) or a radio (its own
+ * arrows pick a character), an open dialog or menu, or a handler that took it already.
  */
 function belongsElsewhere(event: KeyboardEvent): boolean {
   if (event.defaultPrevented) return true;
@@ -122,25 +114,17 @@ function belongsElsewhere(event: KeyboardEvent): boolean {
   }
 }
 
-/** Enter ends the turn only away from anything Enter already presses. */
-function onPressable(event: KeyboardEvent): boolean {
-  const target = event.target instanceof Element ? event.target : null;
-  return target?.closest('button, a, [role="button"], summary') != null;
+/** What the board says about a position: a step refused, or the move that led to it. */
+interface Said {
+  readonly state: JellyCrewState;
+  readonly text: string;
 }
 
 /**
- * Something the board says: about this very position (a step refused), shown until the game moves
- * on; or that a held plate ended a turn, shown through the turn it began (`turnsDone`).
- */
-type Said =
-  | { readonly state: JellyCrewState; readonly text: string }
-  | { readonly turnsDone: number; readonly text: string };
-
-/**
- * Đội gom thạch's board (design §6): the whole map drawn at once, the turn on the board (a ringed
- * character, the frame in its seat's colour, the latest turn's trail), the chips and the notes, and
- * the pad: four directions (a blocked one says why), "Xong lượt", "Lùi bước" online, "Đặt lại bản
- * đồ" with a question, and "Giữ nút" for a character on a plate. Keys and swipes do the same.
+ * Đội gom thạch's board, played freely (design §10.5): the whole map drawn at once, the character
+ * the arrows move ringed (this player's own online; the one picked under "Điều khiển" on one
+ * device, W A S D always moving the first), the chips and the notes, and the pad: four directions (a
+ * blocked one says why) and "Đặt lại bản đồ" with a question. Keys and swipes do the same.
  */
 export function JellyCrewBoard({
   state,
@@ -148,7 +132,6 @@ export function JellyCrewBoard({
   onMove,
   disabled,
   result,
-  lastEntry,
   viewer,
   layout,
   lockedReason,
@@ -156,9 +139,9 @@ export function JellyCrewBoard({
   const t = useTranslations("Games.jelly-crew");
   const tOptions = useTranslations("Games.jelly-crew.options.map.values");
   const seatName = useJellyCrewPlayerLabel();
-  const sign = useGroupSign();
   const blockedReason = useBlockedReason();
   const words = useDirectionWords();
+  const moveLabel = useJellyCrewMoveLabel();
   const reducedMotion = usePrefersReducedMotion();
   const grid = jellyCrewLayoutOf(state);
   // Over by the rules, or stopped outside them (someone gave up or left): the session's result.
@@ -166,103 +149,64 @@ export function JellyCrewBoard({
   const online = viewer !== null;
   const lockId = useId();
   const reasonIds = useId();
+  const pickName = useId();
 
-  // Seats this device holds a plate for. Only while their character stands on a plate: stepping
-  // off, or any move of theirs here, lets go (design §6). Never part of the rules or the record.
-  const [holds, setHolds] = useState<ReadonlySet<number>>(new Set());
-  const holding = (seat: number) => holds.has(seat) && holdingOf(state, seat) !== undefined;
+  const [picked, setPicked] = useState(FIRST_PICK);
+  /** The seat the arrows, the pad and swipes move. */
+  const driven: PlayerIndex = viewer ?? Math.min(picked, state.playerCount - 1);
+  /** The seat W A S D move: the first on one device, so two can share a keyboard. */
+  const wasdSeat: PlayerIndex = viewer ?? 0;
   const [said, setSaid] = useState<Said | null>(null);
   const [confirmingReset, setConfirmingReset] = useState(false);
 
-  // The seat whose plate the toggle is for: online the player here, on one device the one to move.
-  const holderSeat = online ? viewer : state.turn;
-  const holderPlate = over ? undefined : holdingOf(state, holderSeat);
-
-  const legal = (move: JellyCrewMove) => !disabled && legalMoves.includes(move);
-  const letGo = (seat: number) => {
-    setHolds((current) => {
-      if (!current.has(seat)) return current;
-      const next = new Set(current);
-      next.delete(seat);
-      return next;
-    });
-  };
   const say = (text: string) => {
     setSaid({ state, text });
   };
-
-  const step = (direction: JellyCrewDirection) => {
+  const step = (seat: PlayerIndex, direction: JellyCrewDirection) => {
     if (disabled || over) return;
-    const tried = jellyCrewTryStep(state, direction);
+    const tried = jellyCrewTryStep(state, seat, direction);
     if (!tried.ok) {
-      say(t("blockedSay", { direction: words.word(direction), reason: blockedReason(tried) }));
+      say(
+        t("blockedSay", {
+          name: seatName(seat),
+          direction: words.word(direction),
+          reason: blockedReason(tried),
+        }),
+      );
       return;
     }
-    letGo(state.turn);
-    onMove(direction);
+    onMove(jellyCrewMove(seat, direction));
   };
-  const end = () => {
-    if (legal("end")) onMove("end");
-  };
-  const back = () => {
-    if (!online || !legal("back")) return;
-    letGo(state.turn);
-    onMove("back");
-  };
-  const askReset = () => {
-    if (legal("reset")) setConfirmingReset(true);
+  const resetMove = jellyCrewMove(driven, JELLY_CREW_ACTION.Reset);
+  const canReset = !disabled && legalMoves.includes(resetMove);
+  const pick = (seat: PlayerIndex) => {
+    if (online || seat < 0 || seat >= state.playerCount) return;
+    setPicked(seat);
+    say(t("pickSay", { name: seatName(seat) }));
   };
 
-  // A held plate ends its seat's turn by itself, once the turn is theirs here and untouched.
-  // Never when every seat holds: nobody would ever play again, and the rounds would run out alone.
-  const everyoneHolds = state.board.chars.every((_, seat) => holding(seat));
-  const autoEnd =
-    !disabled &&
-    !over &&
-    !everyoneHolds &&
-    state.taken === 0 &&
-    holding(state.turn) &&
-    legalMoves.includes("end");
-  const latestMove = useRef(onMove);
+  // Keys (design §10.5): the arrows move the character driven, W A S D the first one on a shared
+  // device (this player's own online), 1–4 pick a character on one device. A held key does not
+  // repeat. Never while typing or on a radio, nor with a dialog or menu open.
+  const keys = useRef({ step, pick, driven, wasdSeat });
   useLayoutEffect(() => {
-    latestMove.current = onMove;
-  });
-  useEffect(() => {
-    if (!autoEnd) return undefined;
-    const timer = setTimeout(() => {
-      setSaid({
-        turnsDone: state.turnsDone + 1,
-        text: t("holdSay", { name: seatName(state.turn) }),
-      });
-      latestMove.current("end");
-    }, HOLD_END_MS);
-    return () => {
-      clearTimeout(timer);
-    };
-    // `t` and `seatName` are new functions every render; the words they give are not.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoEnd, state]);
-
-  // Keys (design §6): arrows and W A S D step (a held key does not repeat), Enter ends the turn away
-  // from buttons and links, Z steps back online. Never while typing, nor with a dialog or menu open.
-  const keys = useRef({ step, end, back });
-  useLayoutEffect(() => {
-    keys.current = { step, end, back };
+    keys.current = { step, pick, driven, wasdSeat };
   });
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (belongsElsewhere(event) || event.ctrlKey || event.metaKey || event.altKey) return;
+      if (event.shiftKey || event.repeat) return;
       const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
-      const direction = KEY_DIRECTION[key];
-      if (direction !== undefined) {
-        if (event.shiftKey) return;
+      const arrow = ARROW_DIRECTION[key];
+      const wasd = WASD_DIRECTION[key];
+      if (arrow !== undefined) {
         event.preventDefault();
-        if (!event.repeat) keys.current.step(direction);
-      } else if (key === "Enter" && !event.repeat && !onPressable(event)) {
+        keys.current.step(keys.current.driven, arrow);
+      } else if (wasd !== undefined) {
         event.preventDefault();
-        keys.current.end();
-      } else if (key === "z" && !event.repeat && !event.shiftKey) {
-        keys.current.back();
+        keys.current.step(keys.current.wasdSeat, wasd);
+      } else if (/^[1-4]$/u.test(key)) {
+        keys.current.pick(Number(key) - 1);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -271,7 +215,7 @@ export function JellyCrewBoard({
     };
   }, []);
 
-  // Swipes on the board: the main axis from 32 px.
+  // Swipes on the board: the main axis from 32 px, for the character driven.
   const swipe = useRef<{ id: number; x: number; y: number } | null>(null);
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (event.pointerType === "mouse") return;
@@ -284,20 +228,34 @@ export function JellyCrewBoard({
     const dx = event.clientX - start.x;
     const dy = event.clientY - start.y;
     if (Math.max(Math.abs(dx), Math.abs(dy)) < SWIPE_PX) return;
-    if (Math.abs(dx) > Math.abs(dy)) step(dx > 0 ? "R" : "L");
-    else step(dy > 0 ? "D" : "U");
+    if (Math.abs(dx) > Math.abs(dy)) step(driven, dx > 0 ? "R" : "L");
+    else step(driven, dy > 0 ? "D" : "U");
   };
 
-  // One moment a step (design §6): the character and what it pushed slide in from where they were.
-  // Worked out while rendering, from the state shown before (adjusted during render, not in a ref).
-  const [shown, setShown] = useState<{ state: JellyCrewState; slide: Slide | null }>({
-    state,
-    slide: null,
-  });
+  // One moment a move (design §6): the character and what it pushed slide in from where they were;
+  // and what it did is said. Worked out while rendering, from the state shown before (adjusted
+  // during render, not in a ref). Another player's step that only walked is not said: two people
+  // walking at once would drown everything else (spec "Dùng được bằng trình đọc màn hình").
+  const [shown, setShown] = useState<{
+    state: JellyCrewState;
+    slide: Slide | null;
+    spoken: string;
+  }>({ state, slide: null, spoken: "" });
   if (shown.state !== state) {
-    setShown({ state, slide: slideBetween(shown.state, state, lastEntry?.move, grid) });
+    const { last } = state;
+    const moved = last !== null && shown.state.moves + 1 === state.moves;
+    const own = !online || last?.seat === viewer;
+    setShown({
+      state,
+      slide: slideBetween(shown.state, state, grid),
+      spoken:
+        moved && (own || !isQuietMove(state))
+          ? moveLabel(jellyCrewMove(last.seat, last.action), state)
+          : "",
+    });
   }
   const slide = shown.state === state ? shown.slide : null;
+  const spoken = shown.state === state ? shown.spoken : "";
   const svgRef = useRef<SVGSVGElement>(null);
   useLayoutEffect(() => {
     const svg = svgRef.current;
@@ -314,50 +272,16 @@ export function JellyCrewBoard({
   }, [slide, reducedMotion]);
 
   const molds = jellyCrewMolds(grid, state.board);
-  const stepsLeft = JELLY_CREW_STEPS - state.taken;
-  const turnName = seatName(state.turn);
-  const lastRounds = !over && jellyCrewRound(state) >= grid.rounds - 1;
-  const resetBy = state.last?.move === "reset" ? seatName(state.last.seat) : null;
-  const sayNow =
-    said === null
-      ? ""
-      : "state" in said
-        ? said.state === state
-          ? said.text
-          : ""
-        : said.turnsDone === state.turnsDone
-          ? said.text
-          : "";
+  const resetBy = state.last?.action === JELLY_CREW_ACTION.Reset ? seatName(state.last.seat) : null;
+  const sayNow = said?.state === state ? said.text : spoken;
+  const refused = said?.state === state;
 
   const chip = "rounded-full border px-2.5 py-0.5 text-caption font-semibold tabular-nums";
   const notes = (
     <div className="flex min-h-9 flex-col items-center gap-1 text-small lg:items-start short-landscape:items-start">
       <div className="flex flex-wrap justify-center gap-1.5 lg:justify-start short-landscape:justify-start">
-        {!over && (
-          <span
-            data-chip="turn"
-            className={cn(
-              chip,
-              stepsLeft === 0
-                ? "border-warning bg-warning-soft text-warning-ink"
-                : "border-border bg-surface",
-            )}
-          >
-            {stepsLeft === 0
-              ? t("chips.turnDone", { name: turnName })
-              : t("chips.turn", { name: turnName, count: stepsLeft })}
-          </span>
-        )}
-        <span
-          data-chip="round"
-          className={cn(
-            chip,
-            lastRounds
-              ? "border-warning bg-warning-soft text-warning-ink"
-              : "border-border bg-surface",
-          )}
-        >
-          {t("chips.round", { round: jellyCrewRound(state), rounds: grid.rounds })}
+        <span data-chip="steps" className={cn(chip, "border-border bg-surface")}>
+          {t("chips.steps", { count: state.steps })}
         </span>
         <span
           data-chip="molds"
@@ -377,11 +301,11 @@ export function JellyCrewBoard({
       {resetBy !== null && !over && (
         <p className="text-fg-muted">{t("resetNote", { name: resetBy })}</p>
       )}
-      {holding(holderSeat) && !over && <p className="text-fg-muted">{t("holdOn")}</p>}
-      {/* Not a status region: the play screen's turn line is the only one (spec). */}
+      {/* Not a status region: the play screen's turn line is the only one (spec). A refused step is
+          shown; what a move did is for screen readers only, the board shows it. */}
       <p
         aria-live="polite"
-        className={cn("font-semibold text-danger-ink", sayNow === "" && "sr-only")}
+        className={cn("font-semibold text-danger-ink", (!refused || sayNow === "") && "sr-only")}
       >
         {sayNow}
       </p>
@@ -393,19 +317,54 @@ export function JellyCrewBoard({
     "focus-ring inline-flex h-[3.25rem] min-w-0 cursor-pointer items-center justify-center gap-1.5 rounded-control border-[1.5px] border-border-control bg-surface px-1.5 text-center text-small leading-tight font-semibold text-fg aria-disabled:cursor-not-allowed aria-disabled:border-dashed aria-disabled:text-fg-muted";
   const reasonOf = (direction: JellyCrewDirection): string | null => {
     if (locked) return null;
-    const tried = jellyCrewTryStep(state, direction);
+    const tried = jellyCrewTryStep(state, driven, direction);
     return tried.ok ? null : blockedReason(tried);
   };
-  const backReason =
-    state.taken === 0 ? t("noBack") : state.backs >= JELLY_CREW_BACKS ? t("noBacksLeft") : null;
-  const resetReason = legalMoves.includes("reset") || locked ? null : t("resetSame");
+  const resetReason = canReset || locked ? null : t("resetSame");
   const describedBy = (reason: string | null, id: string) =>
     locked ? lockId : reason === null ? undefined : id;
 
   const controls = over ? null : (
-    <div role="group" aria-label={t("controls")} className="flex flex-col gap-2">
-      {/* The pad: ↑ above, ← ↓ → below, and the turn's end beside them, as tall as both rows. */}
-      <div className="mx-auto grid w-full max-w-[22rem] grid-cols-[3.25rem_3.25rem_3.25rem_minmax(0,1fr)] grid-rows-[3.25rem_3.25rem] gap-2 lg:mx-0 short-landscape:mx-0">
+    <div role="group" aria-label={t("controls")} className="flex flex-col gap-3">
+      {!online && (
+        <fieldset className="flex min-w-0 flex-col items-center gap-1.5 lg:items-start short-landscape:items-start">
+          <legend className="mb-1.5 w-full text-center text-caption font-semibold text-fg-muted lg:text-left short-landscape:text-left">
+            {t("pick")}
+          </legend>
+          <div className="flex flex-wrap justify-center gap-1.5 lg:justify-start short-landscape:justify-start">
+            {state.board.chars.map((_, seat) => (
+              <label
+                key={seat}
+                className="focus-ring-within inline-flex h-11 cursor-pointer items-center gap-1.5 rounded-full border-[1.5px] border-border-control bg-surface pr-3 pl-1 text-small font-bold text-fg has-checked:border-fg has-checked:shadow-[inset_0_0_0_1.5px_var(--color-fg)]"
+              >
+                <input
+                  type="radio"
+                  name={pickName}
+                  value={seat}
+                  checked={seat === driven}
+                  onChange={() => {
+                    setPicked(seat);
+                  }}
+                  className="sr-only"
+                />
+                <svg viewBox="0 0 56 56" aria-hidden className="size-8 shrink-0">
+                  <Character cx={28} cy={28} seat={seat} now={false} />
+                </svg>
+                {seatName(seat)}
+                <span aria-hidden className="text-caption font-semibold text-fg-muted">
+                  {seat + 1}
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
+      {/* The pad: ↑ above, ← ↓ → below. */}
+      <div
+        role="group"
+        aria-label={t("pad", { name: seatName(driven) })}
+        className="mx-auto grid grid-cols-[3.25rem_3.25rem_3.25rem] grid-rows-[3.25rem_3.25rem] gap-2 lg:mx-0 short-landscape:mx-0"
+      >
         {JELLY_CREW_DIRECTIONS.map((direction) => {
           const Icon = DIRECTION_ICON[direction];
           const reason = reasonOf(direction);
@@ -419,70 +378,30 @@ export function JellyCrewBoard({
               data-direction={direction}
               className={cn(padButton, DIRECTION_PLACE[direction])}
               onClick={() => {
-                step(direction);
+                step(driven, direction);
               }}
             >
               <Icon aria-hidden className="size-6" />
             </button>
           );
         })}
-        <Button
-          className="col-start-4 row-span-2 row-start-1 h-full min-w-0 flex-col gap-1 px-2 text-body"
-          aria-disabled={locked}
-          aria-describedby={locked ? lockId : undefined}
-          onClick={end}
-        >
-          <CheckIcon aria-hidden className="size-5 shrink-0" />
-          {t("end")}
-        </Button>
       </div>
-      {/* The other things a turn may do, in words, wrapping on a narrow phone. */}
       <div className="flex flex-wrap justify-center gap-2 lg:justify-start short-landscape:justify-start">
-        {online && (
-          <button
-            type="button"
-            className={cn(padButton, "h-11 px-3")}
-            aria-disabled={locked || backReason !== null}
-            aria-describedby={describedBy(backReason, `${reasonIds}back`)}
-            onClick={back}
-          >
-            <Undo2Icon aria-hidden className="size-4 shrink-0" />
-            {t("back")}
-          </button>
-        )}
         <button
           type="button"
           className={cn(padButton, "h-11 px-3")}
           aria-disabled={locked || resetReason !== null}
           aria-describedby={describedBy(resetReason, `${reasonIds}reset`)}
-          onClick={askReset}
+          onClick={() => {
+            if (canReset) setConfirmingReset(true);
+          }}
         >
           <RotateCcwIcon aria-hidden className="size-4 shrink-0" />
           {t("reset")}
         </button>
-        {holderPlate !== undefined && (
-          <button
-            type="button"
-            aria-pressed={holding(holderSeat)}
-            className={cn(
-              padButton,
-              "h-11 px-3 aria-pressed:border-accent-ink aria-pressed:bg-accent-soft aria-pressed:text-accent-ink",
-            )}
-            onClick={() => {
-              setHolds((current) => {
-                const next = new Set(current);
-                if (next.has(holderSeat)) next.delete(holderSeat);
-                else next.add(holderSeat);
-                return next;
-              });
-            }}
-          >
-            {t("hold")} {sign(holderPlate)}
-          </button>
-        )}
       </div>
       <p className="text-caption text-fg-muted max-lg:hidden">
-        {online ? t("keysOnline") : t("keys")}
+        {online ? t("keysOnline") : t("keysLocal", { count: state.playerCount })}
       </p>
       <span id={lockId} className="sr-only">
         {locked ? (lockedReason ?? "") : ""}
@@ -492,9 +411,6 @@ export function JellyCrewBoard({
           {reasonOf(direction)}
         </span>
       ))}
-      <span id={`${reasonIds}back`} className="sr-only">
-        {backReason}
-      </span>
       <span id={`${reasonIds}reset`} className="sr-only">
         {resetReason}
       </span>
@@ -509,8 +425,7 @@ export function JellyCrewBoard({
         }}
         onConfirm={() => {
           setConfirmingReset(false);
-          letGo(state.turn);
-          if (legal("reset")) onMove("reset");
+          if (canReset) onMove(resetMove);
         }}
       />
     </div>
@@ -522,23 +437,19 @@ export function JellyCrewBoard({
       style={{ "--crew-board-max": `${String(grid.width * CELL)}px` } as Record<string, string>}
     >
       <div
-        data-turn-seat={over ? undefined : state.turn + 1}
+        data-driven-seat={over ? undefined : driven + 1}
         onPointerDown={onPointerDown}
         onPointerUp={onPointerUp}
         onPointerCancel={() => {
           swipe.current = null;
         }}
-        style={{ touchAction: disabled ? "pan-y" : "none" }}
-        className={cn(
-          "rounded-card border-[3px] bg-game-page p-1",
-          over ? "border-transparent" : (SEAT_BORDER[state.turn] ?? SEAT_BORDER[0]),
-        )}
+        style={{ touchAction: disabled || over ? "pan-y" : "none" }}
+        className="rounded-card border-[3px] border-transparent bg-game-page p-1"
       >
         <CrewBoardSvg
           grid={grid}
           board={state.board}
-          now={over ? null : state.turn}
-          trail={state.trail}
+          now={over ? null : driven}
           slid={slide?.cells ?? NOTHING}
           moverSlid={slide?.seat ?? null}
           svgRef={svgRef}
@@ -566,23 +477,23 @@ interface Slide {
 }
 
 /**
- * The step that led from `before` to `after`, when it is one (a step back, a reset or a new game
- * slides nothing): played again from `before`, so what it pushed is known exactly.
+ * The step that led from `before` to `after`, when it is one (a reset, an undo or a new game slides
+ * nothing): played again from `before`, so what it pushed is known exactly.
  */
 function slideBetween(
   before: JellyCrewState,
   after: JellyCrewState,
-  move: JellyCrewMove | undefined,
   grid: ReturnType<typeof jellyCrewLayoutOf>,
 ): Slide | null {
-  if (move === undefined || !isJellyCrewDirection(move) || after.last?.move !== move) return null;
-  if (before.turn !== after.last.seat || before.steps + 1 !== after.steps) return null;
-  const replayed = jellyCrewStep(grid, before.board, before.turn, move);
+  const last = after.last;
+  if (last === null || !isJellyCrewDirection(last.action)) return null;
+  if (before.moves + 1 !== after.moves || before.steps + 1 !== after.steps) return null;
+  const replayed = jellyCrewStep(grid, before.board, last.seat, last.action);
   if (!replayed.ok) return null;
-  const offset = stepOffset(move, grid.width);
+  const offset = stepOffset(last.action, grid.width);
   return {
-    seat: before.turn,
-    direction: move,
+    seat: last.seat,
+    direction: last.action,
     cells: new Set(
       replayed.pushed.flatMap((index) =>
         (before.board.pieces[index]?.cells ?? []).map((cell) => cell + offset),

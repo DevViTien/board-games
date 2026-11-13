@@ -44,6 +44,7 @@ export {
 } from "./messages";
 export {
   gameRecordSchema,
+  type GameTimeView,
   normalizeRoomCode,
   PLAYER_NAME_MAX_LENGTH,
   playerNameSchema,

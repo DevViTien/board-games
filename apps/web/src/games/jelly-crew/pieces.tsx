@@ -63,7 +63,7 @@ const KIND_FILL: Readonly<
 };
 
 /** Each seat's colour, as a fill and a stroke. */
-export const SEAT_FILL = [
+const SEAT_FILL = [
   "fill-(--jelly-crew-seat-1)",
   "fill-(--jelly-crew-seat-2)",
   "fill-(--jelly-crew-seat-3)",
@@ -520,9 +520,9 @@ export function Door({
 }
 
 /**
- * A character: a disc in its seat's colour with its number; the one whose turn it is has a thick
- * ring around a halo (it breathes slowly, never when motion is reduced), and one on a plate has a
- * badge with the plate's sign, as its body hides the plate.
+ * A character: a disc in its seat's colour with its number; the one the arrows move has a thick
+ * ring around a halo (still: it marks a choice, not a turn), and one on a plate has a badge with the
+ * plate's sign, as its body hides the plate.
  */
 export function Character({
   cx,
@@ -550,7 +550,7 @@ export function Character({
           fill="none"
           strokeWidth={r1(cell * 0.12)}
           data-turn-ring=""
-          className="stroke-(--jelly-crew-turn) motion-safe:animate-[jelly-crew-breathe_1.6s_ease-in-out_infinite]"
+          className="stroke-(--jelly-crew-turn)"
         />
       )}
       {now && (

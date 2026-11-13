@@ -172,6 +172,22 @@ export interface ReadySnapshot<State, Move, Outcome = never> {
    * otherwise. A cooperative game ended so is a draw: only this says who left.
    */
   readonly ending: GameEnding | null;
+  /**
+   * Every seat may move at any time (`GameMeta.freePlay`): nobody is "to move", so the play screen
+   * shows no turn and nobody waits.
+   */
+  readonly freePlay: boolean;
+  /**
+   * When the game began and got its result, by one clock (this device's on one device, the server's
+   * online), for a game's length; `null` when it is not known (a game saved or a room made before).
+   */
+  readonly gameTime: GameTime | null;
+}
+
+/** The span of a game: `endedAt - startedAt` is its length once it has a result. */
+export interface GameTime {
+  readonly startedAt: number;
+  readonly endedAt: number | null;
 }
 
 export interface ResignOption {
@@ -239,6 +255,8 @@ export interface Transport<State, Move, Outcome = never> {
 export interface LoadedGame {
   readonly settings: ModeSettings;
   readonly record: unknown;
+  /** When the game began (`Date.now()`); absent from a game saved before it was kept. */
+  readonly startedAt?: number;
 }
 
 interface GameToSave {
@@ -246,6 +264,8 @@ interface GameToSave {
   readonly record: GameRecord;
   /** See `ReadySnapshot.inProgress`; lists of games in progress read only this. */
   readonly inProgress: boolean;
+  /** When the game began, for its length (`ReadySnapshot.gameTime`). */
+  readonly startedAt?: number;
 }
 
 /** A game in progress, as listed by the menu and the setup screen. */

@@ -559,14 +559,14 @@ describe("protection", () => {
     expect(await context.store.get(code)).toEqual(before);
   });
 
-  it("closes a connection that sends more than 30 messages in 10 seconds", async () => {
+  it("closes a connection that sends more than 150 messages in 10 seconds", async () => {
     const context = await start();
     const code = await createRoom(context);
     const { client } = await join(context, code, LAN);
 
-    // The join was the first message; 29 pings make 30, still allowed.
-    for (let count = 0; count < 29; count += 1) client.send({ type: "ping" });
-    for (let count = 0; count < 29; count += 1)
+    // The join was the first message; 149 pings make 150, still allowed.
+    for (let count = 0; count < 149; count += 1) client.send({ type: "ping" });
+    for (let count = 0; count < 149; count += 1)
       expect(await client.next()).toEqual({ type: "pong" });
     client.send({ type: "ping" });
 

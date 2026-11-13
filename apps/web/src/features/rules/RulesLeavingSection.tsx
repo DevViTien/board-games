@@ -8,9 +8,10 @@ interface RulesLeavingSectionProps {
   /**
    * What happens to whoever resigns or leaves online: the game ends and the others win (a room of
    * two, a game without an AI), or, in a room of three or four, the computer plays for them, or,
-   * in a cooperative game (`team`), the game stops for everyone and nobody wins.
+   * in a cooperative game (`team`), the game stops for everyone and nobody wins; a cooperative game
+   * played freely (`freeTeam`) has no turn to leave, so only giving up stops it.
    */
-  readonly rooms: "two" | "standIn" | "team";
+  readonly rooms: "two" | "standIn" | "team" | "freeTeam";
   /** Whether the game can be played against the computer (then resigning hands it the win). */
   readonly vsAi: boolean;
 }
@@ -20,9 +21,20 @@ export function RulesLeavingSection({ t, place, rooms, vsAi }: RulesLeavingSecti
   return (
     <RulesSection
       place={place}
-      title={rooms === "team" ? t("common.leaving.titleTeam") : t("common.leaving.title")}
+      title={
+        rooms === "freeTeam"
+          ? t("common.leaving.titleFree")
+          : rooms === "team"
+            ? t("common.leaving.titleTeam")
+            : t("common.leaving.title")
+      }
     >
-      {rooms === "team" ? (
+      {rooms === "freeTeam" ? (
+        <>
+          <p>{t.rich("common.leaving.giveUp", RULES_TAGS)}</p>
+          <p>{t("common.leaving.noAbandon")}</p>
+        </>
+      ) : rooms === "team" ? (
         <>
           <p>{t.rich("common.leaving.giveUp", RULES_TAGS)}</p>
           <p>{t.rich("common.leaving.abandonTeam", RULES_TAGS)}</p>
@@ -30,7 +42,7 @@ export function RulesLeavingSection({ t, place, rooms, vsAi }: RulesLeavingSecti
       ) : (
         <p>{t.rich("common.leaving.resign", RULES_TAGS)}</p>
       )}
-      {rooms === "team" ? null : rooms === "two" ? (
+      {rooms === "team" || rooms === "freeTeam" ? null : rooms === "two" ? (
         <p>{t.rich("common.leaving.abandon", RULES_TAGS)}</p>
       ) : (
         <>

@@ -94,8 +94,20 @@ export interface RoomView {
    * while the room waits for players or once the game has a result.
    */
   readonly turnIdleMs: number | null;
+  /**
+   * When the current game began (the room full, or "Chơi lại") and when it got a result, by the
+   * server's clock, in ms: one clock, so the difference is the game's length on every device.
+   * Absent or `null` from a server or a room that predates it.
+   */
+  readonly gameTime?: GameTimeView | null;
   /** The room's latest messages, oldest first; empty for a client without a seat. */
   readonly chat: readonly ChatMessageView[];
+}
+
+/** The span of a game by the server's clock (`RoomView.gameTime`). */
+export interface GameTimeView {
+  readonly startedAt: number;
+  readonly endedAt: number | null;
 }
 
 const countSchema = z.number().int().nonnegative();
@@ -130,5 +142,9 @@ export const roomViewSchema = z.object({
   host: playerIndexSchema.nullable().catch(null),
   record: gameRecordSchema,
   turnIdleMs: countSchema.nullable().catch(null),
+  // Absent stays absent (a server or a room that predates it); a broken one reads as unknown.
+  gameTime: z.exactOptional(
+    z.object({ startedAt: z.number(), endedAt: z.number().nullable() }).nullable().catch(null),
+  ),
   chat: chatMessagesSchema,
 }) satisfies z.ZodType<RoomView>;

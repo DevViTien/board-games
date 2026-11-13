@@ -811,47 +811,42 @@ export function savedJellyCrewGame(
     inProgress: moves.length > 0,
     mode: { kind: "local" },
     record: jellyCrewRecord(playerCount, moves, map),
+    // Begun 4 minutes 12 seconds before it is opened, for the length a won game shows.
+    startedAt: Date.now() - (4 * 60 + 12) * 1000,
   };
 }
 
 /**
- * The two players' kitchen won in 4 rounds (the mockup's solution): Lam down; Hồng onto plate ●;
+ * The two players' kitchen won in 25 steps (`layouts.solutions.ts`): Lam down; Hồng onto plate ●;
  * Lam pushes the strawberries through door ● into their molds and walks onto plate ▲; Hồng pushes
- * the mangoes through door ▲.
+ * the mangoes through door ▲. Each move names its seat (`0` Lam, `1` Hồng).
  */
 export const JELLY_CREW_KITCHEN_TWO: readonly JellyCrewMove[] = [
-  "D",
-  "end",
-  "D",
-  "D",
-  "D",
-  "L",
-  "L",
-  "end",
-  "R",
-  "R",
-  "R",
-  "R",
-  "R",
-  "end",
-  "end",
-  "R",
-  "L",
-  "L",
-  "L",
-  "L",
-  "end",
-  "R",
-  "U",
-  "U",
-  "end",
-  "D",
-  "D",
-  "end",
-  "L",
-  "L",
-  "L",
-  "L",
+  "0D",
+  "1D",
+  "1D",
+  "1D",
+  "1L",
+  "1L",
+  "0R",
+  "0R",
+  "0R",
+  "0R",
+  "0R",
+  "0R",
+  "0L",
+  "0L",
+  "0L",
+  "0L",
+  "0D",
+  "0D",
+  "1R",
+  "1U",
+  "1U",
+  "1L",
+  "1L",
+  "1L",
+  "1L",
 ];
 
 export const crewBoard = (page: Page) => page.locator("[data-crew-board]");

@@ -1,4 +1,10 @@
-import { createSession, ENGINE_ERROR } from "@board-games/engine";
+import {
+  createSession,
+  ENGINE_ERROR,
+  fromRecord,
+  RECORD_VERSION,
+  toRecord,
+} from "@board-games/engine";
 import { describe, expect, it } from "vitest";
 
 import { chess } from "../chess";
@@ -6,6 +12,7 @@ import { jellyCrewFilled, jellyCrewSettle } from "./board";
 import {
   JELLY_CREW_BLOCKED,
   JELLY_CREW_MAP,
+  JELLY_CREW_MAX_MOVES,
   JELLY_CREW_REASON,
   type JellyCrewMapId,
   type JellyCrewMove,
@@ -15,7 +22,8 @@ import { JELLY_CREW_SOLUTIONS } from "./layouts.solutions";
 import {
   jellyCrew,
   jellyCrewHolding,
-  jellyCrewRound,
+  jellyCrewMove,
+  jellyCrewMoveParts,
   jellyCrewTryStep,
   parseJellyCrewOptions,
 } from "./rules";
@@ -29,7 +37,7 @@ function start(playerCount = 2, map: JellyCrewMapId = Kitchen): JellyCrewState {
 
 function play(state: JellyCrewState, moves: readonly JellyCrewMove[]): JellyCrewState {
   return moves.reduce((current, move) => {
-    expect(jellyCrew.legalMoves(current), `${move} at turn ${String(current.turnsDone)}`).toContain(
+    expect(jellyCrew.legalMoves(current), `${move} after ${String(current.moves)} moves`).toContain(
       move,
     );
     return jellyCrew.applyMove(current, move);
@@ -38,9 +46,8 @@ function play(state: JellyCrewState, moves: readonly JellyCrewMove[]): JellyCrew
 
 const KITCHEN_2 = jellyCrewLayout(Kitchen, 2);
 const at = (x: number, y: number) => y * KITCHEN_2.width + x;
-const STEPS: readonly JellyCrewMove[] = ["U", "D", "L", "R"];
-const stepsIn = (state: JellyCrewState) =>
-  jellyCrew.legalMoves(state).filter((move) => STEPS.includes(move));
+const seatsWithMoves = (state: JellyCrewState) =>
+  new Set(jellyCrew.legalMoves(state).map((move) => jellyCrew.moverOf(move)));
 
 describe("Bản đồ và người chơi", () => {
   it("Ván hai người trên bản đồ mặc định", () => {
@@ -48,7 +55,7 @@ describe("Bản đồ và người chơi", () => {
     expect(state.map).toBe(Kitchen);
     expect(state.board).toEqual(KITCHEN_2.start);
     expect(state.board.chars).toHaveLength(2);
-    expect(jellyCrew.currentPlayer(state)).toBe(0);
+    expect(seatsWithMoves(state)).toEqual(new Set([0, 1]));
   });
 
   it("Mỗi số người một bố cục", () => {
@@ -69,123 +76,83 @@ describe("Bản đồ và người chơi", () => {
     expect(session).toEqual({ ok: false, error: ENGINE_ERROR.InvalidOptions });
   });
 
-  it("declares a cooperative game of 2 to 4 players without AI", () => {
+  it("declares a cooperative game of 2 to 4 players, played freely, without AI", () => {
     expect(jellyCrew.meta).toMatchObject({
       players: { min: 2, max: 4 },
       supportsAI: false,
       cooperative: true,
+      freePlay: true,
     });
   });
 });
 
-describe("Lượt nhiều bước", () => {
-  it("Đủ 5 bước thì chờ Xong lượt", () => {
-    const state = play(start(), ["D", "D", "D", "D", "R"]);
-    expect(state.taken).toBe(5);
-    expect(jellyCrew.currentPlayer(state)).toBe(0);
-    expect(stepsIn(state)).toEqual([]);
-    expect(jellyCrew.legalMoves(state)).toContain("end");
-    expect(jellyCrewTryStep(state, "R")).toEqual({
-      ok: false,
-      blocked: JELLY_CREW_BLOCKED.NoSteps,
-    });
-  });
-
-  it("Xong lượt khi chưa đi", () => {
-    const plate = at(15, 4);
-    const state: JellyCrewState = {
-      ...start(),
-      turn: 1,
-      turnsDone: 1,
-      board: { ...KITCHEN_2.start, chars: [at(1, 1), plate] },
-    };
-    const next = play(state, ["end"]);
-    expect(jellyCrew.currentPlayer(next)).toBe(0);
-    expect(next.board.chars[1]).toBe(plate);
-    expect(jellyCrewHolding(next, 1)).toBe("circle");
+describe("Đi tự do", () => {
+  it("Hai người đi xen nhau", () => {
+    const state = play(start(), ["0D", "0D", "0D", "1D"]);
+    expect(state.steps).toBe(4);
+    expect(state.board.chars).toEqual([at(1, 4), at(17, 2)]);
+    expect(jellyCrew.legalMoves(state).some((move) => move.endsWith("end"))).toBe(false);
   });
 
   it("Bước bị chặn", () => {
     const state = start();
-    expect(jellyCrew.legalMoves(state)).not.toContain("U");
-    expect(jellyCrewTryStep(state, "U")).toEqual({ ok: false, blocked: JELLY_CREW_BLOCKED.Wall });
-    expect(state.taken).toBe(0);
+    expect(jellyCrew.legalMoves(state)).not.toContain("1U");
+    expect(jellyCrewTryStep(state, 1, "U")).toEqual({
+      ok: false,
+      blocked: JELLY_CREW_BLOCKED.Wall,
+    });
+    expect(jellyCrew.legalMoves(state)).toContain("0D");
   });
 
-  it("passes the turn in seat order, back to the first", () => {
-    let state = start(3);
-    const seats = [];
-    for (let turn = 0; turn < 4; turn += 1) {
-      seats.push(jellyCrew.currentPlayer(state));
-      state = play(state, ["end"]);
-    }
-    expect(seats).toEqual([0, 1, 2, 0]);
-    expect(jellyCrewRound(state)).toBe(2);
-  });
-
-  it("lists the moves in order: steps, end, back, reset", () => {
-    expect(jellyCrew.legalMoves(play(start(), ["D"]))).toEqual([
-      "U",
-      "D",
-      "R",
-      "end",
-      "back",
-      "reset",
+  it("names the seat of every move, and lists them seat by seat: steps, then reset", () => {
+    expect(jellyCrew.legalMoves(play(start(), ["0D"]))).toEqual([
+      "0U",
+      "0D",
+      "0R",
+      "0reset",
+      "1D",
+      "1L",
+      "1reset",
     ]);
-  });
-});
-
-describe("Lùi bước trong lượt", () => {
-  it("Lùi một bước đẩy", () => {
-    const afterOne = play(start(), ["D"]);
-    const pushed = play(afterOne, ["R"]);
-    expect(pushed.last?.pushed).toEqual(["strawberry"]);
-    const back = play(pushed, ["back"]);
-    expect(back.board).toEqual(afterOne.board);
-    expect(back.taken).toBe(1);
-    expect(back.steps).toBe(1);
+    expect(jellyCrew.moverOf("1L")).toBe(1);
+    expect(jellyCrewMoveParts("3reset")).toEqual({ seat: 3, action: "reset" });
+    expect(jellyCrewMove(2, "U")).toBe("2U");
   });
 
-  it("Lùi bước thứ năm", () => {
-    const back = play(start(), ["D", "D", "D", "D", "R", "back"]);
-    expect(back.taken).toBe(4);
-    expect(stepsIn(back).length).toBeGreaterThan(0);
-  });
-
-  it("Không lùi qua lượt trước", () => {
-    const state = play(start(), ["D", "end"]);
-    expect(jellyCrew.legalMoves(state)).not.toContain("back");
-  });
-
-  it("Hết lượt lùi", () => {
-    const state = play(start(), [
-      ...(["D", "back", "D", "back", "D", "back", "D", "back", "D", "back"] as const),
-      "D",
-    ]);
-    expect(state.backs).toBe(5);
-    expect(jellyCrew.legalMoves(state)).not.toContain("back");
-    expect(jellyCrew.legalMoves(play(state, ["end"]))).not.toContain("back");
+  it("Phát lại nước của nhiều ghế: the record rebuilds the same board and steps", () => {
+    const moves = (JELLY_CREW_SOLUTIONS["kitchen-2"] ?? []).slice(0, 12);
+    const created = createSession(jellyCrew, { playerCount: 2 });
+    if (!created.ok) throw new Error(created.error);
+    const record = {
+      ...toRecord(created.value),
+      version: RECORD_VERSION,
+      entries: moves.map((move) => ({ move })),
+    };
+    const rebuilt = fromRecord(jellyCrew, JSON.parse(JSON.stringify(record)));
+    if (!rebuilt.ok) throw new Error(rebuilt.error);
+    const last = rebuilt.value.states.at(-1);
+    expect(last).toEqual(play(start(), moves));
+    expect(rebuilt.value.entries.map(({ move }) => jellyCrew.moverOf(move))).toEqual(
+      moves.map((move) => Number(move[0])),
+    );
   });
 });
 
 describe("Đặt lại bản đồ", () => {
   it("Đặt lại giữa ván", () => {
-    const fiveRounds = Array.from({ length: 15 }, (): JellyCrewMove => "end");
-    const before = play(start(3), [...fiveRounds, "D", "end", "D"]);
-    expect(jellyCrewRound(before)).toBe(6);
-    expect(jellyCrew.currentPlayer(before)).toBe(1);
-    const reset = play(before, ["reset"]);
+    const before = play(start(3), ["0D", "1D", "0R", "2U"]);
+    const reset = play(before, ["1reset"]);
     expect(reset.board).toEqual(jellyCrewLayout(Kitchen, 3).start);
-    expect(jellyCrew.currentPlayer(reset)).toBe(2);
-    expect(jellyCrewRound(reset)).toBe(6);
-    expect(reset.steps).toBe(2);
-    expect(reset.last?.move).toBe("reset");
+    expect(reset.steps).toBe(before.steps);
+    expect(reset.last).toMatchObject({ seat: 1, action: "reset" });
+    expect(seatsWithMoves(reset)).toEqual(new Set([0, 1, 2]));
   });
 
   it("Bàn chưa đổi", () => {
-    expect(jellyCrew.legalMoves(start())).not.toContain("reset");
+    expect(jellyCrew.legalMoves(start()).some((move) => move.endsWith("reset"))).toBe(false);
     // Back where everything started, a step and its step back: still nothing to reset.
-    expect(jellyCrew.legalMoves(play(start(), ["D", "U"]))).not.toContain("reset");
+    const back = play(start(), ["0D", "0U"]);
+    expect(jellyCrew.legalMoves(back).some((move) => move.endsWith("reset"))).toBe(false);
   });
 });
 
@@ -214,39 +181,36 @@ describe("Thắng khi đầy khuôn", () => {
   });
 });
 
-describe("Giới hạn vòng", () => {
-  const ends = (count: number) => Array.from({ length: count }, (): JellyCrewMove => "end");
-
-  it("Hết vòng", () => {
-    const over = play(start(), ends(KITCHEN_2.rounds * 2));
-    expect(jellyCrew.result(over)).toEqual({ kind: "draw", reason: JELLY_CREW_REASON.OutOfRounds });
+describe("Giới hạn an toàn của ván", () => {
+  it("Chạm giới hạn", () => {
+    const nearly = { ...play(start(), ["0D"]), moves: JELLY_CREW_MAX_MOVES - 1 };
+    const over = play(nearly, ["0U"]);
+    expect(jellyCrew.result(over)).toEqual({ kind: "draw", reason: JELLY_CREW_REASON.TooLong });
     expect(jellyCrew.legalMoves(over)).toEqual([]);
-    expect(jellyCrewRound(over)).toBe(KITCHEN_2.rounds);
   });
 
-  it("Thắng ở lượt cuối", () => {
+  it("Thắng ở nước cuối", () => {
     const moves = JELLY_CREW_SOLUTIONS["kitchen-2"] ?? [];
     const beforeLast = play(start(), moves.slice(0, -1));
-    const lastTurn = { ...beforeLast, turnsDone: KITCHEN_2.rounds * 2 - 1 };
-    const won = play(lastTurn, moves.slice(-1));
+    const won = play({ ...beforeLast, moves: JELLY_CREW_MAX_MOVES - 1 }, moves.slice(-1));
     expect(jellyCrew.result(won)?.reason).toBe(JELLY_CREW_REASON.Filled);
+  });
+
+  it("counts a reset as a move, not a step", () => {
+    const state = play(start(), ["0D", "0reset"]);
+    expect(state.moves).toBe(2);
+    expect(state.steps).toBe(1);
   });
 });
 
 describe("what a move did", () => {
-  it("tells a door opening when a character steps onto its plate", () => {
-    const state = play(start(), ["end", "D", "D", "D", "L"]);
-    expect(state.last).toMatchObject({ seat: 1, move: "L", opened: [], closed: [] });
-    const onPlate = play(state, ["L"]);
-    expect(onPlate.last).toMatchObject({ seat: 1, move: "L", opened: ["circle"], closed: [] });
-    expect(play(onPlate, ["back"]).last?.closed).toEqual(["circle"]);
-  });
-
-  it("keeps the trail of the latest turn with steps, through an end", () => {
-    const state = play(start(), ["D", "R", "end"]);
-    expect(state.trail).toEqual({ seat: 0, cells: [at(1, 1), at(1, 2), at(2, 2)] });
-    expect(play(state, ["end"]).trail).toEqual(state.trail);
-    expect(play(state, ["D"]).trail).toEqual({ seat: 1, cells: [at(17, 1), at(17, 2)] });
+  it("tells a door opening when a character steps onto its plate, and closing when it leaves", () => {
+    const state = play(start(), ["1D", "1D", "1D", "1L"]);
+    expect(state.last).toMatchObject({ seat: 1, action: "L", opened: [], closed: [] });
+    const onPlate = play(state, ["1L"]);
+    expect(onPlate.last).toMatchObject({ seat: 1, action: "L", opened: ["circle"], closed: [] });
+    expect(jellyCrewHolding(onPlate, 1)).toBe("circle");
+    expect(play(onPlate, ["1R"]).last?.closed).toEqual(["circle"]);
   });
 
   it("tells the molds only when their count changes", () => {
@@ -261,8 +225,10 @@ describe("what a move did", () => {
 });
 
 describe("Khai báo game", () => {
-  it("Đọc cờ cùng phe: Đội gom thạch is cooperative, Cờ vua is not", () => {
+  it("Đọc cờ cùng phe: Đội gom thạch is cooperative and played freely, Cờ vua neither", () => {
     expect(jellyCrew.meta.cooperative).toBe(true);
+    expect(jellyCrew.meta.freePlay).toBe(true);
     expect(chess.meta).not.toHaveProperty("cooperative");
+    expect(chess.meta).not.toHaveProperty("freePlay");
   });
 });

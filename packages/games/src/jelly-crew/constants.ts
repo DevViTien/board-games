@@ -18,17 +18,17 @@ export const JELLY_CREW_MAPS = [
 export const JELLY_CREW_REASON = {
   /** Every mold holds its kind: the whole team wins. */
   Filled: "filled",
-  /** The last round is over and a mold is still empty: nobody wins. */
-  OutOfRounds: "out-of-rounds",
+  /** The safety limit of moves was reached with a mold still empty: nobody wins. */
+  TooLong: "too-long",
 } as const;
 
 export type JellyCrewReason = (typeof JELLY_CREW_REASON)[keyof typeof JELLY_CREW_REASON];
 
-/** Steps a player may take in one turn. */
-export const JELLY_CREW_STEPS = 5;
-
-/** Steps a player may take back in one turn: a game can never grow without end (design §3). */
-export const JELLY_CREW_BACKS = 5;
+/**
+ * The most moves a game can have (design §10.3): not a rule to play by (the longest solution takes
+ * 89 steps) but what keeps a game, its record and the server's replay of it finite.
+ */
+export const JELLY_CREW_MAX_MOVES = 3000;
 
 /** What a cell of jelly is made of. */
 export const JELLY_CREW_KIND = {
@@ -67,30 +67,37 @@ export const JELLY_CREW_GROUPS = [
   JELLY_CREW_GROUP.Square,
 ] as const satisfies readonly JellyCrewGroup[];
 
-/** The four steps, then the moves that end or change a turn. */
-export const JELLY_CREW_MOVE = {
+/** What a seat does: a step in one of four directions, or the map put back as it began. */
+export const JELLY_CREW_ACTION = {
   Up: "U",
   Down: "D",
   Left: "L",
   Right: "R",
-  End: "end",
-  Back: "back",
   Reset: "reset",
 } as const;
 
-export type JellyCrewMove = (typeof JELLY_CREW_MOVE)[keyof typeof JELLY_CREW_MOVE];
+export type JellyCrewAction = (typeof JELLY_CREW_ACTION)[keyof typeof JELLY_CREW_ACTION];
+
+/** A seat, as the first character of a move. */
+export type JellyCrewSeatDigit = "0" | "1" | "2" | "3";
+
+/**
+ * A move names its seat and what it does (design §10.3): `"1L"` is the second seat stepping left,
+ * `"0reset"` the first seat putting the map back. Short, as the whole record is sent on every write.
+ */
+export type JellyCrewMove = `${JellyCrewSeatDigit}${JellyCrewAction}`;
 
 export type JellyCrewDirection =
-  | typeof JELLY_CREW_MOVE.Up
-  | typeof JELLY_CREW_MOVE.Down
-  | typeof JELLY_CREW_MOVE.Left
-  | typeof JELLY_CREW_MOVE.Right;
+  | typeof JELLY_CREW_ACTION.Up
+  | typeof JELLY_CREW_ACTION.Down
+  | typeof JELLY_CREW_ACTION.Left
+  | typeof JELLY_CREW_ACTION.Right;
 
 export const JELLY_CREW_DIRECTIONS = [
-  JELLY_CREW_MOVE.Up,
-  JELLY_CREW_MOVE.Down,
-  JELLY_CREW_MOVE.Left,
-  JELLY_CREW_MOVE.Right,
+  JELLY_CREW_ACTION.Up,
+  JELLY_CREW_ACTION.Down,
+  JELLY_CREW_ACTION.Left,
+  JELLY_CREW_ACTION.Right,
 ] as const satisfies readonly JellyCrewDirection[];
 
 /** Why a step cannot be taken, for the reason a disabled direction gives. */
@@ -107,8 +114,6 @@ export const JELLY_CREW_BLOCKED = {
   PushDoor: "push-door",
   /** A pushed piece would move into a character. */
   PushSeat: "push-seat",
-  /** The player has taken every step of the turn. */
-  NoSteps: "no-steps",
   /** The game is over. */
   Over: "over",
 } as const;

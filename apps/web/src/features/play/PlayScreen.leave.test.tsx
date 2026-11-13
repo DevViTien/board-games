@@ -61,6 +61,8 @@ function online(overrides: Partial<Snapshot> = {}): Snapshot {
     turn: { player: 0, gameNumber: 1, moveIndex: 2, startedAt: NOW, claim: null, available: true },
     cooperative: false,
     ending: null,
+    freePlay: false,
+    gameTime: null,
     ...overrides,
   };
 }
@@ -134,6 +136,8 @@ describe("Đầu hàng khi chơi online", () => {
       turn: null,
       cooperative: false,
       ending: null,
+      freePlay: false,
+      gameTime: null,
       canMove: false,
       canStartNewGame: true,
     });
@@ -155,6 +159,8 @@ describe("Đầu hàng khi chơi online", () => {
         turn: null,
         cooperative: false,
         ending: null,
+        freePlay: false,
+        gameTime: null,
         canStartNewGame: true,
       }),
     );
@@ -184,6 +190,8 @@ describe("Đầu hàng khi chơi online", () => {
       turn: null,
       cooperative: false,
       ending: null,
+      freePlay: false,
+      gameTime: null,
     });
 
     const mine = within(screen.getByRole("list", { name: "Người chơi" })).getAllByRole(
@@ -221,6 +229,8 @@ describe("Đầu hàng khi chơi online", () => {
         turn: null,
         cooperative: false,
         ending: null,
+        freePlay: false,
+        gameTime: null,
         canStartNewGame: true,
       }),
     );
@@ -277,6 +287,8 @@ describe("Chờ người lâu chưa đi", () => {
       turn: null,
       cooperative: false,
       ending: null,
+      freePlay: false,
+      gameTime: null,
       waitingFor: null,
       canStartNewGame: true,
     });
@@ -294,6 +306,8 @@ describe("Chờ người lâu chưa đi", () => {
         turn: null,
         cooperative: false,
         ending: null,
+        freePlay: false,
+        gameTime: null,
         canStartNewGame: true,
       }),
     );
@@ -542,6 +556,8 @@ describe("Ghế máy chơi thay trên màn hình", () => {
         turn: null,
         cooperative: false,
         ending: null,
+        freePlay: false,
+        gameTime: null,
       }),
     );
 
@@ -558,6 +574,8 @@ describe("Ghế máy chơi thay trên màn hình", () => {
         turn: null,
         cooperative: false,
         ending: null,
+        freePlay: false,
+        gameTime: null,
       }),
     );
 
@@ -577,6 +595,8 @@ describe("Ghế máy chơi thay trên màn hình", () => {
         turn: null,
         cooperative: false,
         ending: null,
+        freePlay: false,
+        gameTime: null,
         canStartNewGame: true,
       }),
     );
@@ -593,6 +613,8 @@ describe("Ghế máy chơi thay trên màn hình", () => {
         turn: null,
         cooperative: false,
         ending: null,
+        freePlay: false,
+        gameTime: null,
         canStartNewGame: true,
       }),
     );
@@ -705,6 +727,8 @@ describe("Đầu hàng khi đấu với máy", () => {
         turn: null,
         cooperative: false,
         ending: null,
+        freePlay: false,
+        gameTime: null,
         supportsUndo: true,
         canStartNewGame: true,
       }),

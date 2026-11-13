@@ -36,7 +36,9 @@ const DEFAULT_LIMITS: ConnectionLimits = {
   greetingTimeoutMs: 10_000,
   idleTimeoutMs: 20 * 60_000,
   heartbeatIntervalMs: 30_000,
-  rateLimit: { messages: 30, windowMs: 10_000 },
+  // A game played freely sends a move per key press (design of `add-jelly-crew-game` §10.2): room
+  // for a quick player's 10–12 a second, still far from flooding the store.
+  rateLimit: { messages: 150, windowMs: 10_000 },
   storeTimeoutMs: 5000,
 };
 

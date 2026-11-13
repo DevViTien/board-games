@@ -126,6 +126,8 @@ interface RoomOptions {
   readonly turnIdleMs?: number | null;
   /** The room's chat; none by default. */
   readonly chat?: RoomView["chat"];
+  /** When the game began and ended by the server's clock; unknown by default. */
+  readonly gameTime?: RoomView["gameTime"];
 }
 
 /** A room as the server sends it: Tic-tac-toe, or the game of `record`. */
@@ -138,6 +140,7 @@ export function roomView({
   record,
   turnIdleMs = null,
   chat = [],
+  gameTime = null,
 }: RoomOptions = {}): RoomView {
   return {
     code: ROOM_CODE,
@@ -158,6 +161,7 @@ export function roomView({
       entries: cells.map((cell) => ({ move: { cell } })),
     },
     turnIdleMs,
+    gameTime,
     chat,
   };
 }

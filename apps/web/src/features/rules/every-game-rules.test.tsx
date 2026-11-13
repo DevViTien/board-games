@@ -135,9 +135,12 @@ describe.each(GAME_IDS)("the rules of %s", (gameId) => {
     const headings = screen.getAllByRole("heading", { level: 2 });
     // A cooperative game is given up, not resigned: nobody wins it (change `add-jelly-crew-game`).
     expect(headings.at(-1)).toHaveAccessibleName(
-      gameId === "jelly-crew" ? "Bỏ cuộc và bỏ ván" : "Đầu hàng và bỏ ván",
+      gameId === "jelly-crew" ? "Bỏ cuộc" : "Đầu hàng và bỏ ván",
     );
-    expect(headings.at(-1)?.closest("section")).toHaveTextContent(/5 phút/);
+    // A game played freely has no turn to leave for 5 minutes.
+    expect(headings.at(-1)?.closest("section")).toHaveTextContent(
+      gameId === "jelly-crew" ? /không ai bị xử bỏ ván/u : /5 phút/u,
+    );
   });
 
   it("in the dialog: sections are h3 under the dialog's title, and no link leaves the game", async () => {

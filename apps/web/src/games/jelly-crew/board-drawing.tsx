@@ -2,23 +2,11 @@ import {
   type JellyCrewBoard,
   type JellyCrewLayout,
   jellyCrewOpenDoors,
-  type JellyCrewTrail,
 } from "@board-games/games/jelly-crew";
 import { cn } from "@board-games/ui";
 import type { Ref } from "react";
 
-import {
-  CELL,
-  Character,
-  Door,
-  MoldOver,
-  MoldUnder,
-  PieceShape,
-  Plate,
-  r1,
-  SEAT_FILL,
-  Wall,
-} from "./pieces";
+import { CELL, Character, Door, MoldOver, MoldUnder, PieceShape, Plate, r1, Wall } from "./pieces";
 
 /** What the static board needs of a layout: what never moves. */
 type CrewGrid = Pick<JellyCrewLayout, "width" | "height" | "walls" | "plates" | "doors" | "molds">;
@@ -26,10 +14,11 @@ type CrewGrid = Pick<JellyCrewLayout, "width" | "height" | "walls" | "plates" | 
 interface CrewBoardLayersProps {
   readonly grid: CrewGrid;
   readonly board: JellyCrewBoard;
-  /** The seat whose turn it is, ringed; `null` once the game is over. */
+  /**
+   * The character the arrows move (this player's own online, the one picked on one device), ringed;
+   * `null` for none (the game is over, a picture).
+   */
   readonly now: number | null;
-  /** Where the latest turn's character walked, dotted in its colour. */
-  readonly trail?: JellyCrewTrail | null;
   /** Cells of jelly that slid in the move shown, and whether the mover's character did. */
   readonly slid?: ReadonlySet<number>;
   readonly moverSlid?: number | null;
@@ -65,7 +54,6 @@ function CrewBoardLayers({
   grid,
   board,
   now,
-  trail = null,
   slid = new Set(),
   moverSlid = null,
 }: CrewBoardLayersProps) {
@@ -117,20 +105,6 @@ function CrewBoardLayers({
       {[...grid.doors].map(([at, group]) => {
         const [x, y] = xy(at);
         return <Door key={`d${at}`} x={x} y={y} group={group} open={open.has(at)} />;
-      })}
-      {(trail?.cells ?? []).slice(0, -1).map((at, index) => {
-        const [x, y] = xy(at);
-        return (
-          <circle
-            key={`t${index}:${at}`}
-            data-trail=""
-            cx={r1(x + CELL / 2)}
-            cy={r1(y + CELL / 2)}
-            r={r1(CELL * 0.1)}
-            opacity={0.7}
-            className={SEAT_FILL[trail?.seat ?? 0] ?? SEAT_FILL[0]}
-          />
-        );
       })}
       {board.pieces.map((piece) => (
         <g

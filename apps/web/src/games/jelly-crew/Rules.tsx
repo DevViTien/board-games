@@ -9,8 +9,8 @@ import { BlockedFigure, HoldFigure } from "./rules/figures";
 
 /**
  * The rules of Đội gom thạch as the app plays them (`openspec/specs/jelly-crew`): the team's goal,
- * five steps and "Xong lượt", pushing and sticking, characters in the way, plates and doors, the
- * limit of rounds, stepping back, resetting, holding a plate, the maps, and giving up.
+ * everyone moving at any time, pushing and sticking, characters in the way, plates and doors, the
+ * end without losing, resetting the map, the maps, and giving up.
  */
 export function JellyCrewRules({ t, place }: GameRulesProps) {
   return (
@@ -54,20 +54,16 @@ export function JellyCrewRules({ t, place }: GameRulesProps) {
         <p>{t.rich("jelly-crew.doors.body", RULES_TAGS)}</p>
         <p>{t("jelly-crew.doors.body2")}</p>
       </RulesSection>
-      <RulesSection place={place} title={t("jelly-crew.rounds.title")}>
-        <p>{t.rich("jelly-crew.rounds.body", RULES_TAGS)}</p>
+      <RulesSection place={place} title={t("jelly-crew.end.title")}>
+        <p>{t.rich("jelly-crew.end.body", RULES_TAGS)}</p>
       </RulesSection>
       <RulesSection place={place} title={t("jelly-crew.tools.title")}>
-        <ul className="list-disc space-y-1 pl-5">
-          <li>{t.rich("jelly-crew.tools.back", RULES_TAGS)}</li>
-          <li>{t.rich("jelly-crew.tools.reset", RULES_TAGS)}</li>
-          <li>{t.rich("jelly-crew.tools.hold", RULES_TAGS)}</li>
-        </ul>
+        <p>{t.rich("jelly-crew.tools.reset", RULES_TAGS)}</p>
       </RulesSection>
       <RulesSection place={place} title={t("jelly-crew.maps.title")}>
         <p>{t.rich("jelly-crew.maps.body", RULES_TAGS)}</p>
       </RulesSection>
-      <RulesLeavingSection t={t} place={place} rooms="team" vsAi={false} />
+      <RulesLeavingSection t={t} place={place} rooms="freeTeam" vsAi={false} />
     </>
   );
 }

@@ -45,6 +45,8 @@ const savedGameSchema = z.object({
   inProgress: z.boolean(),
   mode: modeSettingsSchema,
   record: z.unknown(),
+  // Absent from a game saved before it was kept: the game has no known length then.
+  startedAt: z.exactOptional(z.number()),
 });
 
 /** What `savedGameSchema` accepts, as written. */
@@ -54,6 +56,7 @@ interface StoredGame {
   readonly inProgress: boolean;
   readonly mode: ModeSettings;
   readonly record: unknown;
+  readonly startedAt?: number;
 }
 
 // Only the version fields are read, each on its own, to recognise data written by a newer version
@@ -81,7 +84,12 @@ function isFromNewerVersion(raw: unknown): boolean {
 }
 
 export function toSavedGame(
-  game: { readonly settings: ModeSettings; readonly record: unknown; readonly inProgress: boolean },
+  game: {
+    readonly settings: ModeSettings;
+    readonly record: unknown;
+    readonly inProgress: boolean;
+    readonly startedAt?: number | undefined;
+  },
   savedAt: string,
 ): StoredGame {
   return {
@@ -90,6 +98,7 @@ export function toSavedGame(
     inProgress: game.inProgress,
     mode: game.settings,
     record: game.record,
+    ...(game.startedAt === undefined ? {} : { startedAt: game.startedAt }),
   };
 }
 
@@ -101,6 +110,7 @@ export type ReadSavedGame =
       readonly settings: ModeSettings;
       /** Still unchecked: the engine's `fromRecord` checks it. */
       readonly record: unknown;
+      readonly startedAt?: number;
     }
   | { readonly kind: "newer" | "unreadable" };
 
@@ -113,8 +123,15 @@ export function readSavedGame(raw: unknown): ReadSavedGame {
   if (isFromNewerVersion(raw)) return { kind: "newer" };
   const parsed = savedGameSchema.safeParse(raw);
   if (!parsed.success) return { kind: "unreadable" };
-  const { savedAt, inProgress, mode, record } = parsed.data;
-  return { kind: "saved", savedAt, inProgress, settings: mode, record };
+  const { savedAt, inProgress, mode, record, startedAt } = parsed.data;
+  return {
+    kind: "saved",
+    savedAt,
+    inProgress,
+    settings: mode,
+    record,
+    ...(startedAt === undefined ? {} : { startedAt }),
+  };
 }
 
 /**

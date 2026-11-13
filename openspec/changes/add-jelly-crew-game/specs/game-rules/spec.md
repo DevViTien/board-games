@@ -18,7 +18,7 @@ Trang luật Đội gom thạch SHALL nêu: cả đội cùng thắng khi mọi 
 
 ### Requirement: Đầu hàng và bỏ ván trên trang luật
 
-Trang luật của mọi game SHALL có mục ngắn về chơi online: nút "Đầu hàng" (có xác nhận) và việc người đến lượt quá 5 phút không đi thì người khác xử được bỏ ván. Trang của game có máy và có phòng 3–4 người (Cờ cá ngựa, Cờ rào) SHALL nói thêm rằng ở phòng 3–4 người máy chơi thay người đầu hàng hay bỏ ván ("Máy chơi thay") tới hết ván, còn phòng 2 người thì ván kết thúc. Trang của game cùng phe (Đội gom thạch) SHALL gọi nút là "Bỏ cuộc" và nói rằng bỏ cuộc hay bỏ ván thì ván dừng cho cả đội, không ai thắng.
+Trang luật của mọi game SHALL có mục ngắn về chơi online: nút "Đầu hàng" (có xác nhận) và việc người đến lượt quá 5 phút không đi thì người khác xử được bỏ ván. Trang của game có máy và có phòng 3–4 người (Cờ cá ngựa, Cờ rào) SHALL nói thêm rằng ở phòng 3–4 người máy chơi thay người đầu hàng hay bỏ ván ("Máy chơi thay") tới hết ván, còn phòng 2 người thì ván kết thúc. Trang của game cùng phe đi tự do (Đội gom thạch) SHALL gọi nút là "Bỏ cuộc", nói ván dừng cho cả đội, không ai thắng, và không ai bị xử bỏ ván.
 
 #### Scenario: Mục đầu hàng của Cờ vua
 
@@ -38,4 +38,4 @@ Trang luật của mọi game SHALL có mục ngắn về chơi online: nút "Đ
 #### Scenario: Bỏ cuộc trên trang Đội gom thạch
 
 - **WHEN** người chơi mở `/rules/jelly-crew`
-- **THEN** mục chơi online nói về nút "Bỏ cuộc", rằng ván dừng cho cả đội và không ai thắng, và không nói tới "Máy chơi thay"
+- **THEN** mục cuối "Bỏ cuộc" nói về nút "Bỏ cuộc", rằng ván dừng cho cả đội và không ai thắng, không ai bị xử bỏ ván, và không nói tới "Máy chơi thay"

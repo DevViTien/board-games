@@ -57,6 +57,8 @@ function online(overrides: Partial<Snapshot> = {}): Snapshot {
     turn: { player: 0, gameNumber: 1, moveIndex: 4, startedAt: NOW, claim: null, available: true },
     cooperative: true,
     ending: null,
+    freePlay: false,
+    gameTime: null,
     ...overrides,
   };
 }
@@ -236,5 +238,58 @@ describe("Kết quả của game cùng phe", () => {
     expect(screen.getByText("Hết 40 vòng, còn 3 ô khuôn trống.")).toBeInTheDocument();
     expect(document.querySelector("[data-confetti]")).toBeNull();
     expect(screen.getByRole("button", { name: "Ván mới" })).toBeInTheDocument();
+  });
+});
+
+describe("Chơi game đi tự do online", () => {
+  const free = (overrides: Partial<Snapshot> = {}) =>
+    online({ freePlay: true, turn: null, currentPlayer: 1, ...overrides });
+
+  it("says the whole team moves at once, with this player's colour, and marks no seat to move", () => {
+    render(free());
+
+    expect(status()).toHaveTextContent("Cả đội cùng đi · bạn là Lam");
+    expect(screen.queryByText("Đến lượt")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Đang chờ/u)).not.toBeInTheDocument();
+  });
+
+  it("Không có đồng hồ lượt: no reminder and no claim, but giving up is there", () => {
+    render(free({ moveCount: 9 }));
+    act(() => {
+      vi.advanceTimersByTime(6 * MINUTE);
+    });
+
+    expect(screen.queryByRole("button", { name: "Kết thúc ván" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/còn \d:\d\d/u)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Bỏ cuộc" })).toBeInTheDocument();
+  });
+
+  it("says the team moves at once on one device too", () => {
+    render(local({ freePlay: true }));
+    expect(status()).toHaveTextContent("Cả đội cùng đi");
+  });
+
+  it("gives the game's time to the line under the result", () => {
+    const detail = vi.fn(() => "Đầy khuôn sau 87 bước, 7 phút 12 giây.");
+    const fake = changingTransport(
+      local({
+        freePlay: true,
+        result: { kind: "win", winners: [0, 1, 2], reason: "filled" },
+        gameTime: { startedAt: 0, endedAt: 432_000 },
+      }),
+    );
+    renderWithIntl(
+      <PlayScreen
+        gameId="tictactoe"
+        transport={fake.transport}
+        ui={{ ...ui, useResultDetail: () => detail }}
+      />,
+    );
+
+    expect(screen.getByText("Đầy khuôn sau 87 bước, 7 phút 12 giây.")).toBeInTheDocument();
+    expect(detail).toHaveBeenCalledWith(expect.anything(), expect.anything(), {
+      startedAt: 0,
+      endedAt: 432_000,
+    });
   });
 });

@@ -8,13 +8,14 @@ import {
   type JellyCrewGroup,
   type JellyCrewKind,
   jellyCrewLayoutOf,
-  jellyCrewMolds,
   type JellyCrewMove,
-  jellyCrewRound,
+  jellyCrewMoveParts,
   type JellyCrewState,
   type JellyCrewStep,
 } from "@board-games/games/jelly-crew";
 import { useFormatter, useTranslations } from "next-intl";
+
+import type { GameTime } from "@/transport/types";
 
 import type { SeatSummary } from "../types";
 
@@ -31,30 +32,29 @@ export function useGroupSign(): (group: JellyCrewGroup) => string {
 }
 
 /**
- * How a move is read out, from what the state after it says it did (`state.last`): "đi sang phải,
- * cửa ● mở", "đẩy thạch dâu sang phải, khuôn 2/4", "xong lượt", "lùi một bước", "đặt lại bản đồ".
+ * How a move is read out, from what the state after it says it did (`state.last`), naming the
+ * character: "Hồng đi sang phải, cửa ● mở", "Lam đẩy thạch dâu sang phải, khuôn 2/4", "Cam đặt lại
+ * bản đồ".
  */
 export function useJellyCrewMoveLabel(): (move: JellyCrewMove, state: JellyCrewState) => string {
   const t = useTranslations("Games.jelly-crew");
   const format = useFormatter();
   const sign = useGroupSign();
+  const seatName = useJellyCrewPlayerLabel();
   return (move, state) => {
+    const { seat, action } = jellyCrewMoveParts(move);
+    const name = seatName(seat);
     const last = state.last;
     const parts: string[] = [];
-    if (move === "end") {
-      const plate = last === null ? undefined : holdingOf(state, last.seat);
-      parts.push(
-        plate === undefined ? t("move.end") : t("move.endHolding", { group: sign(plate) }),
-      );
-    } else if (move === "back") parts.push(t("move.back"));
-    else if (move === "reset") parts.push(t("move.reset"));
+    if (action === "reset") parts.push(t("move.reset", { name }));
     else {
-      const direction = t(`directionWords.${move}`);
+      const direction = t(`directionWords.${action}`);
       const pushed = last?.pushed ?? [];
       parts.push(
         pushed.length === 0
-          ? t("move.step", { direction })
+          ? t("move.step", { name, direction })
           : t("move.push", {
+              name,
               direction,
               kinds: format.list(
                 pushed.map((kind: JellyCrewKind) => t(`kinds.${kind}`)),
@@ -63,7 +63,7 @@ export function useJellyCrewMoveLabel(): (move: JellyCrewMove, state: JellyCrewS
             }),
       );
     }
-    if (last !== null && last.move === move) {
+    if (last !== null && last.seat === seat && last.action === action) {
       const groups = (list: readonly JellyCrewGroup[]) => list.map(sign).join(" ");
       if (last.opened.length > 0) parts.push(t("move.opened", { groups: groups(last.opened) }));
       if (last.closed.length > 0) parts.push(t("move.closed", { groups: groups(last.closed) }));
@@ -75,8 +75,24 @@ export function useJellyCrewMoveLabel(): (move: JellyCrewMove, state: JellyCrewS
   };
 }
 
+/**
+ * Whether the move that led to `state` only walked: no jelly pushed, no door opened or closed, no
+ * mold filled. Another player's such step is not read out (spec "Dùng được bằng trình đọc màn hình").
+ */
+export function isQuietMove(state: JellyCrewState): boolean {
+  const last = state.last;
+  return (
+    last !== null &&
+    last.action !== "reset" &&
+    last.pushed.length === 0 &&
+    last.opened.length === 0 &&
+    last.closed.length === 0 &&
+    last.molds === null
+  );
+}
+
 /** The plate the seat's character stands on, if it does. */
-export function holdingOf(state: JellyCrewState, seat: PlayerIndex): JellyCrewGroup | undefined {
+function holdingOf(state: JellyCrewState, seat: PlayerIndex): JellyCrewGroup | undefined {
   const cell = state.board.chars[seat];
   return cell === undefined ? undefined : jellyCrewLayoutOf(state).plates.get(cell);
 }
@@ -96,20 +112,27 @@ export function useJellyCrewSeatSummary(): (
   };
 }
 
-/** The line under the result: the steps and rounds it took, or the mold cells left empty. */
+/**
+ * The line under the result: the steps the team took and, when known, how long it took (from
+ * `gameTime`); at the safety limit, the moves played.
+ */
 export function useJellyCrewResultDetail(): (
   result: GameResult,
   state: JellyCrewState,
+  gameTime: GameTime | null,
 ) => string | null {
   const t = useTranslations("Games.jelly-crew.result");
-  return (result, state) => {
+  return (result, state, gameTime) => {
     if (result.reason === JELLY_CREW_REASON.Filled) {
-      return t("filled", { steps: state.steps, rounds: jellyCrewRound(state) });
+      const ended = gameTime?.endedAt ?? null;
+      if (gameTime === null || ended === null) return t("filled", { steps: state.steps });
+      const total = Math.max(0, Math.round((ended - gameTime.startedAt) / 1000));
+      const minutes = Math.floor(total / 60);
+      const seconds = total % 60;
+      const time = minutes > 0 ? t("minutes", { minutes, seconds }) : t("seconds", { seconds });
+      return t("filledTime", { steps: state.steps, time });
     }
-    if (result.reason === JELLY_CREW_REASON.OutOfRounds) {
-      const { fitted, total } = jellyCrewMolds(jellyCrewLayoutOf(state), state.board);
-      return t("outOfRounds", { rounds: jellyCrewLayoutOf(state).rounds, left: total - fitted });
-    }
+    if (result.reason === JELLY_CREW_REASON.TooLong) return t("tooLong", { moves: state.moves });
     return null;
   };
 }

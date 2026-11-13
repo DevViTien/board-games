@@ -11,6 +11,7 @@ interface MemorySavedGame {
   readonly record: unknown;
   readonly inProgress: boolean;
   readonly savedAt: string;
+  readonly startedAt?: number;
 }
 
 /** A game to put in a memory store before a test, under `"<gameId>:<mode>"`. */
@@ -46,10 +47,16 @@ export function createMemoryStore(
     load: (slot) => {
       const saved = entries.get(slotKey(slot));
       return Promise.resolve(
-        saved === undefined ? undefined : { settings: saved.settings, record: saved.record },
+        saved === undefined
+          ? undefined
+          : {
+              settings: saved.settings,
+              record: saved.record,
+              ...(saved.startedAt === undefined ? {} : { startedAt: saved.startedAt }),
+            },
       );
     },
-    save: (slot, { settings, record, inProgress }) => {
+    save: (slot, { settings, record, inProgress, startedAt }) => {
       const key = slotKey(slot);
       // Re-inserted, so the map stays in the order of saving. Stored as a JSON copy, like
       // IndexedDB stores a structured clone, so later changes to the session never leak into it.
@@ -60,6 +67,7 @@ export function createMemoryStore(
         record: JSON.parse(JSON.stringify(record)) as unknown,
         inProgress,
         savedAt: new Date().toISOString(),
+        ...(startedAt === undefined ? {} : { startedAt }),
       });
       return Promise.resolve();
     },

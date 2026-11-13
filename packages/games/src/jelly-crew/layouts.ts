@@ -4,7 +4,7 @@ import type { JellyCrewLayout } from "./types";
 
 // The nine layouts (design §4): three maps, each for 2, 3 and 4 players. `#` wall, `.` floor, `1`–`4`
 // starts, `r g y p s i` jelly, `a b c` plates ● ▲ ■, `A B C` their doors; the mold layer below each.
-// Each has a solution in `layouts.solutions.ts`; `rounds` is about 2.5 times the rounds it takes.
+// Each has a solution in `layouts.solutions.ts`.
 
 const { Kitchen, Market, ColdStore } = JELLY_CREW_MAP;
 
@@ -13,7 +13,6 @@ const KITCHEN: readonly JellyCrewLayoutDefinition[] = [
   {
     map: Kitchen,
     playerCount: 2,
-    rounds: 13,
     rows: [
       "###################",
       "#1....#.....#....2#",
@@ -36,7 +35,6 @@ const KITCHEN: readonly JellyCrewLayoutDefinition[] = [
   {
     map: Kitchen,
     playerCount: 3,
-    rounds: 20,
     rows: [
       "###################",
       "#1....#.....#....2#",
@@ -69,7 +67,6 @@ const KITCHEN: readonly JellyCrewLayoutDefinition[] = [
   {
     map: Kitchen,
     playerCount: 4,
-    rounds: 25,
     rows: [
       "###################",
       "#1....#.....#....2#",
@@ -108,7 +105,6 @@ const MARKET: readonly JellyCrewLayoutDefinition[] = [
   {
     map: Market,
     playerCount: 2,
-    rounds: 18,
     rows: [
       "#################",
       "#1..#.......#...#",
@@ -131,7 +127,6 @@ const MARKET: readonly JellyCrewLayoutDefinition[] = [
   {
     map: Market,
     playerCount: 3,
-    rounds: 20,
     rows: [
       "###################",
       "#1..#.........#..2#",
@@ -158,7 +153,6 @@ const MARKET: readonly JellyCrewLayoutDefinition[] = [
   {
     map: Market,
     playerCount: 4,
-    rounds: 20,
     rows: [
       "###################",
       "#####....4....#####",
@@ -195,7 +189,6 @@ const COLD_STORE: readonly JellyCrewLayoutDefinition[] = [
   {
     map: ColdStore,
     playerCount: 2,
-    rounds: 30,
     rows: [
       "###################",
       "#1...#.......#....#",
@@ -218,7 +211,6 @@ const COLD_STORE: readonly JellyCrewLayoutDefinition[] = [
   {
     map: ColdStore,
     playerCount: 3,
-    rounds: 35,
     rows: [
       "###################",
       "#1...#.......#....#",
@@ -247,7 +239,6 @@ const COLD_STORE: readonly JellyCrewLayoutDefinition[] = [
   {
     map: ColdStore,
     playerCount: 4,
-    rounds: 43,
     rows: [
       "###################",
       "#1...#.......#....#",

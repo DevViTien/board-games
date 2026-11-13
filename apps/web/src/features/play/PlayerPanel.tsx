@@ -22,6 +22,8 @@ interface PlayerPanelProps<State> {
   readonly thinking: boolean;
   /** Every seat plays on one side: a win is the team's, never marked on one seat. */
   readonly cooperative?: boolean;
+  /** Every seat moves at any time: no seat is marked to move. */
+  readonly freePlay?: boolean;
   readonly className?: string | undefined;
 }
 
@@ -90,6 +92,7 @@ function useSeatRows<State>({
   connectionLost,
   thinking,
   cooperative = false,
+  freePlay = false,
 }: SeatRowsProps<State>): readonly SeatRow[] {
   const t = useTranslations("Play");
   const tLevels = useTranslations("Levels");
@@ -137,7 +140,7 @@ function useSeatRows<State>({
         .filter((part) => part !== null)
         .join(" · ");
     let badge: SeatBadge = null;
-    if (result === null && player === currentPlayer) badge = "turn";
+    if (result === null && player === currentPlayer && !freePlay) badge = "turn";
     else if (!cooperative && result?.kind === "win" && result.winners.includes(player)) {
       badge = "winner";
     }

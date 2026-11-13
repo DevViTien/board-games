@@ -67,6 +67,8 @@ function tictactoeSnapshot(
     turn: null,
     cooperative: false,
     ending: null,
+    freePlay: false,
+    gameTime: null,
     connection: null,
     options: {},
     ...overrides,
@@ -83,6 +85,8 @@ const ONLINE = {
   turn: null,
   cooperative: false,
   ending: null,
+  freePlay: false,
+  gameTime: null,
   connection: "online",
 } as const;
 

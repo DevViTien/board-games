@@ -94,6 +94,8 @@ function fakeTransport(
     turn: null,
     cooperative: false,
     ending: null,
+    freePlay: false,
+    gameTime: null,
     connection: null,
     options: {},
     ...overrides,
@@ -633,6 +635,8 @@ function onlineSnapshot(
     turn: null,
     cooperative: false,
     ending: null,
+    freePlay: false,
+    gameTime: null,
     connection: "online",
     ...overrides,
   };
@@ -911,6 +915,8 @@ function caroAfterAiMove(
     turn: null,
     cooperative: false,
     ending: null,
+    freePlay: false,
+    gameTime: null,
     connection: null,
     options,
     ...overrides,
@@ -1008,6 +1014,8 @@ describe("Bố cục màn hình chơi", () => {
           turn: null,
           cooperative: false,
           ending: null,
+          freePlay: false,
+          gameTime: null,
         })}
         ui={ui}
       />,

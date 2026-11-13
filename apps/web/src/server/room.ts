@@ -71,6 +71,12 @@ export interface StoredRoom {
    * filling up); `null` while the room waits for players or once the game has a result.
    */
   readonly turnStartedAt: number | null;
+  /**
+   * Server time, in ms, at which the current game began (every seat taken, or "Chơi lại") and got a
+   * result (design of `add-jelly-crew-game` §10.4). Absent from a room stored before them.
+   */
+  readonly gameStartedAt?: number | null;
+  readonly gameEndedAt?: number | null;
   /** The latest messages, oldest first: outside `record`, so a game stays its list of moves. */
   readonly chat: readonly StoredChatMessage[];
 }
@@ -116,6 +122,10 @@ const currentFormatSchema = z.object({
       .nullable(),
   ),
   turnStartedAt: z.number().nullable(),
+  // Not in the format's number: a room stored before them reads as one without, and a rollback
+  // keeps every room.
+  gameStartedAt: z.exactOptional(z.number().nullable()),
+  gameEndedAt: z.exactOptional(z.number().nullable()),
   chat: storedChatSchema,
 }) satisfies z.ZodType<StoredRoom>;
 
@@ -214,6 +224,10 @@ export function toRoomView(room: StoredRoom, now: number, viewerId: string): Roo
     record: room.record,
     // Instances' clocks may differ by a few ms: never a negative duration.
     turnIdleMs: room.turnStartedAt === null ? null : Math.max(0, now - room.turnStartedAt),
+    gameTime:
+      room.gameStartedAt == null
+        ? null
+        : { startedAt: room.gameStartedAt, endedAt: room.gameEndedAt ?? null },
     chat:
       seatOf(room, viewerId) === null
         ? []

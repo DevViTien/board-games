@@ -29,34 +29,34 @@ describe("Luật Đội gom thạch", () => {
     );
   });
 
-  it("Nêu giới hạn lượt và vòng", () => {
+  it("Nêu cách đi tự do: no turns, no step limit, no rounds", () => {
     renderWithIntl(<JellyCrewRules t={rulesTranslator()} place="page" />);
 
-    expect(sectionOf("Lượt chơi")).toHaveTextContent(/tối đa 5 bước/u);
-    expect(sectionOf("Giới hạn vòng")).toHaveTextContent(
-      /hết vòng mà khuôn chưa đầy thì ván kết thúc/u,
-    );
+    expect(sectionOf("Mọi người cùng đi")).toHaveTextContent(/bất cứ lúc nào/u);
+    expect(sectionOf("Mọi người cùng đi")).toHaveTextContent(/W A S D luôn đi Lam/u);
+    const page = document.body.textContent;
+    expect(page).not.toMatch(/Xong lượt|vòng/u);
   });
 
-  it("names the team's goal, the kinds, the tools and the maps", () => {
+  it("names the team's goal, the kinds, the end without losing, the reset and the maps", () => {
     renderWithIntl(<JellyCrewRules t={rulesTranslator()} place="page" />);
 
     expect(sectionOf("Mục tiêu")).toHaveTextContent(/cả đội thắng/u);
     expect(sectionOf("Đẩy và dính")).toHaveTextContent(/Sương sáo dính với mọi loại thạch/u);
     expect(sectionOf("Nhân vật chắn đường")).toHaveTextContent(/không đẩy được nhân vật/u);
-    const tools = sectionOf("Lùi bước, đặt lại, giữ nút");
-    expect(tools).toHaveTextContent(/Lùi bước \(chơi online\)/u);
-    expect(tools).toHaveTextContent(/Đặt lại bản đồ/u);
+    expect(sectionOf("Kết thúc ván")).toHaveTextContent(/không có thua/u);
+    expect(sectionOf("Đặt lại bản đồ")).toHaveTextContent(/ai cũng bấm được/u);
     expect(sectionOf("Bản đồ")).toHaveTextContent(/Hai gian bếp.*Chợ đêm.*Kho lạnh/u);
   });
 
   it("Bỏ cuộc trên trang Đội gom thạch: giving up stops the game for the team, no stand-in", () => {
     renderWithIntl(<JellyCrewRules t={rulesTranslator()} place="page" />);
 
-    const leaving = sectionOf("Bỏ cuộc và bỏ ván");
+    const leaving = sectionOf("Bỏ cuộc");
     expect(leaving).toHaveTextContent(/“Bỏ cuộc”/u);
     expect(leaving).toHaveTextContent(/cả đội, không ai thắng/u);
     expect(leaving).not.toHaveTextContent(/Máy chơi thay/u);
+    expect(leaving).toHaveTextContent(/không ai bị xử bỏ ván/u);
   });
 
   it("draws its figures as the rules play them", () => {

@@ -12,7 +12,6 @@ import {
 const GOOD: JellyCrewLayoutDefinition = {
   map: JELLY_CREW_MAP.Kitchen,
   playerCount: 2,
-  rounds: 4,
   rows: ["########", "#1rA..a#", "#2.....#", "########"],
   molds: ["........", "......R.", "........", "........"].map((row, y) =>
     y === 1 ? ".....R.." : row,
@@ -39,7 +38,6 @@ describe("parseJellyCrewLayout", () => {
     expect([...layout.doors]).toEqual([[11, "circle"]]);
     expect([...layout.plates]).toEqual([[14, "circle"]]);
     expect([...layout.molds]).toEqual([[13, "strawberry"]]);
-    expect(layout.rounds).toBe(4);
   });
 
   it("sticks touching jelly of one kind into one piece at once", () => {
@@ -143,7 +141,6 @@ describe("parseJellyCrewLayout", () => {
       { molds: ["........", "........", "........", "........"] },
       JELLY_CREW_LAYOUT_ERROR.NoMolds,
     ],
-    ["no round", { rounds: 0 }, JELLY_CREW_LAYOUT_ERROR.Rounds],
   ])("refuses %s", (_name, definition, code) => {
     expect(codeOf(definition)).toBe(code);
   });

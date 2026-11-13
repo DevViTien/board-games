@@ -1,10 +1,10 @@
 import type { PlayerIndex } from "@board-games/engine";
 
 import type {
+  JellyCrewAction,
   JellyCrewGroup,
   JellyCrewKind,
   JellyCrewMapId,
-  JellyCrewMove,
   JellyCrewReason,
 } from "./constants";
 
@@ -30,8 +30,7 @@ export interface JellyCrewBoard {
 export type JellyCrewMoldKind = JellyCrewKind;
 
 /**
- * One map for one number of players: what never moves, where everything starts, and the rounds
- * the team has. Looked up from the state's `map` and `playerCount`, never stored in it.
+ * One map for one number of players: what never moves and where everything starts. Looked up from the state's `map` and `playerCount`, never stored in it.
  */
 export interface JellyCrewLayout {
   readonly map: JellyCrewMapId;
@@ -43,7 +42,6 @@ export interface JellyCrewLayout {
   readonly doors: ReadonlyMap<number, JellyCrewGroup>;
   readonly molds: ReadonlyMap<number, JellyCrewMoldKind>;
   readonly start: JellyCrewBoard;
-  readonly rounds: number;
 }
 
 /** How many mold cells hold the kind they ask for, of how many. */
@@ -59,7 +57,7 @@ export interface JellyCrewMolds {
  */
 export interface JellyCrewNews {
   readonly seat: PlayerIndex;
-  readonly move: JellyCrewMove;
+  readonly action: JellyCrewAction;
   readonly pushed: readonly JellyCrewKind[];
   readonly opened: readonly JellyCrewGroup[];
   readonly closed: readonly JellyCrewGroup[];
@@ -67,29 +65,14 @@ export interface JellyCrewNews {
   readonly molds: JellyCrewMolds | null;
 }
 
-/** The cells a character walked through in the latest turn that had steps, from where it began. */
-export interface JellyCrewTrail {
-  readonly seat: PlayerIndex;
-  readonly cells: readonly number[];
-}
-
 export interface JellyCrewState {
   readonly map: JellyCrewMapId;
   readonly playerCount: number;
   readonly board: JellyCrewBoard;
-  /** The seat to move. */
-  readonly turn: PlayerIndex;
-  /** Steps taken in this turn, 0 to 5. */
-  readonly taken: number;
-  /** Steps taken back in this turn, 0 to 5. */
-  readonly backs: number;
-  /** Turns over in the whole game. */
-  readonly turnsDone: number;
-  /** Steps the team took in the whole game, less those taken back; kept through a reset. */
+  /** Steps the whole team took, kept through a reset. */
   readonly steps: number;
-  /** The board before each step of this turn, the latest last: what a step back returns to. */
-  readonly turnBoards: readonly JellyCrewBoard[];
-  readonly trail: JellyCrewTrail | null;
+  /** Moves played, resets included: what the safety limit counts. */
+  readonly moves: number;
   readonly last: JellyCrewNews | null;
   readonly result: JellyCrewReason | null;
 }

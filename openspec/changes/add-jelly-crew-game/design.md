@@ -213,7 +213,7 @@ Người dùng chơi thử online (task 5.3) và thấy lượt cùng giới h�
 - **Cùng máy: chọn nhân vật rồi đi**: một hàng "Điều khiển" chọn nhân vật mà mũi tên, bàn điều khiển và vuốt điều khiển; trên máy tính **W A S D luôn là nhân vật 1**, để hai người chung bàn phím đi cùng lúc.
 - **Bỏ "Lùi bước"** (và "Giữ nút", "Xong lượt"); giữ "Đặt lại bản đồ" có hỏi lại.
 
-Mockup duyệt lại: `mockup/free.html` (ảnh `mockup/png/free-*`).
+Mockup: `mockup/free.html` (ảnh `mockup/png/free-*`); người dùng duyệt ngày 13/11/2026 ("Xử lý cả đi tự do, merge vào main"), không điều chỉnh.
 
 #### 10.1 Hợp đồng engine: game đi tự do
 
@@ -232,8 +232,12 @@ Engine chỉ biết đi tuần tự: một `currentPlayer`, server từ chối n
 - **Server** (`room-service.move`), game đi tự do:
   - kiểm ghế bằng `moverOf(move) === seat`, không bằng `currentPlayer`;
   - `moveIndex` được **nhỏ hơn hoặc bằng** số nước đã có (cùng `gameNumber`): nước gửi khi chưa thấy nước của người khác được áp lên **trạng thái mới nhất** và kiểm lại bằng luật. Không còn hợp lệ ở đó (ví dụ ô vừa bị người khác chiếm) thì từ chối `illegal-move`. `moveIndex` lớn hơn số nước vẫn là `stale-move`;
-  - không có đồng hồ lượt: `turnIdleMs` luôn `null`, nên không có lời nhắc 4 phút và không ai "xử bỏ ván". Người kẹt vì đồng đội bỏ đi thì bấm "Bỏ cuộc" (ván dừng cho cả đội, §5).
+  - không có đồng hồ lượt cho người chơi: client bỏ qua `turnIdleMs` (server vẫn tính như mọi game) nên không có lời nhắc 4 phút, và server từ chối "xử bỏ ván" (`not-abandoned`). Người kẹt vì đồng đội bỏ đi thì bấm "Bỏ cuộc" (ván dừng cho cả đội, §5);
+  - **gửi lại không đi hai lần**: nước mà từ vị trí của nó đã có nước của chính ghế đó bị từ chối `stale-move`. Client chỉ gửi nước kế tiếp khi nước trước của mình đã được trả lời, nên đây luôn là bản gửi lại (câu trả lời bị mất, kết nối lại), không bao giờ là nước mới;
+  - **thử ghi tới 4 lần** (`MOVE_ATTEMPTS`, trước là 2): nhiều người ghi cùng lúc nên xung đột phiên bản là thường, mỗi lần thử áp lên phòng mới nhất;
+  - **giới hạn mỗi kết nối 150 thông điệp trong 10 giây** (trước là 30): mỗi lần bấm phím là một thông điệp; 30 làm người bấm nhanh bị ngắt kết nối sau vài giây (spec `online-rooms` "Giới hạn mỗi kết nối").
 - **`online-transport`**, game đi tự do: `canMove` khi phòng đủ người, đang kết nối, ván chưa xong, người ở thiết bị này tự chơi ghế của mình và không có nước đang chờ server trả lời; không xét `currentPlayer`. `waitingFor` luôn `null`, `turn` (đồng hồ) luôn `null`. Một nước bị từ chối `illegal-move` mà `moveIndex` của nó đã cũ thì **im lặng** (bàn đã đổi vì người khác), không báo lỗi. Nước đang chờ chỉ coi là đã được trả lời khi phòng mới có một nước **của chính ghế mình** từ `moveIndex` trở đi, hoặc server từ chối; phòng dài thêm vì nước của người khác thì chưa (hiện `answers` coi mọi biên bản dài hơn là đã trả lời).
+- **Hiện ngay, không lần lượt**: ở game đi tự do, các nước nhận cùng lúc hiện ngay (không theo nhịp "Hiện lần lượt các nước nhận cùng lúc"), nếu không người chơi bị khoá sau nước của người khác chừng nào họ còn đi.
 - **Không đoán trước nước đi**: vẫn một nước chờ server trả lời mỗi lúc như mọi game, nước hiện khi server phát lại (khoảng 70 ms trên Production, plan.md §10). Giữ phím hay bấm liên tục thì được khoảng 8–12 bước mỗi giây. Đoán trước kèm sửa lại khi server khác ý là việc sau, nếu chơi thử thấy chậm.
 - **Nhận nước liên tục**: `online-transport` hiện dựng lại cả ván bằng `fromRecord` mỗi lần nhận phòng. Game đi tự do nhận nhiều nước hơn và mỗi nước phải kiểm `legalMoves` của mọi ghế, nên thêm **nối tiếp**: biên bản mới cùng `gameNumber` và chứa biên bản đang có làm đầu thì chỉ áp các nước mới (`playMove` từng nước). Áp dụng cho mọi game (kết quả như dựng lại, test so hai đường).
 - **`local-transport`**: `canMove` khi ván chưa xong (mọi ghế đều là người); "Hoàn tác" và "Làm lại" của màn hình chơi giữ nguyên (lùi nước gần nhất, của bất kỳ ai). Người dùng bỏ "Lùi bước" vì online nhiều người đi xen nhau; trên một thiết bị, hoàn tác đã có và vô hại.
@@ -281,7 +285,7 @@ Engine chỉ biết đi tuần tự: một `currentPlayer`, server từ chối n
 #### 10.6 Chi phí online
 
 - Một ván thật khoảng 2–5 lần lời giải: 100–450 bước. Mỗi bước là một lần ghi (≈ 6 lệnh Redis), tức 600–2.700 lệnh mỗi ván; gói 500 nghìn lệnh/tháng đủ khoảng 180 ván dài mỗi tháng.
-- Mỗi lần ghi, server dựng lại cả ván. `legalMoves` của game đi tự do thử bốn hướng cho mọi ghế (tới 16 lần `tryStep` thay vì 4), nên `fromRecord` chậm khoảng 3–4 lần bản theo lượt. Task đo lại `fromRecord` một biên bản 3.000 nước, ngân sách dưới 200 ms trên máy dev. Vượt thì kiểm nước khi phát lại bằng `tryStep` của đúng ghế đó thay vì sinh mọi nước hợp lệ (thêm `isLegal?` vào hợp đồng), trước khi đổi gì khác.
+- Mỗi lần ghi, server dựng lại cả ván. `legalMoves` của game đi tự do thử bốn hướng cho mọi ghế (tới 16 lần `tryStep` thay vì 4), nên `fromRecord` chậm khoảng 3–4 lần bản theo lượt. Đo được `fromRecord` một biên bản 3.000 nước ngẫu nhiên (Kho lạnh 4 người): **79 ms** trên máy dev, trong ngân sách 200 ms; test để ngưỡng rộng 2 s cho máy CI. Vượt thì kiểm nước khi phát lại bằng `tryStep` của đúng ghế đó thay vì sinh mọi nước hợp lệ (thêm `isLegal?` vào hợp đồng), trước khi đổi gì khác.
 - Biên bản 3.000 nước chuỗi 2–6 ký tự khoảng 30 KB JSON, vẫn nhỏ so với giới hạn một lần ghi.
 
 #### 10.7 Dữ liệu cũ
@@ -295,7 +299,20 @@ Game mới ship trong ngày nên không viết chuyển đổi.
 
 ## Khác thiết kế
 
-Ghi lại khi code (task 1–5), các artifact khác đã sửa cho khớp:
+Ghi lại khi code (task 1–6), các artifact khác đã sửa cho khớp.
+
+Bản đi tự do (nhóm 6):
+
+- **Lời báo nước đi do bàn nói**, trong vùng `aria-live` của bàn (như bước bị chặn), không qua dòng lượt: dòng lượt của game đi tự do chỉ ghi "Cả đội cùng đi" (online thêm "· bạn là …"), vì `PlayScreen` không biết nước nào là "bước trống". Cùng máy, mọi nước được đọc (đều do người ở thiết bị này); online, bước trống của người khác không được đọc.
+- **"Đã đặt lại bản đồ"** gọi người bấm theo màu nhân vật ("Hồng đã đặt lại bản đồ."), như các lời báo khác của bàn, không theo tên người chơi.
+- **Thời gian ván cùng máy**: ván đã có kết quả không được lưu (như mọi game), nên tải lại sau khi thắng là ván mới; spec `local-play` "Thời gian ván cùng máy" tả đúng điều này (tải lại **giữa** ván giữ giờ bắt đầu).
+- **`RoomView.gameTime`** vắng thì giữ vắng khi đọc (không thêm `null`), hỏng thì đọc là `null`.
+- **Mục cuối trang luật** của game cùng phe đi tự do tên "Bỏ cuộc" (`RulesLeavingSection rooms="freeTeam"`), nói không ai bị xử bỏ ván; biến thể `team` giữ cho game cùng phe có lượt sau này.
+- **`useResultDetail`** của `GameUI` nhận thêm `gameTime` (tham số thứ ba), `PlayScreen` truyền từ snapshot.
+- **Sau lượt review code**: giới hạn kết nối, số lần thử ghi, từ chối nước gửi lại và hiện ngay các nước (§10.2) được thêm sau khi review tìm ra: bấm nhanh bị ngắt kết nối, người chơi bị khoá khi người khác đi liên tục, hai người ghi cùng lúc dễ hết lượt thử, và một nước gửi lại sau khi mất câu trả lời đi hai bước.
+- **Nối tiếp biên bản** không chạy ngay sau lời chào (kết nối lại): lần đầu sau lời chào luôn dựng lại cả ván, như trước.
+
+Bản theo lượt (nhóm 1–5):
 
 - **Cửa kẹt theo từng ô**: chỉ cửa đang có người hay thạch nằm trong mới mở vì kẹt, không phải mọi cửa cùng nhóm (spec "Nút và cửa" viết "chính ô cửa"; mockup tính theo nhóm). `last.opened`/`closed` chỉ báo nhóm đổi theo nút.
 - **`trail`** là `{ seat, cells } | null` (cần biết màu ghế của vệt), không phải mảng ô trần.

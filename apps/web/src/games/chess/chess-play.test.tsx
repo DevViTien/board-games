@@ -64,6 +64,8 @@ function onlineSnapshot(
     turn: null,
     cooperative: false,
     ending: null,
+    freePlay: false,
+    gameTime: null,
     connection: "online",
     options: {},
     ...overrides,

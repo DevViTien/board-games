@@ -13,33 +13,43 @@ import {
   status,
 } from "./helpers";
 
-// Đội gom thạch (change `add-jelly-crew-game`): the two players' kitchen won on one device with the
-// keys only, and a room of two browsers holding a plate, pushing through its door, stepping back
-// and giving up.
+// Đội gom thạch played freely (change `add-jelly-crew-game`, design §10): two on one keyboard win the
+// two players' kitchen, W A S D for Lam and the arrows for Hồng; a room of two browsers where both
+// move without waiting for the other, reset the map and give up.
 
-const KEY = {
+/** W A S D move Lam (seat 0), the arrows the character picked: Hồng (seat 1) at first. */
+const KEY: Readonly<Record<string, string>> = {
+  "0U": "w",
+  "0D": "s",
+  "0L": "a",
+  "0R": "d",
+  "1U": "ArrowUp",
+  "1D": "ArrowDown",
+  "1L": "ArrowLeft",
+  "1R": "ArrowRight",
+};
+
+/** Online, arrows move this player's own character, whatever its seat. */
+const ARROW: Readonly<Record<string, string>> = {
   U: "ArrowUp",
   D: "ArrowDown",
   L: "ArrowLeft",
   R: "ArrowRight",
-  end: "Enter",
-} as const;
+};
 
 const chip = (page: Page, name: string) => page.locator(`[data-chip="${name}"]`);
 
 /** Takes the focus off any button, as a player clicking the page would, then plays by keys. */
-async function playKeys(page: Page, moves: readonly (keyof typeof KEY)[]): Promise<void> {
+async function playKeys(page: Page, keys: readonly string[]): Promise<void> {
   await crewBoard(page).click();
-  for (const move of moves) {
-    const before = await page.locator("[data-chip]").allTextContents();
-    await page.keyboard.press(KEY[move]);
-    await expect
-      .poll(async () => (await page.locator("[data-chip]").allTextContents()).join("|"))
-      .not.toBe(before.join("|"));
+  for (const key of keys) {
+    const before = await chip(page, "steps").textContent();
+    await page.keyboard.press(key);
+    await expect(chip(page, "steps")).not.toHaveText(before ?? "");
   }
 }
 
-test("Cùng máy: the two players' kitchen is won by keys, and the whole team wins", async ({
+test("Cùng máy: two on one keyboard win the two players' kitchen, the team's time shown", async ({
   page,
 }) => {
   await page.goto("/play/jelly-crew");
@@ -47,16 +57,20 @@ test("Cùng máy: the two players' kitchen is won by keys, and the whole team wi
   await choose(page, "Số người chơi", "2 người");
   await pressStart(page);
   await expect(crewBoard(page)).toBeVisible();
-  await expect(chip(page, "turn")).toHaveText("Lam · còn 5 bước");
+  await expect(status(page)).toHaveText("Cả đội cùng đi");
+  await expect(page.getByRole("radio", { name: /Hồng/u })).toBeChecked();
 
-  await playKeys(page, JELLY_CREW_KITCHEN_TWO as readonly (keyof typeof KEY)[]);
+  await playKeys(
+    page,
+    JELLY_CREW_KITCHEN_TWO.map((move) => KEY[move] ?? ""),
+  );
 
   await expect(status(page)).toHaveText(/Cả đội thắng!/u);
-  await expect(page.getByText("Đầy khuôn sau 25 bước, 4 vòng.")).toBeVisible();
+  await expect(page.getByText(/^Đầy khuôn sau 25 bước, \d+ (phút \d+ )?giây\.$/u)).toBeVisible();
   await expect(chip(page, "molds")).toHaveText(/^Khuôn 4\/4/u);
 });
 
-test("Online: one holds the plate, the other pushes through the door, steps back, then gives up", async ({
+test("Online: both move without waiting for the other, one resets the map, then gives up", async ({
   page,
   browser,
 }) => {
@@ -70,23 +84,36 @@ test("Online: one holds the plate, the other pushes through the door, steps back
   await lan.page.getByRole("button", { name: "Vào chơi" }).click();
   await expect(crewBoard(page)).toBeVisible();
   await expect(crewBoard(lan.page)).toBeVisible();
-  await expect(chip(page, "turn")).toHaveText("Lam · còn 5 bước");
+  await expect(status(page)).toHaveText("Cả đội cùng đi · bạn là Lam");
+  await expect(status(lan.page)).toHaveText("Cả đội cùng đi · bạn là Hồng");
 
-  // Minh (Lam) a step down; Lan (Hồng) onto plate ●.
-  await playKeys(page, ["D", "end"]);
-  await playKeys(lan.page, ["D", "D", "D", "L", "L"]);
-  await expect(lan.page.locator('[data-door="circle"][data-open]')).toBeVisible();
-  await expect(lan.page.getByRole("button", { name: "Giữ nút ●" })).toBeVisible();
-  await playKeys(lan.page, ["end"]);
+  // Minh (Lam) a step down, Lan (Hồng) onto plate ●, then Minh again: nobody waits for a turn.
+  await playKeys(page, [ARROW.D ?? ""]);
+  await playKeys(
+    lan.page,
+    ["D", "D", "D"].map((d) => ARROW[d] ?? ""),
+  );
+  await playKeys(page, [ARROW.R ?? ""]);
+  await playKeys(
+    lan.page,
+    ["L", "L"].map((d) => ARROW[d] ?? ""),
+  );
   await expect(page.locator('[data-door="circle"][data-open]')).toBeVisible();
 
-  // Minh pushes the strawberries through the open door, then takes the last step back.
-  await playKeys(page, ["R", "R", "R", "R", "R"]);
+  // Minh pushes the strawberries through the open door into their molds.
+  await playKeys(
+    page,
+    ["R", "R", "R", "R"].map((d) => ARROW[d] ?? ""),
+  );
   await expect(chip(page, "molds")).toHaveText(/^Khuôn 1\/4/u);
   await expect(chip(lan.page, "molds")).toHaveText(/^Khuôn 1\/4/u);
-  await page.getByRole("button", { name: "Lùi bước" }).click();
-  await expect(chip(page, "turn")).toHaveText("Lam · còn 1 bước");
-  await expect(chip(lan.page, "molds")).toHaveText(/^Khuôn 0\/4/u);
+
+  // Lan puts the map back, for everyone; the steps still count.
+  await lan.page.getByRole("button", { name: "Đặt lại bản đồ" }).click();
+  await lan.page.getByRole("dialog").getByRole("button", { name: "Đặt lại" }).click();
+  await expect(page.getByText("Hồng đã đặt lại bản đồ.")).toBeVisible();
+  await expect(chip(page, "molds")).toHaveText(/^Khuôn 0\/4/u);
+  await expect(chip(page, "steps")).toHaveText("Bước 11");
 
   // Lan gives up: the game stops for both, nobody wins.
   await lan.page.getByRole("button", { name: "Bỏ cuộc" }).click();
@@ -116,12 +143,16 @@ test.describe("Dùng được trên điện thoại", () => {
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
     ).toBe(true);
+    // The picker of the character to move: every one reachable, 44 px high.
+    const cam = page.locator("label").filter({ has: page.getByRole("radio", { name: /Cam/u }) });
+    await cam.scrollIntoViewIfNeeded();
+    expect((await cam.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
+    await cam.tap();
+    await expect(page.getByRole("radio", { name: /Cam/u })).toBeChecked();
     const down = page.getByRole("button", { name: "Xuống" });
     await down.scrollIntoViewIfNeeded();
     const size = await down.boundingBox();
     expect(Math.min(size?.width ?? 0, size?.height ?? 0)).toBeGreaterThanOrEqual(44);
-    await down.tap();
-    await expect(chip(page, "turn")).toHaveText("Lam · còn 4 bước");
   });
 });
 

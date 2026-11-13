@@ -10,6 +10,7 @@ import {
   type GameDefinition,
   type HistoryEntry,
   lastEntry,
+  moverOf,
   parseGameOptions,
   type PlayerIndex,
   playMove,
@@ -78,6 +79,8 @@ export type LocalTransportOptions<State, Move, Outcome, Options extends object> 
   readonly store: SavedGameStore;
   /** Draws random outcomes (dice), who moves first when random, and the AI's seeds. */
   readonly rng: Rng;
+  /** The clock of a game's length (`ReadySnapshot.gameTime`); `Date.now` by default. */
+  readonly now?: () => number;
 } & ModeOptions;
 
 const LOADING = { status: "loading" } as const;
@@ -106,6 +109,7 @@ export function createLocalTransport<
 >(options: LocalTransportOptions<State, Move, Outcome, Options>): Transport<State, Move, Outcome> {
   type GameSession = Session<State, Move, Outcome, Options>;
   const { definition, store, rng } = options;
+  const now = options.now ?? Date.now;
   const mode: SlotMode = options.mode ?? "local";
   const slot: SaveSlot = { gameId: definition.id, mode };
   const ai = options.mode === "ai" ? options.ai : undefined;
@@ -116,6 +120,10 @@ export function createLocalTransport<
   let settings: ModeSettings = { kind: "local" };
   let seats: readonly SeatController[] = [];
   let snapshot: PlaySnapshot<State, Move, Outcome> = LOADING;
+  // When the game on screen began (kept with it) and got its result (seen here, dropped by undo):
+  // its length on the result card. `null`: a game saved before it was kept.
+  let startedAt: number | null = null;
+  let endedAt: number | null = null;
   let disposed = false;
   // Cleared when the saved game could not be read: it may still be there (a passing storage
   // error, or a game saved by a newer version of the app), and this session must not overwrite it.
@@ -142,10 +150,13 @@ export function createLocalTransport<
       .some((state) => isHuman(definition.currentPlayer(state)));
   }
 
-  /** The seat that played the last move in effect: the player to move before it. */
+  /** The seat that played the last move in effect: the seat it names, or the player to move. */
   function lastMover(next: GameSession): PlayerIndex | null {
     const before = next.cursor > 0 ? next.states[next.cursor - 1] : undefined;
-    return before === undefined ? null : definition.currentPlayer(before);
+    const entry = next.entries[next.cursor - 1];
+    return before === undefined || entry === undefined
+      ? null
+      : moverOf(definition, before, entry.move);
   }
 
   /**
@@ -241,6 +252,7 @@ export function createLocalTransport<
       controller.kind === "human" ? [index] : [],
     );
     const humanMoved = humanHasMoved(next);
+    endedAt = result === null ? null : (endedAt ?? now());
     snapshot = {
       status: "ready",
       state,
@@ -266,6 +278,8 @@ export function createLocalTransport<
       turn: null,
       cooperative: definition.meta.cooperative === true,
       ending: next.ending !== undefined && next.cursor === next.entries.length ? next.ending : null,
+      freePlay: definition.meta.freePlay === true,
+      gameTime: startedAt === null ? null : { startedAt, endedAt },
     };
     emit({ type: "changed" });
     // A listener may already have changed the game, and started the AI's turn for that one.
@@ -367,17 +381,33 @@ export function createLocalTransport<
               // A resigned game left in storage as it was before would come back on the next
               // visit: overwrite it with the ending, which `restore` drops like any finished game.
               if (next.ending === undefined) return;
-              return store.save(slot, { settings, record: toRecord(next), inProgress: false });
+              return store.save(slot, {
+                settings,
+                record: toRecord(next),
+                inProgress: false,
+                ...timeToSave(),
+              });
             })
           : store.save(slot, {
               settings,
               record: toRecord(next),
               inProgress: humanHasMoved(next),
+              ...timeToSave(),
             });
       saved.catch(() => undefined);
     } catch {
       // Same as a rejected write.
     }
+  }
+
+  function timeToSave(): { startedAt?: number } {
+    return startedAt === null ? {} : { startedAt };
+  }
+
+  /** A new game begins now. */
+  function begin(): void {
+    startedAt = now();
+    endedAt = null;
   }
 
   function commit(next: GameSession): void {
@@ -387,6 +417,7 @@ export function createLocalTransport<
 
   function start(setup: PlaySetup, next: GameSession, save: boolean): void {
     seat(setup, next);
+    begin();
     if (save) commit(next);
     else show(next);
   }
@@ -409,6 +440,7 @@ export function createLocalTransport<
   }
 
   interface Restored {
+    readonly startedAt: number | null;
     readonly session: GameSession;
     readonly settings: ModeSettings;
     readonly seats: readonly SeatController[];
@@ -436,7 +468,12 @@ export function createLocalTransport<
       restoredSeats !== undefined &&
       sessionResult(definition, rebuilt.value) === null
     ) {
-      return { session: rebuilt.value, settings: loaded.settings, seats: restoredSeats };
+      return {
+        session: rebuilt.value,
+        settings: loaded.settings,
+        seats: restoredSeats,
+        startedAt: loaded.startedAt ?? null,
+      };
     }
     try {
       await withStoreTimeout(() => store.clear(slot));
@@ -459,6 +496,7 @@ export function createLocalTransport<
     } else if (restored !== undefined) {
       settings = restored.settings;
       seats = restored.seats;
+      startedAt = restored.startedAt;
       show(restored.session);
     } else {
       const fallback: PlaySetup = options.fallback ?? { mode: "local" };
@@ -528,6 +566,7 @@ export function createLocalTransport<
       if (settings.kind === "ai" && settings.first === "random" && aiSeat?.kind === "ai") {
         seat({ mode: "ai", level: aiSeat.level, first: "random" }, next);
       }
+      begin();
       commit(next);
     },
     // Against the AI: the player gives up, every AI seat wins, and the move the AI may be choosing

@@ -91,6 +91,13 @@ describe("roomViewSchema", () => {
     expect(roomViewSchema.parse(view)).toEqual(view);
   });
 
+  it("keeps the game's time, absent when absent, unknown when broken", () => {
+    const timed = { ...view, gameTime: { startedAt: 1000, endedAt: 5000 } };
+    expect(roomViewSchema.parse(timed)).toEqual(timed);
+    expect(roomViewSchema.parse(view)).not.toHaveProperty("gameTime");
+    expect(roomViewSchema.parse({ ...view, gameTime: { startedAt: "soon" } }).gameTime).toBeNull();
+  });
+
   it("accepts AI seats and a room without a host", () => {
     const withAi = {
       ...view,

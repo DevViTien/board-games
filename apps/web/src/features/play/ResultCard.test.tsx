@@ -78,6 +78,8 @@ function vsAi(cells: readonly number[]): ReadySnapshot<TicTacToeState, TicTacToe
     turn: null,
     cooperative: false,
     ending: null,
+    freePlay: false,
+    gameTime: null,
     connection: null,
     options: {},
   };

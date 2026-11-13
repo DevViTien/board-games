@@ -12,7 +12,6 @@ import type { JellyCrewLayout, JellyCrewMoldKind, JellyCrewPiece } from "./types
 export interface JellyCrewLayoutDefinition {
   readonly map: JellyCrewMapId;
   readonly playerCount: number;
-  readonly rounds: number;
   readonly rows: readonly string[];
   /** `.` no mold, or the kind a mold asks for: `R G Y P S I`. */
   readonly molds: readonly string[];
@@ -42,7 +41,6 @@ export const JELLY_CREW_LAYOUT_ERROR = {
   /** No mold at all: the game could never be won. */
   NoMolds: "no-molds",
   /** Fewer than one round. */
-  Rounds: "rounds",
 } as const;
 
 export type JellyCrewLayoutErrorCode =
@@ -106,9 +104,6 @@ export function parseJellyCrewLayout(definition: JellyCrewLayoutDefinition): Jel
   if (rows.some((row) => row.length !== width)) fail(JELLY_CREW_LAYOUT_ERROR.Shape, "rows differ");
   if (width < 3 || height < 3 || width > JELLY_CREW_MAX_WIDTH || height > JELLY_CREW_MAX_HEIGHT) {
     fail(JELLY_CREW_LAYOUT_ERROR.Size, `${String(width)} × ${String(height)}`);
-  }
-  if (!Number.isInteger(definition.rounds) || definition.rounds < 1) {
-    fail(JELLY_CREW_LAYOUT_ERROR.Rounds, `${String(definition.rounds)} rounds`);
   }
 
   const walls = new Set<number>();
@@ -184,6 +179,5 @@ export function parseJellyCrewLayout(definition: JellyCrewLayoutDefinition): Jel
       chars: chars.filter((cell) => cell !== undefined),
       pieces: jellyCrewSettle({ width, height, walls }, pieces),
     },
-    rounds: definition.rounds,
   };
 }

@@ -382,7 +382,7 @@
     },
     "jelly-crew": {
       "name": "Jelly Crew",
-      "tagline": "Push jelly into the molds together: hold a plate so a teammate can get through a door",
+      "tagline": "The team pushes jelly into molds together, everyone moving at any time",
       "seats": {
         "1": "Blue",
         "2": "Pink",
@@ -434,10 +434,10 @@
         "R": "right"
       },
       "controls": "Controls",
-      "end": "End turn",
-      "back": "Step back",
+      "pad": "Directions of {name}",
+      "pick": "Control",
+      "pickSay": "Controlling {name}.",
       "reset": "Reset the map",
-      "hold": "Hold the plate",
       "blocked": {
         "wall": "Wall",
         "door": "Door {group} closed",
@@ -445,46 +445,39 @@
         "push-wall": "Jelly against a wall",
         "push-door": "Jelly against closed door {group}",
         "push-seat": "Jelly against {name}",
-        "no-steps": "No steps left, press End turn",
         "over": "The game is over"
       },
-      "blockedSay": "Can't go {direction}: {reason}.",
-      "noBack": "No step taken this turn yet",
-      "noBacksLeft": "Stepped back 5 times this turn",
+      "blockedSay": "{name}: can't go {direction}, {reason}.",
       "resetSame": "The map is as it started",
       "chips": {
-        "turn": "{name} · {count, plural, one {# step} other {# steps}} left",
-        "turnDone": "{name} · no steps left, press End turn",
-        "round": "Round {round}/{rounds}",
+        "steps": "Steps {count}",
         "molds": "Molds {fitted}/{total}",
         "moldsLabel": "{fitted} of {total} mold cells filled"
       },
       "resetDialog": {
         "title": "Reset the map?",
-        "body": "Everyone and every jelly goes back to the start. Your turn ends; the rounds played still count.",
+        "body": "Everyone and every jelly go back to the start, for the whole team. The steps already taken still count.",
         "keep": "Leave it",
         "confirm": "Reset"
       },
       "resetNote": "{name} reset the map.",
       "holding": "Holding plate {group}",
-      "holdOn": "Holding the plate: your turn will end by itself.",
-      "holdSay": "{name} holds the plate, turn over.",
-      "keys": "Keys: arrows or W A S D to move · Enter ends the turn",
-      "keysOnline": "Keys: arrows or W A S D to move · Enter ends the turn · Z steps back",
+      "keysOnline": "Keys: arrows or W A S D to move",
+      "keysLocal": "Keys: W A S D move Blue · arrows move the character picked · 1–{count} pick a character",
       "move": {
-        "step": "went {direction}",
-        "push": "pushed {kinds} {direction}",
-        "end": "ended the turn",
-        "back": "stepped back",
-        "reset": "reset the map",
+        "step": "{name} goes {direction}",
+        "push": "{name} pushes {kinds} {direction}",
+        "reset": "{name} resets the map",
         "opened": "door {groups} open",
         "closed": "door {groups} closed",
-        "molds": "molds {fitted}/{total}",
-        "endHolding": "held plate {group} and ended the turn"
+        "molds": "molds {fitted}/{total}"
       },
       "result": {
-        "filled": "Molds filled after {steps} steps, {rounds} rounds.",
-        "outOfRounds": "{rounds} rounds over, {left} mold cells still empty."
+        "filled": "Molds full after {steps} steps.",
+        "filledTime": "Molds full after {steps} steps, {time}.",
+        "tooLong": "{moves, number} moves played and the molds are not full.",
+        "minutes": "{minutes, plural, one {# minute} other {# minutes}} {seconds, plural, one {# second} other {# seconds}}",
+        "seconds": "{seconds, plural, one {# second} other {# seconds}}"
       },
       "boardLabel": "Map {map}, {width} × {height} cells",
       "describe": {
@@ -708,6 +701,8 @@
       "loadError": "Couldn’t load the rules. Check your connection and try again; the game goes on.",
       "retry": "Try again"
     },
+    "freePlay": "Everyone moves at once",
+    "freePlayYou": "Everyone moves at once · you are {player}",
     "teamWins": "The team wins!",
     "teamStopped": "Game stopped",
     "teamEnded": "Game over",
@@ -1134,7 +1129,9 @@
         "vsAi": "Against the computer: resigning means the computer wins.",
         "giveUp": "Press <b>“Give up”</b> to stop the game; the app asks first. The game stops for the <b>whole team</b>, and nobody wins.",
         "abandonTeam": "Online: if the player to move doesn't move for <b>5 minutes</b>, someone else can press “End game”: the game stops for the whole team, and nobody wins.",
-        "titleTeam": "Giving up and leaving"
+        "titleTeam": "Giving up and leaving",
+        "titleFree": "Giving up",
+        "noAbandon": "There are no turns, so nobody is called out for leaving. If a teammate leaves mid-game, press “Give up” to stop."
       }
     },
     "tictactoe": {
@@ -1367,9 +1364,9 @@
         "body": "The team pushes jelly into the <b>molds</b> together. Once every mold cell holds the right kind, <b>the whole team wins</b>; nobody wins alone."
       },
       "turn": {
-        "title": "Turns",
-        "body": "Each player has a numbered character. On your turn you take <b>up to 5 steps</b>, then press <b>“End turn”</b>; the turn never passes by itself.",
-        "body2": "You can end your turn without a step, to stay on a plate for someone else."
+        "title": "Everyone moves at once",
+        "body": "Each player has a numbered character and moves it <b>at any time</b>: no turns, no step limit. Standing on a plate keeps its door open for the others.",
+        "body2": "On one device: W A S D always move Blue; the arrows, the pad and swipes on the board move the character picked under “Control” (keys 1–4 to switch)."
       },
       "jelly": {
         "title": "Pushing and sticking",
@@ -1386,15 +1383,13 @@
         "body": "Each plate and door has a sign: <b>●</b>, <b>▲</b> or <b>■</b>. A door opens while someone or some jelly stands on a plate with its sign; once the plate is empty, the door closes.",
         "body2": "A door with someone or some jelly in it doesn't close, so whatever is in a door can always get out."
       },
-      "rounds": {
-        "title": "Round limit",
-        "body": "A round is one turn for each player. Each map has a limit of rounds; when they are over and a mold is still empty, the game ends and <b>nobody wins</b>."
+      "end": {
+        "title": "End of the game",
+        "body": "The game ends when the molds are full; <b>there is no losing</b>. The result shows the steps and the time, for the team to beat next time."
       },
       "tools": {
-        "title": "Step back, reset, hold the plate",
-        "back": "<b>Step back</b> (online): take back the last step of your own turn, at most 5 times a turn. On one device, use “Undo”.",
-        "reset": "<b>Reset the map</b>: everyone and every jelly goes back to the start and your turn ends; the rounds and steps already used still count.",
-        "hold": "<b>Hold the plate</b>: while standing on a plate, turn it on and the app ends your turns for you."
+        "title": "Reset the map",
+        "reset": "<b>Reset the map</b>: anyone can; everyone and every jelly go back to the start, and the steps already taken still count. On one device there is “Undo” too."
       },
       "maps": {
         "title": "Maps",

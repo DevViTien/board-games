@@ -31,7 +31,10 @@ describe.each(GAME_IDS)("the play screen of %s", (gameId) => {
     expect(await screen.findByRole("button", { name: "Ván mới" })).toBeInTheDocument();
     // The top bar too.
     expect(screen.getByRole("banner").closest("[data-game]")).toHaveAttribute("data-game", gameId);
-    expect(screen.getByRole("status")).toHaveTextContent(/^Đến lượt /);
+    // A game played freely has nobody to move: the whole team moves at once.
+    expect(screen.getByRole("status")).toHaveTextContent(
+      gameId === "jelly-crew" ? /^Cả đội cùng đi$/u : /^Đến lượt /u,
+    );
     expect(screen.getByRole("button", { name: "Hoàn tác" })).toBeInTheDocument();
     // The seats: around the board for a game that places them (Chess), else the players' panel;
     // the board is busy for assistive technology while the AI thinks, either way.

@@ -8,6 +8,7 @@ export {
   type Result,
   type Success,
 } from "./errors";
+export { moverOf } from "./mover";
 export { listOptionChoices, type OptionChoiceList } from "./option-choices";
 export { parseGameOptions } from "./options";
 export { fromRecord, type GameRecord, RECORD_VERSION, toRecord } from "./record";

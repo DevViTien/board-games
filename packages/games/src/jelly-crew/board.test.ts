@@ -15,7 +15,7 @@ function testLayout(rows: readonly string[]): JellyCrewLayout {
   const molds = rows.map((row, y) =>
     Array.from({ length: row.length }, (_, x) => (y === 1 && x === moldAt ? "I" : ".")).join(""),
   );
-  return parseJellyCrewLayout({ map: JELLY_CREW_MAP.Kitchen, playerCount, rounds: 5, rows, molds });
+  return parseJellyCrewLayout({ map: JELLY_CREW_MAP.Kitchen, playerCount, rows, molds });
 }
 
 /** The board of `layout` with these characters and pieces (and its ice block), settled. */

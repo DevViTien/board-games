@@ -8,7 +8,7 @@ export {
   jellyCrewStep,
 } from "./board";
 export {
-  JELLY_CREW_BACKS,
+  JELLY_CREW_ACTION,
   JELLY_CREW_BLOCKED,
   JELLY_CREW_DIRECTIONS,
   JELLY_CREW_GROUP,
@@ -17,9 +17,9 @@ export {
   JELLY_CREW_KINDS,
   JELLY_CREW_MAP,
   JELLY_CREW_MAPS,
-  JELLY_CREW_MOVE,
+  JELLY_CREW_MAX_MOVES,
   JELLY_CREW_REASON,
-  JELLY_CREW_STEPS,
+  type JellyCrewAction,
   type JellyCrewBlocked,
   type JellyCrewDirection,
   type JellyCrewGroup,
@@ -35,7 +35,8 @@ export {
   jellyCrew,
   jellyCrewHolding,
   jellyCrewLayoutOf,
-  jellyCrewRound,
+  jellyCrewMove,
+  jellyCrewMoveParts,
   jellyCrewTryStep,
 } from "./rules";
 export type {
@@ -46,5 +47,4 @@ export type {
   JellyCrewOptions,
   JellyCrewPiece,
   JellyCrewState,
-  JellyCrewTrail,
 } from "./types";

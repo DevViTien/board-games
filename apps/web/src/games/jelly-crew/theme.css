@@ -143,14 +143,3 @@
   --jelly-crew-door-sign: #1e2036;
   --jelly-crew-door-open: #c9b9a0;
 }
-
-/* The character whose turn it is: its ring breathes slowly (Board, `motion-safe:` only). */
-@keyframes jelly-crew-breathe {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.55;
-  }
-}

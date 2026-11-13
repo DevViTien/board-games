@@ -54,6 +54,13 @@ const cooperativeCounter = {
     state.count === COUNTER_TARGET ? { kind: "win" as const, winners: [0, 1] } : null,
 };
 
+/** The cooperative counter played freely: each move names its seat (both add for seat 0). */
+const freeCounter = {
+  ...cooperativeCounter,
+  meta: { ...cooperativeCounter.meta, freePlay: true },
+  moverOf: () => 0,
+};
+
 /** Calls that return a new value on every call, to make a rule non-deterministic. */
 function counter() {
   let calls = 0;
@@ -78,6 +85,7 @@ describe("contract checks on valid games", () => {
     expect(failingChecks(counterGame, COUNTER_CONFIG)).toEqual([]);
     expect(failingChecks(diceRaceGame, DICE_CONFIG)).toEqual([]);
     expect(failingChecks(cooperativeCounter, COUNTER_CONFIG)).toEqual([]);
+    expect(failingChecks(freeCounter, COUNTER_CONFIG)).toEqual([]);
   });
 
   it("option-choices passes for a game that declares no choice", () => {
@@ -423,6 +431,32 @@ const BROKEN_GAMES: readonly BrokenGame[] = [
     id: CONTRACT_CHECK.CooperativeNoAi,
     what: "is cooperative and claims AI support",
     game: { ...cooperativeCounter, meta: { ...cooperativeCounter.meta, supportsAI: true } },
+    config: COUNTER_CONFIG,
+  },
+  {
+    id: CONTRACT_CHECK.FreePlayMovers,
+    what: "plays freely without moverOf",
+    game: Object.fromEntries(
+      Object.entries(freeCounter).filter(([key]) => key !== "moverOf"),
+    ) as Omit<typeof freeCounter, "moverOf">,
+    config: COUNTER_CONFIG,
+    message: "moverOf is missing",
+  },
+  {
+    id: CONTRACT_CHECK.FreePlayMovers,
+    what: "plays freely and names a seat outside the game",
+    game: { ...freeCounter, moverOf: () => 2 },
+    config: COUNTER_CONFIG,
+    message: "outside 0..1",
+  },
+  {
+    id: CONTRACT_CHECK.FreePlayNoAi,
+    what: "plays freely and claims AI support",
+    game: {
+      ...freeCounter,
+      meta: { ...freeCounter.meta, cooperative: false, supportsAI: true },
+      evaluate: () => 0,
+    },
     config: COUNTER_CONFIG,
   },
   {

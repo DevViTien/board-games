@@ -115,3 +115,33 @@ Trong ván online, khi lượt của người ở thiết bị này đã kéo d�
 
 - **WHEN** lời nhắc đang hiện và người chơi đi một nước
 - **THEN** lời nhắc không còn
+
+### Requirement: Hiện lần lượt các nước nhận cùng lúc
+
+Khi một lần cập nhật của phòng mang nhiều nước mới cùng lúc (máy đi liền nhau, kể cả ván mới mà máy đi đầu), màn hình ván SHALL hiện từng nước một theo đúng thứ tự, mỗi nước không sớm hơn lúc hiệu ứng của nước trước kết thúc và dừng lâu hơn sau mỗi kết quả ngẫu nhiên, và MUST NOT cho người chơi đi trước khi hiện xong. Lần vào phòng, tải lại hay kết nối lại SHALL hiện ngay trạng thái mới nhất. Ở game đi tự do, các nước nhận được SHALL hiện ngay, không lần lượt, để người chơi không phải chờ nước của người khác.
+
+#### Scenario: Ba máy đi liền nhau
+
+- **WHEN** người chơi đi một nước và trạng thái phòng trả về có thêm sáu nước của ba máy
+- **THEN** màn hình hiện lần lượt từng nước của các máy rồi mới tới lượt người chơi
+- **AND** bàn không cho người chơi đi trong lúc đang hiện
+
+#### Scenario: Chơi lại với máy đi đầu
+
+- **WHEN** một người bấm "Chơi lại" và ghế máy được xoay vào ghế đầu nên ván mới đến nơi đã có các nước của máy
+- **THEN** màn hình hiện bàn mới rồi hiện lần lượt các nước của máy
+
+#### Scenario: Ván mới tới khi đang hiện ván cũ
+
+- **WHEN** màn hình đang hiện lần lượt các nước cuối của một ván, nước cuối kết thúc ván, và ván mới tới trong lúc đó
+- **THEN** màn hình hiện hết các nước và kết quả của ván cũ rồi mới hiện ván mới
+
+#### Scenario: Tải lại không phát lại
+
+- **WHEN** người chơi tải lại trang phòng giữa ván có ghế máy
+- **THEN** màn hình hiện ngay trạng thái mới nhất của ván
+
+#### Scenario: Nhiều nước của game đi tự do
+
+- **WHEN** trong ván Đội gom thạch online, một lần cập nhật mang ba nước mới của Minh và Hoa
+- **THEN** màn hình của Lan hiện ngay bàn sau cả ba nước và Lan đi được ngay

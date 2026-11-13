@@ -16,12 +16,17 @@
 
 ### Requirement: Thời gian ván cùng máy
 
-Ván chơi cùng máy SHALL nhớ giờ bắt đầu và giờ có kết quả, cả khi tải lại trang. Hoàn tác nước kết thúc ván SHALL bỏ giờ có kết quả. Ván lưu từ bản trước không có giờ SHALL vẫn mở được, không có thời gian ván.
+Ván chơi cùng máy SHALL tính thời gian từ lúc ván bắt đầu tới lúc có kết quả, và nhớ giờ bắt đầu cả khi tải lại trang giữa ván. Hoàn tác nước kết thúc ván SHALL bỏ giờ có kết quả. Ván lưu từ bản trước không có giờ bắt đầu SHALL vẫn mở được, không có thời gian ván.
 
-#### Scenario: Tải lại sau khi thắng
+#### Scenario: Tải lại giữa ván
 
-- **WHEN** ván Đội gom thạch cùng máy đầy khuôn 4 phút 12 giây sau khi bắt đầu, rồi người chơi tải lại trang
-- **THEN** thẻ kết quả vẫn ghi 4 phút 12 giây
+- **WHEN** ván Đội gom thạch cùng máy bắt đầu, người chơi tải lại trang sau 2 phút, rồi cả đội đầy khuôn 4 phút 12 giây sau khi ván bắt đầu
+- **THEN** thẻ kết quả ghi 4 phút 12 giây
+
+#### Scenario: Hoàn tác nước thắng
+
+- **WHEN** cả đội vừa đầy khuôn khi chơi cùng máy và người chơi bấm "Hoàn tác"
+- **THEN** thẻ kết quả không còn, và khi thắng lại, thời gian tính tới lúc thắng lại
 
 ## MODIFIED Requirements
 

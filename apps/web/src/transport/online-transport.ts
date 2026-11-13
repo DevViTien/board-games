@@ -1,10 +1,12 @@
 import {
   AI_LEVEL,
+  applyEntry,
   currentState,
   ENGINE_ERROR,
   fromRecord,
   type GameDefinition,
   lastEntry,
+  moverOf as moverOfMove,
   type PlayerIndex,
   type Session,
   sessionResult,
@@ -190,10 +192,49 @@ export function createOnlineTransport<
     return rebuilt.ok ? rebuilt.value : null;
   }
 
-  /** The seat that made the `index`-th move of a game (from 0): the player to move before it. */
+  /**
+   * `next` as `base` (the game of `baseRoom`) with only the moves added since, or `null` when it is
+   * not that: another game, a record that differs before its new moves, an ending. The same game
+   * as `rebuild` gives, without replaying every move again on each one received (a game played
+   * freely receives many; design of `add-jelly-crew-game` §10.2).
+   */
+  function extend(
+    base: GameSession | null,
+    baseRoom: RoomView | null,
+    next: RoomView,
+  ): GameSession | null {
+    if (base === null || baseRoom === null || next.gameId !== definition.id) return null;
+    const before = baseRoom.record;
+    const after = next.record;
+    if (
+      next.gameNumber !== baseRoom.gameNumber ||
+      before.ending !== undefined ||
+      after.ending !== undefined ||
+      base.entries.length !== before.entries.length ||
+      base.cursor !== base.entries.length ||
+      after.entries.length < before.entries.length ||
+      JSON.stringify({ ...after, entries: [] }) !== JSON.stringify({ ...before, entries: [] }) ||
+      JSON.stringify(after.entries.slice(0, before.entries.length)) !==
+        JSON.stringify(before.entries)
+    ) {
+      return null;
+    }
+    let extended = base;
+    for (const entry of after.entries.slice(before.entries.length)) {
+      const applied = applyEntry(definition, extended, entry);
+      if (!applied.ok) return null;
+      extended = applied.value;
+    }
+    return extended;
+  }
+
+  /** The seat that made the `index`-th move of a game (from 0): the seat it names, or the player to move. */
   function moverOf(current: GameSession, index: number): PlayerIndex | null {
     const before = current.states[index];
-    return before === undefined ? null : definition.currentPlayer(before);
+    const entry = current.entries[index];
+    return before === undefined || entry === undefined
+      ? null
+      : moverOfMove(definition, before, entry.move);
   }
 
   /**
@@ -285,10 +326,9 @@ export function createOnlineTransport<
     startRevealTimer(left);
   }
 
-  /** The seat that played the last move shown: the player to move before it. */
+  /** The seat that played the last move shown. */
   function lastMover(current: GameSession): PlayerIndex | null {
-    const before = current.cursor > 0 ? current.states[current.cursor - 1] : undefined;
-    return before === undefined ? null : definition.currentPlayer(before);
+    return current.cursor > 0 ? moverOf(current, current.cursor - 1) : null;
   }
 
   function seatView(
@@ -309,6 +349,8 @@ export function createOnlineTransport<
   const hasAi = gameHasAi(definition);
   /** A seat that leaves a cooperative game stops it for everyone: nobody wins by it. */
   const cooperative = definition.meta.cooperative === true;
+  /** Every seat moves at any time: nobody is to move, nobody waits, no turn is timed. */
+  const free = definition.meta.freePlay === true;
 
   function resignOption(
     plays: readonly SeatPlay[],
@@ -397,13 +439,20 @@ export function createOnlineTransport<
         everyoneSeated &&
         !revealing &&
         result === null &&
-        currentPlayer === you &&
-        plays[currentPlayer] === SEAT_PLAY.Self &&
+        (free
+          ? you !== null && plays[you] === SEAT_PLAY.Self
+          : currentPlayer === you && plays[currentPlayer] === SEAT_PLAY.Self) &&
         pending === null,
       viewer: you,
       seats,
       waitingFor:
-        result !== null ? null : toMove === "remote" ? "opponent" : toMove === "ai" ? "ai" : null,
+        result !== null || free
+          ? null
+          : toMove === "remote"
+            ? "opponent"
+            : toMove === "ai"
+              ? "ai"
+              : null,
       inProgress: false,
       supportsUndo: false,
       // Not while the next game is already waiting to be shown.
@@ -414,7 +463,7 @@ export function createOnlineTransport<
       resign: resignOption(plays, you, open, online),
       // The turn whose clock the server sent: only once every move received is on screen.
       turn:
-        open && !revealing
+        open && !revealing && !free
           ? turnClock(plays, currentPlayer, you, online, {
               gameNumber: view.gameNumber,
               moveIndex: whole.cursor,
@@ -425,6 +474,8 @@ export function createOnlineTransport<
         current.ending !== undefined && current.cursor === current.entries.length
           ? current.ending
           : null,
+      freePlay: free,
+      gameTime: view.gameTime ?? null,
     };
   }
 
@@ -434,9 +485,18 @@ export function createOnlineTransport<
     emit({ type: "changed" });
   }
 
-  /** The game has moved on from where the request was sent: the request is answered. */
+  /**
+   * The game has moved on from where the request was sent: the request is answered. Played freely,
+   * others' moves move it on too: only one of this seat's own answers.
+   */
   function answers(next: RoomView, sentAt: Pending): boolean {
-    return next.gameNumber !== sentAt.gameNumber || next.record.entries.length > sentAt.moveIndex;
+    if (next.gameNumber !== sentAt.gameNumber) return true;
+    if (!free) return next.record.entries.length > sentAt.moveIndex;
+    const own = seat;
+    const { moverOf: seatOf } = definition;
+    return next.record.entries
+      .slice(sentAt.moveIndex)
+      .some((entry) => seatOf?.(entry.move as Move) === own);
   }
 
   /** Where to show `next` from, given what was on screen of `previous`. */
@@ -458,6 +518,13 @@ export function createOnlineTransport<
       stopRevealing();
       shown = 0;
       scheduleReveal();
+      return;
+    }
+    // Played freely, moves come all the time from everyone: shown as they come, at once, or this
+    // player would wait behind the others' moves and could not move while they kept going.
+    if (free) {
+      stopRevealing();
+      shown = next.cursor;
       return;
     }
     if (shown > next.cursor) shown = next.cursor;
@@ -505,7 +572,8 @@ export function createOnlineTransport<
         if (seatsChanged || statusChanged || clockChanged) render();
         return;
       }
-      const rebuilt = rebuild(latest);
+      const rebuilt =
+        (queued === null && !greeted ? extend(session, room, latest) : null) ?? rebuild(latest);
       if (rebuilt === null) {
         broken = true;
         settle();
@@ -558,9 +626,18 @@ export function createOnlineTransport<
         if (code === ROOM_ERROR.NotAbandoned) emit({ type: "claim-refused" });
         return;
       }
+      const sentAt = pending;
       settle();
       refresh();
-      if (isRuleRefusal(code)) emit({ type: "rejected", code });
+      // Played freely, a move sent before another player's reached the server may no longer fit
+      // the board: the board, now showing that move, says why.
+      const latest = connection.getSnapshot().room;
+      const overtaken =
+        free &&
+        sentAt !== null &&
+        latest?.gameNumber === sentAt.gameNumber &&
+        latest.record.entries.length > sentAt.moveIndex;
+      if (isRuleRefusal(code) && !overtaken) emit({ type: "rejected", code });
     }),
   ];
   refresh();

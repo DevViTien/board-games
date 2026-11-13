@@ -62,7 +62,11 @@ export function createIndexedDbStore(
       if (raw === undefined) return undefined;
       const saved = readSavedGame(raw);
       if (saved.kind === "saved" && saved.settings.kind === slot.mode) {
-        return { settings: saved.settings, record: saved.record };
+        return {
+          settings: saved.settings,
+          record: saved.record,
+          ...(saved.startedAt === undefined ? {} : { startedAt: saved.startedAt }),
+        };
       }
       // Rejecting tells the transport not to write over it (see `SavedGameStore.load`).
       if (saved.kind === "newer") throw new Error(`${key} was saved by a newer version`);

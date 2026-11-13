@@ -9,6 +9,7 @@ import {
   type EndingReason,
   ENGINE_ERROR,
   fromRecord,
+  moverOf,
   parseGameOptions,
   playMove,
   type Rng,
@@ -58,10 +59,12 @@ const CODE_ATTEMPTS = 5;
 const JOIN_ATTEMPTS = 3;
 
 /**
- * Reads for a move or a rematch: one more after a conflict, to check the request again against
- * the newer room (a rename in between lets a move through, a move in between makes it stale).
+ * Reads for a move or a rematch: more after a conflict, to check the request again against the
+ * newer room (a rename in between lets a move through, a move in between makes it stale). In a game
+ * played freely, several players write moves at once and each one goes on the newest room, so a
+ * conflict is common and seldom final (design of `add-jelly-crew-game` §10.2).
  */
-const MOVE_ATTEMPTS = 2;
+const MOVE_ATTEMPTS = 4;
 
 /**
  * Reads for a chat message before giving up. Measured on the service with four people sending five
@@ -297,15 +300,29 @@ export function createRoomService({
     return normalized;
   }
 
-  /** `room` one write later, its turn timed as `turn` says. */
+  /**
+   * `room` one write later, its turn timed as `turn` says, and its game timed (design of
+   * `add-jelly-crew-game` §10.4): it begins when every seat is taken before its first move, or with
+   * "Chơi lại"; it ends with the write that stops the turn while every seat is taken (a result).
+   */
   function written(room: StoredRoom, changes: Partial<StoredRoom>, turn: TurnChange): StoredRoom {
     const time = now();
     const next = { ...room, ...changes };
+    const seated = !next.players.includes(null);
+    const newGame = next.gameNumber !== room.gameNumber;
+    const begins =
+      seated && (newGame || (next.gameStartedAt == null && next.record.entries.length === 0));
+    const startedAt = begins ? time : newGame ? null : (next.gameStartedAt ?? null);
+    const endedAt = newGame
+      ? null
+      : (next.gameEndedAt ?? (turn === "stop" && seated && startedAt !== null ? time : null));
     return {
       ...next,
       revision: room.revision + 1,
       updatedAt: time,
       turnStartedAt: turn === "restart" ? time : turn === "stop" ? null : next.turnStartedAt,
+      gameStartedAt: startedAt,
+      gameEndedAt: endedAt,
     };
   }
 
@@ -525,6 +542,8 @@ export function createRoomService({
           record: toRecord(session.value),
           updatedAt: now(),
           turnStartedAt: null,
+          gameStartedAt: null,
+          gameEndedAt: null,
           chat: [],
         };
         if ((await store.create(room)) === "created") return ok(room);
@@ -590,18 +609,51 @@ export function createRoomService({
         if (!current.ok) return current;
         const { seat, game, session } = current;
         if (room.players.includes(null)) return fail(ROOM_ERROR.WaitingForPlayers, room);
-        if (gameNumber !== room.gameNumber || moveIndex !== room.record.entries.length) {
+        // A game played freely (design of `add-jelly-crew-game` §10.2) takes a move sent before the
+        // sender saw the others' latest ones: it goes on the newest state, checked by the rules there.
+        const free = game.meta.freePlay === true;
+        const entries = room.record.entries.length;
+        if (
+          gameNumber !== room.gameNumber ||
+          (free ? moveIndex > entries : moveIndex !== entries)
+        ) {
+          return fail(ROOM_ERROR.StaleMove, room);
+        }
+        // A player waits for their own move before sending the next: one of theirs recorded since
+        // the position they sent from means this is that move sent again (an answer lost, a
+        // reconnection), never a new one. Played twice, one key press would take two steps.
+        if (
+          free &&
+          room.record.entries.slice(moveIndex).some((recorded) => {
+            try {
+              return game.moverOf?.(recorded.move) === seat;
+            } catch {
+              return false;
+            }
+          })
+        ) {
           return fail(ROOM_ERROR.StaleMove, room);
         }
         if (sessionResult(game, session) !== null) return fail(ENGINE_ERROR.GameOver, room);
         // An AI seat's turn is nobody else's: no person moves for it, nor for a seat the AI
         // stands in for, their own included.
-        if (game.currentPlayer(currentState(session)) !== seat || isStandIn(room.players[seat])) {
+        if (
+          isStandIn(room.players[seat]) ||
+          (!free && game.currentPlayer(currentState(session)) !== seat)
+        ) {
           return fail(ROOM_ERROR.NotYourTurn, room);
         }
         // The rules check the move; any random outcome is drawn here, from the server's rng.
         const played = playMove(game, session, move, rng);
         if (!played.ok) return fail(played.error, room);
+        // Played freely, a move names its seat: only the sender's own.
+        const entry = played.value.entries.at(-1);
+        if (
+          free &&
+          (entry === undefined || moverOf(game, currentState(session), entry.move) !== seat)
+        ) {
+          return fail(ROOM_ERROR.NotYourTurn, room);
+        }
         // The AI seats to move next answer in this very write.
         const after = playAiSeats(room.players, game, played.value);
         return ok(written(room, { record: toRecord(after) }, turnAfter(game, after)));
@@ -678,6 +730,8 @@ export function createRoomService({
         const current = gameToLeave(room, playerId, position);
         if (!current.ok) return current;
         const { seat, game, session } = current;
+        // A game played freely has no turn to wait on: "Bỏ cuộc" is how it stops.
+        if (game.meta.freePlay === true) return fail(ROOM_ERROR.NotAbandoned, room);
         const toMove = game.currentPlayer(currentState(session));
         const claim = abandonClaim(
           {

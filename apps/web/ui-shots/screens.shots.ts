@@ -1689,10 +1689,16 @@ for (const [suffix, viewport] of [
 
     await openCrew(page, 2, []);
     await shootScreen(page, `81-crew-start${suffix}`);
-    await openCrew(page, 2, CREW.slice(0, 10));
+    await openCrew(page, 2, CREW.slice(0, 8));
     await shootScreen(page, `81a-crew-holding${suffix}`);
+    // Lam picked under "Điều khiển": the arrows and the pad move Lam now.
     await openCrew(page, 2, CREW.slice(0, 7));
-    await shootScreen(page, `81b-crew-no-steps${suffix}`);
+    await page
+      .locator("label")
+      .filter({ has: page.getByRole("radio", { name: /Lam/u }) })
+      .click();
+    await expect(page.getByRole("radio", { name: /Lam/u })).toBeChecked();
+    await shootScreen(page, `81b-crew-pick-lam${suffix}`);
     await page.getByRole("button", { name: "Đặt lại bản đồ" }).click();
     await expect(page.getByRole("dialog")).toBeVisible();
     await shootScreen(page, `81c-crew-reset${suffix}`);
@@ -1706,23 +1712,13 @@ for (const [suffix, viewport] of [
     await page.keyboard.press("ArrowLeft");
     await expect(page.getByRole("status")).toHaveText(/Cả đội thắng!/u);
     await shootScreen(page, `81d-crew-won${suffix}`, { moving: true });
-    await openCrew(page, 2, [
-      ...CREW.slice(0, 21),
-      ...Array.from({ length: 4 }, () => "end" as const),
-    ]);
-    for (let turn = 0; turn < 40; turn += 1) {
-      if ((await page.getByRole("button", { name: "Xong lượt" }).count()) === 0) break;
-      await page.getByRole("button", { name: "Xong lượt" }).click();
-    }
-    await expect(page.getByRole("status")).toHaveText(/Ván kết thúc/u);
-    await shootScreen(page, `81e-crew-out-of-rounds${suffix}`);
   });
 
   test(`Đội gom thạch, four players${suffix}`, async ({ page }) => {
     test.skip(viewport !== null && (page.viewportSize()?.width ?? 0) > 500, "a phone's size");
     if (viewport !== null) await page.setViewportSize(viewport);
 
-    await openCrew(page, 4, ["D", "end", "D", "D", "D", "L", "L", "end"]);
+    await openCrew(page, 4, ["0D", "1D", "1D", "1D", "1L", "1L"]);
     await shootScreen(page, `82-crew-four${suffix}`);
     await openCrew(page, 4, [], "cold-store");
     await shootScreen(page, `82a-crew-cold-store-four${suffix}`);
@@ -1755,7 +1751,7 @@ for (const [suffix, viewport] of [
       0,
     );
     await expect(crewBoard(page)).toBeVisible();
-    await shootScreen(page, `83b-crew-online-wait${suffix}`);
+    await shootScreen(page, `83b-crew-online-lam${suffix}`);
 
     const stopped = {
       ...jellyCrewRecord(2, CREW.slice(0, 10)),

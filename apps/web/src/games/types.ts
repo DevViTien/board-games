@@ -2,6 +2,8 @@ import type { GameDefinition, GameResult, HistoryEntry, PlayerIndex } from "@boa
 import type { RegisteredGameId } from "@board-games/games";
 import { type ComponentType, createElement, Fragment, type ReactNode } from "react";
 
+import type { GameTime } from "@/transport/types";
+
 /** The parts a board draws, for the play screen to place: the board, and its own controls. */
 interface BoardParts {
   /** The board itself. */
@@ -86,8 +88,13 @@ export interface GameUI<State, Move, Outcome = never> {
   /**
    * Optional hook returning the line under the result on the result card, saying how the game was
    * won ("Three X in row 1"), or `null` for nothing (a draw). A game without it shows no such line.
+   * `gameTime` is when the game began and ended, when known (`ReadySnapshot.gameTime`).
    */
-  readonly useResultDetail?: () => (result: GameResult, state: State) => string | null;
+  readonly useResultDetail?: () => (
+    result: GameResult,
+    state: State,
+    gameTime: GameTime | null,
+  ) => string | null;
   /**
    * Optional mark of a seat in the players' panel (decorative: the seat's name says it), drawn in
    * a 28 px ring. Without it, the panel draws the seat's symbol (`usePlayerLabel`) in the game's
