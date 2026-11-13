@@ -942,11 +942,12 @@ export function PlayScreen<State, Move, Outcome>({
         "grid w-full grid-cols-[minmax(0,1fr)] gap-y-4 [--board-room:100%]",
         "lg:grid-cols-[auto_minmax(20rem,24rem)] lg:grid-rows-[minmax(0,1fr)_repeat(7,auto)_minmax(0,1fr)] lg:justify-center lg:gap-x-10 lg:gap-y-0 [:root[data-chat-column=open]_&]:lg:grid-cols-[auto_20rem] [:root[data-chat-column=open]_&]:lg:gap-x-8",
         "lg:[grid-template-areas:'board_.'_'board_chips'_'board_notice'_'board_status'_'board_players'_'board_notes'_'board_controls'_'board_buttons'_'board_.']",
-        // The page's height less the top bar and the page's padding (3rem), a little room kept.
+        // The page's height less the top bar and the page's padding (3rem), a little room kept; never
+        // more than beside the column once `main` stops growing (`--play-cap`, globals.css).
         seatOrder === undefined
-          ? "lg:[--board-room:min(100vw_-_var(--play-side)_-_var(--chat-room),100dvh_-_var(--top-bar-height)_-_var(--safe-top)_-_6rem)]"
+          ? "lg:[--board-room:min(100vw_-_var(--play-side)_-_var(--chat-room),var(--play-cap),100dvh_-_var(--top-bar-height)_-_var(--safe-top)_-_6rem)]"
           : // Less the two bars (2 × 2.75rem) and their gaps (2 × 0.375rem) too.
-            "lg:[--board-room:min(100vw_-_var(--play-side)_-_var(--chat-room),100dvh_-_var(--top-bar-height)_-_var(--safe-top)_-_3.25rem_-_6.25rem)]",
+            "lg:[--board-room:min(100vw_-_var(--play-side)_-_var(--chat-room),var(--play-cap),100dvh_-_var(--top-bar-height)_-_var(--safe-top)_-_3.25rem_-_6.25rem)]",
         "short-landscape:grid-cols-[auto_minmax(0,1fr)] short-landscape:grid-rows-[minmax(0,1fr)_repeat(9,auto)_minmax(0,1fr)] short-landscape:gap-x-6 short-landscape:gap-y-0",
         "short-landscape:[grid-template-areas:'board_.'_'board_chips'_'board_notice'_'board_status'_'board_players'_'board_seat-top'_'board_seat-bottom'_'board_notes'_'board_controls'_'board_buttons'_'board_.']",
         // The page's height less the top bar and the page's padding (1rem); the column at least

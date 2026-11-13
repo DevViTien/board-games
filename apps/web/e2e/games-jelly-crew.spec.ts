@@ -4,8 +4,10 @@ import {
   choose,
   crewBoard,
   JELLY_CREW_KITCHEN_TWO,
+  jellyCrewRecord,
   nameField,
   openAsNewPlayer,
+  openFakeRoom,
   pressStart,
   ROOM_URL,
   status,
@@ -120,5 +122,47 @@ test.describe("Dùng được trên điện thoại", () => {
     expect(Math.min(size?.width ?? 0, size?.height ?? 0)).toBeGreaterThanOrEqual(44);
     await down.tap();
     await expect(chip(page, "turn")).toHaveText("Lam · còn 4 bước");
+  });
+});
+
+// A wide board on a big screen: `main` stops growing at 72rem, so the board is held to what is left
+// beside the column of words (`--play-cap`), with the chat's column open and without a chat.
+test.describe("Màn hình lớn: bàn rộng không đè cột chữ", () => {
+  test.use({ viewport: { width: 1920, height: 1080 } });
+
+  /** The board's right edge is left of the column of words (its status line and chips). */
+  async function expectBesideColumn(page: Page): Promise<void> {
+    await expect(crewBoard(page)).toBeVisible();
+    const board = await crewBoard(page).boundingBox();
+    const words = await status(page).boundingBox();
+    const chips = await page.locator("[data-chip]").first().boundingBox();
+    expect(board).not.toBeNull();
+    const right = (board?.x ?? 0) + (board?.width ?? 0);
+    expect(right).toBeLessThanOrEqual(words?.x ?? 0);
+    expect(right).toBeLessThanOrEqual(chips?.x ?? 0);
+  }
+
+  test("online, the chat's column open: Chợ đêm for two", async ({ page }) => {
+    test.skip(test.info().project.name === "mobile", "a wide screen");
+    await openFakeRoom(page, {
+      gameId: "jelly-crew",
+      seats: [
+        { kind: "human", name: "Lam", standIn: false },
+        { kind: "human", name: "Hồng", standIn: false },
+      ],
+      record: jellyCrewRecord(2, [], "market"),
+    });
+    await expect(page.locator("#room-chat")).toBeVisible();
+    await expectBesideColumn(page);
+  });
+
+  test("on one device, no chat: Kho lạnh for two", async ({ page }) => {
+    test.skip(test.info().project.name === "mobile", "a wide screen");
+    await page.goto("/play/jelly-crew");
+    await choose(page, "Chế độ", "Cùng máy");
+    await choose(page, "Số người chơi", "2 người");
+    await choose(page, "Bản đồ", "Kho lạnh");
+    await pressStart(page);
+    await expectBesideColumn(page);
   });
 });

@@ -9,15 +9,23 @@
  * design §2): `ChatLayer` sets `data-chat-column` on <html> while it is there. `--chat-room` is what
  * the page leaves it; `--play-side` is what the play screen keeps beside its board (sides, gap and
  * the column of the game's words), narrower while the chat's column is open.
+ *
+ * `--play-cap` is the most a board can have once the play screen's `main` stops growing (`max-w-6xl`,
+ * 72rem): 72rem less its sides, the gap and the column of words as wide as it then grows (24rem; 20rem
+ * pinned while the chat's column is open). Without it a wide board (Đội gom thạch, up to 19 cells
+ * across) grows over the column on a big screen. Closed: 72 − 2 × 2.5 − 2.5 − 24; open: 72 − 2 × 1.5
+ * − 2 − 20.
  */
 :root {
   --chat-room: 0rem;
   --play-side: 34rem;
+  --play-cap: 40.5rem;
 }
 
 :root[data-chat-column="open"] {
   --chat-room: 18rem;
   --play-side: 25.5rem;
+  --play-cap: 47rem;
 }
 
 :root[data-chat-column="rail"] {
