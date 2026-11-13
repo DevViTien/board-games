@@ -570,6 +570,83 @@
         "summary": "{guests}",
         "change": "Change table"
       }
+    },
+    "xiangqi": {
+      "name": "Xiangqi",
+      "tagline": "Chinese chess, a Vietnamese favourite: checkmate the other general to win",
+      "players": {
+        "red": "Red",
+        "black": "Black"
+      },
+      "pieces": {
+        "k": "General",
+        "a": "Advisor",
+        "e": "Elephant",
+        "h": "Horse",
+        "r": "Chariot",
+        "c": "Cannon",
+        "p": "Soldier"
+      },
+      "colour": {
+        "red": "Red",
+        "black": "Black"
+      },
+      "point": {
+        "piece": "{colour} {piece} on column {col}, row {row}",
+        "empty": "Empty point at column {col}, row {row}",
+        "target": "Can move here",
+        "capture": "Can capture",
+        "inCheck": "In check"
+      },
+      "selection": {
+        "chosen": "{colour} {piece} on column {col}, row {row} chosen: {moves}.",
+        "quiet": "{count, plural, one {# point to go to} other {# points to go to}}",
+        "capture": "can take {pieces}",
+        "noMoves": "{colour} {piece} on column {col}, row {row} cannot move."
+      },
+      "check": {
+        "badge": "Check!",
+        "line": "{player} is in check"
+      },
+      "flip": "Flip board",
+      "sheet": {
+        "title": "Score sheet",
+        "empty": "No moves yet",
+        "score": {
+          "red": "Red wins",
+          "black": "Black wins",
+          "draw": "Draw"
+        }
+      },
+      "summary": {
+        "full": "{points, plural, one {# point ahead} other {# points ahead}}",
+        "short": "+{points}"
+      },
+      "words": {
+        "line": "{piece} {place} {action}",
+        "column": "on column {n}",
+        "front": "in front",
+        "back": "behind",
+        "middle": "in the middle",
+        "nth": "no. {n}",
+        "markColumn": "{mark} {column}",
+        "forward": "forward {n}",
+        "backward": "back {n}",
+        "forwardTo": "forward to column {n}",
+        "backTo": "back to column {n}",
+        "side": "across to column {n}"
+      },
+      "move": {
+        "played": "moved {move}",
+        "check": "{move}, check"
+      },
+      "result": {
+        "checkmate": "Checkmate.",
+        "noMoves": "{player} has no move left.",
+        "perpetualCheck": "{player} gave perpetual check.",
+        "repetition": "Repeated three times.",
+        "quiet": "120 moves without a capture."
+      }
     }
   },
   "Modes": {
@@ -1525,6 +1602,50 @@
         "five": {
           "label": "A table of 5 guests: the ring A–B–C–D–E in red, the five diagonals in blue, no triangle of one colour",
           "caption": "Every line drawn at 5 guests without a triangle of one colour: a draw."
+        }
+      }
+    },
+    "xiangqi": {
+      "goal": {
+        "title": "Goal",
+        "body": "Two players, <b>Red</b> moving first and <b>Black</b>, take turns moving a piece. Whoever <b>checkmates</b> the other general, or leaves the other side without a move, wins."
+      },
+      "board": {
+        "title": "Board",
+        "body": "The board has 9 columns × 10 rows of points; pieces stand on the points. Across the middle runs the <b>river</b> (楚河 漢界). Each side has a <b>palace</b> of 3 × 3 points with diagonals. Columns are numbered 1–9 from right to left as each side sees them."
+      },
+      "pieces": {
+        "title": "Pieces",
+        "general": "<b>General</b> (帥 / 將): one step sideways or forwards and back, never out of the palace.",
+        "advisor": "<b>Advisor</b> (仕 / 士): one step diagonally, never out of the palace.",
+        "elephant": "<b>Elephant</b> (相 / 象): two steps diagonally, never across the river; blocked by a piece on the point between (its eye).",
+        "horse": "<b>Horse</b> (傌 / 馬): one step straight then one diagonally outwards; blocked by a piece next to it the way it goes (its leg).",
+        "rook": "<b>Chariot</b> (俥 / 車): any distance straight, until it meets a piece.",
+        "cannon": "<b>Cannon</b> (炮 / 砲): moves like a chariot, but captures by jumping over exactly one piece (a screen).",
+        "soldier": "<b>Soldier</b> (兵 / 卒): one step forward; across the river it may also step sideways; never back."
+      },
+      "check": {
+        "title": "Check and facing generals",
+        "body": "No move may leave your own general in check, and the two generals may never stand on one column with nothing between them (<b>facing generals</b>)."
+      },
+      "end": {
+        "title": "End of the game",
+        "body": "The side to move with no legal move <b>loses</b>: checkmate if in check, no move left otherwise. Having no move loses here, unlike chess.",
+        "perpetual": "<b>Perpetual check</b>: a side that keeps checking until a position comes for the third time <b>loses</b>. A position coming a third time without perpetual check is a <b>draw</b>.",
+        "quiet": "<b>120 moves</b> in a row (by both sides) without a capture is a draw."
+      },
+      "notation": {
+        "title": "Notation",
+        "body": "The sheet uses Vietnamese notation: the piece's letter (Tg, S, T, M, X, P, B), its column, a sign (<b>.</b> forward, <b>/</b> back, <b>-</b> across), then the steps or the column it goes to. <b>P2-5</b> is the cannon on column 2 across to column 5, <b>M8.7</b> the horse on column 8 forward to column 7, <b>X1/1</b> the chariot on column 1 back one. Two pieces of a kind on one column are written <b>t</b> (front) and <b>s</b> (behind)."
+      },
+      "figures": {
+        "horse": {
+          "label": "A red horse in the middle with a red soldier right above it: six dotted points it can reach, the two points above crossed out because its leg is blocked",
+          "caption": "A blocked horse: the piece right above it stops the two points above."
+        },
+        "cannon": {
+          "label": "A red cannon on the left, a black soldier as a screen in the middle, a black chariot on the right marked with corners: the cannon takes the chariot and cannot stop beyond the screen",
+          "caption": "A cannon takes over exactly one screen and cannot stop beyond it."
         }
       }
     }

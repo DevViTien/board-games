@@ -8,6 +8,7 @@ import type { RegisteredGameId } from "./ids";
 import { jellyCrew } from "./jelly-crew";
 import { ludo } from "./ludo";
 import { tictactoe } from "./tictactoe";
+import { xiangqi } from "./xiangqi";
 
 /**
  * Every game the app can play. Adding a game is one entry here and its id in `GAME_IDS` (`ids.ts`,
@@ -22,6 +23,7 @@ export const GAMES = [
   fenceRace,
   jellyCrew,
   forbiddenTriangle,
+  xiangqi,
 ] as const satisfies readonly (AnyGameDefinition & {
   readonly id: RegisteredGameId;
 })[];
@@ -38,3 +40,4 @@ export { GAME_IDS, isRegisteredGameId, type RegisteredGameId } from "./ids";
 export * from "./jelly-crew";
 export * from "./ludo";
 export * from "./tictactoe";
+export * from "./xiangqi";

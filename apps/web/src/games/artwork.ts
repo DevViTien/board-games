@@ -9,6 +9,7 @@ import { JellyCrewArtwork } from "./jelly-crew/Artwork";
 import { LudoArtwork } from "./ludo/Artwork";
 import { TicTacToeArtwork } from "./tictactoe/Artwork";
 import type { ArtworkProps } from "./types";
+import { XiangqiArtwork } from "./xiangqi/Artwork";
 
 /**
  * Each registered game's picture on the menu and the setup screen, drawn with the game's own tokens
@@ -27,4 +28,5 @@ export const GAME_ARTWORK = {
   "fence-race": FenceRaceArtwork,
   "jelly-crew": JellyCrewArtwork,
   "forbidden-triangle": ForbiddenTriangleArtwork,
+  xiangqi: XiangqiArtwork,
 } as const satisfies Readonly<Record<RegisteredGameId, ComponentType<ArtworkProps>>>;

@@ -47,7 +47,14 @@ describe("game registry", () => {
 
   it("types RegisteredGameId as the union of literal ids", () => {
     expectTypeOf<RegisteredGameId>().toEqualTypeOf<
-      "tictactoe" | "caro" | "ludo" | "chess" | "fence-race" | "jelly-crew" | "forbidden-triangle"
+      | "tictactoe"
+      | "caro"
+      | "ludo"
+      | "chess"
+      | "fence-race"
+      | "jelly-crew"
+      | "forbidden-triangle"
+      | "xiangqi"
     >();
     // Forgetting `as const satisfies` on a game would widen this union to string.
     expectTypeOf<string>().not.toExtend<RegisteredGameId>();

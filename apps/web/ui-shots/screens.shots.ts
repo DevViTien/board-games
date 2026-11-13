@@ -1851,3 +1851,68 @@ test("Tam giác cấm: seven guests, at 360 px", async ({ page }) => {
   ]);
   await shoot(page, "91d-triangle-seven-360");
 });
+
+// --- Cờ tướng (change `add-xiangqi-game`) --------------------------------------------------------
+
+/** A point of the Cờ tướng board: column `x`, row `y` of the rules (y = 0 is Đen's back rank). */
+const xiangqiPoint = (page: Page, x: number, y: number) =>
+  page.getByRole("grid", { name: "Bàn cờ" }).locator(`[data-point="${String(y * 9 + x)}"]`);
+
+async function xiangqiMoves(
+  page: Page,
+  moves: readonly (readonly [number, number, number, number])[],
+) {
+  for (const [fx, fy, tx, ty] of moves) {
+    await xiangqiPoint(page, fx, fy).click();
+    await xiangqiPoint(page, tx, ty).click();
+  }
+}
+
+/** P2-5 X1.1 P5.4 X1/1 P8.3 X1.1 P8-5: Đỏ's two cannons mate on the middle column. */
+const XIANGQI_MATE = [
+  [7, 7, 4, 7],
+  [0, 0, 0, 1],
+  [4, 7, 4, 3],
+  [0, 1, 0, 0],
+  [1, 7, 1, 4],
+  [0, 0, 0, 1],
+  [1, 4, 4, 4],
+] as const;
+
+test("Cờ tướng: the setup screen and the rules", async ({ page }) => {
+  await page.goto("/play/xiangqi");
+  await expect(page.getByRole("group", { name: "Chế độ" })).toBeVisible();
+  await shoot(page, "92-setup-xiangqi");
+  await page.goto("/rules/xiangqi");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await shoot(page, "92a-rules-xiangqi");
+});
+
+test("Cờ tướng on one device: start, a piece chosen, the mate with its check marks", async ({
+  page,
+}) => {
+  await page.goto("/play/xiangqi");
+  await choose(page, "Chế độ", "Cùng máy");
+  await pressStart(page);
+  await expect(page.getByRole("grid", { name: "Bàn cờ" })).toBeVisible();
+  await shoot(page, "93-xiangqi-start");
+
+  await xiangqiMoves(page, XIANGQI_MATE.slice(0, 2));
+  await xiangqiPoint(page, 4, 7).click();
+  await shoot(page, "93a-xiangqi-selected");
+  await xiangqiPoint(page, 4, 3).click();
+  await xiangqiMoves(page, XIANGQI_MATE.slice(3));
+  await expect(page.getByRole("status")).toHaveText("Đỏ thắng!");
+  await shoot(page, "93c-xiangqi-mate");
+});
+
+test("Cờ tướng: the board at 360 px", async ({ page }) => {
+  test.skip((page.viewportSize()?.width ?? 0) > 500, "a phone's size");
+  await page.setViewportSize({ width: 360, height: 740 });
+  await page.goto("/play/xiangqi");
+  await choose(page, "Chế độ", "Cùng máy");
+  await pressStart(page);
+  await xiangqiMoves(page, XIANGQI_MATE.slice(0, 2));
+  await xiangqiPoint(page, 4, 7).click();
+  await shoot(page, "93d-xiangqi-360");
+});

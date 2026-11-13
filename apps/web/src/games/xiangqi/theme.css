@@ -1,0 +1,69 @@
+/*
+ * Cờ tướng's look (design §6–§7 of `add-xiangqi-game`): a wooden board with its lines, river and
+ * palaces in dark brown; round discs with Chinese characters, Đỏ's in red ink and Đen's in black.
+ * Values of the shared `--game-*` contract and its own, inside `[data-game="xiangqi"]` only; light
+ * here, dark in both blocks below, which stay identical (games/theme-css.test.ts).
+ */
+[data-game="xiangqi"] {
+  --game-page: #f3ead9;
+  --game-tint: #f3ead9;
+  /* The wood, and its lines, river and column numbers. */
+  --game-board: #e8c992;
+  --game-line: #5b3a1a;
+  /* The characters of Đỏ and Đen. */
+  --game-mark-1: #b3261e;
+  --game-mark-2: #1d1b1a;
+  /* The piece chosen. */
+  --game-highlight: #5b34e6;
+  /* The last move's dashed rings. */
+  --game-last-move: #1f4f80;
+  --game-win: #1f4f80;
+  /* A piece's face and edge, and the shadow under it. */
+  --xiangqi-disc: #f7ebd0;
+  --xiangqi-disc-edge: #7b5530;
+  --xiangqi-disc-shadow: #a37a49;
+  /* Where the chosen piece may go: a dot, or corners around a piece to take. */
+  --xiangqi-target: #1a6a3f;
+  /* A general in check. */
+  --xiangqi-check: #c4271b;
+  /* The light halo around marks, so they read on the wood and on a piece. */
+  --xiangqi-halo: #fff8e8;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) [data-game="xiangqi"] {
+    --game-page: #17150f;
+    --game-tint: #17150f;
+    --game-board: #3a2c1c;
+    --game-line: #e2c391;
+    --game-mark-1: #ff7b6e;
+    --game-mark-2: #f1e6d2;
+    --game-highlight: #b9a6ff;
+    --game-last-move: #8cc0ff;
+    --game-win: #8cc0ff;
+    --xiangqi-disc: #2c241a;
+    --xiangqi-disc-edge: #d9b27a;
+    --xiangqi-disc-shadow: #120e09;
+    --xiangqi-target: #7fe0a8;
+    --xiangqi-check: #ff6b5e;
+    --xiangqi-halo: #120e09;
+  }
+}
+
+:root[data-theme="dark"] [data-game="xiangqi"] {
+  --game-page: #17150f;
+  --game-tint: #17150f;
+  --game-board: #3a2c1c;
+  --game-line: #e2c391;
+  --game-mark-1: #ff7b6e;
+  --game-mark-2: #f1e6d2;
+  --game-highlight: #b9a6ff;
+  --game-last-move: #8cc0ff;
+  --game-win: #8cc0ff;
+  --xiangqi-disc: #2c241a;
+  --xiangqi-disc-edge: #d9b27a;
+  --xiangqi-disc-shadow: #120e09;
+  --xiangqi-target: #7fe0a8;
+  --xiangqi-check: #ff6b5e;
+  --xiangqi-halo: #120e09;
+}

@@ -43,7 +43,7 @@ Chỉ chọn **game truyền thống/dân gian/cổ điển** (luật thuộc ph
 | Cờ cá ngựa | Bàn hình chữ thập, 2–4 người, xúc xắc | Trung bình | Luật ưu tiên (đá quân > lên chuồng > ra quân…) | **MVP** |
 | Ô ăn quan | 10 ô dân + 2 ô quan | Dễ | Minimax (cây nhỏ) | v1 |
 | Cờ gánh | Lưới 5×5 có đường chéo | Trung bình | Minimax | v1 |
-| Cờ tướng | 9×10 | Khó (luật tướng đối mặt, chiếu…) | Alpha-beta | v1 |
+| Cờ tướng | 9×10, quân chữ Hán | Khó (luật tướng đối mặt, chiếu…) | Alpha-beta chung của engine | **Đã có** (quyết định 23) |
 
 ### 3.2 Cờ cổ điển thế giới
 
@@ -375,3 +375,4 @@ Vì `Board` là component React nên nằm ở `apps/web`, còn `GameDefinition`
 | 20 | Màn của bên thứ ba và màn khuôn | Gom thạch có thêm **màn khuôn** (ô đích có màu, luật **vừa khít**: mỗi loại có khuôn có đúng bằng số ô khuôn, mọi ô khuôn có khối đúng loại) và một chương **lấy màn từ bộ Boxoban** của DeepMind (**Apache 2.0**, commit `78011d8c`): hộp thành đá viên, ô đích thành khuôn đá; chỉ lấy màn mà luật đẩy dây chuyền không làm ngắn lời giải so với luật Sokoban; ghi công, nêu rõ đã sửa và kèm toàn văn giấy phép trong `/third-party-licenses.txt` và trên danh sách màn. **Không dùng màn của Jelly Is Sticky** (tài sản của Lunarch Studios, không có bộ map công khai) (chốt 12/11/2026, `add-jelly-gather-molds`) |
 | 21 | Game cùng phe | **Đội gom thạch** là game mới (không phải chế độ của trò giải đố) chơi **cùng phe**, 2–4 người, cùng máy và online; sau chơi thử 13/11/2026 đổi từ theo lượt sang **đi tự do** (mọi người cùng đi, không giới hạn bước, không thua; hợp đồng engine thêm cờ `freePlay`, mỗi nước nêu ghế của nó). Hợp đồng engine có cờ `cooperative`: game cùng phe thắng thì mọi ghế thắng; có người bỏ cuộc hay bỏ ván thì **ván dừng, không ai thắng** (thay vì những người còn lại thắng); màn hình báo "Cả đội thắng!", "Ván kết thúc", "Ván dừng" (chốt 12/11/2026, `add-jelly-crew-game`) |
 | 22 | Game từ bài toán kinh điển | **Tam giác cấm** dựng trên bài toán bữa tiệc Ramsey; lối chơi tránh tam giác là trò bút giấy cổ điển của toán học ("Sim", 1969), không phải board game thương mại, nên làm được với tên và hình riêng. Người dùng bảo làm thẳng tới bản chơi được và duyệt bằng chạy local thay cho mockup (chốt 13/11/2026, `add-forbidden-triangle-game`) |
+| 23 | Luật Cờ tướng | **Cờ tướng** làm sớm hơn v1 theo yêu cầu người dùng: quân **chữ Hán truyền thống** (帥/將…, phông Noto Serif TC), ký hiệu nước đi kiểu Việt Nam (P2-5, M8.7); **chiếu dai thì thua, thế cờ lặp lại lần thứ ba thì hoà, 120 nước không ăn quân thì hoà**; hết nước đi là thua; cùng máy, đấu với máy ba mức và online. Mockup duyệt trước khi code (chốt 13/11/2026, `add-xiangqi-game`) |

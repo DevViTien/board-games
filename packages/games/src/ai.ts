@@ -6,6 +6,7 @@ import { forbiddenTriangle } from "./forbidden-triangle";
 import type { RegisteredGameId } from "./ids";
 import { ludo } from "./ludo";
 import { tictactoe } from "./tictactoe";
+import { xiangqi } from "./xiangqi";
 
 /**
  * The games the AI plays (`meta.supportsAI`), for the AI's Worker (`@board-games/games/ai`): it
@@ -19,6 +20,7 @@ export const AI_GAMES = [
   ludo,
   fenceRace,
   forbiddenTriangle,
+  xiangqi,
 ] as const satisfies readonly (AnyGameDefinition & {
   readonly id: RegisteredGameId;
 })[];

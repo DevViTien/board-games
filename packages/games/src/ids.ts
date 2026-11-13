@@ -11,6 +11,7 @@ export const GAME_IDS = [
   "fence-race",
   "jelly-crew",
   "forbidden-triangle",
+  "xiangqi",
 ] as const;
 
 export type RegisteredGameId = (typeof GAME_IDS)[number];

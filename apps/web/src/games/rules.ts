@@ -18,4 +18,5 @@ export const GAME_RULES = {
   "jelly-crew": () => import("./jelly-crew/Rules").then((module) => module.JellyCrewRules),
   "forbidden-triangle": () =>
     import("./forbidden-triangle/Rules").then((module) => module.ForbiddenTriangleRules),
+  xiangqi: () => import("./xiangqi/Rules").then((module) => module.XiangqiRules),
 } as const satisfies Readonly<Record<RegisteredGameId, () => Promise<GameRulesComponent>>>;

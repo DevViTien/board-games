@@ -49,6 +49,7 @@ describe("buildMenu", () => {
       ["playable", "fence-race"],
       ["playable", "jelly-crew"],
       ["playable", "forbidden-triangle"],
+      ["playable", "xiangqi"],
       ["puzzle", "jelly-gather"],
     ]);
   });
@@ -106,6 +107,7 @@ describe("buildOptionChoices", () => {
         choices: [{ name: "guests", values: [5, 6, 7] }],
         defaults: { guests: 6 },
       },
+      xiangqi: { choices: [], defaults: {} },
     });
     expect(JSON.parse(JSON.stringify(choices))).toEqual(choices);
   });

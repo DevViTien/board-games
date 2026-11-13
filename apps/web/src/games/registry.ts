@@ -20,4 +20,5 @@ export const GAME_ENTRY_LOADERS = {
   "jelly-crew": () => import("./jelly-crew").then((module) => module.jellyCrewEntry),
   "forbidden-triangle": () =>
     import("./forbidden-triangle").then((module) => module.forbiddenTriangleEntry),
+  xiangqi: () => import("./xiangqi").then((module) => module.xiangqiEntry),
 } satisfies GameEntryLoaders;

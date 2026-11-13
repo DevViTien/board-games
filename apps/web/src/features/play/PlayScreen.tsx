@@ -1251,7 +1251,7 @@ export function PlayScreen<State, Move, Outcome>({
         choices={optionChoices}
         current={playedOptions ?? {}}
         online={online}
-        title={optionLabels.change(gameId)}
+        title={playedOptions === null ? "" : optionLabels.change(gameId)}
         onStart={(options) => {
           setChoosingOptions(false);
           // The dialog goes without giving the focus back. Online, the new game comes when the

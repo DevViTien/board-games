@@ -2,7 +2,7 @@ import "./globals.css";
 
 import { PAGE_BACKGROUND } from "@board-games/ui";
 import type { Metadata, Viewport } from "next";
-import { Be_Vietnam_Pro, Noto_Sans_JP } from "next/font/google";
+import { Be_Vietnam_Pro, Noto_Sans_JP, Noto_Serif_TC } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
@@ -25,6 +25,16 @@ const appFont = Be_Vietnam_Pro({
 // Fallback for Japanese glyphs. Not preloaded: the browser only fetches the slices a page uses.
 const cjkFont = Noto_Sans_JP({
   variable: "--font-cjk",
+  display: "swap",
+  preload: false,
+});
+
+// The characters on Cờ tướng's pieces (design §5 of `add-xiangqi-game`): the Japanese font lacks
+// 傌, so the pieces use Noto Serif TC. Not preloaded: its slices are fetched only when a page shows
+// these characters (a board or the rules of Cờ tướng). Never used for Vietnamese text.
+const pieceFont = Noto_Serif_TC({
+  weight: ["900"],
+  variable: "--font-xiangqi",
   display: "swap",
   preload: false,
 });
@@ -73,7 +83,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     <html
       lang={locale}
       data-theme={themeAttribute(theme)}
-      className={`${appFont.variable} ${cjkFont.variable}`}
+      className={`${appFont.variable} ${cjkFont.variable} ${pieceFont.variable}`}
     >
       <body className="min-h-dvh bg-bg font-sans text-body [word-break:auto-phrase] text-fg antialiased">
         {/* Every message but the rules' (`clientMessages`): the rules page translates them on the

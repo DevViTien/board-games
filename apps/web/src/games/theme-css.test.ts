@@ -109,6 +109,21 @@ const JELLY_CREW_KINDS = ["strawberry", "pandan", "mango", "taro", "grass", "ice
 
 /** Pairs of one game's look (`redesign-game-boards` design §2–§4). */
 const GAME_PAIRS: Readonly<Record<string, readonly Pair[]>> = {
+  // Design §7 of `add-xiangqi-game`: the characters on a piece, a piece's edge, the column numbers,
+  // and the marks (choice, targets, last move, check) on the wood and on a piece.
+  xiangqi: [
+    ["--fg-muted", "--game-tint", 4.5],
+    ["--game-mark-1", "--xiangqi-disc", 4.5],
+    ["--game-mark-2", "--xiangqi-disc", 4.5],
+    ["--xiangqi-disc-edge", "--game-board", 3],
+    ["--game-line", "--game-board", 4.5],
+    ...(["--game-board", "--xiangqi-disc"] as const).flatMap((ground): Pair[] => [
+      [["--game-highlight", "--xiangqi-halo"], ground, 3],
+      [["--xiangqi-target", "--xiangqi-halo"], ground, 3],
+      [["--game-last-move", "--xiangqi-halo"], ground, 3],
+      [["--xiangqi-check", "--xiangqi-halo"], ground, 3],
+    ]),
+  ],
   // Design §5 of `add-forbidden-triangle-game`: the lines not drawn, the guest chosen, the lost
   // triangle's edge and the danger sign on the tablecloth; a guest's edge, and its letter and the
   // danger sign on its plate.

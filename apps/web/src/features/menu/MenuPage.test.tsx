@@ -91,7 +91,7 @@ describe("MenuPage", () => {
     );
   });
 
-  it("Mọi game đã có luật đều chơi được: all seven games are playable, none coming soon", () => {
+  it("Mọi game đã có luật đều chơi được: all eight games are playable, none coming soon", () => {
     renderWithIntl(<MenuPage />);
 
     const names = [
@@ -102,6 +102,7 @@ describe("MenuPage", () => {
       "Cờ rào",
       "Đội gom thạch",
       "Tam giác cấm",
+      "Cờ tướng",
     ];
     // And the puzzle after them (its own card, below).
     expect(cardNames()).toEqual([...names, "Gom thạch"]);
@@ -122,6 +123,20 @@ describe("MenuPage", () => {
     expect(card.getByRole("link", { name: "Online" })).toHaveAttribute(
       "href",
       "/play/fence-race?mode=online",
+    );
+    expect(card.queryByText("Sắp có")).not.toBeInTheDocument();
+  });
+
+  it("Thẻ Cờ tướng: 2 players, about 20 minutes, Play and Online", () => {
+    renderWithIntl(<MenuPage />);
+
+    const card = gameCard("Cờ tướng");
+    expect(card.getByText("2 người")).toBeInTheDocument();
+    expect(card.getByText("~20 phút")).toBeInTheDocument();
+    expect(card.getByRole("link", { name: "Chơi" })).toHaveAttribute("href", "/play/xiangqi");
+    expect(card.getByRole("link", { name: "Online" })).toHaveAttribute(
+      "href",
+      "/play/xiangqi?mode=online",
     );
     expect(card.queryByText("Sắp có")).not.toBeInTheDocument();
   });
@@ -221,6 +236,7 @@ describe("MenuPage", () => {
       "fence-race",
       "jelly-crew",
       "forbidden-triangle",
+      "xiangqi",
       "jelly-gather",
     ]);
     expect(
@@ -252,13 +268,14 @@ describe("MenuPage", () => {
       "Cờ rào",
       "Đội gom thạch",
       "Tam giác cấm",
+      "Cờ tướng",
       "Cờ vua",
     ]);
     expect(gameCard("Cờ vua").getByText("Sắp có")).toBeInTheDocument();
     expect(gameCard("Cờ vua").queryByRole("link")).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("heading", { name: "Cờ vua" }));
-    // Play, Online and the rules on the six playable games' cards, the toolbox, and nothing more.
-    expect(within(screen.getByRole("main")).getAllByRole("link")).toHaveLength(19);
+    // Play, Online and the rules on the seven playable games' cards, the toolbox, and nothing more.
+    expect(within(screen.getByRole("main")).getAllByRole("link")).toHaveLength(22);
   });
 
   it("Mở từ menu: a link to the toolbox, above the games", () => {
@@ -270,11 +287,11 @@ describe("MenuPage", () => {
     expect(toolbox.compareDocumentPosition(firstGame)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   });
 
-  it("links every game of the real menu: Play, Online and the rules on each of the seven cards", () => {
+  it("links every game of the real menu: Play, Online and the rules on each of the eight cards", () => {
     renderWithIntl(<MenuPage />);
 
     // With the way to the toolbox and Gom thạch's "Chơi".
-    expect(within(screen.getByRole("main")).getAllByRole("link")).toHaveLength(23);
+    expect(within(screen.getByRole("main")).getAllByRole("link")).toHaveLength(26);
   });
 
   it("Thẻ Gom thạch: one player, its levels, one way in named with it, no Online", () => {
@@ -313,7 +330,7 @@ describe("MenuPage", () => {
     expect(new Set(descriptions).size).toBe(2);
   });
 
-  it("Tên liên kết không trùng: seven links to the rules, each named with its game", () => {
+  it("Tên liên kết không trùng: eight links to the rules, each named with its game", () => {
     renderWithIntl(<MenuPage />);
 
     const rules = within(screen.getByRole("main")).getAllByRole("link", { name: /^Luật chơi/ });
@@ -325,6 +342,7 @@ describe("MenuPage", () => {
       "Luật chơi Cờ rào",
       "Luật chơi Đội gom thạch",
       "Luật chơi Tam giác cấm",
+      "Luật chơi Cờ tướng",
     ]);
     expect(new Set(rules.map((link) => link.getAttribute("href")))).toEqual(
       new Set([
@@ -335,6 +353,7 @@ describe("MenuPage", () => {
         "/rules/fence-race",
         "/rules/jelly-crew",
         "/rules/forbidden-triangle",
+        "/rules/xiangqi",
       ]),
     );
     for (const [index, name] of [
@@ -345,6 +364,7 @@ describe("MenuPage", () => {
       "Luật chơi Cờ rào",
       "Luật chơi Đội gom thạch",
       "Luật chơi Tam giác cấm",
+      "Luật chơi Cờ tướng",
     ].entries()) {
       expect(rules[index]).toHaveAccessibleName(name);
     }

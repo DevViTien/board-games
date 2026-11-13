@@ -570,6 +570,83 @@
         "summary": "{guests}",
         "change": "Đổi bàn tiệc"
       }
+    },
+    "xiangqi": {
+      "name": "Cờ tướng",
+      "tagline": "Cờ quen thuộc của người Việt: chiếu bí Tướng bên kia để thắng",
+      "players": {
+        "red": "Đỏ",
+        "black": "Đen"
+      },
+      "pieces": {
+        "k": "Tướng",
+        "a": "Sĩ",
+        "e": "Tượng",
+        "h": "Mã",
+        "r": "Xe",
+        "c": "Pháo",
+        "p": "Tốt"
+      },
+      "colour": {
+        "red": "đỏ",
+        "black": "đen"
+      },
+      "point": {
+        "piece": "{piece} {colour} ở cột {col}, hàng {row}",
+        "empty": "Điểm trống ở cột {col}, hàng {row}",
+        "target": "Đi tới được",
+        "capture": "Ăn được",
+        "inCheck": "Đang bị chiếu"
+      },
+      "selection": {
+        "chosen": "Đã chọn {piece} {colour} ở cột {col}, hàng {row}: {moves}.",
+        "quiet": "đi được {count} điểm",
+        "capture": "ăn được {pieces}",
+        "noMoves": "{piece} {colour} ở cột {col}, hàng {row} không đi được."
+      },
+      "check": {
+        "badge": "Chiếu!",
+        "line": "{player} đang bị chiếu"
+      },
+      "flip": "Lật bàn",
+      "sheet": {
+        "title": "Sổ ghi",
+        "empty": "Chưa có nước nào",
+        "score": {
+          "red": "Đỏ thắng",
+          "black": "Đen thắng",
+          "draw": "Hoà"
+        }
+      },
+      "summary": {
+        "full": "Hơn {points} điểm",
+        "short": "+{points}"
+      },
+      "words": {
+        "line": "{piece} {place} {action}",
+        "column": "cột {n}",
+        "front": "trước",
+        "back": "sau",
+        "middle": "giữa",
+        "nth": "thứ {n}",
+        "markColumn": "{mark} {column}",
+        "forward": "tiến {n}",
+        "backward": "thoái {n}",
+        "forwardTo": "tiến lên cột {n}",
+        "backTo": "thoái về cột {n}",
+        "side": "bình sang cột {n}"
+      },
+      "move": {
+        "played": "đi {move}",
+        "check": "{move}, chiếu"
+      },
+      "result": {
+        "checkmate": "Chiếu bí.",
+        "noMoves": "{player} hết nước đi.",
+        "perpetualCheck": "{player} chiếu dai.",
+        "repetition": "Lặp lại ba lần.",
+        "quiet": "120 nước không ăn quân."
+      }
     }
   },
   "Modes": {
@@ -1525,6 +1602,50 @@
         "five": {
           "label": "Bàn 5 khách: vòng ngoài A–B–C–D–E là dây đỏ, năm đường chéo là dây xanh, không có tam giác cùng màu",
           "caption": "Bàn 5 khách nối hết dây mà không có tam giác cùng màu: hoà."
+        }
+      }
+    },
+    "xiangqi": {
+      "goal": {
+        "title": "Mục tiêu",
+        "body": "Hai người, <b>Đỏ</b> đi trước và <b>Đen</b>, lần lượt đi quân. Ai <b>chiếu bí</b> Tướng của bên kia, hoặc làm bên kia hết nước đi, là thắng."
+      },
+      "board": {
+        "title": "Bàn cờ",
+        "body": "Bàn có 9 cột × 10 hàng giao điểm; quân đứng trên giao điểm. Giữa bàn là <b>sông</b> (楚河 漢界). Mỗi bên có một <b>cung</b> 3 × 3 điểm có đường chéo. Cột đánh số 1–9 từ phải sang trái theo hướng nhìn của mỗi bên."
+      },
+      "pieces": {
+        "title": "Các quân",
+        "general": "<b>Tướng</b> (帥 / 將): đi một bước ngang hay dọc, không ra khỏi cung.",
+        "advisor": "<b>Sĩ</b> (仕 / 士): đi một bước chéo, không ra khỏi cung.",
+        "elephant": "<b>Tượng</b> (相 / 象): đi chéo hai bước, không qua sông; bị chặn khi điểm giữa có quân (cản mắt).",
+        "horse": "<b>Mã</b> (傌 / 馬): đi một bước thẳng rồi một bước chéo; bị chặn khi điểm kề theo hướng đi có quân (cản chân).",
+        "rook": "<b>Xe</b> (俥 / 車): đi thẳng bao xa cũng được, tới khi gặp quân.",
+        "cannon": "<b>Pháo</b> (炮 / 砲): đi như Xe, nhưng muốn ăn phải nhảy qua đúng một quân (ngòi).",
+        "soldier": "<b>Tốt</b> (兵 / 卒): tiến một bước; qua sông thì được đi ngang; không bao giờ lùi."
+      },
+      "check": {
+        "title": "Chiếu và Tướng đối mặt",
+        "body": "Không được đi nước để Tướng mình bị chiếu, và hai Tướng không được đứng cùng một cột mà không có quân nào ở giữa (<b>lộ mặt Tướng</b>)."
+      },
+      "end": {
+        "title": "Kết thúc ván",
+        "body": "Bên đến lượt không còn nước hợp lệ thì <b>thua</b>: bị chiếu là chiếu bí, không bị chiếu là hết nước. Hết nước cũng là thua, khác với Cờ vua.",
+        "perpetual": "<b>Chiếu dai</b>: một bên chiếu liên tục làm thế cờ lặp lại lần thứ ba thì bên đó <b>thua</b>. Thế cờ lặp lại lần thứ ba mà không phải chiếu dai thì <b>hoà</b>.",
+        "quiet": "<b>120 nước</b> liền (của cả hai bên) không ăn quân thì hoà."
+      },
+      "notation": {
+        "title": "Ký hiệu nước đi",
+        "body": "Sổ ghi theo kiểu Việt Nam: chữ của quân (Tg, S, T, M, X, P, B), cột của quân, dấu (<b>.</b> tiến, <b>/</b> thoái, <b>-</b> bình), rồi số bước hoặc cột tới. Ví dụ <b>P2-5</b> là Pháo cột 2 bình sang cột 5, <b>M8.7</b> là Mã cột 8 tiến lên cột 7, <b>X1/1</b> là Xe cột 1 thoái 1. Hai quân cùng loại trên một cột ghi <b>t</b> (trước) và <b>s</b> (sau)."
+      },
+      "figures": {
+        "horse": {
+          "label": "Mã đỏ ở giữa, một Tốt đỏ ngay trên nó: sáu điểm đi được có chấm, hai điểm phía trên có dấu nhân vì bị cản chân",
+          "caption": "Mã bị cản chân: quân đứng ngay trên chặn hai điểm phía trên."
+        },
+        "cannon": {
+          "label": "Pháo đỏ bên trái, Tốt đen làm ngòi ở giữa, Xe đen bên phải có góc ngoặc: Pháo ăn được Xe, các điểm sau ngòi không đi tới được",
+          "caption": "Pháo ăn qua đúng một ngòi; không đi tới các điểm sau ngòi."
         }
       }
     }

@@ -13,7 +13,8 @@
     "./chess": "./src/chess/index.ts",
     "./fence-race": "./src/fence-race/index.ts",
     "./jelly-crew": "./src/jelly-crew/index.ts",
-    "./forbidden-triangle": "./src/forbidden-triangle/index.ts"
+    "./forbidden-triangle": "./src/forbidden-triangle/index.ts",
+    "./xiangqi": "./src/xiangqi/index.ts"
   },
   "scripts": {
     "lint": "eslint .",

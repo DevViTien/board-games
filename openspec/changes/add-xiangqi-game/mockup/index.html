@@ -1,0 +1,1164 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Cờ tướng</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&family=Noto+Serif+TC:wght@700;900&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* App tokens copied from packages/ui/src/styles.css. */
+      :root {
+        color-scheme: light;
+        --bg: #f6f5f1;
+        --surface: #fff;
+        --surface-muted: #efede6;
+        --surface-raised: #fff;
+        --fg: #17182b;
+        --fg-muted: #5e6072;
+        --border: #e2e0d8;
+        --border-control: #7c7a72;
+        --accent: #5b34e6;
+        --accent-fg: #fff;
+        --accent-press: #3a1fa8;
+        --accent-soft: #ece7ff;
+        --accent-ink: #3a1fa8;
+        --celebration-soft: #ffe9db;
+        --celebration-ink: #a6430c;
+        --card: 0 1px 2px rgb(23 24 43/0.06);
+        --raised: 0 1px 2px rgb(23 24 43/0.12);
+        --r-c: 0.875rem;
+        --r-card: 1.25rem;
+      }
+      [data-theme="dark"] {
+        color-scheme: dark;
+        --bg: #121322;
+        --surface: #1b1c30;
+        --surface-muted: #24253b;
+        --surface-raised: #2e2f48;
+        --fg: #f1f0f7;
+        --fg-muted: #a9aabf;
+        --border: #2c2e47;
+        --border-control: #8a8cab;
+        --accent: #a894ff;
+        --accent-fg: #121322;
+        --accent-press: #6f5bd6;
+        --accent-soft: #2d2752;
+        --accent-ink: #d9d0ff;
+        --celebration-soft: #3a2a1e;
+        --celebration-ink: #ffb98c;
+        --card: 0 0 #0000;
+        --raised: 0 0 #0000;
+      }
+
+      /* The game's own tokens (would be games/xiangqi/theme.css). */
+      .game {
+        --game-page: #f3ead9;
+        --board: #e8c992;
+        --board-edge: #8a5a2b;
+        --line: #5b3a1a;
+        --river: #5b3a1a;
+        --disc: #f7ebd0;
+        --disc-edge: #7b5530;
+        --disc-shadow: #a37a49;
+        --red: #b3261e;
+        --black: #1d1b1a;
+        --target: #1f6f43;
+        --last: #2c5d8f;
+        --check: #d62d20;
+        --selected: #5b34e6;
+      }
+      [data-theme="dark"] .game {
+        --game-page: #17150f;
+        --board: #3a2c1c;
+        --board-edge: #c9a26b;
+        --line: #e2c391;
+        --river: #e2c391;
+        --disc: #2c241a;
+        --disc-edge: #d9b27a;
+        --disc-shadow: #120e09;
+        --red: #ff7b6e;
+        --black: #f1e6d2;
+        --target: #7fe0a8;
+        --last: #8cc0ff;
+        --check: #ff6b5e;
+        --selected: #b9a6ff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+      }
+      body {
+        font:
+          400 16px/1.55 "Be Vietnam Pro",
+          system-ui,
+          sans-serif;
+        background: #d9d7cf;
+        color: #17182b;
+      }
+      button {
+        font: inherit;
+        color: inherit;
+        cursor: pointer;
+      }
+      .shell {
+        display: flex;
+        gap: 20px;
+        padding: 16px;
+        min-height: 100%;
+        align-items: flex-start;
+      }
+      .panel {
+        width: 270px;
+        flex: none;
+        background: #fff;
+        border-radius: 14px;
+        padding: 14px;
+        font-size: 13px;
+        position: sticky;
+        top: 16px;
+        max-height: calc(100vh - 32px);
+        overflow: auto;
+      }
+      .panel h1 {
+        font-size: 15px;
+        margin: 0 0 6px;
+      }
+      .panel h2 {
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #5e6072;
+        margin: 14px 0 5px;
+      }
+      .panel button {
+        display: block;
+        width: 100%;
+        text-align: left;
+        border: 1px solid #d6d4cc;
+        background: #fff;
+        border-radius: 7px;
+        padding: 4px 8px;
+        margin-bottom: 3px;
+        font-size: 12.5px;
+        color: #17182b;
+      }
+      .panel button.on {
+        background: #17182b;
+        color: #fff;
+      }
+      .panel p {
+        margin: 6px 0;
+        color: #3b3d52;
+        line-height: 1.45;
+      }
+      .bare .shell {
+        padding: 0;
+      }
+      .bare .panel {
+        display: none;
+      }
+      .bare .frame {
+        border-radius: 0;
+        box-shadow: none;
+      }
+      .frame {
+        flex: none;
+        background: var(--bg);
+        color: var(--fg);
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 8px 30px rgb(0 0 0/0.25);
+        position: relative;
+        transform: translateZ(0);
+      }
+      .screen {
+        position: absolute;
+        inset: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .frame.game {
+        background: var(--game-page);
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        background: inherit;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        height: 56px;
+        padding: 0 12px;
+        flex: none;
+      }
+      .wide .topbar {
+        height: 64px;
+        padding: 0 40px;
+      }
+      .topbar .t {
+        font-weight: 700;
+        font-size: 1.125rem;
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .wide .topbar .t {
+        text-align: center;
+        font-size: 1.75rem;
+      }
+      .tb {
+        height: 44px;
+        min-width: 44px;
+        border: 1.5px solid var(--fg);
+        border-radius: var(--r-c);
+        background: var(--surface);
+        display: grid;
+        place-items: center;
+        font-size: 13px;
+        font-weight: 700;
+        padding: 0 10px;
+        flex: none;
+      }
+      .back {
+        display: inline-grid;
+        place-items: center;
+        border: 0;
+        background: none;
+        width: 44px;
+        height: 44px;
+        flex: none;
+        font-size: 22px;
+      }
+      main {
+        padding: 12px 16px 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        flex: 1;
+        width: 100%;
+        max-width: 72rem;
+        margin: 0 auto;
+      }
+      .wide main {
+        padding: 24px 40px 40px;
+      }
+      .muted {
+        color: var(--fg-muted);
+      }
+      .small {
+        font-size: 0.875rem;
+        line-height: 1.45;
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--r-card);
+        box-shadow: var(--card);
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border-radius: var(--r-c);
+        min-height: 48px;
+        padding: 0 18px;
+        font-weight: 600;
+        border: 0;
+        color: var(--fg);
+        background: none;
+      }
+      .btn.primary {
+        background: var(--accent);
+        color: var(--accent-fg);
+        font-weight: 700;
+        box-shadow: 0 2px 0 var(--accent-press);
+      }
+      .btn.secondary {
+        background: var(--surface);
+        border: 1.5px solid var(--fg);
+      }
+      .btn.quiet {
+        border: 1.5px dashed var(--border-control);
+        background: var(--surface-muted);
+        color: var(--fg-muted);
+      }
+      .status {
+        text-align: center;
+        font-weight: 800;
+        font-size: 1.5rem;
+        margin: 2px 0;
+      }
+      .wide .status {
+        text-align: left;
+      }
+      .bar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 14px;
+        border-radius: 14px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+      }
+      .bar.turn {
+        border: 2px solid var(--fg);
+      }
+      .bar b {
+        display: block;
+        line-height: 1.2;
+      }
+      .bar .pill {
+        margin-left: auto;
+        background: var(--fg);
+        color: var(--bg);
+        font-weight: 700;
+        font-size: 0.8rem;
+        border-radius: 999px;
+        padding: 2px 10px;
+      }
+      .bar .lead {
+        margin-left: auto;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--fg-muted);
+      }
+      .sheet {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+        padding: 10px 14px;
+        border-radius: 14px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        font-weight: 600;
+      }
+      .sheet .n {
+        color: var(--fg-muted);
+      }
+      .sheet .cur {
+        background: var(--surface-muted);
+        border-radius: 6px;
+        padding: 0 6px;
+        box-shadow: 0 2px 0 var(--border-control);
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .wide .row {
+        justify-content: flex-start;
+      }
+      .note {
+        font-size: 0.95rem;
+        color: var(--fg-muted);
+      }
+      .board {
+        width: 100%;
+      }
+      .board svg {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+      .layout {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .wide .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 29rem) minmax(0, 22rem);
+        gap: 40px;
+        justify-content: center;
+        align-items: start;
+      }
+      .col {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .result {
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .badge {
+        align-self: flex-start;
+        background: var(--celebration-soft);
+        color: var(--celebration-ink);
+        font-weight: 700;
+        font-size: 0.875rem;
+        border-radius: 999px;
+        padding: 3px 12px;
+      }
+      .result h2 {
+        margin: 0;
+        font-size: 2.1rem;
+        line-height: 1.1;
+        font-weight: 800;
+      }
+
+      /* Setup card. */
+      .setup {
+        overflow: hidden;
+        max-width: 40rem;
+        width: 100%;
+        margin: 0 auto;
+      }
+      .setup .head {
+        background: #f5e9cf;
+        padding: 20px;
+        display: flex;
+        gap: 16px;
+        align-items: center;
+      }
+      [data-theme="dark"] .setup .head {
+        background: #2a2216;
+      }
+      .setup .head h1 {
+        margin: 0;
+        font-size: 1.75rem;
+      }
+      .setup .body {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      fieldset {
+        border: 0;
+        margin: 0;
+        padding: 0;
+      }
+      legend {
+        padding: 0;
+        margin-bottom: 8px;
+        font-size: 0.8125rem;
+        color: var(--fg-muted);
+      }
+      .track {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        border-radius: var(--r-c);
+        background: var(--surface-muted);
+        padding: 4px;
+      }
+      .seg {
+        flex: auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        min-height: 44px;
+        padding: 0 12px;
+        border-radius: 10px;
+        border: 1px solid transparent;
+        font-weight: 600;
+        font-size: 0.95rem;
+      }
+      .seg.on {
+        background: var(--surface-raised);
+        border-color: var(--border-control);
+        box-shadow: var(--raised);
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="panel">
+        <h1>Cờ tướng</h1>
+        <p>
+          Mockup của <code>add-xiangqi-game</code>. Nước đi được tính bằng một bộ sinh nước nhỏ
+          (đúng luật: cản mã, cản mắt tượng, ngòi pháo, cung, sông, lộ mặt tướng), không vẽ tay.
+        </p>
+        <h2>Cảnh</h2>
+        <div id="scenes"></div>
+        <h2>Khung</h2>
+        <div id="vps"></div>
+        <h2>Giao diện</h2>
+        <div id="themes"></div>
+      </aside>
+      <div class="frame" id="frame"><div class="screen" id="screen"></div></div>
+    </div>
+    <script>
+      const SCENES = {
+        play: "Chơi thử (bấm quân rồi bấm điểm)",
+        setup: "Màn bắt đầu ván",
+        start: "Đầu ván (cùng máy)",
+        selected: "Chọn Pháo: nước đi và nước ăn",
+        check: "Đen bị chiếu",
+        mate: "Chiếu bí: Đỏ thắng",
+        ai: "Đấu với máy, máy đang nghĩ",
+      };
+      const VPS = ["390x844", "1280x800", "360x640"];
+      const q = new URLSearchParams(location.search);
+      const S = {
+        scene: q.get("scene") ?? "play",
+        vp: q.get("vp") ?? "390x844",
+        theme: q.get("theme") ?? "light",
+      };
+      if (q.has("bare")) document.body.classList.add("bare");
+
+      /* ---- A small xiangqi: x 0–8 from Đỏ's left, y 0–9 from Đen's back rank. ---- */
+      const GLYPH = {
+        K: "帥",
+        A: "仕",
+        E: "相",
+        H: "傌",
+        R: "俥",
+        C: "炮",
+        P: "兵",
+        k: "將",
+        a: "士",
+        e: "象",
+        h: "馬",
+        r: "車",
+        c: "砲",
+        p: "卒",
+      };
+      const NAME = { k: "Tướng", a: "Sĩ", e: "Tượng", h: "Mã", r: "Xe", c: "Pháo", p: "Tốt" };
+      const SHORT = { k: "Tg", a: "S", e: "T", h: "M", r: "X", c: "P", p: "B" };
+      const START = [
+        "rheakaehr",
+        ".........",
+        ".c.....c.",
+        "p.p.p.p.p",
+        ".........",
+        ".........",
+        "P.P.P.P.P",
+        ".C.....C.",
+        ".........",
+        "RHEAKAEHR",
+      ];
+      const isRed = (p) => p === p.toUpperCase();
+      const at = (b, x, y) => (x < 0 || x > 8 || y < 0 || y > 9 ? null : b[y][x]);
+      function parse(rows) {
+        return rows.map((r) => [...r].map((c) => (c === "." ? "" : c)));
+      }
+      const inPalace = (red, x, y) => x >= 3 && x <= 5 && (red ? y >= 7 : y <= 2);
+      function pseudo(b, x, y) {
+        const p = b[y][x];
+        if (!p) return [];
+        const red = isRed(p),
+          k = p.toLowerCase(),
+          out = [];
+        const own = (t) => t && isRed(t) === red;
+        const add = (nx, ny) => {
+          const t = at(b, nx, ny);
+          if (t === null || own(t)) return;
+          out.push([nx, ny]);
+        };
+        if (k === "k")
+          for (const [dx, dy] of [
+            [1, 0],
+            [-1, 0],
+            [0, 1],
+            [0, -1],
+          ]) {
+            if (inPalace(red, x + dx, y + dy)) add(x + dx, y + dy);
+          }
+        if (k === "a")
+          for (const [dx, dy] of [
+            [1, 1],
+            [1, -1],
+            [-1, 1],
+            [-1, -1],
+          ]) {
+            if (inPalace(red, x + dx, y + dy)) add(x + dx, y + dy);
+          }
+        if (k === "e")
+          for (const [dx, dy] of [
+            [2, 2],
+            [2, -2],
+            [-2, 2],
+            [-2, -2],
+          ]) {
+            const ny = y + dy;
+            if (red ? ny < 5 : ny > 4) continue;
+            if (at(b, x + dx / 2, y + dy / 2) === "") add(x + dx, ny);
+          }
+        if (k === "h")
+          for (const [dx, dy, lx, ly] of [
+            [1, 2, 0, 1],
+            [-1, 2, 0, 1],
+            [1, -2, 0, -1],
+            [-1, -2, 0, -1],
+            [2, 1, 1, 0],
+            [2, -1, 1, 0],
+            [-2, 1, -1, 0],
+            [-2, -1, -1, 0],
+          ]) {
+            if (at(b, x + lx, y + ly) === "") add(x + dx, y + dy);
+          }
+        if (k === "r" || k === "c")
+          for (const [dx, dy] of [
+            [1, 0],
+            [-1, 0],
+            [0, 1],
+            [0, -1],
+          ]) {
+            let nx = x + dx,
+              ny = y + dy,
+              jumped = false;
+            while (at(b, nx, ny) !== null) {
+              const t = b[ny][nx];
+              if (!jumped) {
+                if (t === "") out.push([nx, ny]);
+                else {
+                  if (k === "r") {
+                    if (!own(t)) out.push([nx, ny]);
+                    break;
+                  }
+                  jumped = true;
+                }
+              } else if (t !== "") {
+                if (!own(t)) out.push([nx, ny]);
+                break;
+              }
+              nx += dx;
+              ny += dy;
+            }
+          }
+        if (k === "p") {
+          const f = red ? -1 : 1;
+          add(x, y + f);
+          const crossed = red ? y <= 4 : y >= 5;
+          if (crossed) {
+            add(x + 1, y);
+            add(x - 1, y);
+          }
+        }
+        return out;
+      }
+      function find(b, piece) {
+        for (let y = 0; y < 10; y++)
+          for (let x = 0; x < 9; x++) if (b[y][x] === piece) return [x, y];
+        return null;
+      }
+      function attacked(b, red, x, y) {
+        for (let yy = 0; yy < 10; yy++)
+          for (let xx = 0; xx < 9; xx++) {
+            const p = b[yy][xx];
+            if (p && isRed(p) !== red && pseudo(b, xx, yy).some(([a, c]) => a === x && c === y))
+              return true;
+          }
+        return false;
+      }
+      function facing(b) {
+        const r = find(b, "K"),
+          k = find(b, "k");
+        if (!r || !k || r[0] !== k[0]) return false;
+        for (let y = k[1] + 1; y < r[1]; y++) if (b[y][r[0]]) return false;
+        return true;
+      }
+      function inCheck(b, red) {
+        const g = find(b, red ? "K" : "k");
+        return g !== null && attacked(b, red, g[0], g[1]);
+      }
+      function legal(b, x, y) {
+        const red = isRed(b[y][x]);
+        return pseudo(b, x, y).filter(([nx, ny]) => {
+          const c = b.map((r) => r.slice());
+          c[ny][nx] = c[y][x];
+          c[y][x] = "";
+          return !facing(c) && !inCheck(c, red);
+        });
+      }
+      function anyLegal(b, red) {
+        for (let y = 0; y < 10; y++)
+          for (let x = 0; x < 9; x++) {
+            const p = b[y][x];
+            if (p && isRed(p) === red && legal(b, x, y).length) return true;
+          }
+        return false;
+      }
+      /** Vietnamese notation: piece, column (from its own right), . tiến / thoái - bình, then column or steps. */
+      function notation(b, [x, y], [nx, ny]) {
+        const p = b[y][x],
+          red = isRed(p),
+          k = p.toLowerCase();
+        const col = (cx) => (red ? 9 - cx : cx + 1);
+        const fwd = red ? y - ny : ny - y;
+        const sign = fwd > 0 ? "." : fwd < 0 ? "/" : "-";
+        const straight = "krcp".includes(k);
+        const tail = sign === "-" ? col(nx) : straight ? Math.abs(fwd) : col(nx);
+        return `${SHORT[k]}${col(x)}${sign}${tail}`;
+      }
+      function play(b, moves) {
+        const notes = [];
+        let c = b.map((r) => r.slice());
+        let last = null;
+        for (const [f, t] of moves) {
+          notes.push(notation(c, f, t));
+          c[t[1]][t[0]] = c[f[1]][f[0]];
+          c[f[1]][f[0]] = "";
+          last = [f, t];
+        }
+        return { b: c, notes, last };
+      }
+
+      const WORTH = { r: 9, c: 5, h: 4, e: 2, a: 2, p: 1, k: 0 };
+      function lead(b) {
+        let red = 0,
+          black = 0;
+        for (const row of b)
+          for (const q of row)
+            if (q) {
+              if (isRed(q)) red += WORTH[q.toLowerCase()];
+              else black += WORTH[q];
+            }
+        return red - black;
+      }
+      const leadText = (n) => (n > 0 ? `Hơn ${n} điểm` : null);
+
+      /* ---- Drawing. ---- */
+      const CELL = 10,
+        M = 7,
+        MY = 10;
+      const px = (x) => M + x * CELL,
+        py = (y) => MY + y * CELL;
+      function boardSvg(
+        b,
+        { selected = null, targets = [], last = null, check = null, hits = false } = {},
+      ) {
+        const W = M * 2 + 8 * CELL,
+          H = MY * 2 + 9 * CELL;
+        let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Bàn cờ tướng">`;
+        s += `<rect x="0.5" y="0.5" width="${W - 1}" height="${H - 1}" rx="2.5" fill="var(--board)" stroke="var(--board-edge)" stroke-width="1"/>`;
+        const L = (x1, y1, x2, y2, w = 0.35) =>
+          `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--line)" stroke-width="${w}"/>`;
+        s += `<rect x="${px(0)}" y="${py(0)}" width="${8 * CELL}" height="${9 * CELL}" fill="none" stroke="var(--line)" stroke-width=".7"/>`;
+        for (let y = 1; y < 9; y++) s += L(px(0), py(y), px(8), py(y));
+        for (let x = 1; x < 8; x++) {
+          s += L(px(x), py(0), px(x), py(4));
+          s += L(px(x), py(5), px(x), py(9));
+        }
+        s +=
+          L(px(3), py(0), px(5), py(2)) +
+          L(px(5), py(0), px(3), py(2)) +
+          L(px(3), py(7), px(5), py(9)) +
+          L(px(5), py(7), px(3), py(9));
+        // The river.
+        s += `<text x="${px(2)}" y="${py(4.5) + 2}" text-anchor="middle" font-size="5" font-family="Noto Serif TC" font-weight="700" fill="var(--river)">楚 河</text>`;
+        s += `<text x="${px(6)}" y="${py(4.5) + 2}" text-anchor="middle" font-size="5" font-family="Noto Serif TC" font-weight="700" fill="var(--river)">漢 界</text>`;
+        // Marks of the cannons' and soldiers' points.
+        const mark = (x, y) => {
+          let m = "";
+          for (const [dx, dy] of [
+            [1, 1],
+            [1, -1],
+            [-1, 1],
+            [-1, -1],
+          ]) {
+            if (x + dx < 0 || x + dx > 8) continue;
+            const cx = px(x) + dx * 1.2,
+              cy = py(y) + dy * 1.2;
+            m += `<path d="M${cx + dx * 1.6} ${cy}H${cx}V${cy + dy * 1.6}" fill="none" stroke="var(--line)" stroke-width=".3"/>`;
+          }
+          return m;
+        };
+        for (const [x, y] of [
+          [1, 2],
+          [7, 2],
+          [1, 7],
+          [7, 7],
+          [0, 3],
+          [2, 3],
+          [4, 3],
+          [6, 3],
+          [8, 3],
+          [0, 6],
+          [2, 6],
+          [4, 6],
+          [6, 6],
+          [8, 6],
+        ])
+          s += mark(x, y);
+        // Column numbers: Đen's 1–9 on top, Đỏ's 9–1 below.
+        for (let x = 0; x < 9; x++) {
+          s += `<text x="${px(x)}" y="3.4" text-anchor="middle" font-size="2.6" font-weight="700" fill="var(--line)">${x + 1}</text>`;
+          s += `<text x="${px(x)}" y="${H - 1.2}" text-anchor="middle" font-size="2.6" font-weight="700" fill="var(--line)">${9 - x}</text>`;
+        }
+        // The last move: a dashed ring where it came from, and around the piece that moved.
+        if (last) {
+          const [[fx, fy], [tx, ty]] = last;
+          s += `<circle cx="${px(fx)}" cy="${py(fy)}" r="2.2" fill="none" stroke="var(--last)" stroke-width=".6" stroke-dasharray="1 .8"/>`;
+          s += `<circle cx="${px(tx)}" cy="${py(ty)}" r="5" fill="none" stroke="var(--last)" stroke-width=".7" stroke-dasharray="1.2 .9"/>`;
+        }
+        for (let y = 0; y < 10; y++)
+          for (let x = 0; x < 9; x++) {
+            const p = b[y][x];
+            if (!p) continue;
+            const red = isRed(p),
+              cx = px(x),
+              cy = py(y);
+            const sel = selected && selected[0] === x && selected[1] === y;
+            const chk = check && check[0] === x && check[1] === y;
+            if (chk)
+              s += `<circle cx="${cx}" cy="${cy}" r="5.6" fill="var(--check)" opacity=".35"/><circle cx="${cx}" cy="${cy}" r="5.3" fill="none" stroke="var(--check)" stroke-width=".8"/>`;
+            s += `<circle cx="${cx}" cy="${cy + 0.5}" r="4.3" fill="var(--disc-shadow)"/>`;
+            s += `<circle cx="${cx}" cy="${cy}" r="4.3" fill="var(--disc)" stroke="${sel ? "var(--selected)" : "var(--disc-edge)"}" stroke-width="${sel ? 1 : 0.4}"/>`;
+            s += `<circle cx="${cx}" cy="${cy}" r="3.4" fill="none" stroke="${red ? "var(--red)" : "var(--black)"}" stroke-width=".35"/>`;
+            s += `<text x="${cx}" y="${cy + 1.6}" text-anchor="middle" font-size="4.4" font-family="Noto Serif TC" font-weight="900" fill="${red ? "var(--red)" : "var(--black)"}">${GLYPH[p]}</text>`;
+          }
+        // Targets: a dot on an empty point, corner ticks around a piece to take.
+        for (const [x, y] of targets) {
+          const cx = px(x),
+            cy = py(y);
+          if (b[y][x]) {
+            let c = "";
+            for (const [dx, dy] of [
+              [1, 1],
+              [1, -1],
+              [-1, 1],
+              [-1, -1],
+            ])
+              c += `<path d="M${cx + dx * 5} ${cy + dy * 3}V${cy + dy * 5}H${cx + dx * 3}" fill="none" stroke="var(--target)" stroke-width=".9"/>`;
+            s += c;
+          } else s += `<circle cx="${cx}" cy="${cy}" r="1.6" fill="var(--target)"/>`;
+        }
+        if (hits)
+          for (let y = 0; y < 10; y++)
+            for (let x = 0; x < 9; x++)
+              s += `<circle data-x="${x}" data-y="${y}" cx="${px(x)}" cy="${py(y)}" r="5" fill="transparent" style="cursor:pointer"/>`;
+        return s + "</svg>";
+      }
+
+      const BOOK =
+        '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2V4ZM22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8V4Z"/></svg>';
+      const FLIP =
+        '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16"/></svg>';
+      function topbar(title, wide) {
+        return `<header class="topbar"><button class="back">←</button>${wide ? '<b style="font-size:.9rem;margin-left:-6px">Về menu</b>' : ""}<span class="t">${title}</span><span class="tb" style="gap:6px;display:inline-flex;align-items:center">${BOOK}${wide ? "Luật chơi" : ""}</span><span class="tb">VI</span></header>`;
+      }
+      const disc = (p) =>
+        `<svg viewBox="0 0 10 10" width="32" height="32"><circle cx="5" cy="5" r="4.6" fill="var(--disc)" stroke="var(--disc-edge)" stroke-width=".4"/><circle cx="5" cy="5" r="3.7" fill="none" stroke="${isRed(p) ? "var(--red)" : "var(--black)"}" stroke-width=".35"/><text x="5" y="6.7" text-anchor="middle" font-size="4.8" font-family="Noto Serif TC" font-weight="900" fill="${isRed(p) ? "var(--red)" : "var(--black)"}">${GLYPH[p]}</text></svg>`;
+      function bar(red, o) {
+        const p = red ? "K" : "k";
+        return `<div class="bar game${o.turn ? " turn" : ""}">${disc(p)}<span><b>${o.name}</b><span class="small muted">${o.sub}</span></span>${o.turn ? '<span class="pill">Đến lượt</span>' : o.lead ? `<span class="lead">${o.lead}</span>` : ""}</div>`;
+      }
+      function sheet(notes) {
+        if (!notes.length)
+          return `<div class="sheet"><span class="muted">Chưa có nước nào</span></div>`;
+        let h = "";
+        notes.forEach((n, i) => {
+          if (i % 2 === 0) h += `<span class="n">${i / 2 + 1}.</span>`;
+          h += `<span class="${i === notes.length - 1 ? "cur" : ""}">${n}</span>`;
+        });
+        return `<div class="sheet">${h}</div>`;
+      }
+      function playScreen(wide, o) {
+        const status = o.result ? "" : `<p class="status">${o.status}</p>`;
+        const result = o.result
+          ? `<section class="card result"><span class="badge">🏆 Kết thúc</span><h2>${o.result}</h2><p class="muted" style="margin:0">${o.detail}</p><div class="row" style="justify-content:flex-start"><button class="btn primary" data-act="new">Ván mới</button></div></section>`
+          : "";
+        const top = bar(false, o.black),
+          bottom = bar(true, o.red);
+        const board = `<div class="board game">${boardSvg(o.b, o)}</div>`;
+        const note = o.note ? `<p class="note">${o.note}</p>` : "";
+        const buttons = `<div class="row"><button class="btn secondary" data-act="undo">Hoàn tác</button><button class="btn quiet">Làm lại</button><button class="btn primary" data-act="new">Ván mới</button><button class="tb" data-act="flip" aria-label="Lật bàn">${FLIP}</button></div>`;
+        const body = wide
+          ? `<div class="layout"><div class="col">${top}${board}${bottom}</div><div class="col">${status}${result}${note}${sheet(o.notes)}${o.result ? "" : buttons}</div></div>`
+          : `<div class="layout">${status}${result}${top}${board}${bottom}${note}${sheet(o.notes)}${o.result ? "" : buttons}</div>`;
+        return `${topbar("Cờ tướng", wide)}<main>${body}</main>`;
+      }
+      function setupScreen(wide) {
+        const seg = (legend, values, chosen) =>
+          `<fieldset><legend>${legend}</legend><div class="track">${values.map((v, i) => `<span class="seg${i === chosen ? " on" : ""}">${i === chosen ? "✓ " : ""}${v}</span>`).join("")}</div></fieldset>`;
+        return `${topbar("", wide)}<main><section class="card setup"><div class="head game"><div style="width:64px">${disc("K")}</div><h1>Cờ tướng</h1></div><div class="body">${seg("Chế độ", ["Đấu với máy", "Cùng máy", "Online"], 0)}${seg("Mức độ", ["Dễ", "Vừa", "Khó"], 1)}${seg("Ai đi trước", ["Tôi (Đỏ)", "Máy", "Ngẫu nhiên"], 0)}<button class="btn primary" style="width:100%">Bắt đầu</button></div></section></main>`;
+      }
+
+      const G = {
+        b: parse(START),
+        red: true,
+        notes: [],
+        last: null,
+        sel: null,
+        steps: [],
+        quiet: 0,
+        result: null,
+        detail: "",
+        undo: [],
+        flipped: false,
+      };
+      function key(b, red) {
+        return b.map((r) => r.map((c) => c || ".").join("")).join("/") + (red ? "w" : "b");
+      }
+      function newGame() {
+        Object.assign(G, {
+          b: parse(START),
+          red: true,
+          notes: [],
+          last: null,
+          sel: null,
+          steps: [{ key: key(parse(START), true), check: false, red: null }],
+          quiet: 0,
+          result: null,
+          detail: "",
+          undo: [],
+        });
+      }
+      newGame();
+      function move(from, to) {
+        G.undo.push(JSON.stringify({ ...G, undo: [] }));
+        const capture = G.b[to[1]][to[0]] !== "";
+        G.notes.push(notation(G.b, from, to));
+        G.b[to[1]][to[0]] = G.b[from[1]][from[0]];
+        G.b[from[1]][from[0]] = "";
+        const mover = G.red;
+        G.red = !G.red;
+        G.last = [from, to];
+        G.sel = null;
+        G.quiet = capture ? 0 : G.quiet + 1;
+        const check = inCheck(G.b, G.red);
+        if (capture) G.steps = [];
+        G.steps.push({ key: key(G.b, G.red), check, red: mover });
+        const side = (red) => (red ? "Đỏ" : "Đen");
+        if (!anyLegal(G.b, G.red)) {
+          G.result = `${side(mover)} thắng!`;
+          G.detail = check ? "Chiếu bí." : `${side(G.red)} hết nước đi.`;
+          return;
+        }
+        const k = G.steps.at(-1).key;
+        const seen = G.steps.filter((st) => st.key === k).length;
+        if (seen >= 3) {
+          const first = G.steps.findIndex((st) => st.key === k);
+          const since = G.steps.slice(first + 1);
+          const allChecks = (red) => {
+            const mine = since.filter((st) => st.red === red);
+            return mine.length > 0 && mine.every((st) => st.check);
+          };
+          const r = allChecks(true),
+            bl = allChecks(false);
+          if (r !== bl) {
+            const loser = r;
+            G.result = `${side(!loser)} thắng!`;
+            G.detail = `${side(loser)} chiếu dai.`;
+          } else {
+            G.result = "Hoà!";
+            G.detail = "Lặp lại ba lần.";
+          }
+          return;
+        }
+        if (G.quiet >= 120) {
+          G.result = "Hoà!";
+          G.detail = "120 nước không ăn quân.";
+        }
+      }
+      function playScene(wide) {
+        const check = !G.result && inCheck(G.b, G.red) ? find(G.b, G.red ? "K" : "k") : null;
+        const targets = G.sel ? legal(G.b, G.sel[0], G.sel[1]) : [];
+        const side = (red) => (red ? "Đỏ" : "Đen");
+        let note = "Bấm một quân của bên đến lượt, rồi bấm điểm có chấm hoặc quân có góc ngoặc.";
+        if (G.sel) {
+          const q = G.b[G.sel[1]][G.sel[0]];
+          const takes = targets
+            .filter(([x, y]) => G.b[y][x])
+            .map(([x, y]) => NAME[G.b[y][x].toLowerCase()]);
+          note = `Đã chọn ${NAME[q.toLowerCase()]} ${isRed(q) ? "đỏ" : "đen"}: đi được ${targets.length - takes.length} điểm${takes.length ? `, ăn được ${takes.join(", ")}` : ""}.`;
+        }
+        const l = lead(G.b);
+        return playScreen(wide, {
+          b: G.b,
+          notes: G.notes,
+          last: G.last,
+          selected: G.sel,
+          targets,
+          check,
+          hits: !G.result,
+          status: `${check ? "Chiếu! " : ""}Đến lượt ${side(G.red)}`,
+          result: G.result,
+          detail: G.detail,
+          note: G.result ? null : note,
+          red: { name: "Đỏ", sub: "Ở máy này", turn: !G.result && G.red, lead: leadText(l) },
+          black: { name: "Đen", sub: "Ở máy này", turn: !G.result && !G.red, lead: leadText(-l) },
+        });
+      }
+      document.getElementById("screen").addEventListener("click", (e) => {
+        if (S.scene !== "play") return;
+        const act = e.target.closest("[data-act]")?.dataset.act;
+        if (act === "new") {
+          newGame();
+          return render();
+        }
+        if (act === "undo") {
+          const prev = G.undo.pop();
+          if (prev) {
+            const u = G.undo;
+            Object.assign(G, JSON.parse(prev));
+            G.undo = u;
+          }
+          return render();
+        }
+        const hit = e.target.closest("[data-x]");
+        if (!hit || G.result) return;
+        const x = Number(hit.dataset.x),
+          y = Number(hit.dataset.y);
+        const q = G.b[y][x];
+        if (G.sel) {
+          if (legal(G.b, G.sel[0], G.sel[1]).some(([a, c]) => a === x && c === y)) {
+            move(G.sel, [x, y]);
+            return render();
+          }
+          if (G.sel[0] === x && G.sel[1] === y) {
+            G.sel = null;
+            return render();
+          }
+        }
+        G.sel = q && isRed(q) === G.red && legal(G.b, x, y).length ? [x, y] : null;
+        render();
+      });
+      window.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && S.scene === "play") {
+          G.sel = null;
+          render();
+        }
+      });
+
+      function render() {
+        const [w, h] = S.vp.split("x").map(Number);
+        const wide = w >= 1024;
+        const frame = document.getElementById("frame"),
+          screen = document.getElementById("screen");
+        frame.style.width = `${w}px`;
+        frame.style.height = `${h}px`;
+        document.documentElement.dataset.theme = S.theme;
+        frame.classList.toggle("wide", wide);
+        frame.classList.toggle("game", S.scene !== "setup");
+        const start = parse(START);
+        const opening = [
+          [
+            [7, 7],
+            [4, 7],
+          ],
+          [
+            [7, 0],
+            [6, 2],
+          ],
+          [
+            [7, 9],
+            [6, 7],
+          ],
+          [
+            [8, 0],
+            [7, 0],
+          ],
+        ];
+        const local = {
+          red: { name: "Đỏ", sub: "Ở máy này", turn: true },
+          black: { name: "Đen", sub: "Ở máy này" },
+        };
+        let html;
+        if (S.scene === "play") html = playScene(wide);
+        else if (S.scene === "setup") html = setupScreen(wide);
+        else if (S.scene === "start")
+          html = playScreen(wide, { b: start, notes: [], status: "Đến lượt Đỏ", ...local });
+        else if (S.scene === "selected") {
+          const g = play(start, opening);
+          html = playScreen(wide, {
+            b: g.b,
+            notes: g.notes,
+            last: g.last,
+            status: "Đến lượt Đỏ",
+            selected: [4, 7],
+            targets: legal(g.b, 4, 7),
+            note: "Đã chọn Pháo đỏ ở cột 5: đi được 4 điểm, ăn được Tốt đen.",
+            ...local,
+          });
+        } else if (S.scene === "check" || S.scene === "mate") {
+          const rows = [
+            "R...k....",
+            ".........",
+            ".........",
+            ".........",
+            "..e.p....",
+            "..P......",
+            ".......c.",
+            ".........",
+            "....A....",
+            "...K.....",
+          ];
+          if (S.scene === "mate") rows[1] = "........R";
+          const b = parse(rows);
+          const g = find(b, "k");
+          const mate = !anyLegal(b, false);
+          html = playScreen(wide, {
+            b,
+            notes: S.scene === "mate" ? ["X1.3", "B5.1", "X9.4"] : ["X9.4"],
+            last: [
+              [0, 4],
+              [0, 0],
+            ],
+            check: g,
+            status: "Chiếu! Đến lượt Đen",
+            result: S.scene === "mate" && mate ? "Đỏ thắng!" : null,
+            detail: "Chiếu bí: Tướng đen không còn đường thoát.",
+            red: { name: "Đỏ", sub: "Ở máy này", lead: leadText(lead(b)) },
+            black: {
+              name: "Đen",
+              sub: "Ở máy này",
+              turn: S.scene === "check",
+              lead: leadText(-lead(b)),
+            },
+          });
+        } else {
+          const g = play(start, opening.slice(0, 1));
+          html = playScreen(wide, {
+            b: g.b,
+            notes: g.notes,
+            last: g.last,
+            status: "Máy đang nghĩ…",
+            red: { name: "Bạn · Đỏ", sub: "Ở máy này" },
+            black: { name: "Máy · Đen", sub: "Mức Vừa", turn: true },
+          });
+        }
+        screen.innerHTML = html;
+        document.getElementById("scenes").innerHTML = Object.entries(SCENES)
+          .map(
+            ([k, v]) => `<button data-s="${k}" class="${k === S.scene ? "on" : ""}">${v}</button>`,
+          )
+          .join("");
+        document.getElementById("vps").innerHTML = VPS.map(
+          (v) => `<button data-v="${v}" class="${v === S.vp ? "on" : ""}">${v}</button>`,
+        ).join("");
+        document.getElementById("themes").innerHTML = ["light", "dark"]
+          .map(
+            (v) =>
+              `<button data-t="${v}" class="${v === S.theme ? "on" : ""}">${v === "light" ? "Sáng" : "Tối"}</button>`,
+          )
+          .join("");
+      }
+      document.querySelector(".panel").addEventListener("click", (e) => {
+        const b = e.target.closest("button");
+        if (!b) return;
+        if (b.dataset.s) S.scene = b.dataset.s;
+        if (b.dataset.v) S.vp = b.dataset.v;
+        if (b.dataset.t) S.theme = b.dataset.t;
+        render();
+      });
+      render();
+    </script>
+  </body>
+</html>

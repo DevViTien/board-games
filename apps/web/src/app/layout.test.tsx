@@ -20,6 +20,7 @@ vi.mock("next/headers", () => ({
 vi.mock("next/font/google", () => ({
   Be_Vietnam_Pro: () => ({ variable: "font-app" }),
   Noto_Sans_JP: () => ({ variable: "font-cjk" }),
+  Noto_Serif_TC: () => ({ variable: "font-xiangqi" }),
 }));
 
 vi.mock("next-intl/server", () => ({

@@ -42,9 +42,11 @@ describe.each(GAME_IDS)("the play screen of %s", (gameId) => {
       "aria-busy",
       "false",
     );
-    if (gameId === "chess") {
+    if (gameId === "chess" || gameId === "xiangqi") {
       expect(screen.queryByRole("list", { name: "Người chơi" })).not.toBeInTheDocument();
-      expect(screen.getByRole("group", { name: "Trắng" })).toBeInTheDocument();
+      expect(
+        screen.getByRole("group", { name: gameId === "chess" ? "Trắng" : "Đỏ" }),
+      ).toBeInTheDocument();
       expect(screen.getByRole("group", { name: "Đen" })).toBeInTheDocument();
     } else {
       expect(screen.getByRole("list", { name: "Người chơi" })).toBeInTheDocument();

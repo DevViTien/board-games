@@ -67,9 +67,12 @@ function visibleStrings(root: HTMLElement): string[] {
  * What may read the same in Vietnamese and Japanese (design §5): numbers, sizes, coordinates a–h,
  * the marks X and O, the colours' symbols and punctuation.
  */
-// Guests of Tam giác cấm are letters A–G, and its warning sign is ⚠ (as text: U+FE0E), in every
-// language.
-const SAME_IN_EVERY_LANGUAGE = /^(?:[\d\s×·–\-+.,:;()→a-hA-GXO●■▲◆~⚠]|\uFE0E)+$/u;
+// Guests of Tam giác cấm are letters A–G, its warning sign is ⚠ (as text: U+FE0E), and the
+// characters on Cờ tướng's pieces are pictures of them: the same in every language.
+const SAME_IN_EVERY_LANGUAGE =
+  /^(?:[\d\s×·–\-+.,:;()/→a-hA-GXO●■▲◆~⚠帥仕相傌俥炮兵將士象馬車砲卒楚河漢界]|\uFE0E)+$/u;
+/** Cờ tướng's moves in Vietnamese notation ("P2-5", "X1/1", "t"): the same in every language. */
+const XIANGQI_NOTATION = /^(?:(?:Tg|[STMXPB])[1-9tsg][./-]\d|[ts])$/u;
 /** A message key shown instead of a missing message ("Rules.caro.goal.title"). */
 const RAW_KEY = /^[A-Za-z]+(\.[\w-]+)+$/;
 
@@ -126,7 +129,7 @@ describe.each(GAME_IDS)("the rules of %s", (gameId) => {
     expect(japanese.length).toBeGreaterThan(10);
     for (const text of japanese) {
       expect(text).not.toMatch(RAW_KEY);
-      if (SAME_IN_EVERY_LANGUAGE.test(text)) continue;
+      if (SAME_IN_EVERY_LANGUAGE.test(text) || XIANGQI_NOTATION.test(text)) continue;
       expect(vietnamese.has(text), `"${text}" is the same in Vietnamese`).toBe(false);
     }
   });
