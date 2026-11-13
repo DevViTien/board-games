@@ -508,6 +508,68 @@
         "doorClosed": "cửa {group} đóng",
         "empty": "Hàng {row}: tường và sàn trống"
       }
+    },
+    "forbidden-triangle": {
+      "name": "Tam giác cấm",
+      "tagline": "Nối dây quanh bàn tiệc, đừng khép tam giác của mình",
+      "players": {
+        "red": "Đỏ",
+        "blue": "Xanh"
+      },
+      "move": "nối {line}",
+      "result": {
+        "triangle": "{player} khép tam giác {triangle}.",
+        "full": "Đã nối hết dây, không ai khép tam giác."
+      },
+      "summary": {
+        "safe": "Còn {count} dây an toàn",
+        "stuck": "Nước nào cũng khép tam giác",
+        "drawn": "{count} dây đã nối"
+      },
+      "board": {
+        "label": "Bàn tiệc {guests} khách",
+        "colour": {
+          "red": "đỏ",
+          "blue": "xanh"
+        },
+        "guest": "Khách {name}: {lines}",
+        "guestChosen": "Khách {name}, đang chọn: {lines}",
+        "guestLines": "dây {colour} với {guests}",
+        "guestBoth": "dây đỏ với {red}; dây xanh với {blue}",
+        "guestNoLines": "chưa có dây",
+        "targetDrawn": "Khách {name}: đã có dây {colour} với {other}",
+        "targetSafe": "Khách {name}: nối {line} an toàn",
+        "targetDanger": "Khách {name}: nối {line} sẽ khép tam giác {colour} {triangle}",
+        "description": "Dây {colour}: {lines}.",
+        "descriptionNone": "chưa có",
+        "descriptionLast": "Dây vừa nối: {line}.",
+        "hintFirst": "Chọn vị khách thứ nhất.",
+        "hintSecond": "Đã chọn {name}: chọn vị khách thứ hai, hay chọn lại {name} để bỏ.",
+        "hintSecondDanger": "Đã chọn {name}: chọn vị khách thứ hai, hay chọn lại {name} để bỏ. ⚠︎ là dây sẽ khép tam giác của bạn.",
+        "confirm": {
+          "title": "Nối {line}?",
+          "description": "Dây này khép tam giác {triangle} của bạn: bạn sẽ thua ngay.",
+          "confirm": "Vẫn nối",
+          "cancel": "Không nối"
+        }
+      },
+      "options": {
+        "guests": {
+          "label": "Bàn tiệc",
+          "values": {
+            "5": "5 khách",
+            "6": "6 khách",
+            "7": "7 khách"
+          },
+          "hints": {
+            "5": "Có thể hoà",
+            "6": "Không bao giờ hoà",
+            "7": "Dài hơn"
+          }
+        },
+        "summary": "{guests}",
+        "change": "Đổi bàn tiệc"
+      }
     }
   },
   "Modes": {
@@ -1429,6 +1491,40 @@
         "blocked": {
           "label": "Lam muốn đẩy thạch xoài sang phải, nhưng Hồng đứng ngay sau thạch.",
           "caption": "Thạch bị đẩy vào <b>nhân vật khác</b>: bước bị chặn."
+        }
+      }
+    },
+    "forbidden-triangle": {
+      "goal": {
+        "title": "Mục tiêu",
+        "body": "Các vị khách ngồi quanh bàn tiệc. Hai người lần lượt nối dây giữa hai vị khách: <b>Đỏ</b> nối dây đỏ (nét liền) và đi trước, <b>Xanh</b> nối dây xanh (nét đứt). Ai khép một tam giác cùng màu mình là thua."
+      },
+      "moves": {
+        "title": "Cách đi",
+        "body": "Mỗi lượt nối <b>một</b> sợi dây giữa hai vị khách chưa có dây với nhau: chọn vị khách thứ nhất rồi vị khách thứ hai. Dây đã nối không gỡ được.",
+        "warning": "Khi đã chọn vị khách thứ nhất, các vị khách mà dây nối tới sẽ khép tam giác của bạn có dấu <b>⚠︎</b>. Nối dây như thế phải xác nhận một lần."
+      },
+      "lose": {
+        "title": "Thua",
+        "body": "Ai nối dây làm thành ba vị khách mà cả ba cạnh là dây màu mình thì <b>thua ngay</b>. Tam giác có cạnh màu khác không tính. Bảng người chơi ghi số dây an toàn còn lại của mỗi người: hết dây an toàn ở lượt mình thì nước nào cũng thua."
+      },
+      "draw": {
+        "title": "Hoà",
+        "body": "Nối hết dây mà không ai khép tam giác thì hoà. Điều này chỉ xảy ra được ở bàn <b>5 khách</b>, như hình: vòng ngoài một màu, các đường chéo màu kia.",
+        "theorem": "Từ 6 khách trở lên thì <b>không bao giờ hoà</b>. Đây là bài toán bữa tiệc của Ramsey (1930): trong 6 người bất kỳ, luôn có 3 người đôi một quen nhau hoặc 3 người đôi một lạ nhau. Nếu cả hai chơi hoàn hảo ở bàn 6 khách, người đi sau luôn thắng, nhưng tìm ra cách chơi ấy rất khó."
+      },
+      "tables": {
+        "title": "Bàn tiệc",
+        "body": "<b>5 khách</b> (10 dây): có thể hoà. <b>6 khách</b> (15 dây): bàn chuẩn, không bao giờ hoà. <b>7 khách</b> (21 dây): ván dài hơn, nhiều mưu hơn."
+      },
+      "figures": {
+        "closed": {
+          "label": "Bàn 6 khách: Đỏ có ba dây A–B, B–C, A–C thành tam giác đỏ được tô nổi",
+          "caption": "Đỏ nối A–C khép tam giác đỏ A–B–C: Đỏ thua."
+        },
+        "five": {
+          "label": "Bàn 5 khách: vòng ngoài A–B–C–D–E là dây đỏ, năm đường chéo là dây xanh, không có tam giác cùng màu",
+          "caption": "Bàn 5 khách nối hết dây mà không có tam giác cùng màu: hoà."
         }
       }
     }

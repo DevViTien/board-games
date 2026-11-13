@@ -1790,3 +1790,64 @@ for (const [suffix, viewport] of [
     await shootScreen(page, `83c-crew-stopped${suffix}`);
   });
 }
+
+// --- Tam giác cấm (change `add-forbidden-triangle-game`) -----------------------------------------
+
+/** The table of Tam giác cấm, and a guest by its letter. */
+const triangleTable = (page: Page) => page.getByRole("group", { name: /^Bàn tiệc \d khách$/u });
+const triangleGuest = (page: Page, letter: string) =>
+  triangleTable(page).getByRole("button", { name: new RegExp(`^Khách ${letter}[:,]`, "u") });
+
+async function joinGuests(page: Page, pairs: readonly (readonly [string, string])[]) {
+  for (const [a, b] of pairs) {
+    await triangleGuest(page, a).click();
+    await triangleGuest(page, b).click();
+  }
+}
+
+test("Tam giác cấm: the setup screen and the rules", async ({ page }) => {
+  await page.goto("/play/forbidden-triangle");
+  await expect(page.getByRole("group", { name: "Chế độ" })).toBeVisible();
+  await shoot(page, "90-setup-forbidden-triangle");
+  await page.goto("/rules/forbidden-triangle");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await shoot(page, "90a-rules-forbidden-triangle");
+});
+
+test("Tam giác cấm on one device: start, a warning, the question, the end", async ({ page }) => {
+  await page.goto("/play/forbidden-triangle");
+  await choose(page, "Chế độ", "Cùng máy");
+  await pressStart(page);
+  await expect(triangleTable(page)).toBeVisible();
+  await shoot(page, "91-triangle-start");
+
+  await joinGuests(page, [
+    ["A", "B"],
+    ["D", "E"],
+    ["B", "C"],
+    ["A", "E"],
+  ]);
+  await triangleGuest(page, "A").click();
+  await shoot(page, "91a-triangle-danger");
+  await triangleGuest(page, "C").click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await shoot(page, "91b-triangle-confirm");
+  await page.getByRole("button", { name: "Vẫn nối" }).click();
+  await expect(page.getByRole("status")).toHaveText("Xanh thắng!");
+  await shoot(page, "91c-triangle-lost");
+});
+
+test("Tam giác cấm: seven guests, at 360 px", async ({ page }) => {
+  test.skip((page.viewportSize()?.width ?? 0) > 500, "a phone's size");
+  await page.setViewportSize({ width: 360, height: 740 });
+  await page.goto("/play/forbidden-triangle");
+  await choose(page, "Chế độ", "Cùng máy");
+  await choose(page, "Bàn tiệc", "7 khách");
+  await pressStart(page);
+  await joinGuests(page, [
+    ["A", "D"],
+    ["B", "F"],
+    ["C", "G"],
+  ]);
+  await shoot(page, "91d-triangle-seven-360");
+});

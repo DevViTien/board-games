@@ -67,7 +67,9 @@ function visibleStrings(root: HTMLElement): string[] {
  * What may read the same in Vietnamese and Japanese (design §5): numbers, sizes, coordinates a–h,
  * the marks X and O, the colours' symbols and punctuation.
  */
-const SAME_IN_EVERY_LANGUAGE = /^[\d\s×·–\-+.,:;()→a-hXO●■▲◆~]+$/;
+// Guests of Tam giác cấm are letters A–G, and its warning sign is ⚠ (as text: U+FE0E), in every
+// language.
+const SAME_IN_EVERY_LANGUAGE = /^(?:[\d\s×·–\-+.,:;()→a-hA-GXO●■▲◆~⚠]|\uFE0E)+$/u;
 /** A message key shown instead of a missing message ("Rules.caro.goal.title"). */
 const RAW_KEY = /^[A-Za-z]+(\.[\w-]+)+$/;
 

@@ -1,0 +1,64 @@
+/*
+ * Tam giác cấm's look (design §4–§5 of `add-forbidden-triangle-game`): a cream tablecloth, guests
+ * as white plates with their letter, red lines drawn solid and blue ones dashed, the lines not
+ * drawn yet dotted and thin. Values of the shared `--game-*` contract and a few of its own, inside
+ * `[data-game="forbidden-triangle"]` only; light here, dark in both blocks below, which stay
+ * identical (games/theme-css.test.ts).
+ */
+[data-game="forbidden-triangle"] {
+  --game-page: #f6efe2;
+  --game-tint: #f6efe2;
+  /* The tablecloth. */
+  --game-board: #fffaf0;
+  /* A line not drawn yet (dotted and thin, so lighter than a drawn one whatever its colour). */
+  --game-line: #8a806c;
+  /* Đỏ's lines, solid; Xanh's, dashed. */
+  --game-mark-1: #c42b22;
+  --game-mark-2: #1d5bbf;
+  /* The guest chosen first. */
+  --game-highlight: #5b34e6;
+  /* The glow under the line just drawn. */
+  --game-last-move: #a86d00;
+  /* The edge of the triangle that lost. */
+  --game-win: #17182b;
+  /* A guest: its plate, its edge and its letter. */
+  --forbidden-triangle-guest: #ffffff;
+  --forbidden-triangle-guest-edge: #6b5f45;
+  --forbidden-triangle-guest-ink: #17182b;
+  /* A line that would close the player's own triangle: the ⚠ sign and the guest's edge. */
+  --forbidden-triangle-danger: #b4470a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) [data-game="forbidden-triangle"] {
+    --game-page: #16172a;
+    --game-tint: #16172a;
+    --game-board: #1e2036;
+    --game-line: #7c7f9e;
+    --game-mark-1: #ff7b6e;
+    --game-mark-2: #7fb2ff;
+    --game-highlight: #b9a6ff;
+    --game-last-move: #f0b13d;
+    --game-win: #f1f0f7;
+    --forbidden-triangle-guest: #2b2e4a;
+    --forbidden-triangle-guest-edge: #b9b3a2;
+    --forbidden-triangle-guest-ink: #f1f0f7;
+    --forbidden-triangle-danger: #ffa04d;
+  }
+}
+
+:root[data-theme="dark"] [data-game="forbidden-triangle"] {
+  --game-page: #16172a;
+  --game-tint: #16172a;
+  --game-board: #1e2036;
+  --game-line: #7c7f9e;
+  --game-mark-1: #ff7b6e;
+  --game-mark-2: #7fb2ff;
+  --game-highlight: #b9a6ff;
+  --game-last-move: #f0b13d;
+  --game-win: #f1f0f7;
+  --forbidden-triangle-guest: #2b2e4a;
+  --forbidden-triangle-guest-edge: #b9b3a2;
+  --forbidden-triangle-guest-ink: #f1f0f7;
+  --forbidden-triangle-danger: #ffa04d;
+}

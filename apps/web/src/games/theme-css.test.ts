@@ -109,6 +109,21 @@ const JELLY_CREW_KINDS = ["strawberry", "pandan", "mango", "taro", "grass", "ice
 
 /** Pairs of one game's look (`redesign-game-boards` design §2–§4). */
 const GAME_PAIRS: Readonly<Record<string, readonly Pair[]>> = {
+  // Design §5 of `add-forbidden-triangle-game`: the lines not drawn, the guest chosen, the lost
+  // triangle's edge and the danger sign on the tablecloth; a guest's edge, and its letter and the
+  // danger sign on its plate.
+  "forbidden-triangle": [
+    ["--fg-muted", "--game-tint", 4.5],
+    ["--game-line", "--game-board", 3],
+    ["--game-highlight", "--game-board", 3],
+    ["--game-win", "--game-board", 3],
+    ["--forbidden-triangle-guest-edge", "--game-board", 3],
+    ["--forbidden-triangle-guest-ink", "--forbidden-triangle-guest", 4.5],
+    ["--forbidden-triangle-danger", "--game-board", 3],
+    ["--forbidden-triangle-danger", "--forbidden-triangle-guest", 3],
+    ["--game-mark-1", "--forbidden-triangle-guest", 3],
+    ["--game-mark-2", "--forbidden-triangle-guest", 3],
+  ],
   // A tile that may be chosen: its edge against the lilac page and its own face.
   tictactoe: [
     ["--game-line", "--game-page", 3],

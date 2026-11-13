@@ -1,6 +1,6 @@
 # Board Games Hub
 
-App chơi cờ trên trình duyệt: Tic-tac-toe, Cờ caro, Cờ cá ngựa, Cờ vua, Cờ rào và Đội gom thạch (2–4 người cùng phe đẩy thạch vào khuôn) — cùng máy, đấu với máy và online với bạn bè qua link mời. Không cần tài khoản. Dự án cá nhân, phi thương mại, chạy trên gói miễn phí của Vercel và Upstash.
+App chơi cờ trên trình duyệt: Tic-tac-toe, Cờ caro, Cờ cá ngựa, Cờ vua, Cờ rào, Đội gom thạch (2–4 người cùng phe đẩy thạch vào khuôn) và Tam giác cấm (nối dây quanh bàn tiệc, ai khép tam giác cùng màu thì thua: bài toán bữa tiệc Ramsey) — cùng máy, đấu với máy và online với bạn bè qua link mời. Không cần tài khoản. Dự án cá nhân, phi thương mại, chạy trên gói miễn phí của Vercel và Upstash.
 
 - Ý tưởng và các quyết định sản phẩm: [idea.md](idea.md)
 - Kế hoạch phát triển, kiến trúc, quy ước code, tiến độ: [plan.md](plan.md)

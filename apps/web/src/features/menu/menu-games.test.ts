@@ -48,6 +48,7 @@ describe("buildMenu", () => {
       ["playable", "chess"],
       ["playable", "fence-race"],
       ["playable", "jelly-crew"],
+      ["playable", "forbidden-triangle"],
       ["puzzle", "jelly-gather"],
     ]);
   });
@@ -100,6 +101,10 @@ describe("buildOptionChoices", () => {
           },
         ],
         defaults: { map: "kitchen" },
+      },
+      "forbidden-triangle": {
+        choices: [{ name: "guests", values: [5, 6, 7] }],
+        defaults: { guests: 6 },
       },
     });
     expect(JSON.parse(JSON.stringify(choices))).toEqual(choices);

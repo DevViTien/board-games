@@ -95,7 +95,7 @@ export function RadioGroup<Value extends string>({
                   {label}
                 </span>
                 {hint !== undefined && (
-                  <span aria-hidden className="text-caption font-normal text-fg-muted">
+                  <span aria-hidden className="ps-5.5 text-caption font-normal text-fg-muted">
                     {hint}
                   </span>
                 )}

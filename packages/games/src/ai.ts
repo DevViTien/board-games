@@ -2,6 +2,7 @@ import type { AnyGameDefinition } from "@board-games/engine";
 
 import { caro } from "./caro";
 import { fenceRace } from "./fence-race";
+import { forbiddenTriangle } from "./forbidden-triangle";
 import type { RegisteredGameId } from "./ids";
 import { ludo } from "./ludo";
 import { tictactoe } from "./tictactoe";
@@ -17,6 +18,7 @@ export const AI_GAMES = [
   caro,
   ludo,
   fenceRace,
+  forbiddenTriangle,
 ] as const satisfies readonly (AnyGameDefinition & {
   readonly id: RegisteredGameId;
 })[];

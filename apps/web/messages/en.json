@@ -508,6 +508,68 @@
         "doorClosed": "door {group} closed",
         "empty": "Row {row}: walls and empty floor"
       }
+    },
+    "forbidden-triangle": {
+      "name": "No Triangle",
+      "tagline": "Draw lines around the table, but never close your own triangle",
+      "players": {
+        "red": "Red",
+        "blue": "Blue"
+      },
+      "move": "drew {line}",
+      "result": {
+        "triangle": "{player} closed the triangle {triangle}.",
+        "full": "Every line drawn, no triangle closed."
+      },
+      "summary": {
+        "safe": "{count, plural, one {# safe line left} other {# safe lines left}}",
+        "stuck": "Every line closes a triangle",
+        "drawn": "{count, plural, one {# line drawn} other {# lines drawn}}"
+      },
+      "board": {
+        "label": "Table of {guests} guests",
+        "colour": {
+          "red": "red",
+          "blue": "blue"
+        },
+        "guest": "Guest {name}: {lines}",
+        "guestChosen": "Guest {name}, chosen: {lines}",
+        "guestLines": "{colour} lines with {guests}",
+        "guestBoth": "red lines with {red}; blue lines with {blue}",
+        "guestNoLines": "no lines yet",
+        "targetDrawn": "Guest {name}: a {colour} line with {other} already",
+        "targetSafe": "Guest {name}: drawing {line} is safe",
+        "targetDanger": "Guest {name}: drawing {line} closes the {colour} triangle {triangle}",
+        "description": "Lines in {colour}: {lines}.",
+        "descriptionNone": "none",
+        "descriptionLast": "Line just drawn: {line}.",
+        "hintFirst": "Choose a first guest.",
+        "hintSecond": "{name} chosen: choose a second guest, or {name} again to let go.",
+        "hintSecondDanger": "{name} chosen: choose a second guest, or {name} again to let go. ⚠︎ marks a line that closes your own triangle.",
+        "confirm": {
+          "title": "Draw {line}?",
+          "description": "This line closes your triangle {triangle}: you lose at once.",
+          "confirm": "Draw it anyway",
+          "cancel": "Pick another"
+        }
+      },
+      "options": {
+        "guests": {
+          "label": "Table",
+          "values": {
+            "5": "5 guests",
+            "6": "6 guests",
+            "7": "7 guests"
+          },
+          "hints": {
+            "5": "Can be a draw",
+            "6": "Never a draw",
+            "7": "Longer"
+          }
+        },
+        "summary": "{guests}",
+        "change": "Change table"
+      }
     }
   },
   "Modes": {
@@ -1429,6 +1491,40 @@
         "blocked": {
           "label": "Blue wants to push the mango jelly right, but Pink stands right behind it.",
           "caption": "Jelly pushed into <b>another character</b>: the step is blocked."
+        }
+      }
+    },
+    "forbidden-triangle": {
+      "goal": {
+        "title": "Goal",
+        "body": "Guests sit around a table. Two players take turns drawing a line between two guests: <b>Red</b> draws red lines (solid) and moves first, <b>Blue</b> draws blue ones (dashed). Whoever closes a triangle of their own colour loses."
+      },
+      "moves": {
+        "title": "Moves",
+        "body": "Each turn, draw <b>one</b> line between two guests not joined yet: choose a first guest, then a second. A line once drawn stays.",
+        "warning": "Once you have chosen a first guest, guests that would close your own triangle are marked <b>⚠︎</b>. Drawing such a line asks you first."
+      },
+      "lose": {
+        "title": "Losing",
+        "body": "Whoever draws a line that makes three guests joined by three lines of their colour <b>loses at once</b>. A triangle with a line of the other colour does not count. The players' panel shows how many safe lines each player has left: with none left on your turn, every line loses."
+      },
+      "draw": {
+        "title": "A draw",
+        "body": "If every line is drawn and nobody closed a triangle, it is a draw. That can only happen at a table of <b>5 guests</b>, as pictured: the ring in one colour, the diagonals in the other.",
+        "theorem": "From 6 guests on, there is <b>never a draw</b>. This is Ramsey's party problem (1930): among any 6 people, 3 all know each other or 3 are all strangers. With perfect play at 6 guests the second player always wins, but finding that play is hard."
+      },
+      "tables": {
+        "title": "Tables",
+        "body": "<b>5 guests</b> (10 lines): can be a draw. <b>6 guests</b> (15 lines): the standard table, never a draw. <b>7 guests</b> (21 lines): a longer game with more tactics."
+      },
+      "figures": {
+        "closed": {
+          "label": "A table of 6 guests: Red's lines A–B, B–C and A–C form a highlighted red triangle",
+          "caption": "Red draws A–C and closes the red triangle A–B–C: Red loses."
+        },
+        "five": {
+          "label": "A table of 5 guests: the ring A–B–C–D–E in red, the five diagonals in blue, no triangle of one colour",
+          "caption": "Every line drawn at 5 guests without a triangle of one colour: a draw."
         }
       }
     }

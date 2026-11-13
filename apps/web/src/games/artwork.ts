@@ -4,6 +4,7 @@ import type { ComponentType } from "react";
 import { CaroArtwork } from "./caro/Artwork";
 import { ChessArtwork } from "./chess/Artwork";
 import { FenceRaceArtwork } from "./fence-race/Artwork";
+import { ForbiddenTriangleArtwork } from "./forbidden-triangle/Artwork";
 import { JellyCrewArtwork } from "./jelly-crew/Artwork";
 import { LudoArtwork } from "./ludo/Artwork";
 import { TicTacToeArtwork } from "./tictactoe/Artwork";
@@ -25,4 +26,5 @@ export const GAME_ARTWORK = {
   chess: ChessArtwork,
   "fence-race": FenceRaceArtwork,
   "jelly-crew": JellyCrewArtwork,
+  "forbidden-triangle": ForbiddenTriangleArtwork,
 } as const satisfies Readonly<Record<RegisteredGameId, ComponentType<ArtworkProps>>>;

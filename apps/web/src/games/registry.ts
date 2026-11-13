@@ -18,4 +18,6 @@ export const GAME_ENTRY_LOADERS = {
   chess: () => import("./chess").then((module) => module.chessEntry),
   "fence-race": () => import("./fence-race").then((module) => module.fenceRaceEntry),
   "jelly-crew": () => import("./jelly-crew").then((module) => module.jellyCrewEntry),
+  "forbidden-triangle": () =>
+    import("./forbidden-triangle").then((module) => module.forbiddenTriangleEntry),
 } satisfies GameEntryLoaders;

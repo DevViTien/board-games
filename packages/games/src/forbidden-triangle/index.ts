@@ -1,0 +1,17 @@
+export {
+  closesTriangle,
+  FORBIDDEN_TRIANGLE_DEFAULT_OPTIONS,
+  FORBIDDEN_TRIANGLE_GUESTS,
+  FORBIDDEN_TRIANGLE_REASON,
+  forbiddenTriangle,
+  type ForbiddenTriangleGuests,
+  type ForbiddenTriangleLoss,
+  type ForbiddenTriangleMove,
+  type ForbiddenTriangleOptions,
+  type ForbiddenTriangleState,
+  lineCount,
+  lineOf,
+  pairOf,
+  parseForbiddenTriangleOptions,
+  safeLines,
+} from "./rules";

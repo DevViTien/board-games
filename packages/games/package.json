@@ -12,7 +12,8 @@
     "./ludo": "./src/ludo/index.ts",
     "./chess": "./src/chess/index.ts",
     "./fence-race": "./src/fence-race/index.ts",
-    "./jelly-crew": "./src/jelly-crew/index.ts"
+    "./jelly-crew": "./src/jelly-crew/index.ts",
+    "./forbidden-triangle": "./src/forbidden-triangle/index.ts"
   },
   "scripts": {
     "lint": "eslint .",
