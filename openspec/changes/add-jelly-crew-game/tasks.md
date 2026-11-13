@@ -52,7 +52,7 @@ Mỗi task có chữ mới thì thêm khoá vào `vi.json` ngay trong task đó,
 
 - [x] 5.1 E2E `games-jelly-crew.spec.ts`: cùng máy chơi hết bố cục 2 người "Hai gian bếp" bằng phím và thấy "Cả đội thắng!"; online hai trình duyệt: giữ nút, đẩy qua cửa, lùi bước, bỏ cuộc; thêm cảnh vào `ui-shots/screens.shots.ts` theo design §9
 - [x] 5.2 `pnpm ui:shots`, xem từng ảnh sáng/tối × 390/1280 so với mockup; rà `web-design-guidelines` trên các file giao diện đã đổi; hai lượt review code (senior dev, săn bug), sửa xong
-- [ ] 5.3 Người dùng chơi thử **bản đi tự do** cùng máy và online với bạn (ít nhất một bố cục mỗi bản đồ); ghi nhận xét và sửa trước khi archive. Lần chơi thử bản theo lượt (13/11/2026) dẫn tới nhóm 6
+- [ ] 5.3 Người dùng chơi thử **bản đi tự do** cùng máy và online với bạn (ít nhất một bố cục mỗi bản đồ, kể cả năm bản đồ mới của nhóm 7); ghi nhận xét và sửa trước khi archive. Lần chơi thử bản theo lượt (13/11/2026) dẫn tới nhóm 6
 - [x] 5.4 `pnpm check`, `pnpm knip`, `pnpm spec:check`, `pnpm test:e2e` xanh; cập nhật plan.md §10
 
 ## 6. Đi tự do (sau chơi thử 13/11/2026, design §10)
@@ -72,6 +72,16 @@ Mỗi task có chữ mới thì thêm khoá vào `vi.json` ngay trong task đó,
 - [x] 6.12 E2E `games-jelly-crew.spec.ts`: cùng máy hai người chung bàn phím (WASD + mũi tên) thắng "Hai gian bếp", có dòng thời gian; online hai trình duyệt đi xen nhau không chờ lượt, đặt lại bản đồ, bỏ cuộc; điện thoại 360 px có nhóm "Điều khiển"; cảnh mới trong `ui-shots/screens.shots.ts`
 - [x] 6.13 `pnpm ui:shots` các cảnh Đội gom thạch (80–83, sáng/tối × điện thoại/máy tính), xem từng ảnh so với `mockup/png/free-*`; một lượt review code săn bug (sửa: giới hạn kết nối, số lần thử ghi, nước gửi lại, hiện ngay các nước); `pnpm check`, `pnpm knip`, `pnpm spec:check`, `pnpm test:e2e` xanh (702 qua); cập nhật idea.md §3.3/§9, plan.md §10, skill `board-games-ui`
 - [ ] 6.14 Lượt review code thứ hai và rà `web-design-guidelines` trên các file giao diện của nhóm 6 (chưa làm khi merge 13/11/2026)
+
+## 7. Tám bản đồ (sau chơi thử 13/11/2026, design §11)
+
+- [x] 7.1 Người dùng duyệt mockup `../add-new-game-options/mockup/index.html` (lưới bản đồ có độ khó, "Bản đồ tiếp", "Đổi bản đồ"); ghi ngày duyệt vào design §11
+- [x] 7.2 Thiết kế 15 bố cục mới (`dessert-shop`, `coconut-grove`, `floating-market`, `jelly-factory`, `moon-festival` × 2/3/4 người) theo ràng buộc §11.2, lời giải mẫu trong `layouts.solutions.ts`, điền bảng §11.4; test "Bố cục giải được" (phát lại thắng `filled`, cửa luôn đóng thì không thắng) chạy trên cả 24 bố cục, kiểm cỡ ≤ 19 × 13 và độ dài lời giải tăng theo nhóm độ khó
+- [x] 7.3 `JELLY_CREW_MAP`/`JELLY_CREW_MAPS` theo thứ tự §11.1; test theo "Bản đồ và người chơi" (`parseJellyCrewOptions` nhận đủ tám mã, từ chối mã lạ)
+- [x] 7.4 Nhãn: tên tám bản đồ, độ khó (`options.map.hints.*`), `options.change`, `options.next` ở vi/en/ja; trang luật mục "Bản đồ" nêu tám bản đồ và độ khó; test theo "Độ khó ở màn bắt đầu ván" và "Luật Đội gom thạch"
+- [x] 7.5 `useNextOptions` của Đội gom thạch (§11.3); test theo "Sang bản đồ kế tiếp", "Thắng bản đồ cuối", "Bỏ cuộc thì không gợi ý"
+- [x] 7.6 Xem bàn cả 24 bố cục ở 360 × 640 và 1280 × 800 (sáng/tối), không cuộn ngang; thêm cảnh `ui-shots` cho một bố cục mỗi bản đồ mới và thẻ thắng có "Bản đồ tiếp"
+- [x] 7.7 E2E: thắng "Hai gian bếp" 2 người cùng máy bằng lời giải, bấm "Bản đồ tiếp: Tiệm chè" và thấy bàn "Tiệm chè"; `pnpm check`, `pnpm knip`, `pnpm spec:check`, `pnpm test:e2e` xanh
 
 ## Ngoài phạm vi
 

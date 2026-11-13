@@ -5,7 +5,13 @@ import { SETUP_CHOICE_KEY_PREFIX } from "@/config/storage-keys";
 import { type ChosenOptions, findChoice } from "@/lib/option-choices";
 import { FIRST_PLAYER } from "@/transport/types";
 
-import { type PlayerRange, SETUP_MODE, type SetupChoice } from "./play-setup";
+import {
+  DEFAULT_PLAY_SETUP,
+  type PlayerRange,
+  SETUP_MODE,
+  type SetupChoice,
+  type SetupMode,
+} from "./play-setup";
 
 const setupChoiceSchema = z.object({
   mode: z.enum(SETUP_MODE),
@@ -109,5 +115,41 @@ export function writeSetupChoice(gameId: string, choice: SetupChoice): void {
     );
   } catch {
     // Private mode or blocked storage: the default is shown next time.
+  }
+}
+
+/**
+ * Remembers rule options changed from the play screen (change `add-new-game-options`): the rest
+ * of the remembered choice stays, or, with none remembered yet, is the game played now: `mode`,
+ * its `playerCount`, the default level and first player.
+ */
+export function rememberSetupOptions(
+  gameId: string,
+  mode: SetupMode,
+  options: ChosenOptions,
+  { playerCount }: { readonly playerCount?: number } = {},
+): void {
+  let stored: z.output<typeof setupChoiceSchema> | undefined;
+  try {
+    const raw = window.localStorage.getItem(SETUP_CHOICE_KEY_PREFIX + gameId);
+    const parsed = raw === null ? undefined : setupChoiceSchema.safeParse(JSON.parse(raw));
+    stored = parsed?.success === true ? parsed.data : undefined;
+  } catch {
+    stored = undefined;
+  }
+  try {
+    window.localStorage.setItem(
+      SETUP_CHOICE_KEY_PREFIX + gameId,
+      JSON.stringify({
+        mode,
+        level: DEFAULT_PLAY_SETUP.level,
+        first: DEFAULT_PLAY_SETUP.first,
+        playerCount,
+        ...stored,
+        options,
+      }),
+    );
+  } catch {
+    // Private mode or blocked storage: the setup screen shows the last choice it remembered.
   }
 }

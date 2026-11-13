@@ -139,6 +139,57 @@ describe("local transport rule options", () => {
     expect(rulesOf(snapshot)).toEqual(playedWith(BIG_FREE));
   });
 
+  it("starts a new game with other rule options, saved with it (Tải lại sau khi đổi)", async () => {
+    const store = createMemoryStore();
+    const first = sameDevice({ store, start: { mode: "local", options: DEFAULTS } });
+    await ready(first);
+    first.submit({ cell: 0 });
+
+    first.requestNewGame(BIG_FREE);
+    expect(readySnapshot(first).moveCount).toBe(0);
+    expect(rulesOf(readySnapshot(first))).toEqual(playedWith(BIG_FREE));
+    first.submit({ cell: 360 });
+    first.submit({ cell: 0 });
+    await vi.advanceTimersByTimeAsync(0);
+    first.dispose();
+
+    const reloaded = sameDevice({ store, fallback: { mode: "local", options: DEFAULTS } });
+    const restored = await ready(reloaded);
+    expect(restored.moveCount).toBe(2);
+    expect(rulesOf(restored)).toEqual(playedWith(BIG_FREE));
+    // A new game without options keeps the ones just chosen.
+    reloaded.requestNewGame();
+    expect(rulesOf(readySnapshot(reloaded))).toEqual(playedWith(BIG_FREE));
+  });
+
+  it("ignores a new game asked for with options the game refuses", async () => {
+    const transport = sameDevice({
+      store: createMemoryStore(),
+      start: { mode: "local", options: DEFAULTS },
+    });
+    await ready(transport);
+    transport.submit({ cell: 0 });
+
+    transport.requestNewGame({ size: 21, rule: "free" });
+
+    expect(readySnapshot(transport).moveCount).toBe(1);
+    expect(rulesOf(readySnapshot(transport))).toEqual(playedWith(DEFAULTS));
+  });
+
+  it("starts a new game against the AI with other rule options", async () => {
+    const ai = firstCellAi();
+    const transport = vsAi({
+      store: createMemoryStore(),
+      ai,
+      start: { mode: "ai", level: "medium", first: "human", options: DEFAULTS },
+    });
+    await ready(transport);
+
+    transport.requestNewGame(BIG_FREE);
+
+    expect(rulesOf(readySnapshot(transport))).toEqual(playedWith(BIG_FREE));
+  });
+
   it("restores the rule options after a reload, and keeps them for the next new game", async () => {
     const store = createMemoryStore();
     const first = sameDevice({ store, start: { mode: "local", options: BIG_FREE } });

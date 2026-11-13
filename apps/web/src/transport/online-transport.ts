@@ -629,6 +629,9 @@ export function createOnlineTransport<
       const sentAt = pending;
       settle();
       refresh();
+      // A new game refused (its options, from a client of another version) leaves the game just
+      // over on screen, its buttons back: nothing to say about a move.
+      if (request === "rematch") return;
       // Played freely, a move sent before another player's reached the server may no longer fit
       // the board: the board, now showing that move, says why.
       const latest = connection.getSnapshot().room;
@@ -664,10 +667,15 @@ export function createOnlineTransport<
       waitForAnswer({ gameNumber: room.gameNumber, moveIndex: session.cursor });
       refresh();
     },
-    requestNewGame: () => {
+    requestNewGame: (options) => {
       if (disposed || room === null || session === null || pending !== null) return;
       if (snapshot.status !== "ready" || snapshot.result === null) return;
-      if (!connection.send({ type: "rematch", gameNumber: room.gameNumber })) return;
+      const sent = connection.send({
+        type: "rematch",
+        gameNumber: room.gameNumber,
+        ...(options === undefined ? {} : { options }),
+      });
+      if (!sent) return;
       // The game is over and gets no more moves: only the next game's number answers.
       waitForAnswer({ gameNumber: room.gameNumber, moveIndex: session.cursor });
       refresh();

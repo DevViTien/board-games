@@ -84,7 +84,21 @@ describe("buildOptionChoices", () => {
       chess: { choices: [], defaults: {} },
       "fence-race": { choices: [], defaults: {} },
       "jelly-crew": {
-        choices: [{ name: "map", values: ["kitchen", "market", "cold-store"] }],
+        choices: [
+          {
+            name: "map",
+            values: [
+              "kitchen",
+              "dessert-shop",
+              "market",
+              "coconut-grove",
+              "cold-store",
+              "floating-market",
+              "jelly-factory",
+              "moon-festival",
+            ],
+          },
+        ],
         defaults: { map: "kitchen" },
       },
     });

@@ -4,7 +4,7 @@ import { type ComponentType, useId } from "react";
 
 import { CheckIcon } from "../icons";
 import { cn } from "../lib/cn";
-import { segmentItem, segmentTrack } from "./segmented";
+import { segmentCell, segmentItem, segmentTrack } from "./segmented";
 
 interface RadioOption<Value extends string> {
   readonly value: Value;
@@ -12,6 +12,8 @@ interface RadioOption<Value extends string> {
   readonly label: string;
   /** Drawn before the label, hidden from screen readers. */
   readonly icon?: ComponentType<{ readonly className?: string; readonly "aria-hidden"?: boolean }>;
+  /** A short line under the label (a map's difficulty), read out with it; already translated. */
+  readonly hint?: string | undefined;
 }
 
 interface RadioGroupProps<Value extends string> {
@@ -28,6 +30,11 @@ interface RadioGroupProps<Value extends string> {
   readonly compact?: boolean;
   /** The options grow to fill the track's whole width (a form), instead of keeping their own. */
   readonly fill?: boolean;
+  /**
+   * `grid`: the options as cells of a grid, each as wide as the others, for many options or options
+   * with a hint; `bar` (default): a segmented bar.
+   */
+  readonly layout?: "bar" | "grid";
   readonly className?: string | undefined;
 }
 
@@ -47,8 +54,10 @@ export function RadioGroup<Value extends string>({
   hideLegend = false,
   compact = false,
   fill = false,
+  layout = "bar",
   className,
 }: RadioGroupProps<Value>) {
+  const grid = layout === "grid";
   const name = useId();
 
   return (
@@ -56,22 +65,50 @@ export function RadioGroup<Value extends string>({
       <legend className={cn("mb-2 text-caption text-fg-muted", hideLegend && "sr-only")}>
         {legend}
       </legend>
-      <div className={cn(segmentTrack(), !fill && "self-start")}>
-        {options.map(({ value: option, label, icon: Icon }) => (
-          <label key={option} className={cn(segmentItem({ size, fill }), "focus-ring-within")}>
+      <div className={cn(segmentTrack({ grid }), !fill && !grid && "self-start")}>
+        {options.map(({ value: option, label, icon: Icon, hint }) => (
+          <label
+            key={option}
+            className={cn(grid ? segmentCell() : segmentItem({ size, fill }), "focus-ring-within")}
+          >
             <input
               type="radio"
               name={name}
               value={option}
               checked={option === value}
+              // With a hint, named by both ("Cold store, Hard"): the hint shown is hidden from
+              // screen readers, so it is not read twice.
+              aria-label={hint === undefined ? undefined : `${label}, ${hint}`}
               onChange={() => {
                 onChange(option);
               }}
               className="sr-only"
             />
-            {option === value && <CheckIcon aria-hidden className="size-4 shrink-0" />}
-            {Icon !== undefined && <Icon aria-hidden className="size-4 shrink-0" />}
-            <span className={cn(compact && Icon !== undefined && "max-sm:sr-only")}>{label}</span>
+            {grid ? (
+              <>
+                <span className="flex items-center gap-1.5">
+                  {/* Its room is kept when not chosen, so the label never moves. */}
+                  <CheckIcon
+                    aria-hidden
+                    className={cn("size-4 shrink-0", option !== value && "invisible")}
+                  />
+                  {label}
+                </span>
+                {hint !== undefined && (
+                  <span aria-hidden className="text-caption font-normal text-fg-muted">
+                    {hint}
+                  </span>
+                )}
+              </>
+            ) : (
+              <>
+                {option === value && <CheckIcon aria-hidden className="size-4 shrink-0" />}
+                {Icon !== undefined && <Icon aria-hidden className="size-4 shrink-0" />}
+                <span className={cn(compact && Icon !== undefined && "max-sm:sr-only")}>
+                  {label}
+                </span>
+              </>
+            )}
           </label>
         ))}
       </div>

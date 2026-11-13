@@ -6,7 +6,10 @@ import { describe, expect, it } from "vitest";
 import type { Locale } from "@/i18n/config";
 import { renderWithIntl } from "@/test/render-with-intl";
 
+import en from "../../messages/en.json";
+import ja from "../../messages/ja.json";
 import vi from "../../messages/vi.json";
+import { GAME_ENTRY_LOADERS } from "../games/registry";
 import { useOptionLabels } from "./use-option-labels";
 
 const CARO_CHOICES: readonly OptionChoiceList[] = [
@@ -37,8 +40,10 @@ function summary(
   return text;
 }
 
-/** The message at a dotted path of the Vietnamese messages, or `undefined`. */
-function message(path: string): unknown {
+const LOCALES = { vi, en, ja } as const;
+
+/** The message at a dotted path of the messages of `locale` (Vietnamese by default), or `undefined`. */
+function message(path: string, locale: keyof typeof LOCALES = "vi"): unknown {
   return path
     .split(".")
     .reduce<unknown>(
@@ -46,7 +51,7 @@ function message(path: string): unknown {
         typeof node === "object" && node !== null
           ? (node as Record<string, unknown>)[key]
           : undefined,
-      vi,
+      LOCALES[locale],
     );
 }
 
@@ -71,6 +76,41 @@ describe("rule option messages", () => {
       for (const value of values) {
         const key = `Games.${gameId}.options.${name}.values.${String(value)}`;
         expect(typeof message(key), key).toBe("string");
+      }
+    }
+  });
+
+  it.each(withChoices)("name the button changing the options of %s", (gameId) => {
+    for (const locale of ["vi", "en", "ja"] as const) {
+      expect(typeof message(`Games.${gameId}.options.change`, locale), locale).toBe("string");
+    }
+  });
+
+  it.each(withChoices)(
+    "give %s's hints to every value of an option, or to none",
+    (gameId, choices) => {
+      for (const locale of ["vi", "en", "ja"] as const) {
+        for (const { name, values } of choices) {
+          const hinted = values.filter(
+            (value) =>
+              typeof message(`Games.${gameId}.options.${name}.hints.${String(value)}`, locale) ===
+              "string",
+          );
+          expect([0, values.length], `${locale} ${name}`).toContain(hinted.length);
+        }
+      }
+    },
+  );
+
+  it("name the next game's button of every game suggesting one", async () => {
+    const entries = await Promise.all(Object.values(GAME_ENTRY_LOADERS).map((load) => load()));
+    const suggesting = entries
+      .filter((entry) => entry.open((_definition, ui) => ui.useNextOptions !== undefined))
+      .map((entry) => entry.id);
+    for (const gameId of suggesting) {
+      for (const locale of ["vi", "en", "ja"] as const) {
+        const text = message(`Games.${gameId}.options.next`, locale);
+        expect(argumentNames(String(text)), `${gameId} ${locale}`).toEqual(["rules"]);
       }
     }
   });
@@ -111,6 +151,24 @@ describe("useOptionLabels", () => {
     ["a list", [19, "free"]],
   ])("sums up nothing for options with %s", (_what, options) => {
     expect(summary("caro", CARO_CHOICES, options)).toBe("none");
+  });
+
+  it("gives a value's hint, the change button and the next game's button", () => {
+    function Labels() {
+      const labels = useOptionLabels();
+      return (
+        <p>
+          {[
+            labels.hint("caro", "size", 19) ?? "no hint",
+            labels.change("caro"),
+            labels.next("caro", CARO_CHOICES, { size: 19 }) ?? "no next",
+          ].join("|")}
+        </p>
+      );
+    }
+    renderWithIntl(<Labels />);
+
+    expect(screen.getByRole("paragraph")).toHaveTextContent("no hint|Đổi bàn, luật|no next");
   });
 
   it("names an option and its values", () => {

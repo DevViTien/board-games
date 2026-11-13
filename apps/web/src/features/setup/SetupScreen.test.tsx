@@ -605,6 +605,52 @@ const checkedIn = (group: string) =>
   within(screen.getByRole("group", { name: group })).getByRole("radio", { checked: true });
 
 describe("SetupScreen rule options", () => {
+  it("Nhóm không có ghi chú giữ như cũ: Cờ caro's values have no hint", async () => {
+    await renderCaro();
+
+    expect(radio("19×19")).toHaveAccessibleName("19×19");
+    expect(radio("Tự do")).toHaveAccessibleName("Tự do");
+  });
+
+  it("Ghi chú độ khó của bản đồ: Đội gom thạch's maps each say their difficulty", async () => {
+    renderWithIntl(
+      <SetupScreen
+        gameId="jelly-crew"
+        supportsAI={false}
+        players={{ min: 2, max: 4 }}
+        optionChoices={[
+          {
+            name: "map",
+            values: [
+              "kitchen",
+              "dessert-shop",
+              "market",
+              "coconut-grove",
+              "cold-store",
+              "floating-market",
+              "jelly-factory",
+              "moon-festival",
+            ],
+          },
+        ]}
+        defaultOptions={{ map: "kitchen" }}
+        realtimeUrl="ws://localhost:3101/api/realtime"
+        store={createMemoryStore()}
+      />,
+    );
+    await waitFor(() => {
+      expect(startButton()).toHaveAttribute("aria-disabled", "false");
+    });
+
+    const maps = within(screen.getByRole("group", { name: "Bản đồ" })).getAllByRole("radio");
+    expect(maps).toHaveLength(8);
+    expect(maps[0]).toHaveAccessibleName("Hai gian bếp, Dễ");
+    expect(maps[0]).toBeChecked();
+    expect(maps[1]).toHaveAccessibleName("Tiệm chè, Dễ");
+    expect(maps[7]).toHaveAccessibleName("Đêm trăng rằm, Rất khó");
+    expect(screen.getAllByText("Rất khó")).toHaveLength(2);
+  });
+
   it("offers the board and the win rule of Cờ caro, at their defaults the first time", async () => {
     await renderCaro();
 

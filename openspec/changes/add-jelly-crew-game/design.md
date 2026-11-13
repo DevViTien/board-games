@@ -297,6 +297,92 @@ Nước đi đổi dạng, nên ván Đội gom thạch lưu trên máy và phò
 
 Game mới ship trong ngày nên không viết chuyển đổi.
 
+### 11. Tám bản đồ và bản đồ tiếp theo (sau chơi thử 13/11/2026)
+
+Người dùng chơi thử bản đi tự do và thấy ba bản đồ là quá ít. Họ cũng không đổi được bản đồ khi chơi xong. Ngày 13/11/2026 người dùng chốt:
+
+- **Thêm 5 bản đồ, thành 8.** Mỗi bản đồ mới có bố cục cho 2, 3 và 4 người, tổng 24 bố cục.
+- **Đổi bản đồ ngay ở thẻ kết quả**, chung cho mọi game có tuỳ chọn. Phần này là change riêng `add-new-game-options`.
+- **Online, ai đang ngồi cũng đổi được.**
+- **Thắng thì có nút "Bản đồ tiếp: …"**.
+
+Mockup: `../add-new-game-options/mockup/index.html`, gồm lưới 8 bản đồ kèm độ khó, thẻ thắng và hộp "Đổi bản đồ". Bàn "Tiệm chè" trong mockup là bản nháp. Người dùng duyệt ngày 13/11/2026, không điều chỉnh.
+
+#### 11.1 Thứ tự và độ khó
+
+Thứ tự trong `JELLY_CREW_MAPS` là thứ tự của màn bắt đầu ván và của "Bản đồ tiếp". Bản đồ mới xen vào giữa các bản đồ cũ theo độ khó. Mã cũ giữ nguyên, nên ván lưu và phòng cũ vẫn đọc được.
+
+| #   | Mã                | Tên (vi)      | Độ khó  | Ý tưởng                                                                                                         | Cơ chế chính                            |
+| --- | ----------------- | ------------- | ------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| 1   | `kitchen`         | Hai gian bếp  | Dễ      | (có sẵn) mỗi người một gian, giữ nút cho nhau                                                                   | nút, cửa, khuôn                         |
+| 2   | `dessert-shop`    | Tiệm chè      | Dễ      | Quầy chè chia đôi tiệm; nút của mỗi người mở cửa bên người kia, khuôn ở gian sau, qua hai cửa khác nhóm         | giữ nút luân phiên, hai nhóm cửa        |
+| 3   | `market`          | Chợ đêm       | Vừa     | (có sẵn) lối chung hẹp, thạch giữ nút                                                                           | thạch giữ nút, sương sáo                |
+| 4   | `coconut-grove`   | Vườn dừa      | Vừa     | Hàng dừa thành lối zíc zắc; sương sáo nối nhiều thạch thành khối chữ L, phải ghép đúng hướng mới lọt cửa        | ghép khối bằng sương sáo, thạch giữ nút |
+| 5   | `cold-store`      | Kho lạnh      | Khó     | (có sẵn) đá viên chắn lối, thứ tự vào kho                                                                       | đá viên, cửa nhiều nhóm                 |
+| 6   | `floating-market` | Chợ nổi       | Khó     | Lối nước rộng một ô giữa các ghe; nhân vật chắn nhau, phải nhường nhau ở các bến nhỏ; đá viên làm "cầu" giữ nút | nhường lối, đá viên giữ nút             |
+| 7   | `jelly-factory`   | Xưởng thạch   | Rất khó | Dây chuyền ba nhóm cửa nối nhau: đứng ● mới tới được ▲, đứng ▲ mới mở ■; mỗi người giữ một trạm rồi đổi chỗ     | chuỗi ba nhóm, đổi chỗ giữ nút          |
+| 8   | `moon-festival`   | Đêm trăng rằm | Rất khó | Bản đồ cuối: khuôn hình trăng khuyết ở giữa sân, bốn loại thạch, đá viên, sương sáo, cửa đóng sau lưng          | gộp mọi cơ chế                          |
+
+Độ khó hiện dưới tên bản đồ ở màn bắt đầu ván và trong hộp đổi bản đồ. Giá trị nằm trong khoá `Games.jelly-crew.options.map.hints.<mã>`: "Dễ", "Vừa", "Khó", "Rất khó"; en "Easy" / "Medium" / "Hard" / "Very hard"; ja「やさしい」「ふつう」「むずかしい」「とてもむずかしい」. Tên bản đồ tiếng Anh và tiếng Nhật chốt khi thêm bản dịch.
+
+#### 11.2 Thiết kế 15 bố cục mới
+
+Cách làm như task 1.7: vẽ tay bằng chuỗi, mỗi bố cục có lời giải mẫu là chuỗi nước có ghế (`layouts.solutions.ts`). Test phát lại lời giải phải thắng `filled`, và test "cửa luôn đóng" không tìm được lời giải. Thêm các ràng buộc:
+
+- **Cỡ**: giữ ≤ 19 × 13. Bố cục 2 người nên ≤ 17 cột để ô ở 360 px không quá nhỏ.
+- **Độ dài lời giải**: tăng dần theo thứ tự bản đồ:
+  - Dễ: 20–45 bước;
+  - Vừa: 35–75;
+  - Khó: 55–110;
+  - Rất khó: 85–200.
+
+  Khoảng rộng để ba bản đồ cũ (25–89 bước) cũng nằm trong; test "takes as many steps as its difficulty asks" kiểm từng bố cục. Không bố cục nào vượt 200 bước, còn xa giới hạn an toàn 3.000 nước.
+
+- **Phối hợp thật**: ngoài test "cửa luôn đóng", mỗi bố cục mới cần ít nhất hai người cùng đứng hoặc đổi chỗ ở nút trong lời giải mẫu. Ghi "điểm phối hợp" của từng bố cục vào bảng §11.4.
+- **Bố cục 3 và 4 người** của cùng bản đồ mở rộng bố cục 2 người: thêm gian, thêm cửa, như ba bản đồ cũ. Như vậy người đã chơi bản 2 người nhận ra bản đồ.
+- **Loại thạch và màu**: dùng lại sáu loại hiện có, không thêm token màu.
+
+Thiết kế bố cục có thể giao cho một agent con với một bộ công cụ trong scratchpad: phát lại kế hoạch "ghế: chuỗi hướng" rồi in bàn khi bị chặn, giống `crew/plan.ts` lúc làm task 1.7. Lời giải cuối cùng vẫn do test trong repo kiểm.
+
+#### 11.3 Bản đồ tiếp theo
+
+Phần chung (`add-new-game-options`) có hook `GameUI.useNextOptions`. Đội gom thạch cài hook này như sau:
+
+- kết quả `win` lý do `filled` → bản đồ kế sau bản đồ đang chơi trong `JELLY_CREW_MAPS`;
+- bản đồ cuối, `too-long`, bỏ cuộc → `null`, không gợi ý;
+- nhãn `Games.jelly-crew.options.next` "Bản đồ tiếp: {rules}";
+- nút đổi tuỳ chọn `Games.jelly-crew.options.change` "Đổi bản đồ".
+
+Gợi ý chỉ là tuỳ chọn `map`. Số người giữ như phòng hay ván đang chơi.
+
+#### 11.4 Bố cục
+
+| Bố cục            | Cỡ      | Lời giải (bước) | Điểm phối hợp                                                                                                                                                  |
+| ----------------- | ------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| dessert-shop-2    | 15 × 7  | 41              | Hồng đứng ▲ cho Lam đẩy xoài vào sảnh; Lam đứng ● (hai người cùng đứng nút) cho Hồng đẩy dâu vào và xoài lên hốc                                               |
+| dessert-shop-3    | 15 × 11 | 41              | P3 giữ ●, P1 giữ ▲, P2 đẩy hai thạch lên hốc rồi đứng ■ cho P3 đẩy khối lá dứa qua cửa ■                                                                       |
+| dessert-shop-4    | 15 × 11 | 41              | thêm kho có P4 và nút ■: P4 đẩy khoai môn qua cửa ▲ (P1 giữ) rồi đứng ■ cho P3                                                                                 |
+| coconut-grove-2   | 15 × 10 | 56              | Hồng đứng ■ cho Lam đẩy xoài ra chuồng; Lam về giữ ●; đá viên đè ▲; Hồng ghép chữ L qua cổng đôi ●▲                                                            |
+| coconut-grove-3   | 19 × 10 | 69              | thêm chòi có P3: giữ ■ cho xoài ra, rồi đẩy lá dứa qua cửa ● (P2 vẫn giữ)                                                                                      |
+| coconut-grove-4   | 19 × 13 | 73              | thêm giếng có P4: đẩy khoai môn qua cửa ■ (P3 giữ)                                                                                                             |
+| floating-market-2 | 14 × 8  | 64              | Lam đứng ▲ cho Hồng đẩy đá viên qua cửa rồi bước ra để đá viên lên ▲; Hồng đẩy thạch vào ô cửa rồi đứng ●, Lam ở bến chờ đẩy lên quầy (BFS: ngắn nhất 55 bước) |
+| floating-market-3 | 14 × 11 | 85              | thêm khoang có P3 mở bằng ●: P1 giữ ●, P2 đứng ■, P3 đẩy lá dứa lên sạp                                                                                        |
+| floating-market-4 | 14 × 11 | 91              | thêm khoang có P4 mở bằng ▲: P4 đẩy khoai môn qua ô nút ■, P2 bước lên ■ ngay sau lưng P4                                                                      |
+| jelly-factory-2   | 17 × 9  | 90              | P1 đứng ● thả xoài xuống, P2 đẩy qua cửa ●; P2 lên trạm ▲ cho P1 sang ■; thạch đẩy lên nút thì kẹt luôn                                                        |
+| jelly-factory-3   | 17 × 13 | 117             | nút ▲ chỉ còn ở phòng đóng gói: P3 giữ ▲ cho P1 sang ■, rồi đẩy khoai môn qua hai cửa ■ (BFS: P1 + P2 không thắng được)                                        |
+| jelly-factory-4   | 17 × 13 | 108             | phòng đóng gói chia đôi: P3 đẩy khoai môn qua cửa ● (P1 giữ) sang phòng P4; P4 giữ ▲ rồi đẩy khoai lên khuôn                                                   |
+| moon-festival-2   | 17 × 11 | 132             | khuôn trăng khuyết lấp theo thứ tự khoai môn → sương sáo → xoài, dâu cuối; P1 đứng ▲ cho P2 ra rồi cửa đóng sau lưng; P2 giữ ● rồi ■ cho P1                    |
+| moon-festival-3   | 17 × 11 | 132             | kho chia hai bằng cửa ■ trong: P3 giữ ▲ cho P2 ra rồi tự thả xoài xuống cột                                                                                    |
+| moon-festival-4   | 17 × 11 | 99              | thêm kho tây có ● và khoai môn: P3 giữ ▲, P2 giữ ■, P4 thả khoai và sương sáo, dọn đá viên, rồi giữ ● cho P1 lấy dâu                                           |
+
+Bố cục do hai agent con thiết kế. Ngoài test của repo, mỗi agent chạy thêm một BFS riêng: một người không thắng được khi những người khác đứng yên. Bố cục đủ nhỏ thì chạy BFS, bố cục lớn thì lập luận theo cấu trúc. Lời giải mẫu không phải ngắn nhất.
+
+Ba điểm cần biết:
+
+- Ở Tiệm chè, Xưởng thạch và Đêm trăng rằm, bản 3 hay 4 người không dài hơn bản 2 người, vì nhiều người chia việc. Độ dài vẫn nằm trong khoảng của độ khó.
+- Ở Chợ nổi 2 và 3 người, hai người đứng nút ở hai lúc khác nhau, không cùng lúc.
+- Ở Vườn dừa, khối dâu và sương sáo dính sẵn từ đầu, người chơi chỉ ghép thêm xoài cho đúng hướng.
+
 ## Khác thiết kế
 
 Ghi lại khi code (task 1–6), các artifact khác đã sửa cho khớp.
@@ -340,4 +426,4 @@ Thêm game mới, không đổi dữ liệu cũ: không đổi `STORED_ROOM_FORM
 
 ## Open Questions
 
-- Tên tiếng Anh và tiếng Nhật của game ("Jelly Crew", "ゼリー隊") và của ba bản đồ: chốt khi thêm bản dịch, không đổi spec.
+- Tên tiếng Anh và tiếng Nhật của game ("Jelly Crew", "ゼリー隊") và của tám bản đồ: chốt khi thêm bản dịch, không đổi spec.

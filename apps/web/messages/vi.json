@@ -75,7 +75,8 @@
             "free": "Tự do"
           }
         },
-        "summary": "{size} · {rule}"
+        "summary": "{size} · {rule}",
+        "change": "Đổi bàn, luật"
       },
       "result": {
         "line": "{count} quân {mark} liền nhau theo {direction}",
@@ -415,11 +416,28 @@
           "label": "Bản đồ",
           "values": {
             "kitchen": "Hai gian bếp",
+            "dessert-shop": "Tiệm chè",
             "market": "Chợ đêm",
-            "cold-store": "Kho lạnh"
+            "coconut-grove": "Vườn dừa",
+            "cold-store": "Kho lạnh",
+            "floating-market": "Chợ nổi",
+            "jelly-factory": "Xưởng thạch",
+            "moon-festival": "Đêm trăng rằm"
+          },
+          "hints": {
+            "kitchen": "Dễ",
+            "dessert-shop": "Dễ",
+            "market": "Vừa",
+            "coconut-grove": "Vừa",
+            "cold-store": "Khó",
+            "floating-market": "Khó",
+            "jelly-factory": "Rất khó",
+            "moon-festival": "Rất khó"
           }
         },
-        "summary": "{map}"
+        "summary": "{map}",
+        "change": "Đổi bản đồ",
+        "next": "Bản đồ tiếp: {rules}"
       },
       "directions": {
         "U": "Lên",
@@ -557,6 +575,14 @@
       "description": "Ván đang chơi sẽ bị bỏ.",
       "confirm": "Ván mới",
       "cancel": "Chơi tiếp"
+    },
+    "newGameOptions": "Ván mới: {rules} · {status}",
+    "newGameOptionsTurn": "{status} · {rules}",
+    "optionsDialog": {
+      "description": "Ván mới bắt đầu với lựa chọn này.",
+      "descriptionOnline": "Ván mới bắt đầu ngay cho cả phòng, với lựa chọn này.",
+      "confirm": "Bắt đầu ván mới",
+      "cancel": "Huỷ"
     },
     "notFound": {
       "title": "Không tìm thấy game",
@@ -1393,7 +1419,7 @@
       },
       "maps": {
         "title": "Bản đồ",
-        "body": "Ba bản đồ, mỗi bản đồ có bố cục riêng cho 2, 3 và 4 người: <b>Hai gian bếp</b> (dễ), <b>Chợ đêm</b> (vừa) và <b>Kho lạnh</b> (khó)."
+        "body": "Tám bản đồ, mỗi bản đồ có bố cục riêng cho 2, 3 và 4 người, từ dễ tới khó: <b>Hai gian bếp</b>, <b>Tiệm chè</b> (dễ); <b>Chợ đêm</b>, <b>Vườn dừa</b> (vừa); <b>Kho lạnh</b>, <b>Chợ nổi</b> (khó); <b>Xưởng thạch</b>, <b>Đêm trăng rằm</b> (rất khó). Cả đội thắng thì có nút sang bản đồ tiếp theo; nút “Đổi bản đồ” chọn bản đồ khác cho ván sau."
       },
       "figures": {
         "hold": {

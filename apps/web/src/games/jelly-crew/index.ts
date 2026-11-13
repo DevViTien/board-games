@@ -4,6 +4,7 @@ import { jellyCrew } from "@board-games/games/jelly-crew";
 
 import { defineGameEntry } from "../define-game-entry";
 import { JellyCrewBoard } from "./Board";
+import { useJellyCrewNextOptions } from "./next-map";
 import { JellyCrewSeatMark } from "./SeatMark";
 import {
   useJellyCrewMoveLabel,
@@ -18,5 +19,6 @@ export const jellyCrewEntry = defineGameEntry(jellyCrew, {
   useMoveLabel: useJellyCrewMoveLabel,
   useSeatSummary: useJellyCrewSeatSummary,
   useResultDetail: useJellyCrewResultDetail,
+  useNextOptions: useJellyCrewNextOptions,
   SeatMark: JellyCrewSeatMark,
 });

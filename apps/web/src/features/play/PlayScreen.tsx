@@ -7,7 +7,17 @@ import {
   type PlayerIndex,
 } from "@board-games/engine";
 import type { RegisteredGameId } from "@board-games/games";
-import { Badge, BookOpenIcon, Button, cn, ConfirmDialog, Dialog, FlagIcon } from "@board-games/ui";
+import {
+  ArrowRightIcon,
+  Badge,
+  BookOpenIcon,
+  Button,
+  cn,
+  ConfirmDialog,
+  Dialog,
+  FlagIcon,
+  SlidersHorizontalIcon,
+} from "@board-games/ui";
 import { useFormatter, useTranslations } from "next-intl";
 import {
   type ComponentType,
@@ -21,8 +31,10 @@ import {
 
 import type { ChatSlotContext } from "@/features/chat/use-room-chat";
 import { LazyRules } from "@/features/rules/LazyRules";
+import { rememberSetupOptions } from "@/features/setup/setup-preferences";
 import { AppTopBar } from "@/features/shell/AppTopBar";
 import type { BoardLayout, GameUI } from "@/games/types";
+import { type ChosenOptions, matchOptionChoices } from "@/lib/option-choices";
 import { useModeLabel } from "@/lib/use-mode-label";
 import { useOptionLabels } from "@/lib/use-option-labels";
 import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
@@ -38,6 +50,7 @@ import {
 import { AbandonNotice } from "./AbandonNotice";
 import { Confetti } from "./Confetti";
 import { ConnectionNotice } from "./ConnectionNotice";
+import { NewGameOptionsDialog } from "./NewGameOptionsDialog";
 import { PlayerPanel, SeatBar } from "./PlayerPanel";
 import { PlayLoading } from "./PlayLoading";
 import { PresentationHoldProvider, useHeldPresentation } from "./presentation-hold";
@@ -85,6 +98,10 @@ function noop(): void {
 const NO_OPTION_CHOICES: readonly OptionChoiceList[] = [];
 
 function noResultDetail(): () => null {
+  return () => null;
+}
+
+function noNextOptions(): () => null {
   return () => null;
 }
 
@@ -175,6 +192,12 @@ export function PlayScreen<State, Move, Outcome>({
   const modeLabel = useModeLabel();
   const optionLabels = useOptionLabels();
   const [confirmingNewGame, setConfirmingNewGame] = useState(false);
+  // Whether the dialog choosing the rule options of the next game is open.
+  const [choosingOptions, setChoosingOptions] = useState(false);
+  // The rules the screen last showed (`undefined` before the first render), and the rules of a new
+  // online game that differ from the game before, told until its first move.
+  const [shownRules, setShownRules] = useState<string | undefined>(undefined);
+  const [rulesChanged, setRulesChanged] = useState(false);
   // The number of moves when a move was refused: the refusal is told until the game changes,
   // not when the connection does.
   const [refusedAt, setRefusedAt] = useState<number | null>(null);
@@ -210,6 +233,8 @@ export function PlayScreen<State, Move, Outcome>({
   const connectionLost = useLostForAWhile(connection);
   const useResultDetail = ui.useResultDetail ?? noResultDetail;
   const resultDetail = useResultDetail();
+  const useNextOptions = ui.useNextOptions ?? noNextOptions;
+  const nextOptionsOf = useNextOptions();
   const undoReasonId = useId();
   const redoReasonId = useId();
   const resignReasonId = useId();
@@ -336,6 +361,23 @@ export function PlayScreen<State, Move, Outcome>({
   // Online whoever else plays: a room of one person and three AIs has no remote seat.
   const online = snapshot.connection !== null;
   const optionSummary = optionLabels.summary(gameId, optionChoices, snapshot.options);
+  // Adjusted during render: a new online game with other rules than the game before (someone
+  // changed them) says so until its first move (spec "Báo ván mới với tuỳ chọn khác").
+  // Compared by their values, not their words: a change of language is no new game.
+  const rulesKey = JSON.stringify(matchOptionChoices(optionChoices, snapshot.options));
+  if (rulesKey !== shownRules) {
+    setShownRules(rulesKey);
+    if (
+      shownRules !== undefined &&
+      online &&
+      snapshot.result === null &&
+      snapshot.moveCount === 0
+    ) {
+      setRulesChanged(true);
+    }
+  }
+  if (rulesChanged && (snapshot.moveCount > 0 || snapshot.result !== null)) setRulesChanged(false);
+  const newRules = rulesChanged ? optionSummary : null;
 
   function describeStatus({
     state,
@@ -599,7 +641,15 @@ export function PlayScreen<State, Move, Outcome>({
 
   // Two moves in a row may be told in the same words (the AI rolls a 6 that cannot move, twice):
   // the second gets an invisible mark, so the live region changes and is read again.
-  const announcement = describeClaimReady() ?? describeStatus(snapshot);
+  const status = describeStatus(snapshot);
+  const announcement =
+    describeClaimReady() ??
+    (newRules === null || snapshot.result !== null
+      ? status
+      : // A game played by turns already says "New game:" and whose side is whose: the rules follow.
+        snapshot.freePlay
+        ? t("newGameOptions", { rules: newRules, status })
+        : t("newGameOptionsTurn", { rules: newRules, status }));
   const moverWarning = describeMoverWarning();
   const spoken = moverWarning === null ? announcement : `${announcement} ${moverWarning}`;
   // A move of a person here (a roll, which the board's hint reads out) never makes the same words
@@ -638,6 +688,35 @@ export function PlayScreen<State, Move, Outcome>({
   // The chat stays once the game has a result or the player resigned: when people say "gg".
   const hasButtons =
     snapshot.supportsUndo || newGameInButtons || resign !== null || ChatSlot !== undefined;
+
+  // Once the game is over: the options it was played with, to start from in the dialog changing
+  // them (`null` if they are not among the game's choices), and the next game the game suggests.
+  const playedOptions =
+    snapshot.canStartNewGame && optionChoices.length > 0
+      ? matchOptionChoices(optionChoices, snapshot.options)
+      : null;
+  const suggested =
+    snapshot.canStartNewGame && snapshot.result !== null
+      ? nextOptionsOf(snapshot.result, snapshot.options)
+      : null;
+  const nextOptions = suggested === null ? null : matchOptionChoices(optionChoices, suggested);
+  const nextLabel =
+    nextOptions === null ? null : optionLabels.next(gameId, optionChoices, nextOptions);
+  // The dialog is for a game over: once another one began (someone online asked first), it closes.
+  if (choosingOptions && playedOptions === null) {
+    setChoosingOptions(false);
+    requestTitleFocus();
+  }
+
+  /** A new game with other options, remembered for the setup screen as if chosen there. */
+  function startWithOptions(options: ChosenOptions) {
+    rememberSetupOptions(gameId, online ? "online" : hasAiSeat ? "ai" : "local", options, {
+      playerCount: ready.seats.length,
+    });
+    focusNewGame.current = !online;
+    focusTitleOnNewGame.current = online;
+    transport.requestNewGame(options);
+  }
 
   function startNewGame() {
     // Only a game where a person here has a move in effect is worth asking about: not one where
@@ -717,15 +796,45 @@ export function PlayScreen<State, Move, Outcome>({
       }
       action={
         snapshot.canStartNewGame ? (
-          <Button
-            onClick={() => {
-              focusNewGame.current = !online;
-              focusTitleOnNewGame.current = online;
-              startNewGame();
-            }}
-          >
-            {online ? t("rematch") : t("newGame")}
-          </Button>
+          <div className="flex w-full flex-wrap gap-2">
+            {nextOptions !== null && nextLabel !== null && (
+              <Button
+                // A long map name wraps rather than overflow the button on a phone.
+                className="h-auto min-h-12 py-2 text-balance max-sm:w-full"
+                onClick={() => {
+                  startWithOptions(nextOptions);
+                }}
+              >
+                <ArrowRightIcon aria-hidden className="size-4 shrink-0" />
+                {nextLabel}
+              </Button>
+            )}
+            <Button
+              variant={nextLabel === null ? "primary" : "secondary"}
+              className="max-sm:grow"
+              onClick={() => {
+                focusNewGame.current = !online;
+                focusTitleOnNewGame.current = online;
+                startNewGame();
+              }}
+            >
+              {online ? t("rematch") : t("newGame")}
+            </Button>
+            {playedOptions !== null && (
+              <Button
+                variant="secondary"
+                className="max-sm:grow"
+                aria-haspopup="dialog"
+                onClick={(event) => {
+                  opener.current = event.currentTarget;
+                  setChoosingOptions(true);
+                }}
+              >
+                <SlidersHorizontalIcon aria-hidden className="size-4 shrink-0" />
+                {optionLabels.change(gameId)}
+              </Button>
+            )}
+          </div>
         ) : null
       }
       className="lg:my-1.5 lg:[grid-area:status] short-landscape:my-1 short-landscape:[grid-area:status]"
@@ -1133,6 +1242,26 @@ export function PlayScreen<State, Move, Outcome>({
         }}
         onCancel={() => {
           setConfirmingNewGame(false);
+        }}
+      />
+
+      <NewGameOptionsDialog
+        open={choosingOptions && playedOptions !== null}
+        gameId={gameId}
+        choices={optionChoices}
+        current={playedOptions ?? {}}
+        online={online}
+        title={optionLabels.change(gameId)}
+        onStart={(options) => {
+          setChoosingOptions(false);
+          // The dialog goes without giving the focus back. Online, the new game comes when the
+          // server answers, if it does: meanwhile the focus waits on the title.
+          if (online) requestTitleFocus();
+          startWithOptions(options);
+        }}
+        onCancel={() => {
+          setChoosingOptions(false);
+          setFocusAfterDialog((previous) => ({ target: "opener", seq: (previous?.seq ?? 0) + 1 }));
         }}
       />
 

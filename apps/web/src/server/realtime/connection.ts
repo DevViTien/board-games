@@ -414,7 +414,7 @@ export function attachConnection(socket: WebSocket, deps: ConnectionDeps): void 
           message.move,
         );
       case "rematch":
-        return service.rematch(code, playerId, message.gameNumber);
+        return service.rematch(code, playerId, message.gameNumber, message.options);
       case "ai-seat":
         return service.setAiSeat(code, playerId, message.seat, message.on);
       case "resign":

@@ -159,11 +159,16 @@ export interface RoomService {
     position: { readonly gameNumber: number; readonly moveIndex: number },
     move: unknown,
   ): Promise<ServiceResult<StoredRoom>>;
+  /**
+   * A new game once the current one is over, with `options` if sent (checked as when creating a
+   * room), or else those of the game just over.
+   */
   rematch(
     this: void,
     code: RoomCode,
     playerId: string,
     gameNumber: number,
+    options?: unknown,
   ): Promise<ServiceResult<StoredRoom>>;
   /**
    * The host marks an empty seat as an AI seat (`on`), or empties an AI seat, before the current
@@ -659,16 +664,21 @@ export function createRoomService({
         return ok(written(room, { record: toRecord(after) }, turnAfter(game, after)));
       }),
 
-    rematch: (code, playerId, gameNumber) =>
+    rematch: (code, playerId, gameNumber, options) =>
       writeWithRetry(code, MOVE_ATTEMPTS, (room) => {
         const current = seatedGame(room, playerId);
         if (!current.ok) return current;
         const { game, session } = current;
         if (gameNumber !== room.gameNumber) return fail(ROOM_ERROR.StaleMove, room);
         if (sessionResult(game, session) === null) return fail(ROOM_ERROR.GameNotOver, room);
+        // Other options for the new game are checked last: a second request for the same game is
+        // stale whatever it carries.
+        const parsed =
+          options === undefined ? ok(session.options) : parseGameOptions(game, options);
+        if (!parsed.ok) return fail(parsed.error, room);
         const fresh = createSession(game, {
           playerCount: session.playerCount,
-          options: session.options,
+          options: parsed.value,
         });
         if (!fresh.ok) return fail(ROOM_ERROR.Unavailable, room);
         // Everyone moves one seat on (the last seat to the first), so who starts alternates, and

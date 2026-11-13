@@ -70,7 +70,16 @@ const clientMessageSchema = z.discriminatedUnion("type", [
     /** Checked by the game's rules. */
     move: z.unknown(),
   }),
-  z.strictObject({ type: z.literal("rematch"), gameNumber: gameNumberSchema }),
+  z.strictObject({
+    type: z.literal("rematch"),
+    gameNumber: gameNumberSchema,
+    /**
+     * Other rule options for the new game (change `add-new-game-options`); left out, it keeps those
+     * of the game just over. Checked by the game, as when creating a room: a wrong value is refused
+     * with `invalid-options`, not as a broken message.
+     */
+    options: z.exactOptional(z.unknown()),
+  }),
   /** The sender gives up the current game: it ends, or the AI plays their seat (`leaveOutcome`). */
   z.strictObject({ type: z.literal("resign"), gameNumber: gameNumberSchema }),
   /**

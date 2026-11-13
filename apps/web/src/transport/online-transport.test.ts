@@ -309,6 +309,35 @@ describe("online transport: requests", () => {
     ).toEqual([{ type: "rematch", gameNumber: 2 }]);
   });
 
+  it("sends the options chosen for the new game with the request", () => {
+    const socket = start(
+      roomView({ seats: ["Minh", "Lan"], cells: [4, 0, 2, 1, 6], gameNumber: 2 }),
+      0,
+    );
+
+    transport.requestNewGame({ size: 19, rule: "free" });
+
+    expect(
+      socket.sent.filter((message) => (message as { type: string }).type === "rematch"),
+    ).toEqual([{ type: "rematch", gameNumber: 2, options: { size: 19, rule: "free" } }]);
+  });
+
+  it("lets a new game be asked for again after the server refuses its options, saying nothing of a move", () => {
+    const socket = start(
+      roomView({ seats: ["Minh", "Lan"], cells: [4, 0, 2, 1, 6], gameNumber: 2 }),
+      0,
+    );
+    transport.requestNewGame({ size: 21 });
+
+    socket.receive({ type: "rejected", request: "rematch", code: "invalid-options" });
+    transport.requestNewGame();
+
+    expect(
+      socket.sent.filter((message) => (message as { type: string }).type === "rematch"),
+    ).toHaveLength(2);
+    expect(events).not.toContainEqual(expect.objectContaining({ type: "rejected" }));
+  });
+
   it("waits for the next game after asking for one, whatever else changes in the room", () => {
     const over = { seats: ["Minh", "Lan"], cells: [4, 0, 2, 1, 6], gameNumber: 2 } as const;
     const socket = start(roomView({ ...over, revision: 5 }), 0);

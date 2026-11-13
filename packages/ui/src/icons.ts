@@ -31,6 +31,7 @@ export {
   RotateCw as RotateCwIcon,
   Send as SendIcon,
   Share2 as Share2Icon,
+  SlidersHorizontal as SlidersHorizontalIcon,
   Sun as SunIcon,
   Trash2 as Trash2Icon,
   Trophy as TrophyIcon,

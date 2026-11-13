@@ -243,7 +243,11 @@ export interface Transport<State, Move, Outcome = never> {
   /** Takes back moves until a player at this device is to move again, AI replies included. */
   requestUndo(this: void): void;
   requestRedo(this: void): void;
-  requestNewGame(this: void): void;
+  /**
+   * Starts a new game with the same players and seats, and with `options` if given (checked by the
+   * game; wrong ones are ignored here, refused by the server online), or else the current options.
+   */
+  requestNewGame(this: void, options?: unknown): void;
   /** Gives up the game, when `ReadySnapshot.resign` is available. */
   resign(this: void): void;
   /** Claims the running turn abandoned (`ReadySnapshot.turn`); the server decides. Online only. */

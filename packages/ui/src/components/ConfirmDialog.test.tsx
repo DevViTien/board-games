@@ -110,3 +110,27 @@ describe("ConfirmDialog", () => {
     expect(onConfirm).not.toHaveBeenCalled();
   });
 });
+
+describe("ConfirmDialog with choices", () => {
+  it("shows its choices between the question and the buttons", () => {
+    render(
+      <ConfirmDialog
+        open
+        title="Đổi bản đồ"
+        confirmLabel="Bắt đầu ván mới"
+        cancelLabel="Huỷ"
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+        wide
+      >
+        <input type="radio" aria-label="Tiệm chè" />
+      </ConfirmDialog>,
+    );
+
+    const dialog = screen.getByRole("dialog", { name: "Đổi bản đồ" });
+    const radio = screen.getByRole("radio", { name: "Tiệm chè" });
+    const confirm = screen.getByRole("button", { name: "Bắt đầu ván mới" });
+    expect(dialog).toContainElement(radio);
+    expect(radio.compareDocumentPosition(confirm) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});

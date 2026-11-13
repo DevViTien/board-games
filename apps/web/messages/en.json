@@ -75,7 +75,8 @@
             "free": "Free style"
           }
         },
-        "summary": "{size} · {rule}"
+        "summary": "{size} · {rule}",
+        "change": "Change board & rules"
       },
       "result": {
         "line": "{count} {mark} stones in a line, {direction}",
@@ -415,11 +416,28 @@
           "label": "Map",
           "values": {
             "kitchen": "Two kitchens",
+            "dessert-shop": "Dessert shop",
             "market": "Night market",
-            "cold-store": "Cold store"
+            "coconut-grove": "Coconut grove",
+            "cold-store": "Cold store",
+            "floating-market": "Floating market",
+            "jelly-factory": "Jelly factory",
+            "moon-festival": "Full moon festival"
+          },
+          "hints": {
+            "kitchen": "Easy",
+            "dessert-shop": "Easy",
+            "market": "Medium",
+            "coconut-grove": "Medium",
+            "cold-store": "Hard",
+            "floating-market": "Hard",
+            "jelly-factory": "Very hard",
+            "moon-festival": "Very hard"
           }
         },
-        "summary": "{map}"
+        "summary": "{map}",
+        "change": "Change map",
+        "next": "Next map: {rules}"
       },
       "directions": {
         "U": "Up",
@@ -557,6 +575,14 @@
       "description": "The current game will be discarded.",
       "confirm": "New game",
       "cancel": "Keep playing"
+    },
+    "newGameOptions": "New game: {rules} · {status}",
+    "newGameOptionsTurn": "{status} · {rules}",
+    "optionsDialog": {
+      "description": "A new game starts with these choices.",
+      "descriptionOnline": "A new game starts at once for the whole room, with these choices.",
+      "confirm": "Start a new game",
+      "cancel": "Cancel"
     },
     "notFound": {
       "title": "Game not found",
@@ -1393,7 +1419,7 @@
       },
       "maps": {
         "title": "Maps",
-        "body": "Three maps, each with its own layout for 2, 3 and 4 players: <b>Two kitchens</b> (easy), <b>Night market</b> (medium) and <b>Cold store</b> (hard)."
+        "body": "Eight maps, each with its own layout for 2, 3 and 4 players, from easy to hard: <b>Two kitchens</b>, <b>Dessert shop</b> (easy); <b>Night market</b>, <b>Coconut grove</b> (medium); <b>Cold store</b>, <b>Floating market</b> (hard); <b>Jelly factory</b>, <b>Full moon festival</b> (very hard). When the team wins, a button takes it to the next map; “Change map” picks another map for the next game."
       },
       "figures": {
         "hold": {

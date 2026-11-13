@@ -2,7 +2,7 @@
 
 ### Requirement: Bản đồ và người chơi
 
-Đội gom thạch SHALL chơi được với 2, 3 hoặc 4 người, cùng phe, không có máy chơi. Tuỳ chọn `map` SHALL là một trong ba bản đồ "Hai gian bếp" (`kitchen`, mặc định), "Chợ đêm" (`market`), "Kho lạnh" (`cold-store`); mỗi bản đồ có một bố cục riêng cho từng số người, rộng tối đa 19 cột × 13 hàng. Mỗi người SHALL có một nhân vật đặt ở ô xuất phát của bố cục. Tuỳ chọn khác MUST bị từ chối với `invalid-options`.
+Đội gom thạch SHALL chơi được với 2, 3 hoặc 4 người, cùng phe, không có máy chơi. Tuỳ chọn `map` SHALL là một trong tám bản đồ, xếp từ dễ tới khó: `kitchen` (mặc định), `dessert-shop`, `market`, `coconut-grove`, `cold-store`, `floating-market`, `jelly-factory`, `moon-festival`; mỗi bản đồ có một bố cục riêng cho từng số người, rộng tối đa 19 cột × 13 hàng. Mỗi người SHALL có một nhân vật đặt ở ô xuất phát của bố cục. Tuỳ chọn khác MUST bị từ chối với `invalid-options`.
 
 #### Scenario: Ván hai người trên bản đồ mặc định
 
@@ -143,13 +143,37 @@ Mỗi bố cục SHALL giải được: có một lời giải mẫu mà khi ph�
 
 #### Scenario: Phát lại lời giải mẫu
 
-- **WHEN** test phát lại lời giải mẫu của từng bố cục trong chín bố cục
+- **WHEN** test phát lại lời giải mẫu của từng bố cục trong 24 bố cục
 - **THEN** mỗi lần phát lại kết thúc với kết quả thắng `filled` cho mọi người
 
 #### Scenario: Không thắng khi cửa luôn đóng
 
 - **WHEN** test tìm lời giải cho một bố cục mà coi mọi cửa luôn đóng
 - **THEN** không tìm được lời giải
+
+### Requirement: Độ khó và bản đồ tiếp theo
+
+Mỗi bản đồ SHALL có tên và độ khó hiện ở màn bắt đầu ván và trong hộp đổi bản đồ: "Hai gian bếp", "Tiệm chè" (Dễ); "Chợ đêm", "Vườn dừa" (Vừa); "Kho lạnh", "Chợ nổi" (Khó); "Xưởng thạch", "Đêm trăng rằm" (Rất khó). Khi cả đội thắng, game SHALL gợi ý bản đồ kế tiếp theo thứ tự đó ("Bản đồ tiếp: …", capability `new-game-options`), giữ số người. Thắng bản đồ cuối, chạm giới hạn an toàn hay bỏ cuộc thì MUST không có gợi ý.
+
+#### Scenario: Sang bản đồ kế tiếp
+
+- **WHEN** cả đội 3 người thắng ván "Chợ đêm"
+- **THEN** thẻ kết quả có nút "Bản đồ tiếp: Vườn dừa", và bấm nút thì ván 3 người trên "Vườn dừa" bắt đầu
+
+#### Scenario: Thắng bản đồ cuối
+
+- **WHEN** cả đội thắng ván "Đêm trăng rằm"
+- **THEN** thẻ kết quả không có nút "Bản đồ tiếp", chỉ có "Ván mới" (hay "Chơi lại") và "Đổi bản đồ"
+
+#### Scenario: Bỏ cuộc thì không gợi ý
+
+- **WHEN** ván "Tiệm chè" online dừng vì có người bỏ cuộc
+- **THEN** thẻ kết quả không có nút "Bản đồ tiếp"
+
+#### Scenario: Độ khó ở màn bắt đầu ván
+
+- **WHEN** người chơi mở màn bắt đầu ván Đội gom thạch
+- **THEN** nhóm "Bản đồ" có tám bản đồ theo thứ tự trên, "Tiệm chè" ghi "Dễ" và "Đêm trăng rằm" ghi "Rất khó"
 
 ### Requirement: Hiển thị bàn
 

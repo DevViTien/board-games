@@ -1,3 +1,4 @@
+import { JELLY_CREW_MAPS } from "@board-games/games/jelly-crew";
 import { expect, type Page, test } from "@playwright/test";
 
 import {
@@ -68,6 +69,12 @@ test("Cùng máy: two on one keyboard win the two players' kitchen, the team's t
   await expect(status(page)).toHaveText(/Cả đội thắng!/u);
   await expect(page.getByText(/^Đầy khuôn sau 25 bước, \d+ (phút \d+ )?giây\.$/u)).toBeVisible();
   await expect(chip(page, "molds")).toHaveText(/^Khuôn 4\/4/u);
+
+  // The next map, suggested once the team wins (change `add-new-game-options`).
+  await page.getByRole("button", { name: "Bản đồ tiếp: Tiệm chè" }).click();
+  await expect(status(page)).toHaveText("Cả đội cùng đi");
+  await expect(page.getByRole("main").getByText("Tiệm chè", { exact: true })).toBeVisible();
+  await expect(chip(page, "steps")).toHaveText(/^Bước 0/u);
 });
 
 test("Online: both move without waiting for the other, one resets the map, then gives up", async ({
@@ -153,6 +160,24 @@ test.describe("Dùng được trên điện thoại", () => {
     await down.scrollIntoViewIfNeeded();
     const size = await down.boundingBox();
     expect(Math.min(size?.width ?? 0, size?.height ?? 0)).toBeGreaterThanOrEqual(44);
+  });
+
+  test("every layout of the eight maps fits the phone, no sideways scroll", async ({ page }) => {
+    for (const map of JELLY_CREW_MAPS) {
+      for (const players of [2, 3, 4]) {
+        const options = encodeURIComponent(JSON.stringify({ map }));
+        await page.goto(
+          `/play/jelly-crew/local?new=1&players=${String(players)}&options=${options}`,
+        );
+        await expect(crewBoard(page)).toBeVisible();
+        const box = await crewBoard(page).boundingBox();
+        expect((box?.x ?? -1) >= 0 && (box?.x ?? 0) + (box?.width ?? 999) <= 360, map).toBe(true);
+        expect(
+          await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+          `${map}-${String(players)}`,
+        ).toBe(true);
+      }
+    }
   });
 });
 

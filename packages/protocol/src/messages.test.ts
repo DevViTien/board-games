@@ -50,6 +50,9 @@ describe("parseClientMessage", () => {
     { type: "sit", name: "An" },
     { type: "move", gameNumber: 1, moveIndex: 0, move: { cell: 4 } },
     { type: "rematch", gameNumber: 2 },
+    { type: "rematch", gameNumber: 2, options: { size: 19, rule: "free" } },
+    // Not options of any game, but read: the server answers it with `invalid-options`.
+    { type: "rematch", gameNumber: 2, options: "castle" },
     { type: "ai-seat", seat: 2, on: true },
     { type: "ai-seat", seat: 0, on: false },
     // Not a seat of any room, but read: the server answers it with `invalid-seat`.

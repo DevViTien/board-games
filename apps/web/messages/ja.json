@@ -75,7 +75,8 @@
             "free": "フリー"
           }
         },
-        "summary": "{size}・{rule}"
+        "summary": "{size}・{rule}",
+        "change": "盤・ルールを変える"
       },
       "result": {
         "line": "{mark}が{direction}に{count}つ並びました",
@@ -415,11 +416,28 @@
           "label": "マップ",
           "values": {
             "kitchen": "ふたつの台所",
+            "dessert-shop": "甘味処",
             "market": "夜市",
-            "cold-store": "冷蔵倉庫"
+            "coconut-grove": "ココナッツ林",
+            "cold-store": "冷蔵倉庫",
+            "floating-market": "水上マーケット",
+            "jelly-factory": "ゼリー工場",
+            "moon-festival": "十五夜の祭り"
+          },
+          "hints": {
+            "kitchen": "やさしい",
+            "dessert-shop": "やさしい",
+            "market": "ふつう",
+            "coconut-grove": "ふつう",
+            "cold-store": "むずかしい",
+            "floating-market": "むずかしい",
+            "jelly-factory": "とてもむずかしい",
+            "moon-festival": "とてもむずかしい"
           }
         },
-        "summary": "{map}"
+        "summary": "{map}",
+        "change": "マップを変える",
+        "next": "次のマップ：{rules}"
       },
       "directions": {
         "U": "上へ",
@@ -557,6 +575,14 @@
       "description": "今のゲームは破棄されます。",
       "confirm": "新しいゲーム",
       "cancel": "続ける"
+    },
+    "newGameOptions": "新しいゲーム：{rules}・{status}",
+    "newGameOptionsTurn": "{status}・{rules}",
+    "optionsDialog": {
+      "description": "この設定で新しいゲームを始めます。",
+      "descriptionOnline": "この設定で、部屋の全員の新しいゲームがすぐに始まります。",
+      "confirm": "新しいゲームを始める",
+      "cancel": "キャンセル"
     },
     "notFound": {
       "title": "ゲームが見つかりません",
@@ -1393,7 +1419,7 @@
       },
       "maps": {
         "title": "マップ",
-        "body": "マップは3つ。それぞれ2人・3人・4人用の配置があります：<b>ふたつの台所</b>（やさしい）、<b>夜市</b>（ふつう）、<b>冷蔵倉庫</b>（むずかしい）。"
+        "body": "マップは8つ。それぞれ2人・3人・4人用の配置があり、やさしい順に並びます：<b>ふたつの台所</b>・<b>甘味処</b>（やさしい）、<b>夜市</b>・<b>ココナッツ林</b>（ふつう）、<b>冷蔵倉庫</b>・<b>水上マーケット</b>（むずかしい）、<b>ゼリー工場</b>・<b>十五夜の祭り</b>（とてもむずかしい）。全員でクリアすると次のマップへ進むボタンが出ます。「マップを変える」で次のゲームのマップを選べます。"
       },
       "figures": {
         "hold": {

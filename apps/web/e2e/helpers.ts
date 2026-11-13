@@ -200,11 +200,13 @@ const startButton = (page: Page) => page.getByRole("button", { name: "Bắt đ�
 export async function choose(page: Page, group: string, option: string): Promise<void> {
   const options = page.getByRole("group", { name: group });
   // The radios are visually hidden: a player clicks the option's label, which shows the choice.
+  // Its name may go on with a hint ("Kho lạnh, Khó").
+  const name = new RegExp(`^${option}(, .+)?$`, "u");
   await options
     .locator("label")
-    .filter({ hasText: new RegExp(`^${option}$`) })
+    .filter({ has: page.getByRole("radio", { name }) })
     .click();
-  await expect(options.getByRole("radio", { name: option })).toBeChecked();
+  await expect(options.getByRole("radio", { name })).toBeChecked();
 }
 
 /**

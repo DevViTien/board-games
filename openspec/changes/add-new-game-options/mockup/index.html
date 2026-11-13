@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Đổi tuỳ chọn ván mới</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* App tokens copied from packages/ui/src/styles.css (same set as add-jelly-crew-game/mockup). */
+:root{color-scheme:light;--bg:#f6f5f1;--surface:#fff;--surface-muted:#efede6;--surface-raised:#fff;--fg:#17182b;--fg-muted:#5e6072;--border:#e2e0d8;--border-control:#7c7a72;--accent:#5b34e6;--accent-fg:#fff;--accent-press:#3a1fa8;--accent-soft:#ece7ff;--accent-ink:#3a1fa8;--focus:#17182b;--success-soft:#dff5ec;--success-ink:#0d6b4b;--celebration-soft:#ffe9db;--celebration-ink:#a6430c;--card:0 1px 2px rgb(23 24 43/.06);--raised:0 1px 2px rgb(23 24 43/.12);--r-c:.875rem;--r-card:1.25rem;--scrim:rgb(23 24 43/.45)}
+[data-theme=dark]{color-scheme:dark;--bg:#121322;--surface:#1b1c30;--surface-muted:#24253b;--surface-raised:#2e2f48;--fg:#f1f0f7;--fg-muted:#a9aabf;--border:#2c2e47;--border-control:#8a8cab;--accent:#a894ff;--accent-fg:#121322;--accent-press:#6f5bd6;--accent-soft:#2d2752;--accent-ink:#d9d0ff;--focus:#f1f0f7;--success-soft:#173a30;--success-ink:#7fe3bd;--celebration-soft:#3a2a1e;--celebration-ink:#ffb98c;--card:0 0 #0000;--raised:0 0 #0000;--scrim:rgb(0 0 0/.6)}
+[data-game=jelly-crew]{--game-page:#f7f1e3;--game-board:#fff9ec;--game-line:#eadfc6;--wall:#46677a;--wall-top:#5f8296;--r:#ee5a7c;--r-e:#9e1f3d;--y:#f8be3a;--y-e:#8f5800;--g:#5cbf63;--g-e:#22692b;--p:#a983e0;--p-e:#53308a;--s1:#2a5fc4;--s2:#b8327a;--seat-edge:#17182b;--plate:#e6dcc4;--plate-e:#6b5f45;--door:#7a5a3a;--door-bar:#a98762;--mold-line:#17182b}
+[data-theme=dark] [data-game=jelly-crew]{--game-page:#15162a;--game-board:#1e2036;--game-line:#2b2d48;--wall:#7f9bb0;--wall-top:#a1bacb;--r:#d94a6c;--r-e:#ff9fb4;--y:#e3a722;--y-e:#ffd77f;--g:#46a24f;--g-e:#9be7a1;--p:#9270cf;--p-e:#d2b8ff;--s1:#3d6fd6;--s2:#c23d86;--seat-edge:#f1f0f7;--plate:#3a3c58;--plate-e:#b9b3a2;--door:#c9a57e;--door-bar:#8f6c48;--mold-line:#f1f0f7}
+[data-game=caro]{--game-page:#f4f1e8;--game-board:#fdfcf7;--game-line:#c9d3e3;--x:#1f4fbf;--o:#c0332b}
+[data-theme=dark] [data-game=caro]{--game-page:#14152a;--game-board:#1b1d33;--game-line:#33385a;--x:#8fb0ff;--o:#ff8f86}
+
+*{box-sizing:border-box}html,body{margin:0;height:100%}
+body{font:400 16px/1.55 "Be Vietnam Pro",system-ui,sans-serif;background:#d9d7cf;color:#17182b}
+button{font:inherit;color:inherit;cursor:pointer}
+
+/* Review shell, not part of the design. */
+.shell{display:flex;gap:20px;padding:16px;min-height:100%;align-items:flex-start}
+.panel{width:270px;flex:none;background:#fff;border-radius:14px;padding:14px;font-size:13px;position:sticky;top:16px;max-height:calc(100vh - 32px);overflow:auto}
+.panel h1{font-size:15px;margin:0 0 6px}.panel h2{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#5e6072;margin:14px 0 5px}
+.panel button{display:block;width:100%;text-align:left;border:1px solid #d6d4cc;background:#fff;border-radius:7px;padding:4px 8px;margin-bottom:3px;font-size:12.5px;color:#17182b}
+.panel button.on{background:#17182b;color:#fff}
+.panel p{margin:6px 0;color:#3b3d52;line-height:1.45}
+.bare .shell{padding:0}.bare .panel{display:none}.bare .frame{border-radius:0;box-shadow:none}
+.frame{flex:none;background:var(--bg);color:var(--fg);border-radius:18px;overflow:hidden;box-shadow:0 8px 30px rgb(0 0 0/.25);position:relative;transform:translateZ(0)}
+.screen{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column}
+.frame[data-game]{background:var(--game-page)}
+
+/* App frame. */
+.topbar{position:sticky;top:0;z-index:5;background:inherit;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;height:56px;padding:0 12px;flex:none}
+.wide .topbar{height:64px;padding:0 40px}
+.topbar .t{font-weight:700;font-size:1.125rem;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wide .topbar .t{text-align:center;font-size:1.75rem}
+.tb{height:44px;min-width:44px;border:1.5px solid var(--fg);border-radius:var(--r-c);background:var(--surface);display:grid;place-items:center;font-size:13px;font-weight:700;padding:0 10px;flex:none}
+.tb svg{width:20px;height:20px}
+.back{display:inline-grid;place-items:center;border:0;background:none;width:44px;height:44px;flex:none}
+main{padding:16px 16px 24px;display:flex;flex-direction:column;gap:12px;flex:1;width:100%;max-width:72rem;margin:0 auto}
+.wide main{padding:28px 40px 40px}
+.muted{color:var(--fg-muted)}.small{font-size:.875rem;line-height:1.45}.cap{font-size:.8125rem;line-height:1.4}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-card);box-shadow:var(--card)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:var(--r-c);min-height:48px;padding:0 18px;font-weight:600;border:0;color:var(--fg);background:none;text-align:center}
+.btn.primary{background:var(--accent);color:var(--accent-fg);font-weight:700;box-shadow:0 2px 0 var(--accent-press)}
+.btn.secondary{background:var(--surface);border:1.5px solid var(--fg)}
+.btn.quiet{border:1.5px solid var(--border-control);background:transparent}
+.btn svg{width:18px;height:18px;flex:none}
+.focus{outline:3px solid var(--focus);outline-offset:3px}
+
+/* Segmented radio group (RadioGroup) and its new grid form. */
+fieldset{border:0;margin:0;padding:0;min-width:0}
+legend{padding:0;margin-bottom:8px;font-size:.8125rem;color:var(--fg-muted)}
+.track{display:flex;flex-wrap:wrap;gap:4px;border-radius:var(--r-c);background:var(--surface-muted);padding:4px}
+.seg{display:inline-flex;flex:auto;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 12px;border-radius:calc(var(--r-c) - 4px);border:1px solid transparent;font-weight:600;font-size:.9375rem;white-space:nowrap}
+.seg.on{background:var(--surface-raised);border-color:var(--border-control);box-shadow:var(--raised);font-weight:700}
+.seg svg,.cell svg{width:16px;height:16px;flex:none}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(8rem,1fr));gap:4px;border-radius:var(--r-c);background:var(--surface-muted);padding:4px}
+.cell{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:0;min-height:56px;padding:6px 12px;border-radius:calc(var(--r-c) - 4px);border:1px solid transparent;text-align:left}
+.cell .n{display:flex;align-items:center;gap:6px;font-weight:600;font-size:.9375rem;line-height:1.3}
+.cell .h{font-size:.8125rem;color:var(--fg-muted);line-height:1.3}
+.cell.on{background:var(--surface-raised);border-color:var(--border-control);box-shadow:var(--raised)}
+.cell.on .n{font-weight:700}
+.cell .stars{letter-spacing:1px}
+
+/* Setup card. */
+.setup{overflow:hidden;max-width:40rem;width:100%;margin:0 auto}
+.setup .head{background:var(--game-page,#fbf3e0);padding:20px;display:flex;gap:16px;align-items:center}
+.setup .head .logo{width:64px;height:64px;border-radius:10px;background:var(--game-board,#fff);flex:none;display:grid;place-items:center}
+.setup .head h1{margin:0;font-size:1.75rem;line-height:1.15}
+.setup .body{padding:20px;display:flex;flex-direction:column;gap:20px}
+
+/* Play screen. */
+.layout{display:flex;flex-direction:column;gap:12px}
+.wide .layout{display:grid;grid-template-columns:minmax(0,1fr) 24rem;gap:40px;align-items:center;min-height:100%}
+.col{display:flex;flex-direction:column;gap:12px;min-width:0}
+.rules{align-self:center;background:var(--accent-soft);color:var(--accent-ink);font-weight:700;font-size:.875rem;border-radius:999px;padding:4px 14px}
+.wide .rules{align-self:flex-start;font-size:.8125rem}
+.result{padding:20px;display:flex;flex-direction:column;gap:10px}
+.badge{align-self:flex-start;display:inline-flex;gap:6px;align-items:center;background:var(--celebration-soft);color:var(--celebration-ink);font-weight:700;font-size:.875rem;border-radius:999px;padding:3px 12px}
+.badge svg{width:16px;height:16px}
+.result h2{margin:0;font-size:2.25rem;line-height:1.1;font-weight:800}
+.wide .result h2{font-size:2.5rem}
+.result p{margin:0}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.actions .grow{flex:1 1 100%}
+.wide .actions .grow{flex:0 1 auto}
+.player{display:flex;gap:12px;align-items:center;padding:8px 14px;border-radius:14px;background:var(--surface);border:1px solid var(--border)}
+.dot{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:800;font-size:14px;border:2px solid var(--seat-edge,#17182b);flex:none}
+.player b{display:block;line-height:1.2}
+.chips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.wide .chips{justify-content:flex-start}
+.pill{border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:3px 12px;font-weight:700;font-size:.875rem}
+.pill.ok{background:var(--success-soft);color:var(--success-ink);border-color:currentColor}
+.board{width:100%}
+.board svg{display:block;width:100%;height:auto}
+.status{text-align:center;font-weight:700}
+.wide .status{text-align:left}
+.toast{align-self:center;display:inline-flex;gap:8px;align-items:center;background:var(--fg);color:var(--bg);border-radius:999px;padding:6px 16px;font-weight:600;font-size:.875rem}
+
+/* Dialog. */
+.scrim{position:absolute;inset:0;background:var(--scrim);display:grid;place-items:center;padding:16px;z-index:10}
+.dialog{background:var(--surface);border-radius:var(--r-card);padding:20px;max-width:30rem;width:100%;display:flex;flex-direction:column;gap:14px;max-height:calc(100% - 32px);overflow:auto}
+.dialog h2{margin:0;font-size:1.25rem}
+.dialog p{margin:0}
+.dialog .row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:4px}
+.dialog .row .btn{flex:1 1 auto}
+.wide .dialog .row .btn{flex:0 0 auto}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="panel" aria-label="Điều khiển mockup">
+    <h1>Đổi tuỳ chọn khi bắt đầu ván mới</h1>
+    <p>Mockup tĩnh của <code>add-new-game-options</code> và phần bản đồ của <code>add-jelly-crew-game</code> §11. Bố cục bản đồ mới trên bàn là bản nháp: bố cục thật thiết kế khi code.</p>
+    <h2>Cảnh</h2>
+    <div id="scenes"></div>
+    <h2>Khung</h2>
+    <div id="vps"></div>
+    <h2>Giao diện</h2>
+    <div id="themes"></div>
+    <p id="note"></p>
+  </aside>
+  <div class="frame" id="frame"><div class="screen" id="screen"></div></div>
+</div>
+<script>
+const SCENES = {
+  setup: "Màn tạo ván: 8 bản đồ thành lưới, có độ khó",
+  won: "Thắng cùng máy: Bản đồ tiếp, Ván mới, Đổi bản đồ",
+  change: "Hộp Đổi bản đồ (cùng máy)",
+  last: "Thắng bản đồ cuối: không có Bản đồ tiếp",
+  online: "Online thắng: Bản đồ tiếp, Chơi lại, Đổi bản đồ",
+  "online-change": "Hộp Đổi bản đồ online",
+  "online-new": "Online: bạn khác vừa đổi sang Tiệm chè",
+  caro: "Cờ caro kết thúc: Ván mới, Đổi bàn, luật",
+  "caro-change": "Hộp Đổi bàn, luật của Cờ caro",
+};
+const VPS = ["390x844", "1280x800", "360x640"];
+const q = new URLSearchParams(location.search);
+const S = { scene: q.get("scene") ?? "won", vp: q.get("vp") ?? "390x844", theme: q.get("theme") ?? "light" };
+if (q.has("bare")) document.body.classList.add("bare");
+
+const MAPS = [
+  ["Hai gian bếp", 1, "Dễ"], ["Tiệm chè", 1, "Dễ"], ["Chợ đêm", 2, "Vừa"], ["Vườn dừa", 2, "Vừa"],
+  ["Kho lạnh", 3, "Khó"], ["Chợ nổi", 3, "Khó"], ["Xưởng thạch", 4, "Rất khó"], ["Đêm trăng rằm", 4, "Rất khó"],
+];
+const ICON = {
+  back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>',
+  trophy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4ZM17 6h3v2a3 3 0 0 1-3 3M7 6H4v2a3 3 0 0 0 3 3"/></svg>',
+  next: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7"/></svg>',
+  map: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6ZM9 3v15M15 6v15"/></svg>',
+  sliders: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>',
+  book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2V4ZM22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8V4Z"/></svg>',
+};
+const stars = (n) => "★".repeat(n) + "☆".repeat(4 - n);
+
+/* Boards: the real kitchen-2 at its end, and a draft for Tiệm chè (not a designed layout). */
+const KITCHEN = {
+  rows: ["###################", "#.....#.....#.....#", "#.....A.....B.....#", "#.....#.....#.....#", "#..b..#.....#..a..#", "#.....#.....#.....#", "###################"],
+  molds: { "8,2": "r", "9,2": "r", "10,2": "y", "11,2": "y" },
+  jelly: { "8,2": "r", "9,2": "r", "10,2": "y", "11,2": "y" },
+  chars: [[3, 4], [13, 2]], open: "B",
+};
+const SHOP = {
+  rows: ["###################", "#....a...#...b....#", "#.........#.......#", "#..gg....#....pp..#", "#........B........#", "#........#........#", "####A#########A####", "#......GGPP.......#", "###################"],
+  molds: { "7,7": "g", "8,7": "g", "9,7": "p", "10,7": "p" },
+  jelly: { "3,3": "g", "4,3": "g", "14,3": "p", "15,3": "p" },
+  chars: [[2, 1], [16, 1]], open: "",
+};
+const LOGO = { rows: ["#####", "#..A.", "#..#.", "#.b#.", "#####"], molds: {}, jelly: { "1,1": "r", "2,1": "r" }, chars: [[1, 3], [4, 2]], open: "" };
+SHOP.rows[2] = "#........#........#";
+function boardSvg(map) {
+  const C = 24, w = map.rows[0].length, h = map.rows.length;
+  let s = `<svg viewBox="0 0 ${w * C} ${h * C}" role="img" aria-label="Bàn">`;
+  s += `<rect width="${w * C}" height="${h * C}" fill="var(--game-board)"/>`;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const ch = map.rows[y][x], X = x * C, Y = y * C;
+    if (ch === "#") s += `<rect x="${X}" y="${Y}" width="${C}" height="${C}" fill="var(--wall)"/><rect x="${X + 3}" y="${Y + 3}" width="${C - 6}" height="${C - 8}" rx="3" fill="var(--wall-top)"/>`;
+    else s += `<rect x="${X}" y="${Y}" width="${C}" height="${C}" fill="none" stroke="var(--game-line)" stroke-width=".6"/>`;
+    if (ch === "a" || ch === "b") s += `<rect x="${X + 3}" y="${Y + 3}" width="${C - 6}" height="${C - 6}" rx="4" fill="var(--plate)" stroke="var(--plate-e)" stroke-width="1.5"/>${ch === "a" ? `<circle cx="${X + 12}" cy="${Y + 12}" r="3.5" fill="var(--plate-e)"/>` : `<path d="M${X + 12} ${Y + 7.5}l5 8h-10z" fill="var(--plate-e)"/>`}`;
+    if (ch === "A" || ch === "B") {
+      const open = map.open.includes(ch);
+      s += open ? `<rect x="${X + 1}" y="${Y}" width="4" height="${C}" fill="var(--door)"/><rect x="${X + C - 5}" y="${Y}" width="4" height="${C}" fill="var(--door)"/>`
+        : `<rect x="${X + 1}" y="${Y + 1}" width="${C - 2}" height="${C - 2}" rx="2" fill="var(--door)"/><path d="M${X + 7} ${Y + 3}v18M${X + 12} ${Y + 3}v18M${X + 17} ${Y + 3}v18" stroke="var(--door-bar)" stroke-width="2"/>`;
+    }
+  }
+  for (const [k, kind] of Object.entries(map.molds)) {
+    const [x, y] = k.split(",").map(Number);
+    s += `<rect x="${x * C + 2.5}" y="${y * C + 2.5}" width="${C - 5}" height="${C - 5}" rx="4" fill="var(--${kind})" fill-opacity=".28" stroke="var(--mold-line)" stroke-dasharray="3 2" stroke-width="1"/>`;
+  }
+  for (const [k, kind] of Object.entries(map.jelly)) {
+    const [x, y] = k.split(",").map(Number);
+    s += `<rect x="${x * C + 2}" y="${y * C + 2}" width="${C - 4}" height="${C - 4}" rx="5" fill="var(--${kind})" stroke="var(--${kind}-e)" stroke-width="1.5"/><rect x="${x * C + 5}" y="${y * C + 4.5}" width="${C - 12}" height="4" rx="2" fill="#fff" opacity=".5"/>`;
+  }
+  map.chars.forEach(([x, y], i) => {
+    s += `<circle cx="${x * C + 12}" cy="${y * C + 12}" r="10" fill="var(--s${i + 1})" stroke="var(--seat-edge)" stroke-width="1.5"/><text x="${x * C + 12}" y="${y * C + 16.5}" text-anchor="middle" font-size="12" font-weight="800" fill="#fff">${i + 1}</text>`;
+  });
+  return s + "</svg>";
+}
+
+function topbar(title, wide) {
+  return `<header class="topbar"><button class="back" aria-label="Về menu">${ICON.back}</button>${wide ? '<span class="cap" style="font-weight:700;margin-left:-6px">Về menu</span>' : ""}<span class="t">${title}</span><span class="tb">${ICON.book}${wide ? "&nbsp;Luật chơi" : ""}</span><span class="tb">VI</span></header>`;
+}
+function mapGrid(chosen, legend = "Bản đồ") {
+  return `<fieldset><legend>${legend}</legend><div class="grid">${MAPS.map(([name, n, word], i) => `<label class="cell${i === chosen ? " on" : ""}"><span class="n">${i === chosen ? ICON.check : ""}${name}</span><span class="h">${word}</span></label>`).join("")}</div></fieldset>`;
+}
+function seg(legend, values, chosen) {
+  return `<fieldset><legend>${legend}</legend><div class="track">${values.map((v, i) => `<span class="seg${i === chosen ? " on" : ""}">${i === chosen ? ICON.check : ""}${v}</span>`).join("")}</div></fieldset>`;
+}
+
+function setup(wide) {
+  return `${topbar("", wide)}<main><section class="card setup" data-game="jelly-crew"><div class="head"><div class="logo">${boardSvg(LOGO).replace("<svg", '<svg style="width:56px"')}</div><h1>Đội gom thạch</h1></div><div class="body">${seg("Chế độ", ["Cùng máy", "Online"], 0)}${seg("Số người chơi", ["2 người", "3 người", "4 người"], 0)}${mapGrid(2)}<button class="btn primary" style="width:100%">Bắt đầu</button></div></section></main>`;
+}
+
+function crewPlay(wide, o) {
+  const map = o.shop ? SHOP : KITCHEN;
+  const rules = `<span class="rules">${o.mapName}</span>`;
+  const players = `<div class="player" data-game="jelly-crew"><span class="dot" style="background:var(--s1)">1</span><span><b>Lam</b><span class="cap muted">${o.online ? "Minh" : "Ở máy này"}</span></span></div><div class="player" data-game="jelly-crew"><span class="dot" style="background:var(--s2)">2</span><span><b>Hồng</b><span class="cap muted">${o.online ? "Bạn" : "Ở máy này"}</span></span></div>`;
+  let top;
+  if (o.won) {
+    const next = o.next ? `<button class="btn primary grow${o.focus === "next" ? " focus" : ""}">${ICON.next}Bản đồ tiếp: ${o.next}</button>` : "";
+    const again = `<button class="btn ${o.next ? "secondary" : "primary"}">${o.online ? "Chơi lại" : "Ván mới"}</button>`;
+    top = `<section class="card result"><span class="badge">${ICON.trophy}Kết thúc</span><h2>Cả đội thắng!</h2><p class="muted">Đầy khuôn sau ${o.steps} bước, ${o.time}.</p><div class="actions">${next}${again}<button class="btn secondary">${ICON.map}Đổi bản đồ</button></div></section>`;
+  } else {
+    top = `<p class="status" role="status">${o.toast ? `Ván mới: ${o.mapName} · bạn là Hồng` : "Cả đội cùng đi · bạn là Hồng"}</p>`;
+  }
+  const toast = "";
+  const chips = `<div class="chips"><span class="pill">Bước ${o.won ? o.steps : 0}</span><span class="pill${o.won ? " ok" : ""}">Khuôn ${o.won ? "4/4" : "0/4"}</span></div>`;
+  const board = `<div class="board" data-game="jelly-crew">${boardSvg(map)}</div>`;
+  const body = wide
+    ? `<div class="layout">${board}<div class="col">${rules}${toast}${top}${players}${chips}</div></div>`
+    : `<div class="layout">${rules}${toast}${top}${players}${board}${chips}</div>`;
+  return `${topbar("Đội gom thạch", wide)}<main>${body}</main>`;
+}
+
+function caroPlay(wide) {
+  const N = 15, C = 22;
+  let s = `<svg viewBox="0 0 ${N * C} ${N * C}" role="img" aria-label="Bàn"><rect width="${N * C}" height="${N * C}" fill="var(--game-board)"/>`;
+  for (let i = 0; i <= N; i++) s += `<path d="M${i * C} 0V${N * C}M0 ${i * C}H${N * C}" stroke="var(--game-line)"/>`;
+  const X = [[5, 5], [6, 6], [7, 7], [8, 8], [9, 9], [6, 9], [10, 4]], O = [[6, 5], [7, 6], [8, 7], [5, 8], [9, 6], [4, 4]];
+  for (const [x, y] of X) s += `<path d="M${x * C + 5} ${y * C + 5}l12 12M${x * C + 17} ${y * C + 5}l-12 12" stroke="var(--x)" stroke-width="2.6" stroke-linecap="round"/>`;
+  for (const [x, y] of O) s += `<circle cx="${x * C + 11}" cy="${y * C + 11}" r="6.5" fill="none" stroke="var(--o)" stroke-width="2.6"/>`;
+  s += `<path d="M${5 * C + 2} ${5 * C + 2}L${10 * C - 2} ${10 * C - 2}" stroke="var(--x)" stroke-width="3" stroke-linecap="round" opacity=".55"/></svg>`;
+  const top = `<span class="rules">15×15 · Chặn hai đầu</span><section class="card result"><span class="badge">${ICON.trophy}Kết thúc</span><h2>X thắng!</h2><p class="muted">Năm X liền nhau, không bị chặn hai đầu.</p><div class="actions"><button class="btn primary">Ván mới</button><button class="btn secondary">${ICON.sliders}Đổi bàn, luật</button></div></section>`;
+  const board = `<div class="board" data-game="caro" style="max-width:${wide ? "34rem" : "100%"}">${s}</div>`;
+  const body = wide ? `<div class="layout">${board}<div class="col">${top}</div></div>` : `<div class="layout">${top}${board}</div>`;
+  return `${topbar("Cờ caro", wide)}<main>${body}</main>`;
+}
+
+function dialog(kind, online) {
+  if (kind === "caro") {
+    return `<div class="scrim"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dh"><h2 id="dh">Đổi bàn, luật</h2><p class="small muted">Ván mới bắt đầu với lựa chọn này.</p>${seg("Bàn cờ", ["15×15", "19×19", "Vô hạn"], 1)}${seg("Luật thắng", ["Chặn hai đầu", "Tự do"], 0)}<div class="row"><button class="btn secondary">Huỷ</button><button class="btn primary">Bắt đầu ván mới</button></div></div></div>`;
+  }
+  return `<div class="scrim" data-game="jelly-crew"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dh"><h2 id="dh">Đổi bản đồ</h2><p class="small muted">${online ? "Ván mới bắt đầu ngay cho cả phòng, với bản đồ bạn chọn." : "Ván mới bắt đầu với bản đồ bạn chọn."}</p>${mapGrid(1)}<div class="row"><button class="btn secondary">Huỷ</button><button class="btn primary">Bắt đầu ván mới</button></div></div></div>`;
+}
+
+function render() {
+  const [w, h] = S.vp.split("x").map(Number);
+  const wide = w >= 1024;
+  const frame = document.getElementById("frame"), screen = document.getElementById("screen");
+  frame.style.width = `${w}px`; frame.style.height = `${h}px`;
+  document.documentElement.dataset.theme = S.theme;
+  frame.classList.toggle("wide", wide);
+  const crew = !S.scene.startsWith("caro");
+  if (crew && S.scene !== "setup") frame.dataset.game = "jelly-crew"; else if (!crew) frame.dataset.game = "caro"; else delete frame.dataset.game;
+  const won = { won: true, mapName: "Hai gian bếp", next: "Tiệm chè", steps: 25, time: "4 phút 12 giây" };
+  let html;
+  switch (S.scene) {
+    case "setup": html = setup(wide); break;
+    case "won": html = crewPlay(wide, { ...won, focus: "next" }); break;
+    case "change": html = crewPlay(wide, won) + dialog("crew", false); break;
+    case "last": html = crewPlay(wide, { ...won, mapName: "Đêm trăng rằm", next: null, last: true, steps: 212, time: "18 phút 40 giây" }); break;
+    case "online": html = crewPlay(wide, { ...won, online: true }); break;
+    case "online-change": html = crewPlay(wide, { ...won, online: true }) + dialog("crew", true); break;
+    case "online-new": html = crewPlay(wide, { online: true, shop: true, mapName: "Tiệm chè", toast: true }); break;
+    case "caro": html = caroPlay(wide); break;
+    case "caro-change": html = caroPlay(wide) + dialog("caro"); break;
+  }
+  screen.innerHTML = html;
+  document.getElementById("scenes").innerHTML = Object.entries(SCENES).map(([k, v]) => `<button data-s="${k}" class="${k === S.scene ? "on" : ""}">${v}</button>`).join("");
+  document.getElementById("vps").innerHTML = VPS.map((v) => `<button data-v="${v}" class="${v === S.vp ? "on" : ""}">${v}</button>`).join("");
+  document.getElementById("themes").innerHTML = ["light", "dark"].map((v) => `<button data-t="${v}" class="${v === S.theme ? "on" : ""}">${v === "light" ? "Sáng" : "Tối"}</button>`).join("");
+}
+document.querySelector(".panel").addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.s) S.scene = b.dataset.s; if (b.dataset.v) S.vp = b.dataset.v; if (b.dataset.t) S.theme = b.dataset.t;
+  render();
+});
+render();
+</script>
+</body>
+</html>

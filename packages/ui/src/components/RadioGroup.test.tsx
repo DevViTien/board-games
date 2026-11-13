@@ -143,3 +143,40 @@ describe("RadioGroup with icons", () => {
     expect(screen.getAllByTestId("icon")).toHaveLength(2);
   });
 });
+
+describe("RadioGroup with hints", () => {
+  const MAPS = [
+    { value: "kitchen", label: "Hai gian bếp", hint: "Dễ" },
+    { value: "market", label: "Chợ đêm", hint: "Vừa" },
+  ] as const;
+
+  function Maps({ layout }: { readonly layout: "bar" | "grid" }) {
+    const [value, setValue] = useState<"kitchen" | "market">("kitchen");
+    return (
+      <RadioGroup
+        legend="Bản đồ"
+        options={MAPS}
+        value={value}
+        onChange={setValue}
+        layout={layout}
+      />
+    );
+  }
+
+  it("shows each hint under its label in a grid, read out with it", async () => {
+    render(<Maps layout="grid" />);
+
+    expect(screen.getByText("Vừa")).toBeVisible();
+    expect(radio("Hai gian bếp, Dễ")).toBeChecked();
+    await userEvent.click(radio("Hai gian bếp, Dễ"));
+    await userEvent.keyboard("{ArrowRight}");
+    expect(radio("Chợ đêm, Vừa")).toBeChecked();
+  });
+
+  it("reads a hint out in a bar without showing it", () => {
+    render(<Maps layout="bar" />);
+
+    expect(radio("Hai gian bếp, Dễ")).toBeChecked();
+    expect(screen.queryByText("Dễ")).not.toBeInTheDocument();
+  });
+});

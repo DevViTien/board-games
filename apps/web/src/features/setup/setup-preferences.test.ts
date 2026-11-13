@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { SETUP_CHOICE_KEY_PREFIX } from "@/config/storage-keys";
 
-import { readSetupChoice, writeSetupChoice } from "./setup-preferences";
+import { readSetupChoice, rememberSetupOptions, writeSetupChoice } from "./setup-preferences";
 
 const CARO_CHOICES: readonly OptionChoiceList[] = [
   { name: "size", values: [15, 19] },
@@ -265,4 +265,46 @@ describe("setup preferences", () => {
       });
     },
   );
+});
+
+describe("rememberSetupOptions", () => {
+  it("changes only the rule options of the choice remembered", () => {
+    writeSetupChoice("caro", {
+      mode: "ai",
+      level: "hard",
+      first: "random",
+      playerCount: 2,
+      options: CARO_DEFAULTS,
+    });
+
+    rememberSetupOptions("caro", "local", { size: 19, rule: "blocked-ends" });
+
+    expect(readCaro()).toEqual({
+      mode: "ai",
+      level: "hard",
+      first: "random",
+      playerCount: 2,
+      options: { size: 19, rule: "blocked-ends" },
+    });
+  });
+
+  it("remembers the mode played in with the default level when nothing was remembered", () => {
+    rememberSetupOptions("caro", "online", { size: 19, rule: "free" });
+
+    expect(readCaro()).toEqual({
+      mode: "online",
+      level: "medium",
+      first: "human",
+      playerCount: 2,
+      options: { size: 19, rule: "free" },
+    });
+  });
+
+  it("replaces a choice it cannot read", () => {
+    window.localStorage.setItem(SETUP_CHOICE_KEY_PREFIX + "caro", "{not json");
+
+    rememberSetupOptions("caro", "local", { size: 19, rule: "free" });
+
+    expect(readCaro()?.options).toEqual({ size: 19, rule: "free" });
+  });
 });

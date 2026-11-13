@@ -96,6 +96,13 @@ export interface GameUI<State, Move, Outcome = never> {
     gameTime: GameTime | null,
   ) => string | null;
   /**
+   * Optional hook returning the rule options the game suggests for the next game, given how the
+   * game just over ended and the options it was played with ("the next map" after a win), or
+   * `null` for none. The play screen offers them on the result card only when they are among the
+   * game's choices. A game without it suggests nothing.
+   */
+  readonly useNextOptions?: () => (result: GameResult, options: unknown) => unknown;
+  /**
    * Optional mark of a seat in the players' panel (decorative: the seat's name says it), drawn in
    * a 28 px ring. Without it, the panel draws the seat's symbol (`usePlayerLabel`) in the game's
    * `--game-mark-1` / `--game-mark-2`, which fits a game of two seats named by symbols (X, O).

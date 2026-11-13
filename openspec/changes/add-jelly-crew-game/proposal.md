@@ -21,7 +21,14 @@ Change nằm ngoài các mốc M0–M8 của plan.md §6, như `add-jelly-gather
   - **Thắng**: mọi ô khuôn có thạch đúng loại (luật vừa khít của chương "Khuôn"). Cả đội cùng thắng. **Không thua** theo luật; giới hạn an toàn 3.000 nước để ván luôn hữu hạn.
   - **Đặt lại bản đồ**: ai cũng bấm được (có hỏi lại); số bước không được trả lại.
   - **Kết quả** ghi số bước cả đội đã đi và thời gian từ lúc ván bắt đầu.
-- **Ba bản đồ**, mỗi bản đồ có bản riêng cho 2, 3 và 4 người (9 bố cục, rộng tới 19 × 13 ô): "Hai gian bếp" (dễ), "Chợ đêm" (vừa), "Kho lạnh" (khó). Chọn bản đồ ở màn hình bắt đầu ván như tuỳ chọn luật; mỗi bố cục có lời giải mẫu do test phát lại.
+- **Tám bản đồ** (sau chơi thử, design §11), mỗi bản đồ có bản riêng cho 2, 3 và 4 người (24 bố cục, rộng tới 19 × 13 ô), xếp từ dễ tới khó:
+  - Dễ: "Hai gian bếp", "Tiệm chè";
+  - Vừa: "Chợ đêm", "Vườn dừa";
+  - Khó: "Kho lạnh", "Chợ nổi";
+  - Rất khó: "Xưởng thạch", "Đêm trăng rằm".
+
+  Chọn bản đồ ở màn hình bắt đầu ván như tuỳ chọn luật, có độ khó dưới tên. Mỗi bố cục có lời giải mẫu do test phát lại. Thắng thì thẻ kết quả gợi ý "Bản đồ tiếp: …"; đổi bản đồ ngay ở thẻ kết quả là phần chung của change `add-new-game-options`.
+
 - **Game cùng phe** trong hợp đồng engine: `GameMeta` thêm cờ cùng phe. Với game cùng phe:
   - một người đầu hàng (nút ghi "Bỏ cuộc") hay bị xử bỏ ván thì **ván dừng, không ai thắng**, thay vì "mọi người còn lại thắng";
   - màn hình báo "Cả đội thắng!" khi thắng, "Ván kết thúc" khi luật kết thúc ván mà không ai thắng (giới hạn an toàn), "Ván dừng" khi có người bỏ cuộc hay bỏ ván, ở cả cùng máy và online;

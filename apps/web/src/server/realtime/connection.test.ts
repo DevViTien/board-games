@@ -477,6 +477,22 @@ describe("playing", () => {
     ]);
   });
 
+  it("passes the options of a rematch on to the room service", async () => {
+    const context = await start();
+    const { lan, an } = await startGame(context);
+    for (const [index, cell] of [0, 3, 1, 4, 2].entries()) {
+      await (index % 2 === 0 ? move(lan, an, index, cell) : move(an, lan, index, cell));
+    }
+
+    an.send({ type: "rematch", gameNumber: 1, options: "castle" });
+
+    expect(await an.next()).toMatchObject({
+      type: "rejected",
+      request: "rematch",
+      code: "invalid-options",
+    });
+  });
+
   it("never sends a playerId", async () => {
     const context = await start();
     const { lan, an } = await startGame(context);

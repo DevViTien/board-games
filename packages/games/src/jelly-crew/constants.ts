@@ -1,17 +1,30 @@
-/** The maps of the game, each with a layout for 2, 3 and 4 players. */
+/** The eight maps of the game, each with a layout for 2, 3 and 4 players. */
 export const JELLY_CREW_MAP = {
   Kitchen: "kitchen",
+  DessertShop: "dessert-shop",
   Market: "market",
+  CoconutGrove: "coconut-grove",
   ColdStore: "cold-store",
+  FloatingMarket: "floating-market",
+  JellyFactory: "jelly-factory",
+  MoonFestival: "moon-festival",
 } as const;
 
 export type JellyCrewMapId = (typeof JELLY_CREW_MAP)[keyof typeof JELLY_CREW_MAP];
 
-/** In the order the setup screen lists them: the easiest first, and the default. */
+/**
+ * From the easiest to the hardest (design §11.1): the order of the setup screen and of the map
+ * suggested after a win. The first is the default.
+ */
 export const JELLY_CREW_MAPS = [
   JELLY_CREW_MAP.Kitchen,
+  JELLY_CREW_MAP.DessertShop,
   JELLY_CREW_MAP.Market,
+  JELLY_CREW_MAP.CoconutGrove,
   JELLY_CREW_MAP.ColdStore,
+  JELLY_CREW_MAP.FloatingMarket,
+  JELLY_CREW_MAP.JellyFactory,
+  JELLY_CREW_MAP.MoonFestival,
 ] as const satisfies readonly JellyCrewMapId[];
 
 /** Why a game ended by its rules, in `GameResult.reason`; the app translates it. */

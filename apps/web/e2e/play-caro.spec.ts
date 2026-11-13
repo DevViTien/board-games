@@ -554,3 +554,59 @@ test.describe("on the board that grows", () => {
     });
   });
 });
+
+// Changing the rules from the result card (change `add-new-game-options`).
+
+test("changes the board for the next game from the result card, kept across a reload", async ({
+  page,
+}) => {
+  await startCaro(page, "Cùng máy");
+  await play(page, [8, 4], [10, 4], [8, 5], [10, 5], [8, 6], [10, 6], [8, 7], [10, 7], [8, 8]);
+  await expect(status(page)).toHaveText("X thắng!");
+
+  await page.getByRole("button", { name: "Đổi bàn, luật" }).click();
+  const dialog = page.getByRole("dialog", { name: "Đổi bàn, luật" });
+  await expect(dialog.getByRole("radio", { name: "15×15" })).toBeChecked();
+  await dialog.getByText("19×19", { exact: true }).click();
+  await dialog.getByRole("button", { name: "Bắt đầu ván mới" }).click();
+
+  await expect(dialog).toBeHidden();
+  await expect(board(page).getByRole("button")).toHaveCount(361);
+  await expect(rulesLabel(page, "19×19 · Chặn hai đầu")).toBeVisible();
+  await expect.poll(() => savedMoveCount(page, "caro:local")).toBe(0);
+  await page.reload();
+  await expect(board(page).getByRole("button")).toHaveCount(361);
+  await expect(rulesLabel(page, "19×19 · Chặn hai đầu")).toBeVisible();
+
+  // The setup screen remembers the board chosen on the result card.
+  await openCaroSetup(page);
+  await expect(radio(page, "Bàn cờ", "19×19")).toBeChecked();
+});
+
+test("changes the board of an online room for everyone from the result card", async ({
+  page,
+  browser,
+}) => {
+  const url = await createCaroRoom(page, "Minh");
+  const lan = await joinAs(browser, url, "Lan");
+  await expect(status(page)).toHaveText("Ván mới: bạn cầm X và đi trước");
+  await play(page, [8, 8]);
+  for (const col of [9, 10, 11, 12]) {
+    await play(lan.page, [10, col - 1]);
+    await expect(status(page)).toHaveText(/Đến lượt bạn \(X\)$/);
+    await play(page, [8, col]);
+  }
+  await expect(status(lan.page)).toHaveText("Minh thắng!");
+
+  await button(lan.page, "Đổi bàn, luật").click();
+  const dialog = lan.page.getByRole("dialog", { name: "Đổi bàn, luật" });
+  await dialog.getByText("19×19", { exact: true }).click();
+  await dialog.getByRole("button", { name: "Bắt đầu ván mới" }).click();
+
+  await expect(board(page).getByRole("button")).toHaveCount(361);
+  await expect(board(lan.page).getByRole("button")).toHaveCount(361);
+  await expect(status(page)).toHaveText("Ván mới: bạn cầm O, Lan đi trước · 19×19 · Chặn hai đầu");
+  await expect(rulesLabel(page, "19×19 · Chặn hai đầu")).toBeVisible();
+
+  await lan.context.close();
+});

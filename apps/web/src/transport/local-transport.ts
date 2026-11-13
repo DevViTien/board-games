@@ -557,11 +557,17 @@ export function createLocalTransport<
       } while (canRedo(redone) && !isHuman(definition.currentPlayer(currentState(redone))));
       commit(redone);
     },
-    // Same number of players, seats and rule options, except that a random first player is drawn
-    // again.
-    requestNewGame: () => {
+    // Same number of players and seats, and the same rule options unless others are given, except
+    // that a random first player is drawn again.
+    requestNewGame: (options) => {
       if (disposed || session === null) return;
-      const next = newSession(session.options, session.playerCount);
+      let gameOptions = session.options;
+      if (options !== undefined) {
+        const parsed = parseGameOptions(definition, options);
+        if (!parsed.ok) return;
+        gameOptions = parsed.value;
+      }
+      const next = newSession(gameOptions, session.playerCount);
       const aiSeat = seats.find((controller) => controller.kind === "ai");
       if (settings.kind === "ai" && settings.first === "random" && aiSeat?.kind === "ai") {
         seat({ mode: "ai", level: aiSeat.level, first: "random" }, next);

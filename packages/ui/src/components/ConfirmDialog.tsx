@@ -1,7 +1,8 @@
 "use client";
 
-import { useId } from "react";
+import { type ReactNode, useId } from "react";
 
+import { cn } from "../lib/cn";
 import { Button } from "./Button";
 import { DialogFrame } from "./DialogFrame";
 
@@ -19,6 +20,10 @@ export interface ConfirmDialogProps {
    * question; the button stays focusable (`aria-disabled`) and does nothing. Absent: it can.
    */
   confirmUnavailableReason?: string | undefined;
+  /** Choices to make before confirming (rule options), between the question and the buttons. */
+  children?: ReactNode;
+  /** A wider panel, for choices laid out in a grid. */
+  wide?: boolean;
 }
 
 /**
@@ -34,6 +39,8 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
   confirmUnavailableReason,
+  children,
+  wide = false,
 }: ConfirmDialogProps) {
   const titleId = useId();
   const descriptionId = useId();
@@ -46,7 +53,10 @@ export function ConfirmDialog({
       onDismiss={onCancel}
       labelledBy={titleId}
       describedBy={description === undefined ? undefined : descriptionId}
-      className="m-auto w-[calc(100%-2rem)] max-w-sm rounded-card border border-border p-6"
+      className={cn(
+        "m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] overflow-y-auto overscroll-contain rounded-card border border-border p-6",
+        wide ? "max-w-lg max-sm:p-5" : "max-w-sm",
+      )}
     >
       <h2 id={titleId} className="text-heading">
         {title}
@@ -56,6 +66,7 @@ export function ConfirmDialog({
           {description}
         </p>
       )}
+      {children !== undefined && <div className="mt-4 flex flex-col gap-4">{children}</div>}
       {/* Cancel comes first: showModal() focuses it, so Enter right away never discards anything. */}
       {unavailable && (
         <p id={reasonId} className="mt-3 text-small text-fg-muted">

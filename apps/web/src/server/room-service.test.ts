@@ -610,6 +610,62 @@ describe("rematch", () => {
     expect(caroRules(room.record)).toEqual({ size: 19, rule: "free", filled: 0 });
   });
 
+  describe("with other options", () => {
+    async function caroRoomWon() {
+      const context = setup();
+      const created = expectOk(
+        await context.service.create({
+          gameId: "caro",
+          options: { size: 15, rule: "blocked-ends" },
+          player: LAN,
+        }),
+      );
+      expectOk(await context.service.sit(created.code, AN));
+      const room = { ...context, code: created.code };
+      // Lan (X) takes five in a row on the top row; An plays further down.
+      await play(room, [0, 100, 1, 101, 2, 102, 3, 103, 4]);
+      return room;
+    }
+
+    it("Ván mới với tuỳ chọn khác: starts the new game with them, kept by later rematches", async () => {
+      const context = await caroRoomWon();
+
+      const room = expectOk(
+        await context.service.rematch(context.code, AN.playerId, 1, {
+          size: 19,
+          rule: "blocked-ends",
+        }),
+      );
+
+      expect(room.gameNumber).toBe(2);
+      expect(room.players).toEqual([human(AN), human(LAN)]);
+      expect(caroRules(room.record)).toEqual({ size: 19, rule: "blocked-ends", filled: 0 });
+
+      // An (X now) takes five on the top row of the 19×19 board; Lan plays further down.
+      await play(context, [0, 100, 1, 101, 2, 102, 3, 103, 4]);
+      const next = expectOk(await context.service.rematch(context.code, LAN.playerId, 2));
+      expect(next.record.options).toEqual({ size: 19, rule: "blocked-ends" });
+    });
+
+    it("Tuỳ chọn gửi kèm không hợp lệ: refuses them and keeps the game just over", async () => {
+      const context = await caroRoomWon();
+      const before = await stored(context.store, context.code);
+
+      expect(
+        await context.service.rematch(context.code, AN.playerId, 1, { size: 21, rule: "free" }),
+      ).toEqual({ ok: false, error: "invalid-options", room: before });
+    });
+
+    it("answers a second request for the same game as stale, whatever options it carries", async () => {
+      const context = await caroRoomWon();
+      expectOk(await context.service.rematch(context.code, AN.playerId, 1));
+
+      expect(
+        await context.service.rematch(context.code, LAN.playerId, 1, { size: 21 }),
+      ).toMatchObject({ ok: false, error: "stale-move" });
+    });
+  });
+
   it("refuses a new game while the game is still going", async () => {
     const context = await tictactoeRoom();
     await play(context, [4]);

@@ -62,7 +62,7 @@ Chỉ chọn **game truyền thống/dân gian/cổ điển** (luật thuộc ph
 Đã có:
 
 - **Cờ rào** — 2–4 người, đua quân về cổng làng ở cạnh đối diện (5 ô giữa của cạnh) và đặt rào làm người khác đi xa hơn, không được bịt kín đường của ai; mỗi người có một lần phá rào, quân không chặn nhau và được đứng chung ô. Bàn 11 × 9 khi hai người, 9 × 9 khi ba hoặc bốn người; ván luôn kết thúc nhờ giới hạn số nước.
-- **Đội gom thạch** — 2–4 người **cùng phe**, mỗi người một nhân vật có số trên một bản đồ chung; **ai cũng đi bất cứ lúc nào**, không lượt, không giới hạn bước; đẩy thạch như Gom thạch, nhân vật chắn nhau, cửa mở khi có người hay thạch đứng trên nút cùng ký hiệu (● ▲ ■); cả đội thắng khi mọi ô khuôn có thạch đúng loại, không có thua, kết quả ghi số bước và thời gian. Chơi cùng máy: chọn nhân vật rồi đi, W A S D luôn là nhân vật 1. Ba bản đồ (Hai gian bếp, Chợ đêm, Kho lạnh) × bố cục 2, 3, 4 người; chơi cùng máy và online, không có máy chơi (quyết định 21 ở mục 9).
+- **Đội gom thạch** — 2–4 người **cùng phe**, mỗi người một nhân vật có số trên một bản đồ chung; **ai cũng đi bất cứ lúc nào**, không lượt, không giới hạn bước; đẩy thạch như Gom thạch, nhân vật chắn nhau, cửa mở khi có người hay thạch đứng trên nút cùng ký hiệu (● ▲ ■); cả đội thắng khi mọi ô khuôn có thạch đúng loại, không có thua, kết quả ghi số bước và thời gian. Chơi cùng máy: chọn nhân vật rồi đi, W A S D luôn là nhân vật 1. Tám bản đồ từ dễ tới rất khó (Hai gian bếp, Tiệm chè, Chợ đêm, Vườn dừa, Kho lạnh, Chợ nổi, Xưởng thạch, Đêm trăng rằm) × bố cục 2, 3, 4 người; thắng thì có nút sang bản đồ tiếp, và đổi được bản đồ ngay ở thẻ kết quả; chơi cùng máy và online, không có máy chơi (quyết định 21 ở mục 9).
 
 Một vài phác thảo để phát triển thêm:
 

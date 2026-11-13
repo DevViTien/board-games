@@ -34,6 +34,7 @@ import {
   type SavedGameSummary,
 } from "@/transport/types";
 
+import { OptionFields } from "./OptionFields";
 import {
   DEFAULT_PLAY_SETUP,
   hasPlayerChoice,
@@ -298,27 +299,17 @@ export function SetupScreen({
             </>
           )}
           {/* The rules apply to every mode, and are kept when the mode changes. */}
-          {optionChoices.map(({ name: option, values }) => (
-            <RadioGroup
-              fill
-              key={option}
-              legend={optionLabels.field(gameId, option)}
-              options={values.map((value) => ({
-                value: String(value),
-                label: optionLabels.value(gameId, option, value),
-              }))}
-              value={String(choice.options[option])}
-              onChange={(picked) => {
-                // Radio values are text: back to the game's own value (a number for a board size).
-                const value = values.find((candidate) => String(candidate) === picked);
-                if (value === undefined) return;
-                setChoice((current) => ({
-                  ...current,
-                  options: { ...current.options, [option]: value },
-                }));
-              }}
-            />
-          ))}
+          <OptionFields
+            gameId={gameId}
+            choices={optionChoices}
+            value={choice.options}
+            onChange={(option, value) => {
+              setChoice((current) => ({
+                ...current,
+                options: { ...current.options, [option]: value },
+              }));
+            }}
+          />
           {online && (
             <NameField
               ref={nameInput}

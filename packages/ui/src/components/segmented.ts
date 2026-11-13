@@ -6,9 +6,16 @@ import { cva } from "class-variance-authority";
  * like the main action. A radio's label is chosen when its radio is checked (`has-checked`).
  */
 
-export const segmentTrack = cva(
-  "flex max-w-full flex-wrap gap-1 rounded-control bg-surface-muted p-1",
-);
+export const segmentTrack = cva("max-w-full gap-1 rounded-control bg-surface-muted p-1", {
+  variants: {
+    // A grid of equal cells, two on a phone (360 px), more as the room grows.
+    grid: {
+      true: "grid grid-cols-[repeat(auto-fill,minmax(8rem,1fr))]",
+      false: "flex flex-wrap",
+    },
+  },
+  defaultVariants: { grid: false },
+});
 
 export const segmentItem = cva(
   [
@@ -33,3 +40,10 @@ export const segmentItem = cva(
     defaultVariants: { size: "md", fill: false },
   },
 );
+
+/** A choice in a grid track: its label, and a hint below it, start-aligned. */
+export const segmentCell = cva([
+  "flex min-h-14 cursor-pointer flex-col items-start justify-center rounded-[calc(var(--radius-control)-0.25rem)] border border-transparent px-3 py-1.5 text-start text-small font-semibold text-fg transition-colors",
+  "hover:not-has-checked:bg-surface-raised/60",
+  "has-checked:border-border-control has-checked:bg-surface-raised has-checked:font-bold has-checked:shadow-raised",
+]);

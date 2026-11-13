@@ -7,6 +7,7 @@ import {
   toRecord,
 } from "@board-games/engine";
 import { type FenceRaceMove, ludo, LUDO_DEFAULT_OPTIONS } from "@board-games/games";
+import type { JellyCrewMapId } from "@board-games/games/jelly-crew";
 import type { ChatBody } from "@board-games/protocol";
 import { expect, type Page, test } from "@playwright/test";
 
@@ -289,6 +290,14 @@ test("Cờ caro on one device, in progress then won", async ({ page }) => {
   await play(page, [8, 8]);
   await expect(status(page)).toHaveText("X thắng!");
   await shoot(page, "08-caro-won");
+
+  // The rules of the next game, changed from the result card (change `add-new-game-options`).
+  await page.getByRole("button", { name: "Đổi bàn, luật" }).click();
+  await page
+    .getByRole("dialog", { name: "Đổi bàn, luật" })
+    .getByText("19×19", { exact: true })
+    .click();
+  await shoot(page, "08k-caro-change-options");
 });
 
 for (const [name, xs] of [
@@ -1662,7 +1671,7 @@ async function openCrew(
   page: Page,
   players: 2 | 3 | 4,
   moves: readonly (typeof CREW)[number][],
-  map: "kitchen" | "market" | "cold-store" = "kitchen",
+  map: JellyCrewMapId = "kitchen",
 ) {
   await page.goto(PAGE_WITHOUT_STORAGE);
   await writeSaved(page, "jelly-crew:local", savedJellyCrewGame(players, moves, map));
@@ -1724,6 +1733,25 @@ for (const [suffix, viewport] of [
     await shootScreen(page, `82a-crew-cold-store-four${suffix}`);
     await openCrew(page, 3, [], "market");
     await shootScreen(page, `82b-crew-market-three${suffix}`);
+  });
+
+  // The five maps added after the first playtest (add-jelly-crew-game §11): one layout of each.
+  test(`Đội gom thạch, the new maps${suffix}`, async ({ page }) => {
+    test.skip(viewport !== null && (page.viewportSize()?.width ?? 0) > 500, "a phone's size");
+    if (viewport !== null) await page.setViewportSize(viewport);
+
+    const maps = [
+      ["dessert-shop", 2],
+      ["coconut-grove", 4],
+      ["floating-market", 3],
+      ["jelly-factory", 4],
+      ["moon-festival", 2],
+    ] as const;
+    for (const [index, [map, players]] of maps.entries()) {
+      await openCrew(page, players, [], map);
+      const scene = `84${"abcde"[index] ?? ""}-crew-${map}-${String(players)}`;
+      await shootScreen(page, `${scene}${suffix}`);
+    }
   });
 
   test(`Đội gom thạch online${suffix}`, async ({ page }) => {
