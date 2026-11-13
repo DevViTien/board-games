@@ -41,6 +41,8 @@ Luật đẩy và dính (khoảng 120 dòng: `settle` bằng union-find, đẩy 
 
 ### 3. State, nước đi, lượt
 
+> **Đã thay bằng §10 (đi tự do, sau chơi thử 13/11/2026).** Phần dưới tả bản theo lượt đã ship trong commit `687dfbf`, giữ lại làm lịch sử quyết định; luật cửa, đẩy, dính và đặt lại bàn vẫn đúng.
+
 **Nước đi** là chuỗi: `"U" | "D" | "L" | "R" | "end" | "back" | "reset"`. Ngắn vì một ván có vài trăm nước và cả biên bản được gửi mỗi lần ghi (§8); `moveKey` mặc định (JSON) là chính chuỗi đó.
 
 **State** (dữ liệu thuần, không mutate):
@@ -201,6 +203,95 @@ Số ghế là chữ nhỏ nên cần 4.5:1: đạt ở mọi ghế, cả tối.
 - `apps/web`: component test Board, bàn điều khiển, nhãn; test `PlayScreen` cho cùng phe (cùng máy, online, bỏ cuộc, chờ 5 phút); trang luật.
 - E2E `games-jelly-crew.spec.ts`: chơi cùng máy hết bố cục 2 người "Hai gian bếp" bằng phím; online hai trình duyệt: giữ nút và đẩy qua cửa, bỏ cuộc.
 - `pnpm ui:shots`: thêm cảnh đầu ván 2 và 4 người, đang giữ nút, online chờ, thắng, hết vòng, mỗi cảnh × sáng/tối × 390/1280; xem từng ảnh so với mockup (`mockup/png/`).
+
+### 10. Đi tự do (sau chơi thử 13/11/2026)
+
+Người dùng chơi thử online (task 5.3) và thấy lượt cùng giới hạn bước làm ván chậm: "mong muốn không giới hạn theo lượt, 2 người tự do đi được". Ngày 13/11/2026 người dùng chốt bốn điểm:
+
+- **Thay hẳn** kiểu theo lượt, không giữ làm tuỳ chọn.
+- **Không thua**: ván chỉ kết thúc khi đầy khuôn hay có người bỏ cuộc; kết quả ghi **số bước và thời gian** để cả đội tự so lần sau.
+- **Cùng máy: chọn nhân vật rồi đi**: một hàng "Điều khiển" chọn nhân vật mà mũi tên, bàn điều khiển và vuốt điều khiển; trên máy tính **W A S D luôn là nhân vật 1**, để hai người chung bàn phím đi cùng lúc.
+- **Bỏ "Lùi bước"** (và "Giữ nút", "Xong lượt"); giữ "Đặt lại bản đồ" có hỏi lại.
+
+Mockup duyệt lại: `mockup/free.html` (ảnh `mockup/png/free-*`).
+
+#### 10.1 Hợp đồng engine: game đi tự do
+
+Engine chỉ biết đi tuần tự: một `currentPlayer`, server từ chối nước của ghế không đến lượt (`not-your-turn`) và nước gửi theo vị trí cũ (`stale-move`). Thêm một **loại game** như cờ cùng phe ở §5, không phải chỗ riêng cho `jelly-crew`:
+
+- `GameMeta.freePlay?: boolean`: mọi ghế đi bất cứ lúc nào; **mỗi nước tự nói ghế của nó**.
+- `GameDefinition.moverOf?(move): PlayerIndex`, bắt buộc khi `freePlay`. `legalMoves(state)` liệt kê nước của **mọi** ghế. `currentPlayer` vẫn phải có (kiểu không đổi) nhưng code dùng chung không đọc nó ở game đi tự do.
+- Hàm dùng chung `moverOf(definition, stateBefore, move)` trong `packages/engine`: game đi tự do thì `definition.moverOf(move)`, còn lại `currentPlayer(stateBefore)`. Mọi chỗ đang suy "ai vừa đi" từ `currentPlayer(states[i])` (`lastMover` của hai transport, `moverOf` của `online-transport`, phần rời ván của server) gọi hàm này.
+- Bộ kiểm tra hợp đồng thêm `free-play-movers` (mọi nước hợp lệ có `moverOf` là một ghế của ván; ở mỗi trạng thái chưa xong, mỗi ghế có ít nhất một nước hoặc không ai có) và `free-play-no-ai` (game đi tự do không khai báo `supportsAI`: AI tìm kiếm theo lượt).
+- Biên bản không đổi: vẫn là danh sách nước theo thứ tự server nhận, nên phát lại, kết nối lại, autosave vẫn tất định (bất biến "một ván = danh sách nước đi" giữ nguyên).
+- **Đã cân nhắc**: mỗi ghế một hàng đợi nước riêng rồi ghép. Bỏ: biên bản không còn là một danh sách, phá bất biến phát lại.
+- **Đã cân nhắc**: giữ lượt nhưng mỗi lượt là "một bước của bất kỳ ai". Bỏ: vẫn phải đổi kiểm tra lượt của server, mà chẳng đơn giản hơn.
+
+#### 10.2 Server và transport
+
+- **Server** (`room-service.move`), game đi tự do:
+  - kiểm ghế bằng `moverOf(move) === seat`, không bằng `currentPlayer`;
+  - `moveIndex` được **nhỏ hơn hoặc bằng** số nước đã có (cùng `gameNumber`): nước gửi khi chưa thấy nước của người khác được áp lên **trạng thái mới nhất** và kiểm lại bằng luật. Không còn hợp lệ ở đó (ví dụ ô vừa bị người khác chiếm) thì từ chối `illegal-move`. `moveIndex` lớn hơn số nước vẫn là `stale-move`;
+  - không có đồng hồ lượt: `turnIdleMs` luôn `null`, nên không có lời nhắc 4 phút và không ai "xử bỏ ván". Người kẹt vì đồng đội bỏ đi thì bấm "Bỏ cuộc" (ván dừng cho cả đội, §5).
+- **`online-transport`**, game đi tự do: `canMove` khi phòng đủ người, đang kết nối, ván chưa xong, người ở thiết bị này tự chơi ghế của mình và không có nước đang chờ server trả lời; không xét `currentPlayer`. `waitingFor` luôn `null`, `turn` (đồng hồ) luôn `null`. Một nước bị từ chối `illegal-move` mà `moveIndex` của nó đã cũ thì **im lặng** (bàn đã đổi vì người khác), không báo lỗi. Nước đang chờ chỉ coi là đã được trả lời khi phòng mới có một nước **của chính ghế mình** từ `moveIndex` trở đi, hoặc server từ chối; phòng dài thêm vì nước của người khác thì chưa (hiện `answers` coi mọi biên bản dài hơn là đã trả lời).
+- **Không đoán trước nước đi**: vẫn một nước chờ server trả lời mỗi lúc như mọi game, nước hiện khi server phát lại (khoảng 70 ms trên Production, plan.md §10). Giữ phím hay bấm liên tục thì được khoảng 8–12 bước mỗi giây. Đoán trước kèm sửa lại khi server khác ý là việc sau, nếu chơi thử thấy chậm.
+- **Nhận nước liên tục**: `online-transport` hiện dựng lại cả ván bằng `fromRecord` mỗi lần nhận phòng. Game đi tự do nhận nhiều nước hơn và mỗi nước phải kiểm `legalMoves` của mọi ghế, nên thêm **nối tiếp**: biên bản mới cùng `gameNumber` và chứa biên bản đang có làm đầu thì chỉ áp các nước mới (`playMove` từng nước). Áp dụng cho mọi game (kết quả như dựng lại, test so hai đường).
+- **`local-transport`**: `canMove` khi ván chưa xong (mọi ghế đều là người); "Hoàn tác" và "Làm lại" của màn hình chơi giữ nguyên (lùi nước gần nhất, của bất kỳ ai). Người dùng bỏ "Lùi bước" vì online nhiều người đi xen nhau; trên một thiết bị, hoàn tác đã có và vô hại.
+
+#### 10.3 Luật mới
+
+- **Nước đi**: `` `${seat}${direction}` `` với hướng `U/D/L/R` (ví dụ `"1L"`), hoặc `` `${seat}reset` ``. `moverOf` là chữ số đầu. Chuỗi ngắn vì cả biên bản được gửi mỗi lần ghi.
+- **State**: `map`, `playerCount`, `board`, `steps` (số bước cả đội, giữ qua đặt lại), `last` (việc của nước vừa đi, có `seat`), `result: "filled" | "too-long" | null`. Bỏ `turn`, `taken`, `backs`, `turnsDone`, `turnBoards`, `trail`.
+- **Bước**: hợp lệ khi `tryStep` của ghế đó không bị chặn, như cũ. Đầy khuôn thì `result = "filled"`.
+- **Đặt lại**: mọi ghế đặt lại được khi bàn khác bàn xuất phát; bàn về bàn xuất phát, `steps` giữ nguyên.
+- **Thứ tự `legalMoves`**: theo ghế, mỗi ghế bốn hướng hợp lệ rồi `reset`.
+- **Giới hạn an toàn 3.000 nước**: nước thứ 3.000 kết thúc ván không ai thắng, lý do `too-long`. Không phải luật để chơi (lời giải dài nhất 89 bước, gấp hơn 30 lần) mà giữ ba thứ có giới hạn:
+  - bộ kiểm tra hợp đồng đòi ván tự chơi ngẫu nhiên kết thúc;
+  - server dựng lại cả ván mỗi lần ghi;
+  - phòng gửi cả biên bản mỗi lần ghi.
+
+  Thẻ kết quả nói rõ "Ván kết thúc: đã đi 3.000 nước" để không ai tưởng là thua.
+
+- **Bỏ** `JELLY_CREW_STEPS`, `JELLY_CREW_BACKS`, `rounds` của bố cục, `out-of-rounds`, `end`, `back`.
+- **Lời giải mẫu** (`layouts.solutions.ts`) đổi sang nước có ghế: bỏ `end`, gắn ghế đang đến lượt vào mỗi bước. Test "Bố cục giải được" phát lại và đòi thắng `filled`; bỏ điều kiện "≤ ½ số vòng". Test "cửa luôn đóng" giữ nguyên (BFS vốn đã không có lượt).
+
+#### 10.4 Thời gian ván
+
+Đo bằng đồng hồ của bên làm trọng tài, ngoài luật (luật vẫn không đọc giờ):
+
+- **Online**: phòng trong Redis thêm `gameStartedAt` (lúc đủ người hay lúc "Chơi lại") và `gameEndedAt` (lúc ván có kết quả), giờ của server. `RoomView` thêm `gameTime: { startedAt, endedAt } | null`, không bắt buộc (phòng cũ không có thì `null`). Thời gian = `endedAt − startedAt`, cùng một đồng hồ nên không lệch giữa các máy.
+- **Cùng máy**: ván lưu (`saved-game`) thêm `startedAt`/`endedAt` không bắt buộc; `local-transport` đặt bằng `Date.now()` khi tạo ván và khi ván có kết quả. Hoàn tác nước thắng thì bỏ `endedAt`.
+- **Snapshot**: `ReadySnapshot.gameTime: { startedAt: number; endedAt: number | null } | null`, cho mọi game; hiện chỉ Đội gom thạch đọc.
+- **Hiển thị**: chỉ trên thẻ kết quả ("Đầy khuôn sau 152 bước, 7 phút 12 giây."); không có đồng hồ chạy giữa ván, vì online cần bù lệch giờ giữa máy và server. Thiếu `gameTime` thì dòng chỉ có số bước.
+
+#### 10.5 Màn hình chơi
+
+- **Không có lượt trên bàn**: bỏ khung bàn màu ghế, vệt đường đi, nhịp mờ. Vòng đậm (không nhịp) đánh dấu **nhân vật mà phím mũi tên điều khiển**: của bạn khi online, nhân vật đang chọn khi cùng máy.
+- **Dòng lượt** (`role="status"`): "Cả đội cùng đi" (online thêm "· bạn là Hồng"); kết quả như §5. Bảng người chơi không có nhãn "Đến lượt" ở game đi tự do. `PlayScreen` và `PlayerPanel` đọc cờ `snapshot.freePlay`.
+- **Chip**: "Bước 37" và "Khuôn 1/4". Bỏ chip lượt và vòng.
+- **Bàn điều khiển**: bốn hướng ở lưới 3 × 2, hàng nút có chữ "Đặt lại bản đồ" bên dưới. Hướng bị chặn vẫn tắt kèm lý do. Online: nút khoá khi có nước đang chờ server, nhưng không hiện chữ "Đang gửi…" (chỉ chừng 70 ms).
+- **Cùng máy, hàng "Điều khiển"**: radio gốc (`fieldset` + `legend` "Điều khiển"), mỗi ghế một nhãn có dấu ghế và số phím; mặc định ghế 2 (ghế 1 đã có W A S D). Phím 1–n chọn nhân vật. Mũi tên khi tiêu điểm đang ở radio thì để radio tự xử lý (đổi lựa chọn), không đi.
+- **Phím**: online thì mũi tên và W A S D cùng là nhân vật của bạn. Cùng máy thì W A S D là ghế 1, mũi tên là nhân vật đang chọn. Không lặp khi giữ phím; bỏ Enter và Z.
+- **Vuốt** trên bàn đi nhân vật mũi tên đang điều khiển; `touch-action: none` khi đi được.
+- **Đặt lại bản đồ**: hộp thoại "Mọi người và thạch về chỗ ban đầu (online: cho cả đội). Số bước đã đi vẫn được tính."; online mọi người thấy dòng "Minh đã đặt lại bản đồ."
+- **Lời báo**: bước bị chặn nói tên nhân vật ("Hồng: không đi được, cửa ● đang đóng."). Nước của người khác vẫn đọc qua dòng lượt như mọi game, nhưng online hai người đi liên tục thì đọc dày. Vì vậy ở game đi tự do, `useMoveLabel` chỉ đọc nước **có việc**: đẩy thạch, cửa mở hay đóng, số khuôn đổi, đặt lại. Bước đi trống chỉ đọc khi là của chính thiết bị này.
+- **Trang luật**: thay mục lượt, vòng, lùi bước, giữ nút bằng "Mọi người cùng đi, không giới hạn bước"; thêm cách điều khiển cùng máy.
+- **Màn hình bắt đầu ván**: "Cả đội cùng thắng khi mọi khuôn có thạch đúng màu. Ai cũng đi bất cứ lúc nào."
+
+#### 10.6 Chi phí online
+
+- Một ván thật khoảng 2–5 lần lời giải: 100–450 bước. Mỗi bước là một lần ghi (≈ 6 lệnh Redis), tức 600–2.700 lệnh mỗi ván; gói 500 nghìn lệnh/tháng đủ khoảng 180 ván dài mỗi tháng.
+- Mỗi lần ghi, server dựng lại cả ván. `legalMoves` của game đi tự do thử bốn hướng cho mọi ghế (tới 16 lần `tryStep` thay vì 4), nên `fromRecord` chậm khoảng 3–4 lần bản theo lượt. Task đo lại `fromRecord` một biên bản 3.000 nước, ngân sách dưới 200 ms trên máy dev. Vượt thì kiểm nước khi phát lại bằng `tryStep` của đúng ghế đó thay vì sinh mọi nước hợp lệ (thêm `isLegal?` vào hợp đồng), trước khi đổi gì khác.
+- Biên bản 3.000 nước chuỗi 2–6 ký tự khoảng 30 KB JSON, vẫn nhỏ so với giới hạn một lần ghi.
+
+#### 10.7 Dữ liệu cũ
+
+Nước đi đổi dạng, nên ván Đội gom thạch lưu trên máy và phòng đang chơi từ bản theo lượt (ship sáng 13/11/2026) không dựng lại được nữa:
+
+- ván lưu đi đường "ván lưu hỏng" đã có (bỏ, bắt đầu ván mới);
+- phòng đi đường "phòng lỗi" đã có.
+
+Game mới ship trong ngày nên không viết chuyển đổi.
 
 ## Khác thiết kế
 

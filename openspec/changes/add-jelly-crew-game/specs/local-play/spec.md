@@ -9,10 +9,19 @@
 - **WHEN** ván Đội gom thạch 3 người chơi cùng máy kết thúc vì đầy khuôn
 - **THEN** thẻ kết quả báo "Cả đội thắng!", không liệt kê tên ghế, và có hiệu ứng ăn mừng
 
-#### Scenario: Hết vòng khi chơi cùng máy
+#### Scenario: Chạm giới hạn khi chơi cùng máy
 
-- **WHEN** ván Đội gom thạch chơi cùng máy kết thúc vì hết vòng
-- **THEN** thẻ kết quả báo "Ván kết thúc" kèm dòng nêu hết vòng, không có hiệu ứng ăn mừng, và có nút "Ván mới"
+- **WHEN** ván Đội gom thạch chơi cùng máy kết thúc vì đã đi 3.000 nước
+- **THEN** thẻ kết quả báo "Ván kết thúc" kèm dòng nêu số nước đã đi, không có hiệu ứng ăn mừng, và có nút "Ván mới"
+
+### Requirement: Thời gian ván cùng máy
+
+Ván chơi cùng máy SHALL nhớ giờ bắt đầu và giờ có kết quả, cả khi tải lại trang. Hoàn tác nước kết thúc ván SHALL bỏ giờ có kết quả. Ván lưu từ bản trước không có giờ SHALL vẫn mở được, không có thời gian ván.
+
+#### Scenario: Tải lại sau khi thắng
+
+- **WHEN** ván Đội gom thạch cùng máy đầy khuôn 4 phút 12 giây sau khi bắt đầu, rồi người chơi tải lại trang
+- **THEN** thẻ kết quả vẫn ghi 4 phút 12 giây
 
 ## MODIFIED Requirements
 

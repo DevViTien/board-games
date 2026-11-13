@@ -2,17 +2,17 @@
 
 ### Requirement: Luật Đội gom thạch
 
-Trang luật Đội gom thạch SHALL nêu: cả đội cùng thắng khi mọi ô khuôn có thạch đúng loại; mỗi lượt tối đa 5 bước và "Xong lượt"; cách đẩy và dính của từng loại thạch; nhân vật là vật cản; nút và cửa theo nhóm ký hiệu; giới hạn vòng; "Lùi bước" khi chơi online và "Đặt lại bản đồ". Hình SHALL cho thấy một người giữ nút cho người kia đẩy thạch qua cửa, và một bước bị nhân vật khác chặn.
+Trang luật Đội gom thạch SHALL nêu: cả đội cùng thắng khi mọi ô khuôn có thạch đúng loại; mọi người cùng đi bất cứ lúc nào, không lượt, không giới hạn bước; cách đẩy và dính của từng loại thạch; nhân vật là vật cản; nút và cửa theo nhóm ký hiệu; "Đặt lại bản đồ"; cách điều khiển khi chơi cùng máy (W A S D, mũi tên, chọn nhân vật). Hình SHALL cho thấy một người giữ nút cho người kia đẩy thạch qua cửa, và một bước bị nhân vật khác chặn.
 
 #### Scenario: Nêu nút và cửa
 
 - **WHEN** người chơi mở `/rules/jelly-crew`
 - **THEN** trang có mục về nút và cửa, kèm hình một nhân vật đứng trên nút ● trong khi nhân vật khác đẩy thạch qua cửa ●, có chú thích
 
-#### Scenario: Nêu giới hạn lượt và vòng
+#### Scenario: Nêu cách đi tự do
 
 - **WHEN** người chơi mở `/rules/jelly-crew`
-- **THEN** trang nêu mỗi lượt tối đa 5 bước và ván kết thúc khi hết số vòng của bản đồ
+- **THEN** trang nêu mọi người cùng đi bất cứ lúc nào, không có lượt hay giới hạn bước, và không nhắc tới "Xong lượt" hay vòng
 
 ## MODIFIED Requirements
 

@@ -1,8 +1,29 @@
+## ADDED Requirements
+
+### Requirement: Game đi tự do
+
+Ở game đi tự do, mọi ghế SHALL đi được bất cứ lúc nào: nước hợp lệ gồm nước của mọi ghế, và mỗi nước SHALL tự nêu ghế của nó, đọc được không cần trạng thái. Biên bản vẫn là một danh sách nước theo thứ tự được nhận. Bộ kiểm tra hợp đồng SHALL kiểm mọi nước hợp lệ nêu một ghế có trong ván, và game đi tự do MUST NOT khai báo hỗ trợ đấu với máy.
+
+#### Scenario: Ghế của nước đi
+
+- **WHEN** ván Đội gom thạch hai người vừa bắt đầu
+- **THEN** các nước hợp lệ có nước của cả ghế thứ nhất lẫn ghế thứ hai, và mỗi nước cho biết ghế của nó
+
+#### Scenario: Phát lại nước của nhiều ghế
+
+- **WHEN** biên bản một ván Đội gom thạch có nước của hai ghế xen nhau được chuyển sang JSON, đọc lại rồi dùng để dựng ván
+- **THEN** ván dựng lại có cùng bàn, cùng số bước và cùng ghế cho từng nước
+
+#### Scenario: Game đi tự do khai báo có máy
+
+- **WHEN** bộ kiểm tra hợp đồng chạy với một game đi tự do khai báo hỗ trợ đấu với máy
+- **THEN** kiểm tra `free-play-no-ai` thất bại
+
 ## MODIFIED Requirements
 
 ### Requirement: Khai báo game
 
-Mỗi game SHALL khai báo: mã định danh kebab-case duy nhất, số người chơi tối thiểu và tối đa, thể loại (`vn-folk`, `classic` hoặc `original`), thời lượng một ván ước tính tính bằng phút, game có hỗ trợ đấu với máy hay không, và tuỳ chọn luật mặc định. Game SHALL khai báo được mình là game **cùng phe** (mọi người cùng thắng hay cùng không thắng); không khai báo thì là game đối kháng. Thông tin khai báo SHALL đọc được mà không cần tạo ván.
+Mỗi game SHALL khai báo: mã định danh kebab-case duy nhất, số người chơi tối thiểu và tối đa, thể loại (`vn-folk`, `classic` hoặc `original`), thời lượng một ván ước tính tính bằng phút, game có hỗ trợ đấu với máy hay không, và tuỳ chọn luật mặc định. Game SHALL khai báo được mình là game **cùng phe** và là game **đi tự do** (không có lượt); không khai báo thì là game đối kháng, theo lượt. Thông tin khai báo SHALL đọc được mà không cần tạo ván.
 
 #### Scenario: Đọc thông tin game mà không tạo ván
 
@@ -12,7 +33,7 @@ Mỗi game SHALL khai báo: mã định danh kebab-case duy nhất, số ngườ
 #### Scenario: Đọc cờ cùng phe
 
 - **WHEN** app đọc khai báo của Đội gom thạch và của Cờ vua
-- **THEN** Đội gom thạch là game cùng phe, Cờ vua không phải
+- **THEN** Đội gom thạch là game cùng phe và đi tự do, Cờ vua không phải cả hai
 
 #### Scenario: Thắng trong game cùng phe
 

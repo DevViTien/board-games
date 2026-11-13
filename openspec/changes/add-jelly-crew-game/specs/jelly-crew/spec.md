@@ -7,7 +7,7 @@
 #### Scenario: Ván hai người trên bản đồ mặc định
 
 - **WHEN** một ván Đội gom thạch được tạo cho 2 người mà không truyền tuỳ chọn
-- **THEN** ván dùng bố cục 2 người của "Hai gian bếp", có đúng hai nhân vật ở hai ô xuất phát, và người thứ nhất đến lượt
+- **THEN** ván dùng bố cục 2 người của "Hai gian bếp", có đúng hai nhân vật ở hai ô xuất phát, và cả hai người đều có nước đi hợp lệ
 
 #### Scenario: Mỗi số người một bố cục
 
@@ -19,24 +19,19 @@
 - **WHEN** ván được tạo với `map` là `"castle"`
 - **THEN** hệ thống từ chối với mã lỗi `invalid-options`
 
-### Requirement: Lượt nhiều bước
+### Requirement: Đi tự do
 
-Người đến lượt SHALL đi tối đa 5 bước, mỗi bước một ô theo bốn hướng, rồi kết thúc lượt bằng "Xong lượt"; lượt không tự chuyển. Đi đủ 5 bước thì chỉ còn "Xong lượt", "Lùi bước" và "Đặt lại bản đồ". "Xong lượt" hợp lệ cả khi chưa đi bước nào (để đứng yên giữ nút). Lượt sang người kế tiếp theo thứ tự ghế, vòng lại người thứ nhất. Bước bị chặn MUST NOT là nước đi hợp lệ.
+Đội gom thạch SHALL là game đi tự do: không có lượt, không giới hạn số bước hay số vòng; mỗi người đi nhân vật của mình bất cứ lúc nào, mỗi bước một ô theo bốn hướng. Mỗi nước SHALL nêu ghế của nó, và nước hợp lệ gồm bước và đặt lại của mọi ghế. Bước bị chặn MUST NOT là nước đi hợp lệ.
 
-#### Scenario: Đủ 5 bước thì chờ Xong lượt
+#### Scenario: Hai người đi xen nhau
 
-- **WHEN** trong ván hai người, người thứ nhất đi đủ 5 bước
-- **THEN** người thứ nhất vẫn đến lượt, không còn bước đi nào trong các nước hợp lệ, và "Xong lượt" hợp lệ
-
-#### Scenario: Xong lượt khi chưa đi
-
-- **WHEN** người thứ hai đang đứng trên một nút và chọn "Xong lượt" khi chưa đi bước nào
-- **THEN** người thứ nhất đến lượt và nhân vật thứ hai vẫn ở trên nút
+- **WHEN** trong ván hai người, người thứ nhất đi ba bước liền rồi người thứ hai đi một bước
+- **THEN** cả bốn bước đều hợp lệ, không có "Xong lượt", và số bước của cả đội là 4
 
 #### Scenario: Bước bị chặn
 
-- **WHEN** ô trước mặt nhân vật đến lượt là tường
-- **THEN** bước theo hướng đó không có trong các nước hợp lệ và số bước đã đi không đổi
+- **WHEN** ô trước mặt nhân vật thứ hai là tường
+- **THEN** bước theo hướng đó của người thứ hai không có trong các nước hợp lệ, còn các bước của người thứ nhất vẫn có
 
 ### Requirement: Đi và đẩy thạch
 
@@ -102,7 +97,7 @@ Mỗi cửa SHALL thuộc một nhóm có ký hiệu (●, ▲ hoặc ■) và m
 
 ### Requirement: Thắng khi đầy khuôn
 
-Ván SHALL kết thúc với kết quả thắng cho mọi người, lý do `filled`, ngay sau bước làm mọi ô khuôn có thạch đúng loại. Mỗi loại thạch có khuôn SHALL có đúng bằng số ô thạch như số ô khuôn của loại đó; loại không có khuôn (thường là đá viên) chỉ là vật cản. Ván đã có kết quả MUST NOT còn nước đi hợp lệ.
+Ván SHALL kết thúc với kết quả thắng cho mọi người, lý do `filled`, ngay sau bước làm mọi ô khuôn có thạch đúng loại. Mỗi loại thạch có khuôn SHALL có đúng bằng số ô thạch như số ô khuôn của loại đó; loại không có khuôn (thường là đá viên) chỉ là vật cản. Ván đã có kết quả MUST NOT còn nước đi hợp lệ. Ván không bao giờ thua theo luật.
 
 #### Scenario: Ô khuôn cuối được lấp
 
@@ -114,66 +109,42 @@ Ván SHALL kết thúc với kết quả thắng cho mọi người, lý do `fil
 - **WHEN** mọi ô khuôn có thạch nhưng một ô khuôn dâu có thạch xoài
 - **THEN** ván chưa kết thúc
 
-### Requirement: Giới hạn vòng
+### Requirement: Giới hạn an toàn của ván
 
-Mỗi bố cục SHALL có số vòng tối đa; một vòng là mỗi người một lượt. Khi người cuối cùng xong lượt của vòng cuối mà khuôn chưa đầy, ván SHALL kết thúc không ai thắng, lý do `out-of-rounds`.
+Ván SHALL kết thúc không ai thắng, lý do `too-long`, ngay sau nước thứ 3.000 nếu khuôn chưa đầy. Đây là giới hạn để ván và biên bản luôn hữu hạn, không phải luật để chơi; thẻ kết quả SHALL nói rõ đã đi bao nhiêu nước.
 
-#### Scenario: Hết vòng
+#### Scenario: Chạm giới hạn
 
-- **WHEN** người cuối cùng xong lượt của vòng cuối và còn ô khuôn trống
-- **THEN** ván kết thúc không ai thắng với lý do `out-of-rounds`
+- **WHEN** ván vừa có nước thứ 3.000 và còn ô khuôn trống
+- **THEN** ván kết thúc không ai thắng với lý do `too-long` và không còn nước đi hợp lệ
 
-#### Scenario: Thắng ở lượt cuối
+#### Scenario: Thắng ở nước cuối
 
-- **WHEN** ở lượt cuối của vòng cuối, một bước lấp ô khuôn cuối cùng
-- **THEN** ván kết thúc với kết quả thắng `filled`, không phải `out-of-rounds`
-
-### Requirement: Lùi bước trong lượt
-
-Người đến lượt SHALL lùi được bước gần nhất của chính lượt mình: nhân vật và thạch trở lại như trước bước đó, số bước đã đi giảm một. Lùi được tới đầu lượt, MUST NOT lùi qua lượt người khác, và mỗi lượt lùi tối đa 5 lần. Chưa đi bước nào trong lượt, hay đã lùi 5 lần, thì lùi bước không có trong các nước hợp lệ.
-
-#### Scenario: Lùi một bước đẩy
-
-- **WHEN** người thứ nhất vừa đẩy một thạch dâu ở bước thứ hai của lượt rồi lùi bước
-- **THEN** thạch dâu và nhân vật thứ nhất về chỗ trước bước đó và số bước đã đi là 1
-
-#### Scenario: Lùi bước thứ năm
-
-- **WHEN** người thứ nhất đi đủ 5 bước rồi lùi bước
-- **THEN** số bước đã đi là 4 và người thứ nhất đi tiếp được một bước
-
-#### Scenario: Không lùi qua lượt trước
-
-- **WHEN** người thứ hai vừa đến lượt, chưa đi bước nào
-- **THEN** lùi bước không có trong các nước hợp lệ
-
-#### Scenario: Hết lượt lùi
-
-- **WHEN** trong một lượt, người thứ nhất đã lùi bước 5 lần và vừa đi lại một bước
-- **THEN** lùi bước không có trong các nước hợp lệ cho tới hết lượt
+- **WHEN** nước thứ 3.000 lấp ô khuôn cuối cùng
+- **THEN** ván kết thúc với kết quả thắng `filled`, không phải `too-long`
 
 ### Requirement: Đặt lại bản đồ
 
-Người đến lượt SHALL đặt lại được bản đồ khi nhân vật hay thạch không còn như lúc bắt đầu ván: mọi nhân vật và thạch về chỗ ban đầu, và lượt sang người kế tiếp. Số vòng đã qua và số bước cả đội đã đi MUST NOT được trả lại. Khi bàn đang như lúc bắt đầu ván, đặt lại không có trong các nước hợp lệ.
+Mọi người SHALL đặt lại được bản đồ khi nhân vật hay thạch không còn như lúc bắt đầu ván: mọi nhân vật và thạch về chỗ ban đầu. Số bước cả đội đã đi MUST NOT được trả lại. Khi bàn đang như lúc bắt đầu ván, đặt lại không có trong các nước hợp lệ.
 
 #### Scenario: Đặt lại giữa ván
 
-- **WHEN** ở vòng 6 của ván ba người, người thứ hai đặt lại bản đồ
-- **THEN** mọi nhân vật và thạch về chỗ ban đầu, người thứ ba đến lượt, ván vẫn ở vòng 6 và số bước đã đi không đổi
+- **WHEN** cả đội đã đi 40 bước và người thứ hai đặt lại bản đồ
+- **THEN** mọi nhân vật và thạch về chỗ ban đầu, số bước vẫn là 40, và cả đội đi tiếp được ngay
 
 #### Scenario: Bàn chưa đổi
 
 - **WHEN** ván vừa bắt đầu
-- **THEN** đặt lại bản đồ không có trong các nước hợp lệ
+- **THEN** đặt lại bản đồ không có trong các nước hợp lệ của ai
 
 ### Requirement: Bố cục giải được
 
-Mỗi bố cục SHALL giải được trong giới hạn vòng của nó: có một lời giải mẫu mà khi phát lại từ đầu đi đến thắng `filled`, mọi người là người thắng, với không quá một nửa số vòng tối đa. Mỗi bố cục SHALL cần tới nút và cửa: coi mọi cửa luôn đóng thì bố cục không giải được.
+Mỗi bố cục SHALL giải được: có một lời giải mẫu mà khi phát lại từ đầu đi đến thắng `filled`, mọi người là người thắng. Mỗi bố cục SHALL cần tới nút và cửa: coi mọi cửa luôn đóng thì bố cục không giải được.
 
 #### Scenario: Phát lại lời giải mẫu
 
 - **WHEN** test phát lại lời giải mẫu của từng bố cục trong chín bố cục
-- **THEN** mỗi lần phát lại kết thúc với kết quả thắng `filled` cho mọi người và dùng không quá một nửa số vòng tối đa
+- **THEN** mỗi lần phát lại kết thúc với kết quả thắng `filled` cho mọi người
 
 #### Scenario: Không thắng khi cửa luôn đóng
 
@@ -182,12 +153,12 @@ Mỗi bố cục SHALL giải được trong giới hạn vòng của nó: có m
 
 ### Requirement: Hiển thị bàn
 
-Màn hình SHALL vẽ cả bản đồ, không cuộn: tường, sàn, khuôn, nút, cửa đóng và mở, thạch theo loại có ký hiệu riêng, và nhân vật có màu và số ghế 1–4. Nhân vật đến lượt SHALL nổi trên bàn bằng vòng đậm, và khung bàn mang màu ghế đó. Đường đi của lượt gần nhất SHALL được đánh dấu. Nút và cửa SHALL có ký hiệu nhóm; cửa đóng và mở khác nhau ở hình, không chỉ ở màu.
+Màn hình SHALL vẽ cả bản đồ, không cuộn: tường, sàn, khuôn, nút, cửa đóng và mở, thạch theo loại có ký hiệu riêng, và nhân vật có màu và số ghế 1–4. Nhân vật mà phím mũi tên đang điều khiển (của mình khi online, nhân vật đang chọn khi cùng máy) SHALL có vòng đậm. Bàn MUST NOT tô lượt của ai. Nút và cửa SHALL có ký hiệu nhóm; cửa đóng và mở khác nhau ở hình, không chỉ ở màu.
 
-#### Scenario: Lượt trên bàn
+#### Scenario: Nhân vật của mình
 
-- **WHEN** đến lượt người thứ hai
-- **THEN** nhân vật số 2 có vòng đánh dấu lượt, khung bàn mang màu ghế Hồng và chip ghi "Hồng · còn 5 bước"
+- **WHEN** Lan chơi online với ghế 2
+- **THEN** nhân vật số 2 có vòng đậm, các nhân vật khác không có, và khung bàn không mang màu ghế nào
 
 #### Scenario: Cửa mở và đóng
 
@@ -196,92 +167,82 @@ Màn hình SHALL vẽ cả bản đồ, không cuộn: tường, sàn, khuôn, n
 
 ### Requirement: Chip của ván
 
-Dưới bàn SHALL có chip ghi người đến lượt và số bước còn lại ("Lam · còn 3 bước"), vòng ("Vòng 3/40") và số ô khuôn đã vừa ("Khuôn 5/8"). Ván xong thì MUST NOT còn chip bước.
+Dưới bàn SHALL có chip ghi số bước cả đội đã đi ("Bước 37") và số ô khuôn đã vừa ("Khuôn 5/8"). MUST NOT có chip lượt hay vòng.
 
-#### Scenario: Chip đầu lượt
+#### Scenario: Chip giữa ván
 
-- **WHEN** đến lượt người thứ hai ở vòng 3 của bố cục 40 vòng
-- **THEN** chip ghi "Hồng · còn 5 bước" và "Vòng 3/40"
-
-#### Scenario: Hết bước
-
-- **WHEN** người đến lượt đã đi đủ 5 bước
-- **THEN** chip ghi đã hết bước và nhắc bấm "Xong lượt"
+- **WHEN** cả đội đã đi 37 bước và 5 trong 8 ô khuôn đã vừa
+- **THEN** chip ghi "Bước 37" và "Khuôn 5/8"
 
 #### Scenario: Ván xong
 
 - **WHEN** cả đội vừa thắng
-- **THEN** không còn chip bước; chip khuôn ghi đầy
+- **THEN** chip khuôn ghi đầy
 
 ### Requirement: Thao tác
 
-Người ở thiết bị đến lượt SHALL đi bằng phím mũi tên hay WASD (không lặp khi giữ phím), bằng bàn điều khiển bốn hướng, hay bằng vuốt trên bàn. Nút hướng bị chặn MUST NOT bấm được và nói lý do. "Xong lượt", "Lùi bước" và "Đặt lại bản đồ" SHALL là nút có chữ; "Đặt lại bản đồ" hỏi lại trước khi làm. Enter SHALL là "Xong lượt" chỉ khi tiêu điểm không ở trên một nút hay liên kết. "Lùi bước" (và phím Z) SHALL chỉ có khi chơi online; chơi cùng máy dùng "Hoàn tác" của màn hình chơi.
+Người chơi SHALL đi bằng phím mũi tên hay WASD (không lặp khi giữ phím), bằng bàn điều khiển bốn hướng, hay bằng vuốt trên bàn. Online, mọi cách đều đi nhân vật của mình. Nút hướng bị chặn MUST NOT bấm được và nói lý do. "Đặt lại bản đồ" SHALL là nút có chữ, hỏi lại trước khi làm. MUST NOT có "Xong lượt", "Lùi bước" hay "Giữ nút".
 
-#### Scenario: Đi bằng phím
+#### Scenario: Đi bằng phím khi online
 
-- **WHEN** đến lượt người ở thiết bị này và người đó bấm phím mũi tên trái
-- **THEN** nhân vật của người đó đi một bước sang trái
+- **WHEN** Lan chơi online với ghế 2 và bấm phím mũi tên trái, rồi phím A
+- **THEN** nhân vật số 2 đi hai bước sang trái, dù Minh cũng đang đi
 
 #### Scenario: Hướng bị chặn
 
-- **WHEN** phía trên nhân vật đến lượt là tường
+- **WHEN** phía trên nhân vật đang điều khiển là tường
 - **THEN** nút "Lên" không bấm được và nêu lý do là tường
-
-#### Scenario: Enter trên một nút
-
-- **WHEN** tiêu điểm đang ở nút "Đặt lại bản đồ" và người chơi bấm Enter
-- **THEN** chỉ hộp thoại đặt lại mở ra; lượt không kết thúc
 
 #### Scenario: Đặt lại có hỏi lại
 
-- **WHEN** người đến lượt bấm "Đặt lại bản đồ"
+- **WHEN** người chơi bấm "Đặt lại bản đồ"
 - **THEN** hộp thoại hỏi lại hiện ra; chọn "Để nguyên" thì bàn không đổi
 
-#### Scenario: Cùng máy không có Lùi bước
+### Requirement: Chọn nhân vật khi chơi cùng máy
 
-- **WHEN** ván Đội gom thạch chơi cùng máy
-- **THEN** màn hình có "Hoàn tác" và không có nút "Lùi bước"
+Chơi cùng máy, màn hình SHALL có nhóm radio "Điều khiển" chọn nhân vật mà phím mũi tên, bàn điều khiển và vuốt điều khiển; mặc định là nhân vật 2. Phím 1–4 SHALL chọn nhân vật. Phím WASD SHALL luôn đi nhân vật 1, để hai người chung một bàn phím đi cùng lúc. Màn hình SHALL giữ "Hoàn tác" và "Làm lại" của màn hình chơi.
 
-### Requirement: Đứng giữ nút
+#### Scenario: Hai người chung bàn phím
 
-Khi nhân vật của người ở thiết bị này đứng trên nút, màn hình SHALL có nút bật/tắt "Giữ nút". Đang bật thì mỗi khi tới lượt người đó, thiết bị SHALL tự gửi "Xong lượt" sau một nhịp ngắn và báo điều đó. Bấm một hướng hay tắt nút thì thôi giữ.
+- **WHEN** ván hai người chơi cùng máy, một người bấm D và người kia bấm mũi tên trái
+- **THEN** nhân vật 1 đi sang phải và nhân vật 2 đi sang trái
 
-#### Scenario: Tự xong lượt khi giữ nút
+#### Scenario: Đổi nhân vật
 
-- **WHEN** Minh đứng trên nút ●, bật "Giữ nút", và tới lượt Minh
-- **THEN** thiết bị của Minh tự gửi "Xong lượt" và lượt sang người kế tiếp, nhân vật của Minh vẫn trên nút
-
-#### Scenario: Thôi giữ khi đi
-
-- **WHEN** Minh đang bật "Giữ nút" và bấm một phím hướng ở lượt của mình
-- **THEN** nhân vật đi một bước và "Giữ nút" tắt
+- **WHEN** ván bốn người chơi cùng máy và người chơi bấm phím 3 rồi mũi tên lên
+- **THEN** "Cam" được chọn trong nhóm "Điều khiển" và nhân vật 3 đi lên
 
 ### Requirement: Bảng người chơi của Đội gom thạch
 
-Bảng người chơi SHALL ghi tên mỗi ghế theo màu nhân vật ("Lam", "Hồng", "Cam", "Ngọc") kèm hình nhân vật có số, và một dòng ngắn cho ghế đang đứng trên nút ("Giữ nút ●"). Khi cả đội thắng, bảng MUST NOT gắn nhãn "Thắng" cho từng ghế.
+Bảng người chơi SHALL ghi tên mỗi ghế theo màu nhân vật ("Lam", "Hồng", "Cam", "Ngọc") kèm hình nhân vật có số, và một dòng ngắn cho ghế đang đứng trên nút ("Giữ nút ●"). Bảng MUST NOT gắn nhãn "Đến lượt" cho ghế nào, và khi cả đội thắng MUST NOT gắn nhãn "Thắng" cho từng ghế.
 
 #### Scenario: Ghế đang giữ nút
 
 - **WHEN** nhân vật số 2 đứng trên nút ▲
-- **THEN** ô của ghế Hồng trong bảng người chơi có dòng "Giữ nút ▲"
+- **THEN** ô của ghế Hồng trong bảng người chơi có dòng "Giữ nút ▲" và không ô nào có nhãn "Đến lượt"
 
 ### Requirement: Dùng được bằng trình đọc màn hình
 
-Câu đọc mỗi nước SHALL nêu điều đã xảy ra: ai đi, đẩy gì, cửa nào vừa mở hay đóng, số khuôn đã vừa khi số đó đổi, và đặt lại bản đồ. Bước bị chặn SHALL được báo kèm lý do. Bàn SHALL có mô tả theo hàng, nêu từng nhân vật, thạch, khuôn, nút và cửa. Màn hình MUST NOT có vùng `role="status"` thứ hai ngoài dòng lượt.
+Câu đọc một nước SHALL nêu việc đã xảy ra: ai đi, đẩy gì, cửa nào vừa mở hay đóng, số khuôn khi số đó đổi, đặt lại bản đồ. Bước trống của người khác MUST NOT được đọc, để hai người đi liên tục không làm ngợp lời báo. Bước bị chặn SHALL được báo kèm tên nhân vật và lý do. Bàn SHALL có mô tả theo hàng. Màn hình MUST NOT có vùng `role="status"` thứ hai ngoài dòng lượt.
 
 #### Scenario: Báo cửa mở
 
-- **WHEN** người thứ hai bước lên nút ●
+- **WHEN** Hồng bước lên nút ●
 - **THEN** câu đọc nước đó nói Hồng đi một bước và cửa ● mở
+
+#### Scenario: Không đọc bước trống của người khác
+
+- **WHEN** Lan chơi online và Minh đi một bước vào ô trống, không đẩy gì, không đổi cửa
+- **THEN** màn hình của Lan không đọc nước đó
 
 #### Scenario: Báo bước bị chặn
 
-- **WHEN** người đến lượt bấm hướng có cửa ▲ đang đóng
-- **THEN** màn hình báo không đi được vì cửa ▲ đóng, và ván không đổi
+- **WHEN** người chơi đi nhân vật Hồng về phía cửa ▲ đang đóng
+- **THEN** màn hình báo Hồng không đi được vì cửa ▲ đóng, và ván không đổi
 
 ### Requirement: Dùng được trên điện thoại
 
-Ở khung 360 px, bàn SHALL vừa chiều ngang màn hình với mọi bố cục, trang MUST NOT cuộn ngang, và mọi nút điều khiển SHALL tới được với vùng chạm ít nhất 44 × 44 px. Khi thiết bị này không được đi, kéo trên bàn SHALL cuộn trang như thường.
+Ở khung 360 px, bàn SHALL vừa chiều ngang màn hình với mọi bố cục, trang MUST NOT cuộn ngang, và mọi nút điều khiển (cả nhóm "Điều khiển" khi chơi cùng máy) SHALL tới được với vùng chạm ít nhất 44 × 44 px. Khi ván đã xong, kéo trên bàn SHALL cuộn trang như thường.
 
 #### Scenario: Bố cục lớn nhất trên điện thoại
 
@@ -290,14 +251,14 @@ Câu đọc mỗi nước SHALL nêu điều đã xảy ra: ai đi, đẩy gì, 
 
 ### Requirement: Đọc nước đi và kết quả
 
-Một nước đi SHALL được đọc theo việc nó làm ("đi sang trái", "đẩy thạch dâu lên", "xong lượt", "lùi một bước", "đặt lại bản đồ"). Thẻ kết quả SHALL có dòng chi tiết: khi thắng, số bước và số vòng cả đội đã dùng; khi hết vòng, số ô khuôn còn trống.
+Một nước SHALL được đọc theo việc nó làm, kèm tên nhân vật ("Hồng đi sang trái", "Lam đẩy thạch dâu lên", "Lan đặt lại bản đồ"). Thẻ kết quả SHALL có dòng chi tiết: khi thắng, số bước cả đội đã đi và thời gian từ lúc ván bắt đầu (không có giờ thì chỉ số bước); khi chạm giới hạn an toàn, số nước đã đi.
 
 #### Scenario: Chi tiết khi thắng
 
-- **WHEN** cả đội đầy khuôn sau 87 bước ở vòng 12
-- **THEN** thẻ kết quả ghi "Cả đội thắng!" kèm dòng nêu 87 bước và 12 vòng
+- **WHEN** cả đội đầy khuôn sau 87 bước, 7 phút 12 giây kể từ khi ván bắt đầu
+- **THEN** thẻ kết quả ghi "Cả đội thắng!" kèm dòng "Đầy khuôn sau 87 bước, 7 phút 12 giây."
 
-#### Scenario: Chi tiết khi hết vòng
+#### Scenario: Chi tiết khi chạm giới hạn
 
-- **WHEN** ván kết thúc vì hết vòng, còn 3 ô khuôn trống
-- **THEN** thẻ kết quả kèm dòng nêu hết vòng và còn 3 ô khuôn trống
+- **WHEN** ván kết thúc vì đã có 3.000 nước đi
+- **THEN** thẻ kết quả báo "Ván kết thúc" kèm dòng nêu đã đi 3.000 nước

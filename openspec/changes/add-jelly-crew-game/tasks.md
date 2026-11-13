@@ -1,5 +1,7 @@
 # Tasks
 
+Nhóm 0–5 làm bản theo lượt (ship ở `687dfbf`). Sau chơi thử 13/11/2026, nhóm 6 thay lượt bằng đi tự do (design §10); các task theo lượt ở nhóm 1 và 3 (1.5, 3.4, 3.5, phần lượt của 3.3, 3.7, 3.8) đã làm xong như lời khai lúc đó, và bị nhóm 6 thay thế.
+
 ## 0. Thiết kế
 
 - [x] 0.1 Người dùng chốt cách chơi "cùng nhau, theo lượt" (2–4 người, cùng phe, mỗi người một nhân vật trên một bản đồ rộng), ngày 12/11/2026
@@ -50,8 +52,25 @@ Mỗi task có chữ mới thì thêm khoá vào `vi.json` ngay trong task đó,
 
 - [x] 5.1 E2E `games-jelly-crew.spec.ts`: cùng máy chơi hết bố cục 2 người "Hai gian bếp" bằng phím và thấy "Cả đội thắng!"; online hai trình duyệt: giữ nút, đẩy qua cửa, lùi bước, bỏ cuộc; thêm cảnh vào `ui-shots/screens.shots.ts` theo design §9
 - [x] 5.2 `pnpm ui:shots`, xem từng ảnh sáng/tối × 390/1280 so với mockup; rà `web-design-guidelines` trên các file giao diện đã đổi; hai lượt review code (senior dev, săn bug), sửa xong
-- [ ] 5.3 Người dùng chơi thử cùng máy và online với bạn (ít nhất một bố cục mỗi bản đồ); ghi nhận xét và sửa (bố cục, số vòng) trước khi archive
+- [ ] 5.3 Người dùng chơi thử **bản đi tự do** cùng máy và online với bạn (ít nhất một bố cục mỗi bản đồ); ghi nhận xét và sửa trước khi archive. Lần chơi thử bản theo lượt (13/11/2026) dẫn tới nhóm 6
 - [x] 5.4 `pnpm check`, `pnpm knip`, `pnpm spec:check`, `pnpm test:e2e` xanh; cập nhật plan.md §10
+
+## 6. Đi tự do (sau chơi thử 13/11/2026, design §10)
+
+- [x] 6.0 Người dùng chốt: thay hẳn lượt, không thua (đếm bước + thời gian), cùng máy chọn nhân vật rồi đi (W A S D là nhân vật 1), bỏ "Lùi bước" giữ "Đặt lại bản đồ"; mockup `mockup/free.html` (ảnh `mockup/png/free-*`)
+- [ ] 6.1 Người dùng duyệt mockup `mockup/free.html`; ghi ngày duyệt và điều chỉnh vào design §10
+- [ ] 6.2 Engine: `GameMeta.freePlay`, `GameDefinition.moverOf`, hàm `moverOf(definition, stateBefore, move)`; kiểm tra hợp đồng `free-play-movers`, `free-play-no-ai` (test mỗi vi phạm như các kiểm tra khác); test theo "Game đi tự do" và "Khai báo game" ("Đọc cờ cùng phe")
+- [ ] 6.3 Luật: nước `<ghế><U|D|L|R|reset>`, state mới (bỏ lượt, vòng, lùi, `trail`), `reset` của mọi ghế, giới hạn an toàn 3.000 nước (`too-long`); lời giải mẫu đổi sang nước có ghế; test theo mọi scenario của "Đi tự do", "Đặt lại bản đồ", "Giới hạn an toàn của ván", "Bố cục giải được", "Thắng khi đầy khuôn"; `describeGameContract` với `maxPlies` 3.000
+- [ ] 6.4 Đo `fromRecord` một biên bản 3.000 nước (ngân sách dưới 200 ms trên máy dev), ghi số vào design §10.6; vượt thì thêm `isLegal?` như design nói
+- [ ] 6.5 Server: `room-service.move` cho game đi tự do (ghế bằng `moverOf`, nước theo vị trí cũ áp lên trạng thái mới nhất, không đồng hồ lượt); phòng thêm `gameStartedAt`/`gameEndedAt`, `RoomView.gameTime` trong `packages/protocol` (không bắt buộc, zod `.catch(null)`); test theo "Trọng tài của game đi tự do" và "Thời gian ván online"; test hiện có của game theo lượt vẫn xanh
+- [ ] 6.6 `online-transport`: `canMove` không xét lượt, `waitingFor`/`turn` `null`, nước chờ chỉ được trả lời bởi nước của chính ghế mình hay lời từ chối, từ chối của nước cũ im lặng, nối tiếp biên bản thay vì dựng lại (mọi game, test so hai đường); `lastMover` qua `moverOf`; test theo "Chơi game đi tự do online"
+- [ ] 6.7 `local-transport` và `saved-game`: `canMove` không xét lượt, `startedAt`/`endedAt` (bỏ `endedAt` khi hoàn tác nước kết thúc); `ReadySnapshot.freePlay` và `gameTime` ở cả hai transport; test theo "Thời gian ván cùng máy"
+- [ ] 6.8 `PlayScreen`/`PlayerPanel`: dòng "Cả đội cùng đi" (online thêm "· bạn là …"), không nhãn "Đến lượt", không câu chờ hay đồng hồ lượt ở game đi tự do; bản dịch vi/en/ja
+- [ ] 6.9 Board: vòng đậm trên nhân vật đang điều khiển (không nhịp), bỏ khung màu ghế và vệt; bàn điều khiển 3 × 2 + "Đặt lại bản đồ"; nhóm radio "Điều khiển" khi cùng máy (mặc định ghế 2, phím 1–n); WASD là ghế 1 khi cùng máy, là ghế mình khi online; vuốt; bỏ "Xong lượt", "Lùi bước", "Giữ nút", Enter, Z; chip "Bước", "Khuôn"; test theo "Hiển thị bàn", "Chip của ván", "Thao tác", "Chọn nhân vật khi chơi cùng máy", "Bảng người chơi của Đội gom thạch"
+- [ ] 6.10 Lời báo: `useMoveLabel` nêu tên nhân vật, không đọc bước trống của người khác; bước bị chặn nêu tên nhân vật; `useResultDetail` với số bước và thời gian (`gameTime`), dòng "đã đi 3.000 nước"; test theo "Dùng được bằng trình đọc màn hình", "Đọc nước đi và kết quả", "Kết quả của game cùng phe"
+- [ ] 6.11 Trang luật, hình minh hoạ (bỏ cảnh lượt), màn bắt đầu ván, mô tả thẻ menu nếu nói tới lượt; bản dịch vi/en/ja; test theo "Luật Đội gom thạch"
+- [ ] 6.12 E2E `games-jelly-crew.spec.ts`: cùng máy hai người chung bàn phím (WASD + mũi tên) thắng "Hai gian bếp", có dòng thời gian; online hai trình duyệt đi xen nhau không chờ lượt, đặt lại bản đồ, bỏ cuộc; điện thoại 360 px có nhóm "Điều khiển"; cảnh mới trong `ui-shots/screens.shots.ts`
+- [ ] 6.13 `pnpm ui:shots` xem từng ảnh so với `mockup/png/free-*`; rà `web-design-guidelines`; hai lượt review code; `pnpm check`, `pnpm knip`, `pnpm spec:check`, `pnpm test:e2e` xanh; cập nhật idea.md §3.3/§9, plan.md §10, README, skill `board-games-ui` (hướng hình Đội gom thạch)
 
 ## Ngoài phạm vi
 

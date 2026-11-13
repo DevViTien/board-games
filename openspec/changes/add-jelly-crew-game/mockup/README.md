@@ -19,3 +19,9 @@ Cùng họ với Gom thạch: khay men kem, tường gạch men xanh xám, thạ
 - **Bàn điều khiển**: hướng bị chặn thì tắt kèm lý do; "Giữ nút" hiện khi đứng trên nút.
 
 Bản đồ trong mockup: "Hai gian bếp" 2 người (19 × 7, lời giải 25 bước trong 4 vòng, giới hạn 10 vòng; xem bảng bên trái) và bản nháp 4 người (19 × 13).
+
+## Bản đi tự do (sau chơi thử 13/11/2026)
+
+`free.html` thay lượt bằng đi tự do (design §10): không "Xong lượt", không vòng, không "Lùi bước", không "Giữ nút". Cùng máy có nhóm "Điều khiển" chọn nhân vật mà mũi tên, bàn điều khiển và vuốt điều khiển (mặc định Hồng); W A S D luôn là Lam, nên hai người chung một bàn phím đi cùng lúc được; phím 1–4 đổi nhân vật. Cảnh online cho Minh (Lam) tự đi mỗi 0,9 giây để thấy hai người đi cùng lúc; Minh đứng chờ khi cửa ● còn đóng. Thẻ thắng ghi số bước và thời gian. Thử nhanh: `free.html?bare&scene=online&vp=1280x800`.
+
+Ảnh: `png/free-*`.

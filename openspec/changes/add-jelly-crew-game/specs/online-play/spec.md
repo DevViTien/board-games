@@ -2,7 +2,7 @@
 
 ### Requirement: Game cùng phe khi chơi online
 
-Ở game cùng phe chơi online, mọi màn hình trong phòng SHALL báo "Cả đội thắng!" khi ván có người thắng, "Ván kết thúc" khi ván kết thúc theo luật mà không ai thắng, và "Ván dừng" kèm dòng nêu ai khi có người bỏ cuộc hay bỏ ván. Nút đầu hàng SHALL ghi "Bỏ cuộc", hộp thoại nói ván dừng cho cả đội. Người chờ quá 5 phút SHALL chỉ có nút "Kết thúc ván", MUST NOT có "Xử thắng"; lời nhắc người đến lượt nói ván sẽ dừng.
+Ở game cùng phe chơi online, mọi màn hình trong phòng SHALL báo "Cả đội thắng!" khi ván có người thắng, "Ván kết thúc" khi ván kết thúc theo luật mà không ai thắng, và "Ván dừng" kèm dòng nêu ai khi có người bỏ cuộc hay bỏ ván. Nút đầu hàng SHALL ghi "Bỏ cuộc", hộp thoại nói ván dừng cho cả đội. Ở game cùng phe có lượt, người chờ quá 5 phút SHALL chỉ có nút "Kết thúc ván", MUST NOT có "Xử thắng"; lời nhắc người đến lượt nói ván sẽ dừng.
 
 #### Scenario: Bỏ cuộc trong ván cùng phe
 
@@ -17,13 +17,13 @@
 
 #### Scenario: Chờ quá 5 phút trong ván cùng phe
 
-- **WHEN** trong ván Đội gom thạch online 2 người, Lan đã chờ Minh đi được 5 phút kể từ nước gần nhất
+- **WHEN** trong ván online 2 người của một game cùng phe có lượt, Lan đã chờ Minh đi được 5 phút kể từ nước gần nhất
 - **THEN** màn hình của Lan có nút "Kết thúc ván" và không có nút "Xử thắng"
 - **AND** hộp thoại xác nhận nói ván sẽ dừng cho cả đội
 
 #### Scenario: Nhắc người đến lượt trong ván cùng phe
 
-- **WHEN** Minh đến lượt trong ván Đội gom thạch online và đã 4 phút 18 giây chưa đi nước nào
+- **WHEN** Minh đến lượt trong ván online của một game cùng phe có lượt và đã 4 phút 18 giây chưa đi nước nào
 - **THEN** màn hình của Minh ghi còn 0:42 và quá 5 phút người khác có thể kết thúc ván
 
 #### Scenario: Cả đội thắng khi chơi online
@@ -35,6 +35,34 @@
 
 - **WHEN** ván Đội gom thạch online dừng vì Lan bỏ cuộc
 - **THEN** mọi người trong phòng bắt đầu được ván mới bằng "Chơi lại"
+
+### Requirement: Chơi game đi tự do online
+
+Ở game đi tự do chơi online, người chơi SHALL đi được bất cứ lúc nào khi phòng đủ người, đang kết nối và ván chưa xong, chỉ chờ server nhận nước trước của chính mình. Màn hình MUST NOT có câu "Đang chờ", đồng hồ lượt, lời nhắc 4 phút hay nút xử bỏ ván. Nước bị từ chối vì người khác vừa đổi bàn MUST NOT kèm lời báo.
+
+#### Scenario: Hai người cùng đi
+
+- **WHEN** Minh và Lan chơi Đội gom thạch online, Minh vừa đi một bước và Lan bấm một hướng ngay sau đó
+- **THEN** bước của Lan được nhận mà không phải chờ Minh, và cả hai màn hình hiện cả hai bước
+
+#### Scenario: Bàn đổi trước khi nước tới server
+
+- **WHEN** Lan đi vào một ô đúng lúc nước của Minh vừa tới server đẩy thạch vào ô đó
+- **THEN** server từ chối nước của Lan, bàn của Lan hiện nước của Minh và không có lời báo nước đi không hợp lệ
+
+#### Scenario: Không có đồng hồ lượt
+
+- **WHEN** Minh không đi bước nào trong 6 phút của ván Đội gom thạch online
+- **THEN** không màn hình nào có lời nhắc còn bao lâu hay nút "Kết thúc ván"; Lan vẫn bấm được "Bỏ cuộc"
+
+### Requirement: Thời gian ván online
+
+Server SHALL ghi giờ một ván online bắt đầu (lúc đủ người, hay lúc "Chơi lại") và giờ ván có kết quả, bằng đồng hồ của server, và gửi cả hai cho mọi người trong phòng. Phòng không có hai giờ này SHALL vẫn mở được, không có thời gian ván.
+
+#### Scenario: Thời gian của ván thắng
+
+- **WHEN** ván Đội gom thạch online bắt đầu lúc đủ hai người và đầy khuôn 7 phút 12 giây sau
+- **THEN** thẻ kết quả của cả hai người ghi 7 phút 12 giây
 
 ## MODIFIED Requirements
 
